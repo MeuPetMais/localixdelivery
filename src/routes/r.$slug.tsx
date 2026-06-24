@@ -27,7 +27,7 @@ function PublicMenu() {
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
     queryFn: async () => {
-      const { data: rest } = await supabase.from("restaurants").select("*").eq("slug", slug).maybeSingle();
+      const { data: rest } = await supabase.from("restaurants_public" as any).select("*").eq("slug", slug).maybeSingle();
       if (!rest) return null;
       const [cats, items] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
