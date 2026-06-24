@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
-import { brl, onlyDigits } from "@/lib/format";
+import { brl } from "@/lib/format";
+import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,13 +27,17 @@ function PublicMenu() {
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
     queryFn: async () => {
-      const { data: rest } = await supabase.from("restaurants").select("*").eq("slug", slug).maybeSingle();
+      const { data: rest } = await (supabase as any)
+        .from("restaurants_public")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
       if (!rest) return null;
       const [cats, items] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
       ]);
-      return { restaurant: rest, categories: cats.data ?? [], items: items.data ?? [] };
+      return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [] };
     },
   });
 
@@ -178,7 +184,9 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const total = subtotal + fee;
   const belowMin = subtotal < min;
 
-  function sendWhatsApp() {
+  const getOrderLink = useServerFn(buildWhatsappOrderLink);
+
+  async function sendWhatsApp() {
     if (!name.trim() || !address.trim()) { toast.error("Preencha nome e endereço"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
     const lines = [
@@ -196,10 +204,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       `*Total: ${brl(total)}*`,
       notes ? `\n*Obs:* ${notes}` : "",
     ].filter(Boolean).join("\n");
-    const phone = onlyDigits(restaurant.whatsapp_phone);
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`;
-    window.open(url, "_blank");
-    onClose();
+    try {
+      const { url } = await getOrderLink({ data: { slug: restaurant.slug, message: lines } });
+      window.open(url, "_blank");
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível enviar o pedido");
+    }
   }
 
   return (
