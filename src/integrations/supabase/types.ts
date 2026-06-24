@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      menu_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          restaurant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          restaurant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean
+          name: string
+          position: number
+          price: number
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
+          position?: number
+          price: number
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+          position?: number
+          price?: number
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurants: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          delivery_fee: number
+          description: string | null
+          id: string
+          is_open: boolean
+          logo_url: string | null
+          min_order: number
+          name: string
+          owner_id: string
+          slug: string
+          updated_at: string
+          whatsapp_phone: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          delivery_fee?: number
+          description?: string | null
+          id?: string
+          is_open?: boolean
+          logo_url?: string | null
+          min_order?: number
+          name: string
+          owner_id: string
+          slug: string
+          updated_at?: string
+          whatsapp_phone: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          delivery_fee?: number
+          description?: string | null
+          id?: string
+          is_open?: boolean
+          logo_url?: string | null
+          min_order?: number
+          name?: string
+          owner_id?: string
+          slug?: string
+          updated_at?: string
+          whatsapp_phone?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
