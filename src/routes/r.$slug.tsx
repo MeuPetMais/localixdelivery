@@ -27,13 +27,17 @@ function PublicMenu() {
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
     queryFn: async () => {
-      const { data: rest } = await supabase.from("restaurants_public" as any).select("*").eq("slug", slug).maybeSingle();
+      const { data: rest } = await (supabase as any)
+        .from("restaurants_public")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
       if (!rest) return null;
       const [cats, items] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
       ]);
-      return { restaurant: rest, categories: cats.data ?? [], items: items.data ?? [] };
+      return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [] };
     },
   });
 
