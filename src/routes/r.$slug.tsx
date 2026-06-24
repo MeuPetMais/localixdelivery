@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
-import { brl, onlyDigits } from "@/lib/format";
+import { brl } from "@/lib/format";
+import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
