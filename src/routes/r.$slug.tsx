@@ -184,7 +184,9 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const total = subtotal + fee;
   const belowMin = subtotal < min;
 
-  function sendWhatsApp() {
+  const getOrderLink = useServerFn(buildWhatsappOrderLink);
+
+  async function sendWhatsApp() {
     if (!name.trim() || !address.trim()) { toast.error("Preencha nome e endereço"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
     const lines = [
@@ -202,10 +204,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       `*Total: ${brl(total)}*`,
       notes ? `\n*Obs:* ${notes}` : "",
     ].filter(Boolean).join("\n");
-    const phone = onlyDigits(restaurant.whatsapp_phone);
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`;
-    window.open(url, "_blank");
-    onClose();
+    try {
+      const { url } = await getOrderLink({ data: { slug: restaurant.slug, message: lines } });
+      window.open(url, "_blank");
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível enviar o pedido");
+    }
   }
 
   return (
