@@ -44,6 +44,13 @@ export type Database = {
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       menu_items: {
@@ -101,6 +108,13 @@ export type Database = {
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       restaurants: {
@@ -153,7 +167,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      restaurants_public: {
+        Row: {
+          cover_url: string | null
+          created_at: string | null
+          delivery_fee: number | null
+          description: string | null
+          id: string | null
+          is_open: boolean | null
+          logo_url: string | null
+          min_order: number | null
+          name: string | null
+          slug: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          description?: string | null
+          id?: string | null
+          is_open?: boolean | null
+          logo_url?: string | null
+          min_order?: number | null
+          name?: string | null
+          slug?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          description?: string | null
+          id?: string | null
+          is_open?: boolean | null
+          logo_url?: string | null
+          min_order?: number | null
+          name?: string | null
+          slug?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
