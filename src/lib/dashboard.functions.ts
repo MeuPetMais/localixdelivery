@@ -75,11 +75,12 @@ export const getDashboardData = createServerFn({ method: "POST" })
       return d >= since60 && d < since30;
     }).length;
 
-    // 30d series
+    // Period series (respects selected window)
     const series: { date: string; revenue: number; orders: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
+    const stepDays = period <= 7 ? 1 : period <= 30 ? 1 : 3;
+    for (let i = period - 1; i >= 0; i -= stepDays) {
       const d = new Date(startToday.getTime() - i * DAY);
-      const next = new Date(d.getTime() + DAY);
+      const next = new Date(d.getTime() + stepDays * DAY);
       const slice = allOrders.filter((o) => {
         const t = new Date(o.created_at);
         return t >= d && t < next;
@@ -100,10 +101,21 @@ export const getDashboardData = createServerFn({ method: "POST" })
       entregue: recent.filter((o) => o.status === "entregue" || o.status === "concluido").length,
     };
 
-    // Top 5 products (last 30d)
+    // Status breakdown across selected period (includes cancelled)
+    const periodOrders = (orders ?? []).filter((o) => new Date(o.created_at) >= sincePeriod);
+    const statusBreakdown = {
+      novo: periodOrders.filter((o) => o.status === "novo" || o.status === "pendente").length,
+      preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
+      entrega: periodOrders.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega").length,
+      entregue: periodOrders.filter((o) => o.status === "entregue" || o.status === "concluido").length,
+      cancelado: periodOrders.filter((o) => o.status === "cancelado").length,
+    };
+
+    // Top 5 products (within selected period)
     const last30 = allOrders.filter((o) => new Date(o.created_at) >= since30);
+    const periodForTop = allOrders.filter((o) => new Date(o.created_at) >= sincePeriod);
     const map = new Map<string, { name: string; qty: number; revenue: number }>();
-    for (const o of last30) {
+    for (const o of periodForTop) {
       const its = (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];
       if (!Array.isArray(its)) continue;
       for (const it of its) {
@@ -114,15 +126,15 @@ export const getDashboardData = createServerFn({ method: "POST" })
         map.set(it.name, cur);
       }
     }
-    const menuPrice = new Map((items ?? []).map((i) => [i.name, Number(i.price)]));
+    const menuByName = new Map((items ?? []).map((i) => [i.name, i]));
     const top = Array.from(map.values())
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5)
       .map((p) => {
-        const price = menuPrice.get(p.name) ?? (p.qty ? p.revenue / p.qty : 0);
-        // assume 35% cost baseline if unknown
+        const m = menuByName.get(p.name);
+        const price = Number(m?.price ?? (p.qty ? p.revenue / p.qty : 0));
         const margin = price > 0 ? Math.round(((price - price * 0.35) / price) * 100) : 0;
-        return { ...p, margin };
+        return { ...p, margin, image_url: (m?.image_url as string | null) ?? null };
       });
 
     // Customer segments
