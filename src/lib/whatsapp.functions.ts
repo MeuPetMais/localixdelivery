@@ -19,6 +19,8 @@ const inputSchema = z.object({
   }),
   items: z.array(itemSchema).min(1).max(100),
   total: z.number().nonnegative(),
+  couponId: z.string().uuid().nullable().optional(),
+  discount: z.number().nonnegative().optional(),
 });
 
 export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
@@ -45,6 +47,8 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       items: data.items,
       total: data.total,
       status: "novo",
+      coupon_id: data.couponId ?? null,
+      discount: data.discount ?? 0,
     });
 
     return { url: `https://wa.me/${phone}?text=${encodeURIComponent(data.message)}` };
