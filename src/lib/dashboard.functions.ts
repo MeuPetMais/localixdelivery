@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const schema = z.object({ restaurantId: z.string().uuid() });
+const schema = z.object({
+  restaurantId: z.string().uuid(),
+  period: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional().default(30),
+});
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -21,24 +24,28 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const startToday = new Date(now);
     startToday.setHours(0, 0, 0, 0);
     const startYesterday = new Date(startToday.getTime() - DAY);
+    const period = data.period ?? 30;
     const since30 = new Date(now.getTime() - 30 * DAY);
     const since60 = new Date(now.getTime() - 60 * DAY);
+    const sincePeriod = new Date(startToday.getTime() - (period - 1) * DAY);
+    const lookback = Math.max(60, period) * DAY;
+    const sinceFetch = new Date(now.getTime() - lookback);
 
     const [{ data: orders }, { data: customers }, { data: items }] = await Promise.all([
       supabaseAdmin
         .from("orders")
         .select("id, total, items, status, created_at, customer_phone")
         .eq("restaurant_id", data.restaurantId)
-        .gte("created_at", since60.toISOString())
+        .gte("created_at", sinceFetch.toISOString())
         .order("created_at", { ascending: false })
-        .limit(2000),
+        .limit(5000),
       supabaseAdmin
         .from("customers")
         .select("id, name, phone, total_orders, total_spent, last_order_at, created_at")
         .eq("restaurant_id", data.restaurantId),
       supabaseAdmin
         .from("menu_items")
-        .select("id, name, price")
+        .select("id, name, price, image_url")
         .eq("restaurant_id", data.restaurantId),
     ]);
 
@@ -68,11 +75,12 @@ export const getDashboardData = createServerFn({ method: "POST" })
       return d >= since60 && d < since30;
     }).length;
 
-    // 30d series
+    // Period series (respects selected window)
     const series: { date: string; revenue: number; orders: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
+    const stepDays = period <= 7 ? 1 : period <= 30 ? 1 : 3;
+    for (let i = period - 1; i >= 0; i -= stepDays) {
       const d = new Date(startToday.getTime() - i * DAY);
-      const next = new Date(d.getTime() + DAY);
+      const next = new Date(d.getTime() + stepDays * DAY);
       const slice = allOrders.filter((o) => {
         const t = new Date(o.created_at);
         return t >= d && t < next;
@@ -93,10 +101,21 @@ export const getDashboardData = createServerFn({ method: "POST" })
       entregue: recent.filter((o) => o.status === "entregue" || o.status === "concluido").length,
     };
 
-    // Top 5 products (last 30d)
+    // Status breakdown across selected period (includes cancelled)
+    const periodOrders = (orders ?? []).filter((o) => new Date(o.created_at) >= sincePeriod);
+    const statusBreakdown = {
+      novo: periodOrders.filter((o) => o.status === "novo" || o.status === "pendente").length,
+      preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
+      entrega: periodOrders.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega").length,
+      entregue: periodOrders.filter((o) => o.status === "entregue" || o.status === "concluido").length,
+      cancelado: periodOrders.filter((o) => o.status === "cancelado").length,
+    };
+
+    // Top 5 products (within selected period)
     const last30 = allOrders.filter((o) => new Date(o.created_at) >= since30);
+    const periodForTop = allOrders.filter((o) => new Date(o.created_at) >= sincePeriod);
     const map = new Map<string, { name: string; qty: number; revenue: number }>();
-    for (const o of last30) {
+    for (const o of periodForTop) {
       const its = (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];
       if (!Array.isArray(its)) continue;
       for (const it of its) {
@@ -107,15 +126,15 @@ export const getDashboardData = createServerFn({ method: "POST" })
         map.set(it.name, cur);
       }
     }
-    const menuPrice = new Map((items ?? []).map((i) => [i.name, Number(i.price)]));
+    const menuByName = new Map((items ?? []).map((i) => [i.name, i]));
     const top = Array.from(map.values())
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5)
       .map((p) => {
-        const price = menuPrice.get(p.name) ?? (p.qty ? p.revenue / p.qty : 0);
-        // assume 35% cost baseline if unknown
+        const m = menuByName.get(p.name);
+        const price = Number(m?.price ?? (p.qty ? p.revenue / p.qty : 0));
         const margin = price > 0 ? Math.round(((price - price * 0.35) / price) * 100) : 0;
-        return { ...p, margin };
+        return { ...p, margin, image_url: (m?.image_url as string | null) ?? null };
       });
 
     // Customer segments
@@ -177,8 +196,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
       },
       series,
       funnel,
+      statusBreakdown,
       topProducts: top,
       customerSegments: { new: newCust, recurring, vip, total: cust.length },
       insights,
+      period,
     };
   });

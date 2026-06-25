@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,11 @@ import {
   Bell,
   CalendarDays,
   ChevronDown,
+  Share2,
+  Instagram,
+  Facebook,
+  MessageCircle,
+  Store,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import {
@@ -66,11 +71,14 @@ function Dashboard() {
     },
   });
 
+  const [period, setPeriod] = useState<7 | 30 | 90>(30);
+  const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
+
   const fetchDash = useServerFn(getDashboardData);
   const { data: dash } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["dashboard", restaurant?.id],
-    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id } }),
+    queryKey: ["dashboard", restaurant?.id, period],
+    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id, period } }),
     refetchInterval: 60_000,
   });
 
@@ -156,43 +164,115 @@ function Dashboard() {
         </div>
       </header>
 
-      {/* Public link compact card */}
-      <Card className="flex w-full max-w-xl items-center gap-3 border-primary/20 bg-card px-3 py-2 shadow-sm">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">{restaurant.name}</p>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                restaurant.is_open
-                  ? "bg-success/10 text-success"
-                  : "bg-destructive/10 text-destructive"
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
-              {restaurant.is_open ? "Online" : "Offline"}
-            </span>
+      {/* Loja Online + Marketing cards */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="relative overflow-hidden border-primary/20 p-5 shadow-sm">
+          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+          <div className="relative flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+              <Store className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-base font-bold">Sua Loja Online</h3>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    restaurant.is_open ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
+                  {restaurant.is_open ? "Online" : "Offline"}
+                </span>
+              </div>
+              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{publicUrl}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a href={publicUrl} target="_blank" rel="noreferrer">
+                  <Button size="sm" className="h-8">
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Abrir página
+                  </Button>
+                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publicUrl);
+                    toast.success("Link copiado!");
+                  }}
+                >
+                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar link
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={async () => {
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({ title: restaurant.name, url: publicUrl });
+                      } catch {
+                        /* user cancelled */
+                      }
+                    } else {
+                      navigator.clipboard.writeText(publicUrl);
+                      toast.success("Link copiado para compartilhar!");
+                    }
+                  }}
+                >
+                  <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartilhar
+                </Button>
+              </div>
+            </div>
           </div>
-          <p className="truncate text-xs text-muted-foreground">/r/{restaurant.slug}</p>
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2"
-            onClick={() => {
-              navigator.clipboard.writeText(publicUrl);
-              toast.success("Link copiado!");
-            }}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-          <a href={publicUrl} target="_blank" rel="noreferrer">
-            <Button size="sm" className="h-8 px-2">
-              <ExternalLink className="mr-1 h-3.5 w-3.5" /> Abrir
-            </Button>
-          </a>
-        </div>
-      </Card>
+        </Card>
+
+        <Card className="relative overflow-hidden bg-gradient-warm p-5 text-primary-foreground shadow-glow">
+          <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-primary-foreground/10 blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5" />
+              <h3 className="font-display text-base font-bold">Divulgue e venda mais</h3>
+            </div>
+            <p className="mt-1 text-sm opacity-90">
+              Compartilhe sua loja nas redes e atraia mais pedidos hoje mesmo.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Peça pelo ${restaurant.name}: ${publicUrl}`)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
+                </Button>
+              </a>
+              <a
+                href={`https://www.instagram.com/`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  navigator.clipboard.writeText(`Peça pelo ${restaurant.name}: ${publicUrl}`);
+                  toast.success("Texto copiado! Cole no seu story.");
+                }}
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <Instagram className="mr-1.5 h-3.5 w-3.5" /> Instagram
+                </Button>
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <Facebook className="mr-1.5 h-3.5 w-3.5" /> Facebook
+                </Button>
+              </a>
+            </div>
+          </div>
+        </Card>
+      </div>
+
 
       {/* Row 1: KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -226,15 +306,46 @@ function Dashboard() {
         />
       </div>
 
-      {/* Row 2: Chart + AI insights */}
+      {/* Row 2: Revenue chart + Status donut */}
       <div className="grid gap-4 lg:grid-cols-10">
         <Card className="min-w-0 p-5 lg:col-span-7">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-display text-lg font-bold">Vendas — últimos 30 dias</h3>
-              <p className="text-xs text-muted-foreground">Faturamento diário</p>
+              <h3 className="font-display text-lg font-bold">
+                {metric === "revenue" ? "Faturamento" : "Pedidos"} — últimos {period} dias
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {metric === "revenue" ? "Receita por dia" : "Quantidade de pedidos por dia"}
+              </p>
             </div>
-            <Sparkles className="h-4 w-4 text-primary" />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                {(["revenue", "orders"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMetric(m)}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      metric === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "revenue" ? "Receita" : "Pedidos"}
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                {([7, 30, 90] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {p}d
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="mt-4 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -249,16 +360,23 @@ function Dashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <Tooltip
-                  formatter={(v: number) => brl(v)}
+                  formatter={(v: number) => (metric === "revenue" ? brl(v) : `${v} pedido${v === 1 ? "" : "s"}`)}
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#FF5A1F" strokeWidth={2} fill="url(#rev)" />
+                <Area type="monotone" dataKey={metric} stroke="#FF5A1F" strokeWidth={2} fill="url(#rev)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card className="min-w-0 p-5 lg:col-span-3">
+          <StatusDonut data={dash?.statusBreakdown} />
+        </Card>
+      </div>
+
+      {/* AI Insights */}
+      <div className="grid gap-4">
+        <Card className="min-w-0 p-5">
           <div className="flex items-center gap-2">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <Sparkles className="h-4 w-4" />
@@ -268,7 +386,7 @@ function Dashboard() {
               <p className="text-xs text-muted-foreground">Insights do seu negócio</p>
             </div>
           </div>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(dash?.insights ?? []).map((ins, i) => (
               <li key={i} className="rounded-xl border bg-muted/30 p-3 text-sm leading-relaxed">
                 {ins}
@@ -276,13 +394,9 @@ function Dashboard() {
             ))}
             {!dash && <li className="text-sm text-muted-foreground">Carregando insights…</li>}
           </ul>
-          <Link to="/ai">
-            <Button variant="ghost" size="sm" className="mt-3 w-full">
-              Ver Central de IA →
-            </Button>
-          </Link>
         </Card>
       </div>
+
 
       {/* Row 3: Funnel */}
       <section>
@@ -327,6 +441,17 @@ function Dashboard() {
                         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {i + 1}
                         </span>
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                            <Package className="h-4 w-4" />
+                          </div>
+                        )}
                         <span className="truncate">{p.name}</span>
                       </div>
                     </td>
@@ -602,3 +727,92 @@ function Loader() {
     </div>
   );
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  novo: "Novo Pedido",
+  preparo: "Em Preparo",
+  entrega: "Saiu p/ Entrega",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
+};
+const STATUS_COLORS: Record<string, string> = {
+  novo: "#f59e0b",
+  preparo: "#3b82f6",
+  entrega: "#8b5cf6",
+  entregue: "#10b981",
+  cancelado: "#ef4444",
+};
+
+function StatusDonut({ data }: { data?: Record<string, number> | null }) {
+  const entries = Object.entries(data ?? {}).map(([status, count]) => ({
+    status,
+    label: STATUS_LABELS[status] ?? status,
+    value: count as number,
+    color: STATUS_COLORS[status] ?? "#94a3b8",
+  }));
+  const total = entries.reduce((acc, e) => acc + e.value, 0);
+
+  return (
+    <div className="flex h-full min-w-0 flex-col">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-base font-bold">Status dos Pedidos</h3>
+          <p className="text-xs text-muted-foreground">Distribuição atual</p>
+        </div>
+        <ShoppingBag className="h-4 w-4 text-primary" />
+      </div>
+      {total === 0 ? (
+        <p className="mt-8 text-center text-sm text-muted-foreground">Nenhum pedido ainda.</p>
+      ) : (
+        <>
+          <div className="relative mx-auto mt-2 h-36 w-36">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={entries}
+                  dataKey="value"
+                  innerRadius={42}
+                  outerRadius={62}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {entries.map((e) => (
+                    <Cell key={e.status} fill={e.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v: number, _n, p: { payload?: { label: string } }) => [
+                    `${v} (${Math.round((v / total) * 100)}%)`,
+                    p.payload?.label ?? "",
+                  ]}
+                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-display text-xl font-bold leading-none">{total}</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</span>
+            </div>
+          </div>
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {entries.map((e) => (
+              <li key={e.status} className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: e.color }} />
+                  <span className="truncate text-muted-foreground">{e.label}</span>
+                </div>
+                <span className="font-medium tabular-nums">
+                  {e.value}
+                  <span className="ml-1 text-muted-foreground">
+                    ({Math.round((e.value / total) * 100)}%)
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
