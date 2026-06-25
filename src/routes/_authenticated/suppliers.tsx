@@ -18,7 +18,7 @@ import { brl } from "@/lib/format";
 import { toast } from "sonner";
 import {
   Store, Search, Heart, Sparkles, Loader2, ShoppingCart, TrendingDown,
-  Package, MessageSquare, Star, Beef, CupSoda, Box, Leaf, Spray, Snowflake, IceCream,
+  Package, MessageSquare, Star, Beef, CupSoda, Box, Leaf, SprayCan, Snowflake, IceCream,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -26,7 +26,7 @@ const CATEGORIES = [
   { key: "Bebidas", icon: CupSoda },
   { key: "Embalagens", icon: Box },
   { key: "Hortifruti", icon: Leaf },
-  { key: "Limpeza", icon: Spray },
+  { key: "Limpeza", icon: SprayCan },
   { key: "Congelados", icon: Snowflake },
   { key: "Sobremesas", icon: IceCream },
 ] as const;
