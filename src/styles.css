@@ -129,14 +129,20 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * { border-color: var(--color-border); box-sizing: border-box; }
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  img, video, canvas, svg, table { max-width: 100%; height: auto; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; overflow-wrap: break-word; }
 }
 
 @utility bg-gradient-warm { background-image: var(--gradient-warm); }
