@@ -306,15 +306,46 @@ function Dashboard() {
         />
       </div>
 
-      {/* Row 2: Chart + AI insights */}
+      {/* Row 2: Revenue chart + Status donut */}
       <div className="grid gap-4 lg:grid-cols-10">
         <Card className="min-w-0 p-5 lg:col-span-7">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-display text-lg font-bold">Vendas — últimos 30 dias</h3>
-              <p className="text-xs text-muted-foreground">Faturamento diário</p>
+              <h3 className="font-display text-lg font-bold">
+                {metric === "revenue" ? "Faturamento" : "Pedidos"} — últimos {period} dias
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {metric === "revenue" ? "Receita por dia" : "Quantidade de pedidos por dia"}
+              </p>
             </div>
-            <Sparkles className="h-4 w-4 text-primary" />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                {(["revenue", "orders"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMetric(m)}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      metric === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "revenue" ? "Receita" : "Pedidos"}
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
+                {([7, 30, 90] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {p}d
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="mt-4 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -329,14 +360,43 @@ function Dashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <Tooltip
-                  formatter={(v: number) => brl(v)}
+                  formatter={(v: number) => (metric === "revenue" ? brl(v) : `${v} pedido${v === 1 ? "" : "s"}`)}
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#FF5A1F" strokeWidth={2} fill="url(#rev)" />
+                <Area type="monotone" dataKey={metric} stroke="#FF5A1F" strokeWidth={2} fill="url(#rev)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
+
+        <Card className="min-w-0 p-5 lg:col-span-3">
+          <StatusDonut data={dash?.statusBreakdown} />
+        </Card>
+      </div>
+
+      {/* AI Insights */}
+      <div className="grid gap-4">
+        <Card className="min-w-0 p-5">
+          <div className="flex items-center gap-2">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate font-display text-base font-bold">Resumo IA</h3>
+              <p className="text-xs text-muted-foreground">Insights do seu negócio</p>
+            </div>
+          </div>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(dash?.insights ?? []).map((ins, i) => (
+              <li key={i} className="rounded-xl border bg-muted/30 p-3 text-sm leading-relaxed">
+                {ins}
+              </li>
+            ))}
+            {!dash && <li className="text-sm text-muted-foreground">Carregando insights…</li>}
+          </ul>
+        </Card>
+      </div>
+
 
         <Card className="min-w-0 p-5 lg:col-span-3">
           <div className="flex items-center gap-2">
