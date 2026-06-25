@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
+import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2, Ticket, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/r/$slug")({
@@ -184,10 +185,30 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
-  const total = subtotal + fee;
+
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{ id: string; code: string; discountPercent: number } | null>(null);
+  const [validating, setValidating] = useState(false);
+  const checkCoupon = useServerFn(validateCoupon);
+
+  const discount = coupon ? +(subtotal * (coupon.discountPercent / 100)).toFixed(2) : 0;
+  const total = Math.max(0, subtotal - discount) + fee;
   const belowMin = subtotal < min;
 
   const getOrderLink = useServerFn(buildWhatsappOrderLink);
+
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setValidating(true);
+    try {
+      const res = await checkCoupon({ data: { slug: restaurant.slug, code: couponInput.trim() } });
+      if (!res.valid) { setCoupon(null); toast.error(res.reason); return; }
+      setCoupon({ id: res.id, code: res.code, discountPercent: res.discountPercent });
+      toast.success(`Cupom aplicado: -${res.discountPercent}%`);
+    } finally {
+      setValidating(false);
+    }
+  }
 
   async function sendWhatsApp() {
     if (!name.trim() || !phone.trim() || !address.trim() || !neighborhood.trim()) {
@@ -202,6 +223,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
       ``,
       `Subtotal: ${brl(subtotal)}`,
+      coupon ? `Cupom ${coupon.code}: -${brl(discount)}` : "",
       `Entrega: ${brl(fee)}`,
       `*Total: ${brl(total)}*`,
       ``,
@@ -220,6 +242,8 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
           customer: { name, phone, address: fullAddress, payment },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
           total,
+          couponId: coupon?.id ?? null,
+          discount,
         },
       });
       window.open(url, "_blank");
