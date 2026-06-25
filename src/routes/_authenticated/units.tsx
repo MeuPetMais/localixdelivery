@@ -27,16 +27,17 @@ function UnitsPage() {
   const insightsFn = useServerFn(generateUnitsInsights);
   const upsertFn = useServerFn(upsertUnit);
 
-  const { data, isLoading } = useQuery({ queryKey: ["units"], queryFn: () => listFn({}) });
+  const { data, isLoading } = useQuery({ queryKey: ["units"], queryFn: () => listFn() });
   const [insights, setInsights] = useState<string>("");
   const insightsMut = useMutation({
-    mutationFn: () => insightsFn({}),
+    mutationFn: () => insightsFn(),
     onSuccess: (r) => setInsights(r.insights),
     onError: (e: Error) => toast.error(e.message),
   });
 
+  type UpsertVars = Parameters<typeof onSubmitType>[0];
   const upsertMut = useMutation({
-    mutationFn: (vars: Parameters<typeof upsertFn>[0]["data"]) => upsertFn({ data: vars }),
+    mutationFn: (vars: UpsertVars) => upsertFn({ data: vars }),
     onSuccess: () => {
       toast.success("Unidade salva");
       qc.invalidateQueries({ queryKey: ["units"] });
