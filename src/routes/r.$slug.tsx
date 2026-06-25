@@ -213,7 +213,15 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
-      const { url } = await getOrderLink({ data: { slug: restaurant.slug, message: lines } });
+      const { url } = await getOrderLink({
+        data: {
+          slug: restaurant.slug,
+          message: lines,
+          customer: { name, phone, address: fullAddress, payment },
+          items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          total,
+        },
+      });
       window.open(url, "_blank");
       onClose();
     } catch (e: any) {
