@@ -32,8 +32,6 @@ import {
   Clock,
   Bell,
   CalendarDays,
-  Bell,
-  CalendarDays,
   ChevronDown,
   Share2,
   Instagram,
