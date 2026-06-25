@@ -398,32 +398,6 @@ function Dashboard() {
       </div>
 
 
-        <Card className="min-w-0 p-5 lg:col-span-3">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="truncate font-display text-base font-bold">Resumo IA</h3>
-              <p className="text-xs text-muted-foreground">Insights do seu negócio</p>
-            </div>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {(dash?.insights ?? []).map((ins, i) => (
-              <li key={i} className="rounded-xl border bg-muted/30 p-3 text-sm leading-relaxed">
-                {ins}
-              </li>
-            ))}
-            {!dash && <li className="text-sm text-muted-foreground">Carregando insights…</li>}
-          </ul>
-          <Link to="/ai">
-            <Button variant="ghost" size="sm" className="mt-3 w-full">
-              Ver Central de IA →
-            </Button>
-          </Link>
-        </Card>
-      </div>
-
       {/* Row 3: Funnel */}
       <section>
         <div className="mb-3 flex items-center justify-between">
