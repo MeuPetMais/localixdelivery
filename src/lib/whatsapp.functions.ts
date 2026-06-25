@@ -28,7 +28,7 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rest, error } = await supabaseAdmin
       .from("restaurants")
-      .select("id, whatsapp_phone, is_open")
+      .select("id, whatsapp_phone, is_open, delivery_time")
       .eq("slug", data.slug)
       .maybeSingle();
     if (error) throw new Error("Falha ao localizar restaurante");
@@ -36,6 +36,7 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     if (!rest.is_open) throw new Error("Restaurante fechado no momento");
     const phone = String(rest.whatsapp_phone ?? "").replace(/\D+/g, "");
     if (!phone) throw new Error("WhatsApp do restaurante não configurado");
+    const eta = Number(rest.delivery_time ?? 35) || 35;
 
     // Recompute subtotal server-side; trust only the item list shape, not totals.
     const subtotal = data.items.reduce((s, it) => s + it.price * it.qty, 0);
