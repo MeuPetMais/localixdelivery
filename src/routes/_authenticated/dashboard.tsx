@@ -955,6 +955,7 @@ function TimelineRow({ type, label, detail, at }: { type: string; label: string;
 }
 
 
+const STATUS_LABELS: Record<string, string> = {
   novo: "Novo Pedido",
   preparo: "Em Preparo",
   entrega: "Saiu p/ Entrega",
