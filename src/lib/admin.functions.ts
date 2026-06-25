@@ -1,0 +1,57 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export const getAdminMetrics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // Verify admin role using the security-definer function
+    const { data: isAdminData, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleError) throw new Error(roleError.message);
+    if (!isAdminData) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [restaurantsTotal, restaurantsActive, ordersAll] = await Promise.all([
+      supabaseAdmin.from("restaurants").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("restaurants").select("id", { count: "exact", head: true }).eq("is_open", true),
+      supabaseAdmin.from("orders").select("total, status, created_at, restaurant_id"),
+    ]);
+
+    if (ordersAll.error) throw new Error(ordersAll.error.message);
+
+    const orders = ordersAll.data ?? [];
+    const revenue = orders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
+
+    // Platform fee model: 2% of GMV (sample). Adjust freely.
+    const platformRevenue = revenue * 0.02;
+
+    return {
+      restaurantsTotal: restaurantsTotal.count ?? 0,
+      restaurantsActive: restaurantsActive.count ?? 0,
+      ordersTotal: orders.length,
+      gmv: revenue,
+      platformRevenue,
+    };
+  });
+
+export const getRecentRestaurants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdminData } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdminData) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("restaurants")
+      .select("id, name, slug, is_open, created_at, whatsapp_phone")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
