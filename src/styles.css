@@ -143,6 +143,7 @@
   }
   img, video, canvas, svg, table { max-width: 100%; height: auto; }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; overflow-wrap: break-word; }
+  .main-container { max-width: 100%; overflow-x: hidden; }
 }
 
 @utility bg-gradient-warm { background-image: var(--gradient-warm); }
