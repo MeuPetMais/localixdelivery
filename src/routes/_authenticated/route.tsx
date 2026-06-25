@@ -33,6 +33,7 @@ function AuthLayout() {
     { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
     { to: "/ai", label: "Central de IA", icon: Brain },
     { to: "/finance", label: "Financeiro", icon: Wallet },
+    { to: "/inventory", label: "Estoque", icon: Package },
     { to: "/settings", label: "Configurações", icon: Settings },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
