@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/orders")({
 
 type Order = {
   id: string;
+  order_number: number | null;
   restaurant_id: string;
   customer_name: string;
   customer_phone: string | null;
@@ -25,6 +26,7 @@ type Order = {
   status: string;
   created_at: string;
 };
+
 
 const STATUSES = [
   { key: "novo", label: "Novo Pedido", tone: "bg-primary/10 text-primary border-primary/30" },
