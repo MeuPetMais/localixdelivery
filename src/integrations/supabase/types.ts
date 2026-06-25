@@ -208,6 +208,57 @@ export type Database = {
           },
         ]
       }
+      ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          restaurant_id: string
+          stock: number
+          unit: string
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          restaurant_id: string
+          stock?: number
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          restaurant_id?: string
+          stock?: number
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -377,6 +428,45 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_items: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          menu_item_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          menu_item_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          menu_item_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
             referencedColumns: ["id"]
           },
         ]
