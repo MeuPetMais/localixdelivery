@@ -176,7 +176,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [payment, setPayment] = useState("Pix");
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
@@ -187,22 +190,27 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const getOrderLink = useServerFn(buildWhatsappOrderLink);
 
   async function sendWhatsApp() {
-    if (!name.trim() || !address.trim()) { toast.error("Preencha nome e endereço"); return; }
+    if (!name.trim() || !phone.trim() || !address.trim() || !neighborhood.trim()) {
+      toast.error("Preencha nome, telefone, endereço e bairro");
+      return;
+    }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
+    const fullAddress = complement.trim() ? `${address} — ${complement}, ${neighborhood}` : `${address}, ${neighborhood}`;
     const lines = [
-      `*Novo pedido — ${restaurant.name}*`,
+      `Olá, gostaria de fazer o seguinte pedido:`,
       ``,
-      `*Cliente:* ${name}`,
-      `*Endereço:* ${address}`,
-      `*Pagamento:* ${payment}`,
-      ``,
-      `*Itens:*`,
       ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
       ``,
       `Subtotal: ${brl(subtotal)}`,
       `Entrega: ${brl(fee)}`,
       `*Total: ${brl(total)}*`,
-      notes ? `\n*Obs:* ${notes}` : "",
+      ``,
+      `Nome: ${name}`,
+      `Telefone: ${phone}`,
+      `Endereço: ${fullAddress}`,
+      ``,
+      `Forma de pagamento: ${payment}`,
+      notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
       const { url } = await getOrderLink({ data: { slug: restaurant.slug, message: lines } });
@@ -233,8 +241,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       </div>
 
       <div className="mt-5 grid gap-3">
-        <div className="space-y-1.5"><Label>Seu nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
-        <div className="space-y-1.5"><Label>Endereço de entrega</Label><Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número, bairro, ponto de referência" /></div>
+        <div className="space-y-1.5"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
+        <div className="space-y-1.5"><Label>Telefone</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" /></div>
+        <div className="space-y-1.5"><Label>Endereço</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número" /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
+          <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
+        </div>
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
           <div className="flex flex-wrap gap-2">
