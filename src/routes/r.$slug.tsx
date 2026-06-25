@@ -26,22 +26,6 @@ function PublicMenu() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(`repeat:${slug}`);
-      if (raw) {
-        const items = JSON.parse(raw) as CartItem[];
-        if (Array.isArray(items) && items.length) {
-          setCart(items);
-          setOpenSheet(true);
-          toast.success("Carrinho preenchido com seu pedido anterior");
-        }
-        sessionStorage.removeItem(`repeat:${slug}`);
-      }
-    } catch {}
-  }, [slug]);
-
-
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
     queryFn: async () => {
@@ -62,6 +46,21 @@ function PublicMenu() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [openSheet, setOpenSheet] = useState(false);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`repeat:${slug}`);
+      if (raw) {
+        const items = JSON.parse(raw) as CartItem[];
+        if (Array.isArray(items) && items.length) {
+          setCart(items);
+          setOpenSheet(true);
+          toast.success("Carrinho preenchido com seu pedido anterior");
+        }
+        sessionStorage.removeItem(`repeat:${slug}`);
+      }
+    } catch {}
+  }, [slug]);
+
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
@@ -72,6 +71,7 @@ function PublicMenu() {
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
+
 
   if (isLoading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!data) return (
