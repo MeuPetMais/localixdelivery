@@ -26,22 +26,26 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
     }
 
     const restaurantIds = Array.from(new Set(customers.map((c) => c.restaurant_id)));
-    const { data: restaurants } = await supabaseAdmin
-      .from("restaurants")
-      .select("id, name, slug")
-      .in("id", restaurantIds);
+    const customerIds = customers.map((c) => c.id);
 
-    // Orders for this phone (raw or formatted variants)
-    const { data: orders } = await supabaseAdmin
-      .from("orders")
-      .select("id, restaurant_id, items, total, status, address, payment_method, created_at, customer_phone")
-      .in("restaurant_id", restaurantIds)
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const [{ data: restaurants }, { data: orders }, { data: pointsRows }, { data: coupons }] = await Promise.all([
+      supabaseAdmin.from("restaurants").select("id, name, slug").in("id", restaurantIds),
+      supabaseAdmin
+        .from("orders")
+        .select("id, restaurant_id, items, total, discount, status, address, payment_method, created_at, customer_phone")
+        .in("restaurant_id", restaurantIds)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabaseAdmin.from("customer_points").select("customer_id, balance, total_earned").in("customer_id", customerIds),
+      supabaseAdmin
+        .from("coupons")
+        .select("id, restaurant_id, code, discount_percent, valid_until, is_active")
+        .in("restaurant_id", restaurantIds)
+        .eq("is_active", true),
+    ]);
 
     const filteredOrders = (orders ?? []).filter((o: any) => normalize(o.customer_phone ?? "") === phone);
 
-    // Saved addresses derived from past orders
     const addresses = Array.from(
       new Set(filteredOrders.map((o: any) => o.address).filter(Boolean) as string[]),
     ).slice(0, 5);
@@ -49,12 +53,18 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
     const name = customers[0]?.name ?? "";
     const totalOrders = customers.reduce((s, c) => s + (c.total_orders ?? 0), 0);
     const totalSpent = customers.reduce((s, c) => s + Number(c.total_spent ?? 0), 0);
+    const totalPoints = (pointsRows ?? []).reduce((s, p: any) => s + (p.balance ?? 0), 0);
+    const totalEarned = (pointsRows ?? []).reduce((s, p: any) => s + (p.total_earned ?? 0), 0);
+
+    const today = new Date(new Date().toDateString());
+    const validCoupons = (coupons ?? []).filter((c: any) => !c.valid_until || new Date(c.valid_until) >= today);
 
     return {
       found: true as const,
-      profile: { name, phone, totalOrders, totalSpent },
+      profile: { name, phone, totalOrders, totalSpent, totalPoints, totalEarned },
       restaurants: restaurants ?? [],
       orders: filteredOrders,
       addresses,
+      coupons: validCoupons,
     };
   });
