@@ -196,8 +196,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
       },
       series,
       funnel,
+      statusBreakdown,
       topProducts: top,
       customerSegments: { new: newCust, recurring, vip, total: cust.length },
       insights,
+      period,
     };
   });
