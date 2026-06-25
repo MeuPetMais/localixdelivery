@@ -17,7 +17,6 @@ import {
   Loader2,
   ShoppingBag,
   DollarSign,
-  Receipt,
   Users,
   TrendingUp,
   TrendingDown,
@@ -31,6 +30,9 @@ import {
   Bike,
   CheckCircle2,
   Clock,
+  Bell,
+  CalendarDays,
+  ChevronDown,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import {
@@ -105,16 +107,40 @@ function Dashboard() {
   return (
     <div className="max-w-full space-y-6">
       {/* Header */}
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="truncate font-display text-2xl font-extrabold sm:text-3xl">
             Olá, {restaurant.name} 👋
           </h1>
-          <p className="text-sm text-muted-foreground">Visão geral do seu negócio em tempo real.</p>
+          <p className="text-sm text-muted-foreground">Aqui está o resumo do seu negócio hoje.</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-accent"
+          >
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            Hoje
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+          <button
+            type="button"
+            aria-label="Notificações"
+            className="relative grid h-9 w-9 place-items-center rounded-lg border bg-background shadow-sm transition hover:bg-accent"
+          >
+            <Bell className="h-4 w-4" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
+          </button>
+          <div className="flex items-center gap-2 rounded-lg border bg-background py-1 pl-1 pr-3 shadow-sm">
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-warm text-xs font-bold text-primary-foreground">
+              {(restaurant.name ?? "L").charAt(0).toUpperCase()}
+            </span>
+            <span className="hidden max-w-[120px] truncate text-sm font-medium sm:block">
+              {user.email ?? restaurant.name}
+            </span>
+          </div>
           <div
-            className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium sm:flex ${
+            className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium md:flex ${
               restaurant.is_open
                 ? "border-success/40 bg-success/10 text-success"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
@@ -185,10 +211,10 @@ function Dashboard() {
           accent="from-emerald-500/10 to-transparent"
         />
         <KpiCard
-          title="Ticket Médio"
-          value={brl(k?.ticketToday ?? 0)}
-          delta={k?.ticketDelta ?? 0}
-          icon={Receipt}
+          title="Produtos Ativos"
+          value={k?.productsActive ?? 0}
+          delta={k?.productsDelta ?? 0}
+          icon={Package}
           accent="from-blue-500/10 to-transparent"
         />
         <KpiCard
