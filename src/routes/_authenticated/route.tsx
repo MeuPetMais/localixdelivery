@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, UtensilsCrossed, Settings, LogOut, ShieldCheck, ClipboardList, Users, Sparkles } from "lucide-react";
+import { LayoutDashboard, UtensilsCrossed, Settings, LogOut, ShieldCheck, ClipboardList, Users, Sparkles, Brain } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-role";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -31,6 +31,7 @@ function AuthLayout() {
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
     { to: "/customers", label: "Clientes", icon: Users },
     { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
+    { to: "/ai", label: "Central de IA", icon: Brain },
     { to: "/settings", label: "Configurações", icon: Settings },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
