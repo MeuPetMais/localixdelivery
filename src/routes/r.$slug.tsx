@@ -176,7 +176,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [payment, setPayment] = useState("Pix");
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
@@ -187,22 +190,27 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const getOrderLink = useServerFn(buildWhatsappOrderLink);
 
   async function sendWhatsApp() {
-    if (!name.trim() || !address.trim()) { toast.error("Preencha nome e endereço"); return; }
+    if (!name.trim() || !phone.trim() || !address.trim() || !neighborhood.trim()) {
+      toast.error("Preencha nome, telefone, endereço e bairro");
+      return;
+    }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
+    const fullAddress = complement.trim() ? `${address} — ${complement}, ${neighborhood}` : `${address}, ${neighborhood}`;
     const lines = [
-      `*Novo pedido — ${restaurant.name}*`,
+      `Olá, gostaria de fazer o seguinte pedido:`,
       ``,
-      `*Cliente:* ${name}`,
-      `*Endereço:* ${address}`,
-      `*Pagamento:* ${payment}`,
-      ``,
-      `*Itens:*`,
       ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
       ``,
       `Subtotal: ${brl(subtotal)}`,
       `Entrega: ${brl(fee)}`,
       `*Total: ${brl(total)}*`,
-      notes ? `\n*Obs:* ${notes}` : "",
+      ``,
+      `Nome: ${name}`,
+      `Telefone: ${phone}`,
+      `Endereço: ${fullAddress}`,
+      ``,
+      `Forma de pagamento: ${payment}`,
+      notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
       const { url } = await getOrderLink({ data: { slug: restaurant.slug, message: lines } });
