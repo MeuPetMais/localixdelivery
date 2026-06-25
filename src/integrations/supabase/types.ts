@@ -473,6 +473,9 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          active: boolean
+          address: string | null
+          category: string | null
           cnpj: string | null
           cover_url: string | null
           created_at: string
@@ -481,15 +484,20 @@ export type Database = {
           id: string
           is_open: boolean
           logo_url: string | null
+          manager_name: string | null
           min_order: number
           name: string
           owner_id: string
           owner_name: string | null
+          phone: string | null
           slug: string
           updated_at: string
           whatsapp_phone: string
         }
         Insert: {
+          active?: boolean
+          address?: string | null
+          category?: string | null
           cnpj?: string | null
           cover_url?: string | null
           created_at?: string
@@ -498,15 +506,20 @@ export type Database = {
           id?: string
           is_open?: boolean
           logo_url?: string | null
+          manager_name?: string | null
           min_order?: number
           name: string
           owner_id: string
           owner_name?: string | null
+          phone?: string | null
           slug: string
           updated_at?: string
           whatsapp_phone: string
         }
         Update: {
+          active?: boolean
+          address?: string | null
+          category?: string | null
           cnpj?: string | null
           cover_url?: string | null
           created_at?: string
@@ -515,10 +528,12 @@ export type Database = {
           id?: string
           is_open?: boolean
           logo_url?: string | null
+          manager_name?: string | null
           min_order?: number
           name?: string
           owner_id?: string
           owner_name?: string | null
+          phone?: string | null
           slug?: string
           updated_at?: string
           whatsapp_phone?: string
