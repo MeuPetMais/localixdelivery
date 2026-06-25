@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/orders")({
 
 type Order = {
   id: string;
+  order_number: number | null;
   restaurant_id: string;
   customer_name: string;
   customer_phone: string | null;
@@ -25,6 +26,7 @@ type Order = {
   status: string;
   created_at: string;
 };
+
 
 const STATUSES = [
   { key: "novo", label: "Novo Pedido", tone: "bg-primary/10 text-primary border-primary/30" },
@@ -82,9 +84,11 @@ function OrdersPage() {
           (payload) => {
             setOrders((prev) => {
               if (payload.eventType === "INSERT") {
-                toast.success("Novo pedido recebido!");
+                const n = (payload.new as Order).order_number;
+                toast.success(n ? `Novo pedido #${n} recebido!` : "Novo pedido recebido!");
                 return [payload.new as Order, ...prev];
               }
+
               if (payload.eventType === "UPDATE") {
                 return prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o));
               }
@@ -144,10 +148,16 @@ function OrdersPage() {
                 const next = NEXT[o.status];
                 return (
                   <Card key={o.id} className="space-y-2 p-3">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold">{o.customer_name}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        {o.order_number && (
+                          <p className="font-display text-xs font-bold text-primary">#{o.order_number}</p>
+                        )}
+                        <p className="truncate font-semibold">{o.customer_name}</p>
+                      </div>
                       <span className="font-display text-sm font-bold text-primary">{brl(Number(o.total))}</span>
                     </div>
+
                     <div className="space-y-0.5 text-xs text-muted-foreground">
                       {o.customer_phone && <p className="flex items-center gap-1"><Phone className="h-3 w-3" /> {o.customer_phone}</p>}
                       {o.address && <p className="flex items-start gap-1"><MapPin className="h-3 w-3 mt-0.5" /> {o.address}</p>}
