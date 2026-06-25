@@ -38,6 +38,19 @@ import {
   Facebook,
   MessageCircle,
   Store,
+  Lightbulb,
+  Crown,
+  UserCheck,
+  UserX,
+  Award,
+  Gift,
+  Coins,
+  Activity as ActivityIcon,
+  ShoppingCart,
+  TicketCheck,
+  UserPlus,
+  PackagePlus,
+  PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import {
