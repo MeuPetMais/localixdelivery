@@ -20,6 +20,7 @@ import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/m
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
+import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
 const ClienteRoute = ClienteRouteImport.update({
@@ -76,6 +77,11 @@ const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/ai': typeof AuthenticatedAiRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/ai': typeof AuthenticatedAiRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/admin'
+    | '/ai'
     | '/customers'
     | '/dashboard'
     | '/loyalty'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/admin'
+    | '/ai'
     | '/customers'
     | '/dashboard'
     | '/loyalty'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/_authenticated/admin'
+    | '/_authenticated/ai'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/loyalty'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ai': {
+      id: '/_authenticated/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -265,6 +284,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
@@ -275,6 +295,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
