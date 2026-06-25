@@ -24,6 +24,23 @@ type CartItem = { id: string; name: string; price: number; qty: number };
 
 function PublicMenu() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`repeat:${slug}`);
+      if (raw) {
+        const items = JSON.parse(raw) as CartItem[];
+        if (Array.isArray(items) && items.length) {
+          setCart(items);
+          setOpenSheet(true);
+          toast.success("Carrinho preenchido com seu pedido anterior");
+        }
+        sessionStorage.removeItem(`repeat:${slug}`);
+      }
+    } catch {}
+  }, [slug]);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
