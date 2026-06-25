@@ -43,7 +43,7 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
 
     // Saved addresses derived from past orders
     const addresses = Array.from(
-      new Set((orders ?? []).map((o: any) => o.address).filter(Boolean) as string[]),
+      new Set(filteredOrders.map((o: any) => o.address).filter(Boolean) as string[]),
     ).slice(0, 5);
 
     const name = customers[0]?.name ?? "";
