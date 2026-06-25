@@ -38,6 +38,19 @@ import {
   Facebook,
   MessageCircle,
   Store,
+  Lightbulb,
+  Crown,
+  UserCheck,
+  UserX,
+  Award,
+  Gift,
+  Coins,
+  Activity as ActivityIcon,
+  ShoppingCart,
+  TicketCheck,
+  UserPlus,
+  PackagePlus,
+  PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import {
@@ -528,6 +541,148 @@ function Dashboard() {
         </Card>
       </div>
 
+      {/* Dica Inteligente do Dia */}
+      <Card className="relative overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-5 shadow-sm dark:from-amber-950/30 dark:via-orange-950/20 dark:to-rose-950/20">
+        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-400/20 blur-2xl" />
+        <div className="relative flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md">
+            <Lightbulb className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-display text-base font-bold">Dica Inteligente do Dia</h3>
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                IA
+              </span>
+            </div>
+            <p
+              className="mt-1.5 text-sm leading-relaxed text-foreground/90"
+              dangerouslySetInnerHTML={{
+                __html: (dash?.dailyTip ?? "Carregando dica do dia…").replace(
+                  /\*\*(.+?)\*\*/g,
+                  '<strong class="font-semibold text-foreground">$1</strong>',
+                ),
+              }}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Dashboard Executivo: Financeiro + CRM + Fidelidade */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold">Dashboard Executivo</h2>
+          <span className="text-xs text-muted-foreground">Últimos {period} dias</span>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Resumo Financeiro */}
+          <Card className="min-w-0 p-5">
+            <div className="flex items-center gap-2">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                <Wallet className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-base font-bold">Resumo Financeiro</h3>
+                <Link to="/finance" className="text-xs text-primary hover:underline">
+                  Ver detalhes →
+                </Link>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              <ExecRow label="Receita Bruta" value={brl(dash?.financial.grossRevenue ?? 0)} color="text-emerald-600" />
+              <ExecRow label="Custos (CMV)" value={`- ${brl(dash?.financial.costs ?? 0)}`} muted />
+              <ExecRow label="Despesas" value={`- ${brl(dash?.financial.expenses ?? 0)}`} muted />
+              <li className="mt-2 flex items-center justify-between border-t pt-2.5">
+                <span className="font-semibold">Lucro Líquido</span>
+                <span
+                  className={`font-display text-lg font-extrabold ${
+                    (dash?.financial.netProfit ?? 0) >= 0 ? "text-emerald-600" : "text-destructive"
+                  }`}
+                >
+                  {brl(dash?.financial.netProfit ?? 0)}
+                </span>
+              </li>
+            </ul>
+          </Card>
+
+          {/* CRM */}
+          <Card className="min-w-0 p-5">
+            <div className="flex items-center gap-2">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-600">
+                <Users className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-base font-bold">CRM</h3>
+                <Link to="/customers" className="text-xs text-primary hover:underline">
+                  Ver clientes →
+                </Link>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-2.5">
+              <CrmRow icon={Crown} color="bg-amber-500/15 text-amber-600" label="Clientes VIP" value={dash?.crm.vip ?? 0} />
+              <CrmRow icon={UserCheck} color="bg-blue-500/15 text-blue-600" label="Frequentes" value={dash?.crm.frequent ?? 0} />
+              <CrmRow icon={UserX} color="bg-rose-500/15 text-rose-600" label="Inativos (30d+)" value={dash?.crm.inactive ?? 0} />
+              <li className="border-t pt-2.5 text-xs text-muted-foreground">
+                Total de clientes: <span className="font-semibold text-foreground">{dash?.crm.total ?? 0}</span>
+              </li>
+            </ul>
+          </Card>
+
+          {/* Fidelidade */}
+          <Card className="min-w-0 p-5">
+            <div className="flex items-center gap-2">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Award className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-base font-bold">Fidelidade</h3>
+                <Link to="/loyalty" className="text-xs text-primary hover:underline">
+                  Programa →
+                </Link>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-2.5">
+              <CrmRow icon={Coins} color="bg-amber-500/15 text-amber-600" label="Pontos emitidos" value={dash?.loyalty.pointsIssued ?? 0} />
+              <CrmRow icon={TicketCheck} color="bg-blue-500/15 text-blue-600" label="Cupons utilizados" value={dash?.loyalty.couponsUsed ?? 0} />
+              <li className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-500/15 text-emerald-600">
+                    <Gift className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="truncate text-sm text-muted-foreground">Cashback distribuído</span>
+                </div>
+                <span className="font-display text-base font-bold">{brl(dash?.loyalty.cashbackDistributed ?? 0)}</span>
+              </li>
+            </ul>
+          </Card>
+        </div>
+      </section>
+
+      {/* Atividades Recentes */}
+      <Card className="min-w-0 p-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <ActivityIcon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate font-display text-base font-bold">Atividades Recentes</h3>
+              <p className="text-xs text-muted-foreground">Tempo real</p>
+            </div>
+          </div>
+        </div>
+        <ol className="mt-4 space-y-3">
+          {(dash?.timeline ?? []).map((a, i) => (
+            <TimelineRow key={i} type={a.type} label={a.label} detail={a.detail} at={a.at} />
+          ))}
+          {dash && dash.timeline.length === 0 && (
+            <li className="rounded-xl border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              Nenhuma atividade recente. Suas movimentações aparecerão aqui.
+            </li>
+          )}
+        </ol>
+      </Card>
+
       {/* Row 6: Quick actions */}
       <section>
         <h2 className="mb-3 font-display text-lg font-bold">Ações Rápidas</h2>
@@ -727,6 +882,78 @@ function Loader() {
     </div>
   );
 }
+
+function ExecRow({ label, value, color, muted }: { label: string; value: string; color?: string; muted?: boolean }) {
+  return (
+    <li className="flex items-center justify-between gap-2">
+      <span className={`truncate text-sm ${muted ? "text-muted-foreground" : ""}`}>{label}</span>
+      <span className={`font-display text-base font-bold tabular-nums ${color ?? ""}`}>{value}</span>
+    </li>
+  );
+}
+
+function CrmRow({
+  icon: Icon,
+  color,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${color}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+      </div>
+      <span className="font-display text-base font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
+    </li>
+  );
+}
+
+const TIMELINE_META: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  order: { icon: ShoppingCart, color: "bg-amber-500/15 text-amber-600" },
+  delivered: { icon: PackageCheck, color: "bg-emerald-500/15 text-emerald-600" },
+  coupon: { icon: TicketCheck, color: "bg-violet-500/15 text-violet-600" },
+  customer: { icon: UserPlus, color: "bg-blue-500/15 text-blue-600" },
+  product: { icon: PackagePlus, color: "bg-primary/15 text-primary" },
+};
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "agora";
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  const d = Math.floor(h / 24);
+  return `há ${d}d`;
+}
+
+function TimelineRow({ type, label, detail, at }: { type: string; label: string; detail: string; at: string }) {
+  const meta = TIMELINE_META[type] ?? TIMELINE_META.order;
+  const Icon = meta.icon;
+  return (
+    <li className="flex items-start gap-3">
+      <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl ${meta.color}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+          <p className="truncate text-sm font-semibold">{label}</p>
+          <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(at)}</span>
+        </div>
+        <p className="truncate text-xs text-muted-foreground">{detail}</p>
+      </div>
+    </li>
+  );
+}
+
 
 const STATUS_LABELS: Record<string, string> = {
   novo: "Novo Pedido",
