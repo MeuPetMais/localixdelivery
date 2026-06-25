@@ -32,7 +32,7 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
       supabaseAdmin.from("restaurants").select("id, name, slug").in("id", restaurantIds),
       supabaseAdmin
         .from("orders")
-        .select("id, restaurant_id, items, total, discount, status, address, payment_method, created_at, customer_phone")
+        .select("id, order_number, restaurant_id, items, total, discount, status, address, payment_method, created_at, customer_phone")
         .in("restaurant_id", restaurantIds)
         .order("created_at", { ascending: false })
         .limit(200),
