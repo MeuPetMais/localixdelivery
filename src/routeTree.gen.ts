@@ -25,6 +25,7 @@ import { Route as AuthenticatedFinanceAiRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
+import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
@@ -107,6 +108,11 @@ const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConsultorRoute = AuthenticatedConsultorRouteImport.update({
+  id: '/consultor',
+  path: '/consultor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/cliente': typeof ClienteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/finance': typeof AuthenticatedFinanceRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof ClienteRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/finance': typeof AuthenticatedFinanceRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/cliente': typeof ClienteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
+  '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin'
     | '/ai'
+    | '/consultor'
     | '/customers'
     | '/dashboard'
     | '/finance'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin'
     | '/ai'
+    | '/consultor'
     | '/customers'
     | '/dashboard'
     | '/finance'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
+    | '/_authenticated/consultor'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/finance'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/consultor': {
+      id: '/_authenticated/consultor'
+      path: '/consultor'
+      fullPath: '/consultor'
+      preLoaderRoute: typeof AuthenticatedConsultorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ai': {
       id: '/_authenticated/ai'
       path: '/ai'
@@ -380,6 +399,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
+  AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
@@ -396,6 +416,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
+  AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,

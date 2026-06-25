@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { lookupCustomerArea } from "@/lib/customer-area.functions";
+import { listFavorites, toggleFavorite } from "@/lib/favorites.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { brl, onlyDigits } from "@/lib/format";
-import { Phone, Loader2, MapPin, ShoppingBag, LogOut, ArrowRight, Store, Sparkles, Ticket } from "lucide-react";
+import { Phone, Loader2, MapPin, ShoppingBag, LogOut, ArrowRight, Store, Sparkles, Ticket, Heart, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cliente")({
@@ -83,6 +84,28 @@ function ClienteArea() {
 function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void }) {
   const navigate = useNavigate();
   const restMap = new Map(data.restaurants.map((r) => [r.id, r]));
+  const fetchFavs = useServerFn(listFavorites);
+  const toggleFav = useServerFn(toggleFavorite);
+  const [favorites, setFavorites] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+
+  useEffect(() => {
+    fetchFavs({ data: { phone: data.profile.phone } }).then((r) => setFavorites(r.favorites)).catch(() => undefined);
+  }, [data.profile.phone, fetchFavs]);
+
+  async function handleToggleFav(restaurantId: string) {
+    try {
+      const res = await toggleFav({ data: { phone: data.profile.phone, restaurantId } });
+      const updated = await fetchFavs({ data: { phone: data.profile.phone } });
+      setFavorites(updated.favorites);
+      toast.success(res.favorited ? "Adicionado aos favoritos" : "Removido dos favoritos");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha");
+    }
+  }
+
+  const favIds = new Set(favorites.map((f) => f.id));
+  // Cashback: 5% sobre total gasto, descontando pontos já consumidos como aproximação simples
+  const cashback = data.profile.totalSpent * 0.05;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -99,21 +122,53 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
       </header>
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-6">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-4">
           <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Pedidos feitos</p>
-            <p className="mt-1 font-display text-3xl font-extrabold">{data.profile.totalOrders}</p>
+            <p className="text-xs text-muted-foreground">Pedidos</p>
+            <p className="mt-1 font-display text-2xl font-extrabold">{data.profile.totalOrders}</p>
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted-foreground">Total gasto</p>
-            <p className="mt-1 font-display text-3xl font-extrabold text-primary">{brl(data.profile.totalSpent)}</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-primary">{brl(data.profile.totalSpent)}</p>
           </Card>
           <Card className="p-4 bg-gradient-to-br from-amber-500/10 to-amber-500/0 border-amber-500/30">
-            <p className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"><Sparkles className="h-3 w-3" /> Saldo de pontos</p>
-            <p className="mt-1 font-display text-3xl font-extrabold text-amber-600 dark:text-amber-400">{data.profile.totalPoints}</p>
-            <p className="text-[10px] text-muted-foreground">Acumulado: {data.profile.totalEarned} pts</p>
+            <p className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"><Sparkles className="h-3 w-3" /> Pontos</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-amber-600 dark:text-amber-400">{data.profile.totalPoints}</p>
+            <p className="text-[10px] text-muted-foreground">Acumulado: {data.profile.totalEarned}</p>
+          </Card>
+          <Card className="p-4 bg-gradient-to-br from-emerald-500/10 to-emerald-500/0 border-emerald-500/30">
+            <p className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400"><Wallet className="h-3 w-3" /> Cashback</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{brl(cashback)}</p>
+            <p className="text-[10px] text-muted-foreground">5% sobre gasto</p>
           </Card>
         </div>
+
+        {data.restaurants.length > 0 && (
+          <section>
+            <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold"><Heart className="h-4 w-4" /> Meus restaurantes</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {data.restaurants.map((r) => {
+                const fav = favIds.has(r.id);
+                return (
+                  <Card key={r.id} className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-primary" />
+                      <p className="font-semibold">{r.name}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => handleToggleFav(r.id)} aria-label="Favoritar">
+                        <Heart className={`h-4 w-4 ${fav ? "fill-rose-500 text-rose-500" : ""}`} />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/r/$slug", params: { slug: r.slug } })}>
+                        Pedir
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {data.coupons.length > 0 && (
           <section>
