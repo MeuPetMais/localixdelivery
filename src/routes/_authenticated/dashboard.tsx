@@ -441,6 +441,17 @@ function Dashboard() {
                         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {i + 1}
                         </span>
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                            <Package className="h-4 w-4" />
+                          </div>
+                        )}
                         <span className="truncate">{p.name}</span>
                       </div>
                     </td>
