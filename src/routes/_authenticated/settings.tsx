@@ -137,7 +137,10 @@ function SettingsPage() {
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
-      await supabase.from("restaurants").update({ [field]: url }).eq("id", restaurant!.id);
+      await supabase
+        .from("restaurants")
+        .update(kind === "logo" ? { logo_url: url } : { cover_url: url })
+        .eq("id", restaurant!.id);
       toast.success(kind === "logo" ? "Logo atualizada" : "Capa atualizada");
       refetch();
     } catch (e: any) {
