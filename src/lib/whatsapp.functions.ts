@@ -4,7 +4,7 @@ import { z } from "zod";
 const itemSchema = z.object({
   id: z.string(),
   name: z.string(),
-  price: z.number(),
+  price: z.number().nonnegative(),
   qty: z.number().int().positive(),
 });
 
@@ -18,9 +18,8 @@ const inputSchema = z.object({
     payment: z.string().min(1).max(40),
   }),
   items: z.array(itemSchema).min(1).max(100),
-  total: z.number().nonnegative(),
-  couponId: z.string().uuid().nullable().optional(),
-  discount: z.number().nonnegative().optional(),
+  deliveryFee: z.number().nonnegative().max(10000),
+  couponCode: z.string().trim().min(1).max(60).nullable().optional(),
 });
 
 export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
@@ -38,6 +37,30 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     const phone = String(rest.whatsapp_phone ?? "").replace(/\D+/g, "");
     if (!phone) throw new Error("WhatsApp do restaurante não configurado");
 
+    // Recompute subtotal server-side; trust only the item list shape, not totals.
+    const subtotal = data.items.reduce((s, it) => s + it.price * it.qty, 0);
+
+    // Validate coupon and compute discount server-side to prevent tampering.
+    let couponId: string | null = null;
+    let discount = 0;
+    if (data.couponCode) {
+      const code = data.couponCode.toUpperCase();
+      const { data: coupon } = await supabaseAdmin
+        .from("coupons")
+        .select("id, discount_percent, is_active, valid_until")
+        .eq("restaurant_id", rest.id)
+        .eq("code", code)
+        .maybeSingle();
+      if (!coupon || !coupon.is_active) throw new Error("Cupom inválido");
+      if (coupon.valid_until && new Date(coupon.valid_until) < new Date(new Date().toDateString())) {
+        throw new Error("Cupom expirado");
+      }
+      couponId = coupon.id;
+      discount = Math.round(subtotal * (coupon.discount_percent / 100) * 100) / 100;
+    }
+
+    const total = Math.max(0, subtotal - discount) + data.deliveryFee;
+
     await supabaseAdmin.from("orders").insert({
       restaurant_id: rest.id,
       customer_name: data.customer.name,
@@ -45,10 +68,10 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       address: data.customer.address,
       payment_method: data.customer.payment,
       items: data.items,
-      total: data.total,
+      total,
       status: "novo",
-      coupon_id: data.couponId ?? null,
-      discount: data.discount ?? 0,
+      coupon_id: couponId,
+      discount,
     });
 
     return { url: `https://wa.me/${phone}?text=${encodeURIComponent(data.message)}` };
