@@ -75,18 +75,22 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
         status: "novo",
         coupon_id: couponId,
         discount,
+        estimated_delivery_time: eta,
       })
-      .select("order_number")
+      .select("id, order_number")
       .single();
     if (insErr) throw new Error("Falha ao registrar pedido");
 
     const orderNumber = inserted?.order_number ?? null;
+    const orderId = inserted?.id ?? null;
     const header = orderNumber ? `*Pedido #${orderNumber}*\n\n` : "";
     const fullMessage = header + data.message;
 
     return {
       url: `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`,
       orderNumber,
+      orderId,
+      estimatedDeliveryTime: eta,
     };
   });
 
