@@ -4,15 +4,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const getAdminMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Verify admin role using the security-definer function
-    const { data: isAdminData, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError) throw new Error(roleError.message);
-    if (!isAdminData) throw new Error("Forbidden");
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verify admin role via service-role read on user_roles (bypasses RLS safely server-side).
+    const { data: adminRow, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (roleError) throw new Error(roleError.message);
+    if (!adminRow) throw new Error("Forbidden");
+
 
     const [restaurantsTotal, restaurantsActive, ordersAll] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id", { count: "exact", head: true }),
