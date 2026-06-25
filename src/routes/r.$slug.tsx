@@ -12,7 +12,7 @@ import { brl } from "@/lib/format";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2, Ticket, Check } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Bike, Loader2, Ticket, Check, Star, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/r/$slug")({
@@ -69,98 +69,156 @@ function PublicMenu() {
 
   const { restaurant, categories, items } = data;
 
+  const firstCatId = categories[0]?.id;
+  const [activeCat, setActiveCat] = useState<string | undefined>(firstCatId);
+
   return (
-    <div className="min-h-screen bg-muted/30 pb-32">
+    <div className="min-h-screen bg-muted/30 pb-36">
       {/* cover */}
-      <div className="relative h-44 bg-gradient-warm md:h-56">
-        {restaurant.cover_url && <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover opacity-80" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+      <div className="relative h-[180px] w-full overflow-hidden bg-gradient-warm">
+        {restaurant.cover_url && <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
       </div>
 
-      <div className="mx-auto -mt-12 max-w-3xl px-4">
-        <Card className="overflow-hidden p-5 shadow-glow">
+      <div className="mx-auto max-w-3xl px-4">
+        {/* premium store card */}
+        <Card className="-mt-16 overflow-hidden rounded-3xl border bg-card p-5 shadow-premium">
           <div className="flex items-start gap-4">
             {restaurant.logo_url ? (
-              <img src={restaurant.logo_url} alt={restaurant.name} className="h-20 w-20 rounded-2xl border bg-card object-cover" />
+              <img src={restaurant.logo_url} alt={restaurant.name} className="h-24 w-24 shrink-0 rounded-2xl border-4 border-card bg-card object-cover shadow-elegant" />
             ) : (
-              <div className="grid h-20 w-20 place-items-center rounded-2xl bg-gradient-warm text-2xl font-extrabold text-primary-foreground">
+              <div className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl border-4 border-card bg-gradient-warm text-3xl font-extrabold text-primary-foreground shadow-elegant">
                 {restaurant.name[0]}
               </div>
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-2xl font-extrabold">{restaurant.name}</h1>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                  {restaurant.is_open ? "Aberto" : "Fechado"}
+            <div className="min-w-0 flex-1 pt-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate font-display text-2xl font-extrabold leading-tight">{restaurant.name}</h1>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                  {restaurant.is_open ? "● Aberto" : "● Fechado"}
                 </span>
               </div>
-              {restaurant.description && <p className="mt-1 text-sm text-muted-foreground">{restaurant.description}</p>}
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> Entrega: {brl(restaurant.delivery_fee)}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Mínimo: {brl(restaurant.min_order)}</span>
+              {restaurant.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>}
+              <div className="mt-2 flex items-center gap-1 text-sm">
+                <Star className="h-4 w-4 fill-warning text-warning" />
+                <span className="font-semibold">4.8</span>
+                <span className="text-muted-foreground">· {restaurant.category ?? "Restaurante"}</span>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-2xl border bg-muted/40 text-center text-xs">
+            <div className="px-2 py-3">
+              <Clock className="mx-auto mb-1 h-4 w-4 text-primary" />
+              <p className="font-bold text-foreground">30–45 min</p>
+              <p className="text-muted-foreground">Entrega</p>
+            </div>
+            <div className="px-2 py-3">
+              <Bike className="mx-auto mb-1 h-4 w-4 text-primary" />
+              <p className="font-bold text-foreground">{Number(restaurant.delivery_fee) === 0 ? "Grátis" : brl(restaurant.delivery_fee)}</p>
+              <p className="text-muted-foreground">Taxa</p>
+            </div>
+            <div className="px-2 py-3">
+              <ShoppingBag className="mx-auto mb-1 h-4 w-4 text-primary" />
+              <p className="font-bold text-foreground">{brl(restaurant.min_order)}</p>
+              <p className="text-muted-foreground">Mínimo</p>
             </div>
           </div>
         </Card>
 
-        {/* category nav */}
+        {/* category chips */}
         {categories.length > 0 && (
-          <nav className="sticky top-0 z-20 -mx-4 mt-6 flex gap-2 overflow-x-auto border-y bg-background/90 px-4 py-3 backdrop-blur">
-            {categories.map((c) => (
-              <a key={c.id} href={`#cat-${c.id}`} className="whitespace-nowrap rounded-full border bg-card px-3 py-1 text-sm font-medium hover:bg-accent">
-                {c.name}
-              </a>
-            ))}
+          <nav className="sticky top-0 z-20 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur">
+            <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {categories.map((c) => {
+                const isActive = activeCat === c.id;
+                return (
+                  <a
+                    key={c.id}
+                    href={`#cat-${c.id}`}
+                    onClick={() => setActiveCat(c.id)}
+                    className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+                  >
+                    {c.name}
+                  </a>
+                );
+              })}
+            </div>
           </nav>
         )}
 
-        <div className="mt-6 space-y-8">
+        <div className="mt-5 space-y-7">
           {categories.map((cat) => {
             const catItems = items.filter((i) => i.category_id === cat.id);
             if (catItems.length === 0) return null;
             return (
-              <section key={cat.id} id={`cat-${cat.id}`}>
-                <h2 className="mb-3 font-display text-xl font-bold">{cat.name}</h2>
-                <div className="space-y-2">
-                  {catItems.map((it) => (
-                    <Card key={it.id} className="flex gap-3 p-3 transition hover:border-primary/30">
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{it.name}</h3>
-                        {it.description && <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{it.description}</p>}
-                        <p className="mt-1 font-display font-bold text-primary">{brl(it.price)}</p>
-                      </div>
-                      {it.image_url && <img src={it.image_url} alt={it.name} className="h-20 w-20 rounded-lg object-cover" />}
-                      <Button
-                        size="icon"
-                        className="self-center shadow-glow"
-                        disabled={!restaurant.is_open}
-                        onClick={() => { add({ id: it.id, name: it.name, price: Number(it.price) }); toast.success(`${it.name} adicionado`); }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </Card>
-                  ))}
+              <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20">
+                <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
+                <div className="grid gap-3">
+                  {catItems.map((it: any) => {
+                    const hasPromo = it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price);
+                    return (
+                      <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
+                          {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                          <div className="mt-auto flex items-baseline gap-2 pt-2">
+                            {hasPromo ? (
+                              <>
+                                <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
+                                <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                              </>
+                            ) : (
+                              <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="relative shrink-0">
+                          {it.image_url ? (
+                            <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
+                          ) : (
+                            <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          )}
+                          <Button
+                            size="icon"
+                            className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
+                            disabled={!restaurant.is_open}
+                            onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
               </section>
             );
           })}
           {items.length === 0 && (
-            <Card className="p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
+            <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
           )}
         </div>
       </div>
 
-      {/* sticky cart bar */}
+      {/* floating cart */}
       {totalQty > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 p-3 backdrop-blur">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-            <div className="text-sm">
-              <p className="font-bold">{totalQty} {totalQty === 1 ? "item" : "itens"}</p>
-              <p className="text-muted-foreground">Subtotal {brl(subtotal)}</p>
-            </div>
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-4 pt-2">
+          <div className="mx-auto max-w-3xl">
             <Sheet open={openSheet} onOpenChange={setOpenSheet}>
               <SheetTrigger asChild>
-                <Button size="lg" className="shadow-glow"><ShoppingBag className="mr-2 h-4 w-4" /> Ver carrinho</Button>
+                <button className="flex w-full items-center justify-between gap-3 rounded-2xl bg-primary px-5 py-3.5 text-primary-foreground shadow-float transition hover:brightness-105">
+                  <span className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-foreground/20 text-sm font-bold">{totalQty}</span>
+                    <span className="text-left">
+                      <span className="block text-xs opacity-90">Ver carrinho</span>
+                      <span className="block font-display text-base font-extrabold leading-tight">{brl(subtotal)}</span>
+                    </span>
+                  </span>
+                  <ShoppingBag className="h-5 w-5" />
+                </button>
               </SheetTrigger>
               <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} />
             </Sheet>
