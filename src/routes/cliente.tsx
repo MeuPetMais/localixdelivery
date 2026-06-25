@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { brl, onlyDigits } from "@/lib/format";
-import { Phone, Loader2, MapPin, ShoppingBag, LogOut, ArrowRight, Store } from "lucide-react";
+import { Phone, Loader2, MapPin, ShoppingBag, LogOut, ArrowRight, Store, Sparkles, Ticket } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cliente")({
@@ -99,7 +99,7 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
       </header>
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-6">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Card className="p-4">
             <p className="text-xs text-muted-foreground">Pedidos feitos</p>
             <p className="mt-1 font-display text-3xl font-extrabold">{data.profile.totalOrders}</p>
@@ -108,7 +108,34 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
             <p className="text-xs text-muted-foreground">Total gasto</p>
             <p className="mt-1 font-display text-3xl font-extrabold text-primary">{brl(data.profile.totalSpent)}</p>
           </Card>
+          <Card className="p-4 bg-gradient-to-br from-amber-500/10 to-amber-500/0 border-amber-500/30">
+            <p className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"><Sparkles className="h-3 w-3" /> Saldo de pontos</p>
+            <p className="mt-1 font-display text-3xl font-extrabold text-amber-600 dark:text-amber-400">{data.profile.totalPoints}</p>
+            <p className="text-[10px] text-muted-foreground">Acumulado: {data.profile.totalEarned} pts</p>
+          </Card>
         </div>
+
+        {data.coupons.length > 0 && (
+          <section>
+            <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold"><Ticket className="h-4 w-4" /> Cupons disponíveis</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {data.coupons.map((c: any) => {
+                const r = restMap.get(c.restaurant_id);
+                return (
+                  <Card key={c.id} className="p-3 border-dashed border-primary/40">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-mono text-lg font-extrabold text-primary">{c.code}</p>
+                        <p className="text-xs text-muted-foreground">{r?.name} · {c.discount_percent}% off{c.valid_until ? ` · até ${new Date(c.valid_until).toLocaleDateString("pt-BR")}` : ""}</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Cupom copiado!"); }}>Copiar</Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {data.addresses.length > 0 && (
           <section>
