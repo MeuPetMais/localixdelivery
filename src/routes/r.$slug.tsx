@@ -1,5 +1,5 @@
-import { createFileRoute, notFound, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ type CartItem = { id: string; name: string; price: number; qty: number };
 
 function PublicMenu() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ["public-restaurant", slug],
@@ -45,6 +46,21 @@ function PublicMenu() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [openSheet, setOpenSheet] = useState(false);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`repeat:${slug}`);
+      if (raw) {
+        const items = JSON.parse(raw) as CartItem[];
+        if (Array.isArray(items) && items.length) {
+          setCart(items);
+          setOpenSheet(true);
+          toast.success("Carrinho preenchido com seu pedido anterior");
+        }
+        sessionStorage.removeItem(`repeat:${slug}`);
+      }
+    } catch {}
+  }, [slug]);
+
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
@@ -55,6 +71,7 @@ function PublicMenu() {
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
+
 
   if (isLoading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!data) return (
@@ -220,7 +237,7 @@ function PublicMenu() {
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} />
+              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => { setCart([]); navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } }); }} />
             </Sheet>
           </div>
         </div>
@@ -229,10 +246,11 @@ function PublicMenu() {
   );
 }
 
-function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
+function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreated }: {
   restaurant: any; cart: CartItem[]; subtotal: number;
   dec: (id: string) => void; add: (it: { id: string; name: string; price: number }) => void;
   onClose: () => void;
+  onCreated: (orderId: string) => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -293,7 +311,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
-      const { url, orderNumber } = await getOrderLink({
+      const { url, orderNumber, orderId } = await getOrderLink({
         data: {
           slug: restaurant.slug,
           message: lines,
@@ -306,6 +324,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
       window.open(url, "_blank");
       onClose();
+      if (orderId) onCreated(orderId);
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível enviar o pedido");
     }
