@@ -311,7 +311,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
-      const { url, orderNumber } = await getOrderLink({
+      const { url, orderNumber, orderId } = await getOrderLink({
         data: {
           slug: restaurant.slug,
           message: lines,
@@ -324,6 +324,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
       window.open(url, "_blank");
       onClose();
+      if (orderId) onCreated(orderId);
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível enviar o pedido");
     }
