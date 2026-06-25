@@ -34,12 +34,12 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
     // Orders for this phone (raw or formatted variants)
     const { data: orders } = await supabaseAdmin
       .from("orders")
-      .select("id, restaurant_id, items, total, status, address, payment_method, created_at")
+      .select("id, restaurant_id, items, total, status, address, payment_method, created_at, customer_phone")
       .in("restaurant_id", restaurantIds)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
-    const filteredOrders = (orders ?? []).filter((o: any) => normalize(o.customer_phone ?? "") === phone || true);
+    const filteredOrders = (orders ?? []).filter((o: any) => normalize(o.customer_phone ?? "") === phone);
 
     // Saved addresses derived from past orders
     const addresses = Array.from(
