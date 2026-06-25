@@ -61,18 +61,31 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
 
     const total = Math.max(0, subtotal - discount) + data.deliveryFee;
 
-    await supabaseAdmin.from("orders").insert({
-      restaurant_id: rest.id,
-      customer_name: data.customer.name,
-      customer_phone: data.customer.phone,
-      address: data.customer.address,
-      payment_method: data.customer.payment,
-      items: data.items,
-      total,
-      status: "novo",
-      coupon_id: couponId,
-      discount,
-    });
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        restaurant_id: rest.id,
+        customer_name: data.customer.name,
+        customer_phone: data.customer.phone,
+        address: data.customer.address,
+        payment_method: data.customer.payment,
+        items: data.items,
+        total,
+        status: "novo",
+        coupon_id: couponId,
+        discount,
+      })
+      .select("order_number")
+      .single();
+    if (insErr) throw new Error("Falha ao registrar pedido");
 
-    return { url: `https://wa.me/${phone}?text=${encodeURIComponent(data.message)}` };
+    const orderNumber = inserted?.order_number ?? null;
+    const header = orderNumber ? `*Pedido #${orderNumber}*\n\n` : "";
+    const fullMessage = header + data.message;
+
+    return {
+      url: `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`,
+      orderNumber,
+    };
   });
+
