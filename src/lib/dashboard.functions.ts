@@ -31,10 +31,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const lookback = Math.max(60, period) * DAY;
     const sinceFetch = new Date(now.getTime() - lookback);
 
-    const [{ data: orders }, { data: customers }, { data: items }] = await Promise.all([
+    const [{ data: orders }, { data: customers }, { data: items }, { data: movements }, { data: coupons }] = await Promise.all([
       supabaseAdmin
         .from("orders")
-        .select("id, total, items, status, created_at, customer_phone")
+        .select("id, total, items, status, created_at, customer_phone, customer_name, discount")
         .eq("restaurant_id", data.restaurantId)
         .gte("created_at", sinceFetch.toISOString())
         .order("created_at", { ascending: false })
@@ -45,7 +45,16 @@ export const getDashboardData = createServerFn({ method: "POST" })
         .eq("restaurant_id", data.restaurantId),
       supabaseAdmin
         .from("menu_items")
-        .select("id, name, price, image_url")
+        .select("id, name, price, image_url, created_at")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("financial_movements")
+        .select("id, type, category, description, amount, movement_date, created_at")
+        .eq("restaurant_id", data.restaurantId)
+        .gte("movement_date", sincePeriod.toISOString().slice(0, 10)),
+      supabaseAdmin
+        .from("coupons")
+        .select("id, code, discount_percent, uses_count, is_active, created_at")
         .eq("restaurant_id", data.restaurantId),
     ]);
 
