@@ -56,7 +56,7 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
       supabaseAdmin.from("menu_categories").select("id, name").eq("restaurant_id", data.restaurantId),
       supabaseAdmin.from("ingredients").select("id, name, stock, min_stock, unit_cost, updated_at").eq("restaurant_id", data.restaurantId),
       supabaseAdmin.from("recipe_items").select("menu_item_id, ingredient_id, quantity"),
-      supabaseAdmin.from("financial_movements").select("type, amount, category, occurred_at").eq("restaurant_id", data.restaurantId).gte("occurred_at", since30.slice(0, 10)),
+      supabaseAdmin.from("financial_movements").select("type, amount, category, movement_date").eq("restaurant_id", data.restaurantId).gte("movement_date", since30.slice(0, 10)),
     ]);
 
     const cutoff30 = new Date(now - 30 * DAY);
