@@ -610,6 +610,8 @@ export type Database = {
           cover_url: string | null
           created_at: string
           delivery_fee: number
+          delivery_radius: number | null
+          delivery_time: string | null
           description: string | null
           id: string
           is_open: boolean
@@ -617,9 +619,11 @@ export type Database = {
           manager_name: string | null
           min_order: number
           name: string
+          opening_hours: Json | null
           owner_id: string
           owner_name: string | null
           phone: string | null
+          primary_color: string | null
           slug: string
           updated_at: string
           whatsapp_phone: string
@@ -632,6 +636,8 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
+          delivery_radius?: number | null
+          delivery_time?: string | null
           description?: string | null
           id?: string
           is_open?: boolean
@@ -639,9 +645,11 @@ export type Database = {
           manager_name?: string | null
           min_order?: number
           name: string
+          opening_hours?: Json | null
           owner_id: string
           owner_name?: string | null
           phone?: string | null
+          primary_color?: string | null
           slug: string
           updated_at?: string
           whatsapp_phone: string
@@ -654,6 +662,8 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
+          delivery_radius?: number | null
+          delivery_time?: string | null
           description?: string | null
           id?: string
           is_open?: boolean
@@ -661,9 +671,11 @@ export type Database = {
           manager_name?: string | null
           min_order?: number
           name?: string
+          opening_hours?: Json | null
           owner_id?: string
           owner_name?: string | null
           phone?: string | null
+          primary_color?: string | null
           slug?: string
           updated_at?: string
           whatsapp_phone?: string
