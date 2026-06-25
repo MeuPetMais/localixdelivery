@@ -71,11 +71,14 @@ function Dashboard() {
     },
   });
 
+  const [period, setPeriod] = useState<7 | 30 | 90>(30);
+  const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
+
   const fetchDash = useServerFn(getDashboardData);
   const { data: dash } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["dashboard", restaurant?.id],
-    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id } }),
+    queryKey: ["dashboard", restaurant?.id, period],
+    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id, period } }),
     refetchInterval: 60_000,
   });
 
