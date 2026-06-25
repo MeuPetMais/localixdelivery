@@ -164,43 +164,115 @@ function Dashboard() {
         </div>
       </header>
 
-      {/* Public link compact card */}
-      <Card className="flex w-full max-w-xl items-center gap-3 border-primary/20 bg-card px-3 py-2 shadow-sm">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">{restaurant.name}</p>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                restaurant.is_open
-                  ? "bg-success/10 text-success"
-                  : "bg-destructive/10 text-destructive"
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
-              {restaurant.is_open ? "Online" : "Offline"}
-            </span>
+      {/* Loja Online + Marketing cards */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="relative overflow-hidden border-primary/20 p-5 shadow-sm">
+          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+          <div className="relative flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+              <Store className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-base font-bold">Sua Loja Online</h3>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    restaurant.is_open ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
+                  {restaurant.is_open ? "Online" : "Offline"}
+                </span>
+              </div>
+              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{publicUrl}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a href={publicUrl} target="_blank" rel="noreferrer">
+                  <Button size="sm" className="h-8">
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Abrir página
+                  </Button>
+                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publicUrl);
+                    toast.success("Link copiado!");
+                  }}
+                >
+                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar link
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={async () => {
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({ title: restaurant.name, url: publicUrl });
+                      } catch {
+                        /* user cancelled */
+                      }
+                    } else {
+                      navigator.clipboard.writeText(publicUrl);
+                      toast.success("Link copiado para compartilhar!");
+                    }
+                  }}
+                >
+                  <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartilhar
+                </Button>
+              </div>
+            </div>
           </div>
-          <p className="truncate text-xs text-muted-foreground">/r/{restaurant.slug}</p>
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2"
-            onClick={() => {
-              navigator.clipboard.writeText(publicUrl);
-              toast.success("Link copiado!");
-            }}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-          <a href={publicUrl} target="_blank" rel="noreferrer">
-            <Button size="sm" className="h-8 px-2">
-              <ExternalLink className="mr-1 h-3.5 w-3.5" /> Abrir
-            </Button>
-          </a>
-        </div>
-      </Card>
+        </Card>
+
+        <Card className="relative overflow-hidden bg-gradient-warm p-5 text-primary-foreground shadow-glow">
+          <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-primary-foreground/10 blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5" />
+              <h3 className="font-display text-base font-bold">Divulgue e venda mais</h3>
+            </div>
+            <p className="mt-1 text-sm opacity-90">
+              Compartilhe sua loja nas redes e atraia mais pedidos hoje mesmo.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Peça pelo ${restaurant.name}: ${publicUrl}`)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
+                </Button>
+              </a>
+              <a
+                href={`https://www.instagram.com/`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  navigator.clipboard.writeText(`Peça pelo ${restaurant.name}: ${publicUrl}`);
+                  toast.success("Texto copiado! Cole no seu story.");
+                }}
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <Instagram className="mr-1.5 h-3.5 w-3.5" /> Instagram
+                </Button>
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button size="sm" variant="secondary" className="h-8">
+                  <Facebook className="mr-1.5 h-3.5 w-3.5" /> Facebook
+                </Button>
+              </a>
+            </div>
+          </div>
+        </Card>
+      </div>
+
 
       {/* Row 1: KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
