@@ -176,6 +176,7 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          cnpj: string | null
           cover_url: string | null
           created_at: string
           delivery_fee: number
@@ -186,11 +187,13 @@ export type Database = {
           min_order: number
           name: string
           owner_id: string
+          owner_name: string | null
           slug: string
           updated_at: string
           whatsapp_phone: string
         }
         Insert: {
+          cnpj?: string | null
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
@@ -201,11 +204,13 @@ export type Database = {
           min_order?: number
           name: string
           owner_id: string
+          owner_name?: string | null
           slug: string
           updated_at?: string
           whatsapp_phone: string
         }
         Update: {
+          cnpj?: string | null
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
@@ -216,6 +221,7 @@ export type Database = {
           min_order?: number
           name?: string
           owner_id?: string
+          owner_name?: string | null
           slug?: string
           updated_at?: string
           whatsapp_phone?: string
