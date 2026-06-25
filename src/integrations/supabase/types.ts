@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          avg_ticket: number
+          created_at: string
+          email: string | null
+          id: string
+          last_order_at: string | null
+          name: string
+          phone: string
+          restaurant_id: string
+          total_orders: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          avg_ticket?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          name: string
+          phone: string
+          restaurant_id: string
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_ticket?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          name?: string
+          phone?: string
+          restaurant_id?: string
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
