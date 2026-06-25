@@ -43,14 +43,18 @@ export const getAdminMetrics = createServerFn({ method: "GET" })
 export const getRecentRestaurants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdminData } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdminData) throw new Error("Forbidden");
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: adminRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRow) throw new Error("Forbidden");
+
     const { data, error } = await supabaseAdmin
+
       .from("restaurants")
       .select("id, name, slug, is_open, created_at, whatsapp_phone")
       .order("created_at", { ascending: false })
