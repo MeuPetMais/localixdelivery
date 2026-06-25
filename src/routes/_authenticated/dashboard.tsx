@@ -883,7 +883,78 @@ function Loader() {
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
+function ExecRow({ label, value, color, muted }: { label: string; value: string; color?: string; muted?: boolean }) {
+  return (
+    <li className="flex items-center justify-between gap-2">
+      <span className={`truncate text-sm ${muted ? "text-muted-foreground" : ""}`}>{label}</span>
+      <span className={`font-display text-base font-bold tabular-nums ${color ?? ""}`}>{value}</span>
+    </li>
+  );
+}
+
+function CrmRow({
+  icon: Icon,
+  color,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${color}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+      </div>
+      <span className="font-display text-base font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
+    </li>
+  );
+}
+
+const TIMELINE_META: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  order: { icon: ShoppingCart, color: "bg-amber-500/15 text-amber-600" },
+  delivered: { icon: PackageCheck, color: "bg-emerald-500/15 text-emerald-600" },
+  coupon: { icon: TicketCheck, color: "bg-violet-500/15 text-violet-600" },
+  customer: { icon: UserPlus, color: "bg-blue-500/15 text-blue-600" },
+  product: { icon: PackagePlus, color: "bg-primary/15 text-primary" },
+};
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "agora";
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  const d = Math.floor(h / 24);
+  return `há ${d}d`;
+}
+
+function TimelineRow({ type, label, detail, at }: { type: string; label: string; detail: string; at: string }) {
+  const meta = TIMELINE_META[type] ?? TIMELINE_META.order;
+  const Icon = meta.icon;
+  return (
+    <li className="flex items-start gap-3">
+      <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl ${meta.color}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+          <p className="truncate text-sm font-semibold">{label}</p>
+          <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(at)}</span>
+        </div>
+        <p className="truncate text-xs text-muted-foreground">{detail}</p>
+      </div>
+    </li>
+  );
+}
+
+
   novo: "Novo Pedido",
   preparo: "Em Preparo",
   entrega: "Saiu p/ Entrega",
