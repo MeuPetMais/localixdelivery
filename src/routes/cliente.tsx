@@ -218,11 +218,15 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
                       <div className="flex items-center gap-2">
                         <Store className="h-4 w-4 text-primary" />
                         <p className="font-semibold">{r?.name ?? "Restaurante"}</p>
+                        {o.order_number && (
+                          <span className="font-display text-xs font-bold text-primary">#{o.order_number}</span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {new Date(o.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                       </p>
                     </div>
+
                     <div className="text-right">
                       <p className="font-display font-bold text-primary">{brl(Number(o.total))}</p>
                       <Badge variant="outline" className="text-[10px]">{String(o.status).replace(/_/g, " ")}</Badge>
