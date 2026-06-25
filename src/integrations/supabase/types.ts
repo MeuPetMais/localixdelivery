@@ -451,13 +451,7 @@ export type Database = {
       }
     }
     Functions: {
-      validate_coupon: {
-        Args: { _code: string; _slug: string }
-        Returns: {
-          discount_percent: number
-          id: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "partner" | "customer"
