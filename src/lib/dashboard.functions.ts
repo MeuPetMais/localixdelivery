@@ -160,6 +160,8 @@ export const getDashboardData = createServerFn({ method: "POST" })
       insights.push("✨ Cadastre seus produtos e compartilhe seu link para começar a receber pedidos.");
     }
 
+    const productsActive = (items ?? []).length;
+
     return {
       kpis: {
         ordersToday: todayOrders.length,
@@ -170,6 +172,8 @@ export const getDashboardData = createServerFn({ method: "POST" })
         ticketDelta: pct(ticketToday, ticketY),
         activeCustomers: activeNow,
         activeDelta: pct(activeNow, activePrev),
+        productsActive,
+        productsDelta: 0,
       },
       series,
       funnel,
