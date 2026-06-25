@@ -84,9 +84,11 @@ function OrdersPage() {
           (payload) => {
             setOrders((prev) => {
               if (payload.eventType === "INSERT") {
-                toast.success("Novo pedido recebido!");
+                const n = (payload.new as Order).order_number;
+                toast.success(n ? `Novo pedido #${n} recebido!` : "Novo pedido recebido!");
                 return [payload.new as Order, ...prev];
               }
+
               if (payload.eventType === "UPDATE") {
                 return prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o));
               }
