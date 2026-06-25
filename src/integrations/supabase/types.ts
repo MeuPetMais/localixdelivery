@@ -117,6 +117,63 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          address: string | null
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          items: Json
+          payment_method: string | null
+          restaurant_id: string
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string | null
+          restaurant_id: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string | null
+          restaurant_id?: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           cover_url: string | null
@@ -162,6 +219,27 @@ export type Database = {
           slug?: string
           updated_at?: string
           whatsapp_phone?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -211,10 +289,16 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "partner" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -341,6 +425,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "partner", "customer"],
+    },
   },
 } as const
