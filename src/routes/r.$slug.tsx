@@ -241,8 +241,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       </div>
 
       <div className="mt-5 grid gap-3">
-        <div className="space-y-1.5"><Label>Seu nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
-        <div className="space-y-1.5"><Label>Endereço de entrega</Label><Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número, bairro, ponto de referência" /></div>
+        <div className="space-y-1.5"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
+        <div className="space-y-1.5"><Label>Telefone</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" /></div>
+        <div className="space-y-1.5"><Label>Endereço</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número" /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
+          <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
+        </div>
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
           <div className="flex flex-wrap gap-2">
