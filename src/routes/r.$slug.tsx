@@ -237,7 +237,7 @@ function PublicMenu() {
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} />
+              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => { setCart([]); navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } }); }} />
             </Sheet>
           </div>
         </div>
