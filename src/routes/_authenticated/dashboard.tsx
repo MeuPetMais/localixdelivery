@@ -727,3 +727,92 @@ function Loader() {
     </div>
   );
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  novo: "Novo Pedido",
+  preparo: "Em Preparo",
+  entrega: "Saiu p/ Entrega",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
+};
+const STATUS_COLORS: Record<string, string> = {
+  novo: "#f59e0b",
+  preparo: "#3b82f6",
+  entrega: "#8b5cf6",
+  entregue: "#10b981",
+  cancelado: "#ef4444",
+};
+
+function StatusDonut({ data }: { data?: Record<string, number> | null }) {
+  const entries = Object.entries(data ?? {}).map(([status, count]) => ({
+    status,
+    label: STATUS_LABELS[status] ?? status,
+    value: count as number,
+    color: STATUS_COLORS[status] ?? "#94a3b8",
+  }));
+  const total = entries.reduce((acc, e) => acc + e.value, 0);
+
+  return (
+    <div className="flex h-full min-w-0 flex-col">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-base font-bold">Status dos Pedidos</h3>
+          <p className="text-xs text-muted-foreground">Distribuição atual</p>
+        </div>
+        <ShoppingBag className="h-4 w-4 text-primary" />
+      </div>
+      {total === 0 ? (
+        <p className="mt-8 text-center text-sm text-muted-foreground">Nenhum pedido ainda.</p>
+      ) : (
+        <>
+          <div className="relative mx-auto mt-2 h-36 w-36">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={entries}
+                  dataKey="value"
+                  innerRadius={42}
+                  outerRadius={62}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {entries.map((e) => (
+                    <Cell key={e.status} fill={e.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v: number, _n, p: { payload?: { label: string } }) => [
+                    `${v} (${Math.round((v / total) * 100)}%)`,
+                    p.payload?.label ?? "",
+                  ]}
+                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-display text-xl font-bold leading-none">{total}</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</span>
+            </div>
+          </div>
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {entries.map((e) => (
+              <li key={e.status} className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: e.color }} />
+                  <span className="truncate text-muted-foreground">{e.label}</span>
+                </div>
+                <span className="font-medium tabular-nums">
+                  {e.value}
+                  <span className="ml-1 text-muted-foreground">
+                    ({Math.round((e.value / total) * 100)}%)
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
