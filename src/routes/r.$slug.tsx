@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
+import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2 } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, MapPin, Loader2, Ticket, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/r/$slug")({
@@ -184,10 +185,30 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
-  const total = subtotal + fee;
+
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{ id: string; code: string; discountPercent: number } | null>(null);
+  const [validating, setValidating] = useState(false);
+  const checkCoupon = useServerFn(validateCoupon);
+
+  const discount = coupon ? +(subtotal * (coupon.discountPercent / 100)).toFixed(2) : 0;
+  const total = Math.max(0, subtotal - discount) + fee;
   const belowMin = subtotal < min;
 
   const getOrderLink = useServerFn(buildWhatsappOrderLink);
+
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setValidating(true);
+    try {
+      const res = await checkCoupon({ data: { slug: restaurant.slug, code: couponInput.trim() } });
+      if (!res.valid) { setCoupon(null); toast.error(res.reason); return; }
+      setCoupon({ id: res.id, code: res.code, discountPercent: res.discountPercent });
+      toast.success(`Cupom aplicado: -${res.discountPercent}%`);
+    } finally {
+      setValidating(false);
+    }
+  }
 
   async function sendWhatsApp() {
     if (!name.trim() || !phone.trim() || !address.trim() || !neighborhood.trim()) {
@@ -202,6 +223,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
       ``,
       `Subtotal: ${brl(subtotal)}`,
+      coupon ? `Cupom ${coupon.code}: -${brl(discount)}` : "",
       `Entrega: ${brl(fee)}`,
       `*Total: ${brl(total)}*`,
       ``,
@@ -220,6 +242,8 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
           customer: { name, phone, address: fullAddress, payment },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
           total,
+          couponId: coupon?.id ?? null,
+          discount,
         },
       });
       window.open(url, "_blank");
@@ -265,10 +289,22 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
           </div>
         </div>
         <div className="space-y-1.5"><Label>Observações (opcional)</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5"><Ticket className="h-4 w-4" /> Cupom de desconto</Label>
+          <div className="flex gap-2">
+            <Input value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCoupon(null); }} placeholder="DIGITE O CÓDIGO" />
+            <Button type="button" variant="outline" onClick={applyCoupon} disabled={validating || !couponInput.trim()}>
+              {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : coupon ? <Check className="h-4 w-4 text-success" /> : "Aplicar"}
+            </Button>
+          </div>
+          {coupon && <p className="text-xs text-success">Cupom {coupon.code} aplicado: -{coupon.discountPercent}%</p>}
+        </div>
       </div>
 
       <div className="mt-5 space-y-1 rounded-xl bg-muted/50 p-4 text-sm">
         <div className="flex justify-between"><span>Subtotal</span><span>{brl(subtotal)}</span></div>
+        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(discount)}</span></div>}
         <div className="flex justify-between"><span>Entrega</span><span>{brl(fee)}</span></div>
         <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(total)}</span></div>
         {belowMin && <p className="mt-1 text-xs text-destructive">Pedido mínimo: {brl(min)}</p>}

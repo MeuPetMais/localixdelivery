@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_percent: number
+          id: string
+          is_active: boolean
+          restaurant_id: string
+          updated_at: string
+          uses_count: number
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_percent: number
+          id?: string
+          is_active?: boolean
+          restaurant_id: string
+          updated_at?: string
+          uses_count?: number
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          is_active?: boolean
+          restaurant_id?: string
+          updated_at?: string
+          uses_count?: number
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_points: {
+        Row: {
+          balance: number
+          created_at: string
+          customer_id: string
+          id: string
+          total_earned: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          total_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          total_earned?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_points_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           avg_ticket: number
@@ -177,9 +263,11 @@ export type Database = {
       orders: {
         Row: {
           address: string | null
+          coupon_id: string | null
           created_at: string
           customer_name: string
           customer_phone: string | null
+          discount: number
           id: string
           items: Json
           payment_method: string | null
@@ -190,9 +278,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_name: string
           customer_phone?: string | null
+          discount?: number
           id?: string
           items?: Json
           payment_method?: string | null
@@ -203,9 +293,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_name?: string
           customer_phone?: string | null
+          discount?: number
           id?: string
           items?: Json
           payment_method?: string | null
@@ -215,6 +307,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_restaurant_id_fkey"
             columns: ["restaurant_id"]
