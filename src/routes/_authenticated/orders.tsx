@@ -48,42 +48,62 @@ function OrdersPage() {
 
   useEffect(() => {
     let active = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const { data: rest } = await supabase
+        .from("restaurants")
+        .select("id")
+        .eq("owner_id", auth.user.id)
+        .maybeSingle();
+      const restaurantId = rest?.id;
+      if (!restaurantId) {
+        if (active) setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("orders")
         .select("*")
+        .eq("restaurant_id", restaurantId)
         .order("created_at", { ascending: false })
         .limit(200);
       if (!active) return;
       if (error) toast.error("Falha ao carregar pedidos");
       setOrders((data ?? []) as any);
       setLoading(false);
-    })();
 
-    const channel = supabase
-      .channel("orders-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
-        setOrders((prev) => {
-          if (payload.eventType === "INSERT") {
-            toast.success("Novo pedido recebido!");
-            return [payload.new as Order, ...prev];
-          }
-          if (payload.eventType === "UPDATE") {
-            return prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o));
-          }
-          if (payload.eventType === "DELETE") {
-            return prev.filter((o) => o.id !== (payload.old as Order).id);
-          }
-          return prev;
-        });
-      })
-      .subscribe();
+      channel = supabase
+        .channel(`orders-realtime-${restaurantId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` },
+          (payload) => {
+            setOrders((prev) => {
+              if (payload.eventType === "INSERT") {
+                toast.success("Novo pedido recebido!");
+                return [payload.new as Order, ...prev];
+              }
+              if (payload.eventType === "UPDATE") {
+                return prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o));
+              }
+              if (payload.eventType === "DELETE") {
+                return prev.filter((o) => o.id !== (payload.old as Order).id);
+              }
+              return prev;
+            });
+          },
+        )
+        .subscribe();
+    })();
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
+
 
   async function updateStatus(id: string, status: string) {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);

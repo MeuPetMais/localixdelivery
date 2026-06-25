@@ -241,9 +241,8 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
           message: lines,
           customer: { name, phone, address: fullAddress, payment },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
-          total,
-          couponId: coupon?.id ?? null,
-          discount,
+          deliveryFee: fee,
+          couponCode: coupon?.code ?? null,
         },
       });
       window.open(url, "_blank");
