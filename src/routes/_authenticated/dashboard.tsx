@@ -130,30 +130,41 @@ function Dashboard() {
         </div>
       </header>
 
-      {/* Public link banner */}
-      <Card className="overflow-hidden border-primary/20 bg-gradient-warm p-5 text-primary-foreground shadow-glow">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-80">Sua página de pedidos</p>
-            <p className="mt-1 truncate font-display text-lg font-bold sm:text-xl">{publicUrl}</p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(publicUrl);
-                toast.success("Link copiado!");
-              }}
+      {/* Public link compact card */}
+      <Card className="flex w-full max-w-xl items-center gap-3 border-primary/20 bg-card px-3 py-2 shadow-sm">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold text-foreground">{restaurant.name}</p>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                restaurant.is_open
+                  ? "bg-success/10 text-success"
+                  : "bg-destructive/10 text-destructive"
+              }`}
             >
-              <Copy className="mr-2 h-4 w-4" /> Copiar
-            </Button>
-            <a href={publicUrl} target="_blank" rel="noreferrer">
-              <Button variant="secondary" size="sm">
-                <ExternalLink className="mr-2 h-4 w-4" /> Abrir
-              </Button>
-            </a>
+              <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
+              {restaurant.is_open ? "Online" : "Offline"}
+            </span>
           </div>
+          <p className="truncate text-xs text-muted-foreground">/r/{restaurant.slug}</p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => {
+              navigator.clipboard.writeText(publicUrl);
+              toast.success("Link copiado!");
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+          <a href={publicUrl} target="_blank" rel="noreferrer">
+            <Button size="sm" className="h-8 px-2">
+              <ExternalLink className="mr-1 h-3.5 w-3.5" /> Abrir
+            </Button>
+          </a>
         </div>
       </Card>
 
