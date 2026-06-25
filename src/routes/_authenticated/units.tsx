@@ -35,7 +35,7 @@ function UnitsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  type UpsertVars = Parameters<typeof onSubmitType>[0];
+  type UpsertVars = { name: string; slug: string; category?: string; address?: string; phone?: string; whatsapp_phone?: string; manager_name?: string; active?: boolean; id?: string };
   const upsertMut = useMutation({
     mutationFn: (vars: UpsertVars) => upsertFn({ data: vars }),
     onSuccess: () => {
