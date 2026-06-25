@@ -153,3 +153,48 @@
 @utility bg-gradient-warm { background-image: var(--gradient-warm); }
 @utility bg-gradient-hero { background-image: var(--gradient-hero); }
 @utility shadow-glow { box-shadow: var(--shadow-glow); }
+@utility shadow-elegant { box-shadow: var(--shadow-elegant); }
+@utility shadow-premium { box-shadow: var(--shadow-premium); }
+@utility shadow-float { box-shadow: var(--shadow-float); }
+
+@utility card-premium {
+  background-color: var(--color-card);
+  border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-elegant);
+  transition: transform 280ms var(--ease-premium), box-shadow 280ms var(--ease-premium), border-color 280ms var(--ease-premium);
+  &:hover {
+    box-shadow: var(--shadow-premium);
+    border-color: color-mix(in oklab, var(--color-primary) 25%, var(--color-border));
+    transform: translateY(-2px);
+  }
+}
+
+@utility hover-lift {
+  transition: transform 220ms var(--ease-premium), box-shadow 220ms var(--ease-premium);
+  &:hover { transform: translateY(-1px); box-shadow: var(--shadow-premium); }
+}
+
+@utility icon-chip {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  transition: transform 220ms var(--ease-premium), background-color 220ms var(--ease-premium);
+  &:hover { transform: scale(1.05); background: color-mix(in oklab, var(--color-primary) 18%, transparent); }
+}
+
+@keyframes shimmer-premium {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@utility text-shimmer {
+  background: linear-gradient(90deg, var(--color-foreground) 0%, var(--color-primary) 50%, var(--color-foreground) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-premium 6s linear infinite;
+}
+
