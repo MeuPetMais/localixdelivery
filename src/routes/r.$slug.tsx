@@ -293,7 +293,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
-      const { url } = await getOrderLink({
+      const { url, orderNumber } = await getOrderLink({
         data: {
           slug: restaurant.slug,
           message: lines,
@@ -303,12 +303,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
           couponCode: coupon?.code ?? null,
         },
       });
+      if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
       window.open(url, "_blank");
       onClose();
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível enviar o pedido");
     }
   }
+
 
   return (
     <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
