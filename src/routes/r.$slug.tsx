@@ -246,10 +246,11 @@ function PublicMenu() {
   );
 }
 
-function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose }: {
+function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreated }: {
   restaurant: any; cart: CartItem[]; subtotal: number;
   dec: (id: string) => void; add: (it: { id: string; name: string; price: number }) => void;
   onClose: () => void;
+  onCreated: (orderId: string) => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
