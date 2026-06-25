@@ -24,24 +24,28 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const startToday = new Date(now);
     startToday.setHours(0, 0, 0, 0);
     const startYesterday = new Date(startToday.getTime() - DAY);
+    const period = data.period ?? 30;
     const since30 = new Date(now.getTime() - 30 * DAY);
     const since60 = new Date(now.getTime() - 60 * DAY);
+    const sincePeriod = new Date(startToday.getTime() - (period - 1) * DAY);
+    const lookback = Math.max(60, period) * DAY;
+    const sinceFetch = new Date(now.getTime() - lookback);
 
     const [{ data: orders }, { data: customers }, { data: items }] = await Promise.all([
       supabaseAdmin
         .from("orders")
         .select("id, total, items, status, created_at, customer_phone")
         .eq("restaurant_id", data.restaurantId)
-        .gte("created_at", since60.toISOString())
+        .gte("created_at", sinceFetch.toISOString())
         .order("created_at", { ascending: false })
-        .limit(2000),
+        .limit(5000),
       supabaseAdmin
         .from("customers")
         .select("id, name, phone, total_orders, total_spent, last_order_at, created_at")
         .eq("restaurant_id", data.restaurantId),
       supabaseAdmin
         .from("menu_items")
-        .select("id, name, price")
+        .select("id, name, price, image_url")
         .eq("restaurant_id", data.restaurantId),
     ]);
 
