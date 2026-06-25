@@ -65,6 +65,42 @@ export type Database = {
           },
         ]
       }
+      customer_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string
+          restaurant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone: string
+          restaurant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_favorites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_favorites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_points: {
         Row: {
           balance: number
