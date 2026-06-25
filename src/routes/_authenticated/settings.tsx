@@ -153,7 +153,10 @@ function SettingsPage() {
   async function removeImage(kind: "logo" | "cover") {
     const field = kind === "logo" ? "logo_url" : "cover_url";
     setForm((f) => ({ ...f, [field]: "" }));
-    await supabase.from("restaurants").update({ [field]: null }).eq("id", restaurant!.id);
+    await supabase
+      .from("restaurants")
+      .update(kind === "logo" ? { logo_url: null } : { cover_url: null })
+      .eq("id", restaurant!.id);
     toast.success("Removido");
     refetch();
   }
