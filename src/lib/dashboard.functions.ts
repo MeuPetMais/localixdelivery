@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const schema = z.object({ restaurantId: z.string().uuid() });
+const schema = z.object({
+  restaurantId: z.string().uuid(),
+  period: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional().default(30),
+});
 
 const DAY = 24 * 60 * 60 * 1000;
 
