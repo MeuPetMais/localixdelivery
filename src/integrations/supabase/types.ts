@@ -432,6 +432,100 @@ export type Database = {
           },
         ]
       }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          id: string
+          product_name: string
+          quantity: number
+          reference_price: number | null
+          supplier_id: string
+          total: number
+          unit: string
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_name: string
+          quantity: number
+          reference_price?: number | null
+          supplier_id: string
+          total: number
+          unit?: string
+          unit_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_name?: string
+          quantity?: number
+          reference_price?: number | null
+          supplier_id?: string
+          total?: number
+          unit?: string
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          product_name: string
+          quantity: number
+          status: string
+          supplier_id: string
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          product_name: string
+          quantity: number
+          status?: string
+          supplier_id: string
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          product_name?: string
+          quantity?: number
+          status?: string
+          supplier_id?: string
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_items: {
         Row: {
           created_at: string
@@ -537,6 +631,121 @@ export type Database = {
           slug?: string
           updated_at?: string
           whatsapp_phone?: string
+        }
+        Relationships: []
+      }
+      supplier_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          supplier_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          supplier_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          supplier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_favorites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_products: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          supplier_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          supplier_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          supplier_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          active: boolean
+          category: string
+          city: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
