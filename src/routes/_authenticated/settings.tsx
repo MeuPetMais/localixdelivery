@@ -27,7 +27,13 @@ import {
   Palette,
   CalendarDays,
   Power,
+  Instagram,
+  Facebook,
+  Globe,
+  Mail,
+  CreditCard,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
