@@ -201,8 +201,7 @@ function SettingsPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase
-      .from("restaurants")
+    const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
         description: form.description || null,
@@ -215,9 +214,18 @@ function SettingsPage() {
           : null,
         primary_color: form.primary_color,
         opening_hours: hours as any,
+        address: form.address || null,
+        instagram: form.instagram || null,
+        facebook: form.facebook || null,
+        website: form.website || null,
+        email: form.email || null,
+        latitude: form.latitude ? Number(form.latitude.replace(",", ".")) : null,
+        longitude: form.longitude ? Number(form.longitude.replace(",", ".")) : null,
+        payment_methods: payments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", restaurant!.id);
+
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
