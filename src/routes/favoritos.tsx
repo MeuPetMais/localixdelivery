@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BottomNav, BottomNavSpacer } from "@/components/BottomNav";
+import { BottomNavSpacer } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/favoritos")({
   head: () => ({ meta: [{ title: "Favoritos — Localix" }] }),
@@ -35,7 +35,7 @@ function FavoritosPage() {
         </div>
       </main>
       <BottomNavSpacer />
-      <BottomNav />
+      
     </div>
   );
 }

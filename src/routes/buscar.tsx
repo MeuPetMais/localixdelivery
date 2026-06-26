@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, Sparkles, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BottomNav, BottomNavSpacer } from "@/components/BottomNav";
+import { BottomNavSpacer } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/buscar")({
   head: () => ({ meta: [{ title: "Buscar — Localix" }] }),
@@ -39,7 +39,7 @@ function BuscarPage() {
         </div>
       </main>
       <BottomNavSpacer />
-      <BottomNav />
+      
     </div>
   );
 }
