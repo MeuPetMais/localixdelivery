@@ -124,7 +124,8 @@ function SettingsPage() {
   const [payments, setPayments] = useState<Record<string, boolean>>({
     cash: true, pix: true, credit: true, debit: false,
     meal_voucher: false, food_voucher: false,
-    online_pix: false, online_credit: false, online_debit: false,
+    ticket: false, alelo: false, sodexo: false, vr: false, ben: false,
+    online_pix: false, online_card: false, online_credit: false, online_debit: false,
     google_pay: false, apple_pay: false,
   });
 
@@ -702,10 +703,15 @@ function SettingsPage() {
                 {[
                   { k: "cash", l: "Dinheiro" },
                   { k: "pix", l: "Pix" },
-                  { k: "credit", l: "Crédito" },
-                  { k: "debit", l: "Débito" },
+                  { k: "credit", l: "Cartão Crédito" },
+                  { k: "debit", l: "Cartão Débito" },
                   { k: "meal_voucher", l: "Vale Refeição" },
                   { k: "food_voucher", l: "Vale Alimentação" },
+                  { k: "ticket", l: "Ticket" },
+                  { k: "alelo", l: "Alelo" },
+                  { k: "sodexo", l: "Sodexo" },
+                  { k: "vr", l: "VR" },
+                  { k: "ben", l: "Ben" },
                 ].map((m) => (
                   <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
                     <input
@@ -724,10 +730,7 @@ function SettingsPage() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {[
                   { k: "online_pix", l: "Pix Online" },
-                  { k: "online_credit", l: "Crédito Online" },
-                  { k: "online_debit", l: "Débito Online" },
-                  { k: "google_pay", l: "Google Pay" },
-                  { k: "apple_pay", l: "Apple Pay" },
+                  { k: "online_card", l: "Cartão Online" },
                 ].map((m) => (
                   <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
                     <input
