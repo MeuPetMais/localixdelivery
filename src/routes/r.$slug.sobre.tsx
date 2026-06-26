@@ -107,21 +107,36 @@ function SobrePage() {
     },
   });
 
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["public-reviews", data?.id],
+    enabled: !!data?.id,
+    queryFn: async () => {
+      const { data: rows } = await (supabase as any)
+        .from("reviews")
+        .select("id, customer_name, rating, comment, owner_reply, created_at")
+        .eq("restaurant_id", data!.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      return (rows ?? []) as Review[];
+    },
+  });
+
   const stats = useMemo(() => {
-    const total = MOCK_REVIEWS.length;
-    const avg = MOCK_REVIEWS.reduce((s, r) => s + r.rating, 0) / total;
+    const total = reviews.length;
+    const avg = total ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
     const dist = [5, 4, 3, 2, 1].map((s) => ({
       stars: s,
-      count: MOCK_REVIEWS.filter((r) => r.rating === s).length,
+      count: reviews.filter((r) => r.rating === s).length,
     }));
     return { total, avg, dist };
-  }, []);
+  }, [reviews]);
 
-  const filteredReviews = MOCK_REVIEWS.filter(
+  const filteredReviews = reviews.filter(
     (r) =>
       (filter === null || r.rating === filter) &&
-      (search === "" || r.comment.toLowerCase().includes(search.toLowerCase())),
+      (search === "" || (r.comment ?? "").toLowerCase().includes(search.toLowerCase())),
   );
+
 
   if (isLoading || !data) {
     return (
