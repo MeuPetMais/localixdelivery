@@ -354,11 +354,12 @@ function SobrePage() {
               <h3 className="mb-3 font-display text-base font-bold">Contato</h3>
               <div className="space-y-2">
                 <InfoRow icon={MessageCircle} label="WhatsApp" value="Falar pelo WhatsApp" href={`/r/${slug}`} />
+                {data.landline_phone && <InfoRow icon={Phone} label="Telefone fixo" value={data.landline_phone} href={`tel:${data.landline_phone.replace(/\D/g, "")}`} />}
                 {data.email && <InfoRow icon={Mail} label="E-mail" value={data.email} href={`mailto:${data.email}`} />}
                 {data.instagram && <InfoRow icon={Instagram} label="Instagram" value={`@${data.instagram.replace(/^@/, "")}`} href={`https://instagram.com/${data.instagram.replace(/^@/, "")}`} />}
                 {data.facebook && <InfoRow icon={Facebook} label="Facebook" value={data.facebook} href={data.facebook.startsWith("http") ? data.facebook : `https://facebook.com/${data.facebook}`} />}
                 {data.website && <InfoRow icon={Globe} label="Site" value={data.website} href={data.website.startsWith("http") ? data.website : `https://${data.website}`} />}
-                {!data.email && !data.instagram && !data.facebook && !data.website && (
+                {!data.landline_phone && !data.email && !data.instagram && !data.facebook && !data.website && (
                   <p className="py-3 text-center text-xs text-muted-foreground">Outros canais de contato em breve</p>
                 )}
               </div>
