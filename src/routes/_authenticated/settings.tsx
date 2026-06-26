@@ -59,10 +59,12 @@ const DAYS = [
   { id: "sun", label: "Domingo" },
 ];
 
-type Hours = Record<string, { open: string; close: string; enabled: boolean }>;
+type Shift = { open: string; close: string };
+type DayHours = { enabled: boolean; open: string; close: string; open2?: string | null; close2?: string | null };
+type Hours = Record<string, DayHours>;
 
 const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
-  acc[d.id] = { open: "18:00", close: "23:00", enabled: true };
+  acc[d.id] = { open: "18:00", close: "23:00", enabled: true, open2: null, close2: null };
   return acc;
 }, {} as Hours);
 
