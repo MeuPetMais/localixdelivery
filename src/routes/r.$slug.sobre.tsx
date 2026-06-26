@@ -89,6 +89,7 @@ function isOpenNow(hours: Hours | null | undefined): boolean {
 
 function SobrePage() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
   const { tab } = Route.useSearch();
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
