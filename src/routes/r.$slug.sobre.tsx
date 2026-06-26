@@ -49,13 +49,28 @@ const DAYS = [
   { id: "sat", label: "Sábado", jsDay: 6 },
 ];
 
-const MOCK_REVIEWS = [
-  { id: "1", name: "Ana S.", rating: 5, comment: "Comida sensacional, chegou rapidinho!", date: "Há 2 dias", reply: "Obrigado, Ana! Volte sempre 💚" },
-  { id: "2", name: "Carlos M.", rating: 5, comment: "Melhor da região, sem dúvidas.", date: "Há 4 dias" },
-  { id: "3", name: "Júlia P.", rating: 4, comment: "Muito bom, só demorou um pouquinho.", date: "Há 1 semana" },
-  { id: "4", name: "Roberto F.", rating: 5, comment: "Atendimento nota 10!", date: "Há 1 semana", reply: "Valeu, Roberto!" },
-  { id: "5", name: "Marina L.", rating: 4, comment: "Sabor excelente, embalagem caprichada.", date: "Há 2 semanas" },
-];
+type Review = {
+  id: string;
+  customer_name: string | null;
+  rating: number;
+  comment: string | null;
+  owner_reply: string | null;
+  created_at: string;
+};
+
+function timeAgo(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)} h`;
+  const d = Math.floor(diff / 86400);
+  if (d < 7) return `há ${d} ${d === 1 ? "dia" : "dias"}`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `há ${w} ${w === 1 ? "semana" : "semanas"}`;
+  const m = Math.floor(d / 30);
+  return `há ${m} ${m === 1 ? "mês" : "meses"}`;
+}
+
 
 function isOpenNow(hours: Hours | null | undefined): boolean {
   if (!hours) return false;
@@ -92,21 +107,36 @@ function SobrePage() {
     },
   });
 
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["public-reviews", data?.id],
+    enabled: !!data?.id,
+    queryFn: async () => {
+      const { data: rows } = await (supabase as any)
+        .from("reviews")
+        .select("id, customer_name, rating, comment, owner_reply, created_at")
+        .eq("restaurant_id", data!.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      return (rows ?? []) as Review[];
+    },
+  });
+
   const stats = useMemo(() => {
-    const total = MOCK_REVIEWS.length;
-    const avg = MOCK_REVIEWS.reduce((s, r) => s + r.rating, 0) / total;
+    const total = reviews.length;
+    const avg = total ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
     const dist = [5, 4, 3, 2, 1].map((s) => ({
       stars: s,
-      count: MOCK_REVIEWS.filter((r) => r.rating === s).length,
+      count: reviews.filter((r) => r.rating === s).length,
     }));
     return { total, avg, dist };
-  }, []);
+  }, [reviews]);
 
-  const filteredReviews = MOCK_REVIEWS.filter(
+  const filteredReviews = reviews.filter(
     (r) =>
       (filter === null || r.rating === filter) &&
-      (search === "" || r.comment.toLowerCase().includes(search.toLowerCase())),
+      (search === "" || (r.comment ?? "").toLowerCase().includes(search.toLowerCase())),
   );
+
 
   if (isLoading || !data) {
     return (
@@ -209,37 +239,43 @@ function SobrePage() {
             </div>
 
             <div className="space-y-3">
-              {filteredReviews.map((r) => (
-                <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                        {r.name[0]}
+              {filteredReviews.map((r) => {
+                const displayName = r.customer_name?.trim() || "Cliente";
+                return (
+                  <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
+                          {displayName[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{displayName}</p>
+                          <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.date}</p>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                        ))}
                       </div>
                     </div>
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-3 text-sm">{r.comment}</p>
-                  {r.reply && (
-                    <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/40 p-3">
-                      <p className="text-xs font-bold text-primary">Resposta do estabelecimento</p>
-                      <p className="mt-1 text-sm">{r.reply}</p>
-                    </div>
-                  )}
-                </Card>
-              ))}
+                    {r.comment && <p className="mt-3 text-sm">{r.comment}</p>}
+                    {r.owner_reply && (
+                      <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/40 p-3">
+                        <p className="text-xs font-bold text-primary">Resposta do estabelecimento</p>
+                        <p className="mt-1 text-sm">{r.owner_reply}</p>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
               {filteredReviews.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma avaliação encontrada</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {reviews.length === 0 ? "Seja o primeiro a avaliar este estabelecimento!" : "Nenhuma avaliação encontrada"}
+                </p>
               )}
             </div>
+
             <p className="text-center text-xs text-muted-foreground">
               Apenas clientes que finalizaram pedido podem avaliar.
             </p>

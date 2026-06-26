@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { brl } from "@/lib/format";
 import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ReviewForm } from "@/components/ReviewForm";
+
 
 export const Route = createFileRoute("/pedido/$id")({
   head: () => ({ meta: [{ title: "Acompanhar Pedido — Localix" }] }),
@@ -188,6 +190,16 @@ function TrackOrder() {
           <InfoRow Icon={CreditCard} label="Pagamento" value={order.payment_method} />
           <InfoRow Icon={Clock} label="Pedido em" value={new Date(order.created_at).toLocaleString("pt-BR")} />
         </Card>
+
+        {order.status === "entregue" && (
+          <ReviewForm
+            orderId={order.id}
+            restaurantId={order.restaurant_id}
+            customerName={order.customer_name}
+            customerPhone={order.customer_phone}
+          />
+        )}
+
 
         <div className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" onClick={handleRepeat} disabled={!restaurant?.slug}>
