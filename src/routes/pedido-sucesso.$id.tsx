@@ -17,6 +17,7 @@ function SuccessPage() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
