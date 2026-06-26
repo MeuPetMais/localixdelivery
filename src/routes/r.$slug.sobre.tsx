@@ -109,8 +109,10 @@ function timeAgo(iso: string) {
 
 
 function inShift(curr: number, open: string, close: string) {
+  if (!open || !close) return false;
   const [oh, om] = open.split(":").map(Number);
   const [ch, cm] = close.split(":").map(Number);
+  if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
   const o = oh * 60 + om;
   const c = ch * 60 + cm;
   return c > o ? curr >= o && curr <= c : curr >= o || curr <= c;
@@ -474,7 +476,7 @@ function SobrePage() {
                           <span className={`font-medium ${isToday ? "text-primary" : ""}`}>
                             {d.label} {isToday && <span className="ml-1 text-xs">(hoje)</span>}
                           </span>
-                          {h?.enabled ? (
+                          {h?.enabled && h.open && h.close ? (
                             <div className="text-right text-sm font-mono">
                               <div>{h.open} — {h.close}</div>
                               {h.open2 && h.close2 && (
