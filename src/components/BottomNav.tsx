@@ -1,24 +1,50 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Home, Search, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type Item = {
-  to: string;
+  key: string;
   label: string;
   icon: LucideIcon;
   match: (p: string) => boolean;
 };
 
 const items: Item[] = [
-  { to: "/", label: "Início", icon: Home, match: (p) => p === "/" || p.startsWith("/r/") },
-  { to: "/buscar", label: "Buscar", icon: Search, match: (p) => p.startsWith("/buscar") },
-  { to: "/favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
-  { to: "/meus-pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
-  { to: "/cliente", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
+  { key: "home", label: "Início", icon: Home, match: (p) => p === "/" || p.startsWith("/r/") },
+  { key: "buscar", label: "Buscar", icon: Search, match: (p) => p.startsWith("/buscar") },
+  { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
+  { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
+  { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
 ];
+
+const LAST_SLUG_KEY = "localix:last-restaurant-slug";
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const [lastSlug, setLastSlug] = useState<string | null>(null);
+
+  // Track the last restaurant the customer visited so "Início" returns to it.
+  useEffect(() => {
+    const m = pathname.match(/^\/r\/([^/]+)/);
+    if (m) {
+      try { sessionStorage.setItem(LAST_SLUG_KEY, m[1]); } catch {}
+      setLastSlug(m[1]);
+    } else {
+      try {
+        const v = sessionStorage.getItem(LAST_SLUG_KEY);
+        if (v) setLastSlug(v);
+      } catch {}
+    }
+  }, [pathname]);
+
+  function handleClick(e: React.MouseEvent, key: string) {
+    if (key !== "home") return;
+    e.preventDefault();
+    if (lastSlug) navigate({ to: "/r/$slug", params: { slug: lastSlug } });
+    else navigate({ to: "/" });
+  }
 
   return (
     <nav
@@ -27,12 +53,25 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex h-[64px] max-w-3xl items-stretch justify-around px-1">
-        {items.map(({ to, label, icon: Icon, match }) => {
+        {items.map(({ key, label, icon: Icon, match }) => {
           const active = match(pathname);
+          const to =
+            key === "home"
+              ? lastSlug
+                ? `/r/${lastSlug}`
+                : "/"
+              : key === "buscar"
+                ? "/buscar"
+                : key === "favoritos"
+                  ? "/favoritos"
+                  : key === "pedidos"
+                    ? "/meus-pedidos"
+                    : "/cliente";
           return (
-            <li key={to} className="flex-1">
+            <li key={key} className="flex-1">
               <Link
                 to={to}
+                onClick={(e) => handleClick(e, key)}
                 className="group relative flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium outline-none"
                 aria-current={active ? "page" : undefined}
               >
