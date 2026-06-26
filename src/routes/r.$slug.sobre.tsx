@@ -23,17 +23,19 @@ import {
   ExternalLink,
   Search,
   CheckCircle2,
-  XCircle,
   Banknote,
   Smartphone,
   Wallet,
   Utensils,
 } from "lucide-react";
 
+const VALID_TABS = ["avaliacoes", "horarios", "info", "pagamentos"] as const;
+type ProfileTab = (typeof VALID_TABS)[number];
+
 export const Route = createFileRoute("/r/$slug/sobre")({
   head: () => ({ meta: [{ title: "Sobre o estabelecimento — Localix" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (s.tab as string) ?? "avaliacoes",
+    tab: VALID_TABS.includes(s.tab as ProfileTab) ? (s.tab as ProfileTab) : "avaliacoes",
   }),
   component: SobrePage,
 });
@@ -54,8 +56,40 @@ type Review = {
   customer_name: string | null;
   rating: number;
   comment: string | null;
-  owner_reply: string | null;
   created_at: string;
+};
+
+type RestaurantBase = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type HoursData = RestaurantBase & {
+  opening_hours: Hours | null;
+};
+
+type InfoData = RestaurantBase & {
+  description: string | null;
+  address: string | null;
+  address_number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  landline_phone: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  website: string | null;
+  email: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  google_maps_url: string | null;
+};
+
+type PaymentsData = RestaurantBase & {
+  payment_methods: Record<string, boolean> | null;
 };
 
 function timeAgo(iso: string) {
@@ -93,6 +127,20 @@ function isOpenNow(hours: Hours | null | undefined): boolean {
   return false;
 }
 
+function formatDate(iso: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
+function isFilled(value: unknown): value is string | number {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  return true;
+}
+
 function SobrePage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
@@ -100,31 +148,77 @@ function SobrePage() {
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["public-restaurant-sobre", slug],
+  const { data: restaurant, isLoading: isRestaurantLoading } = useQuery({
+    queryKey: ["public-restaurant-base", slug],
     enabled: !!slug,
     retry: 3,
     queryFn: async () => {
-      const { data: rest } = await (supabase as any)
+      const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("*")
+        .select("id, name, slug")
         .eq("slug", slug)
         .maybeSingle();
-      return rest as any;
+      if (error) throw error;
+      return rest as RestaurantBase | null;
     },
   });
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["public-reviews", data?.id],
-    enabled: !!data?.id,
+  const restaurantId = restaurant?.id;
+
+  const { data: reviews = [], isLoading: isReviewsLoading } = useQuery({
+    queryKey: ["public-reviews", restaurantId],
+    enabled: tab === "avaliacoes" && !!restaurantId,
     queryFn: async () => {
-      const { data: rows } = await (supabase as any)
+      const { data: rows, error } = await (supabase as any)
         .from("reviews")
-        .select("id, customer_name, rating, comment, owner_reply, created_at")
-        .eq("restaurant_id", data!.id)
+        .select("id, customer_name, rating, comment, created_at")
+        .eq("restaurant_id", restaurantId!)
         .order("created_at", { ascending: false })
         .limit(100);
+      if (error) throw error;
       return (rows ?? []) as Review[];
+    },
+  });
+
+  const { data: hoursData, isLoading: isHoursLoading } = useQuery({
+    queryKey: ["public-restaurant-hours", slug],
+    enabled: tab === "horarios" && !!slug,
+    queryFn: async () => {
+      const { data: rest, error } = await (supabase as any)
+        .from("restaurants_public")
+        .select("id, name, slug, opening_hours")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw error;
+      return rest as HoursData | null;
+    },
+  });
+
+  const { data: infoData, isLoading: isInfoLoading } = useQuery({
+    queryKey: ["public-restaurant-info", slug],
+    enabled: tab === "info" && !!slug,
+    queryFn: async () => {
+      const { data: rest, error } = await (supabase as any)
+        .from("restaurants_public")
+        .select("id, name, slug, description, address, address_number, complement, neighborhood, city, state, zip_code, landline_phone, instagram, facebook, website, email, latitude, longitude, google_maps_url")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw error;
+      return rest as InfoData | null;
+    },
+  });
+
+  const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
+    queryKey: ["public-restaurant-payments", slug],
+    enabled: tab === "pagamentos" && !!slug,
+    queryFn: async () => {
+      const { data: rest, error } = await (supabase as any)
+        .from("restaurants_public")
+        .select("id, name, slug, payment_methods")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw error;
+      return rest as PaymentsData | null;
     },
   });
 
@@ -145,7 +239,7 @@ function SobrePage() {
   );
 
 
-  if (isLoading || !data) {
+  if (isRestaurantLoading) {
     return (
       <div className="min-h-screen bg-muted/30 p-4">
         <div className="mx-auto max-w-3xl space-y-4">
@@ -157,21 +251,68 @@ function SobrePage() {
     );
   }
 
-  const openNow = isOpenNow(data.opening_hours);
-  const fullAddress = [
-    [data.address, data.address_number].filter(Boolean).join(", "),
-    data.complement,
-    data.neighborhood,
-    [data.city, data.state].filter(Boolean).join(" - "),
-    data.zip_code,
-  ].filter(Boolean).join(" · ");
-  const mapsQuery = data.latitude && data.longitude
-    ? `${data.latitude},${data.longitude}`
-    : encodeURIComponent(fullAddress || data.name);
-  const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
-  const mapsOpen = data.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+  if (!restaurant) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
+          <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
+          <Link to="/" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
+        </div>
+      </div>
+    );
+  }
 
-  const pm = data.payment_methods ?? {};
+  const hours = hoursData?.opening_hours ?? null;
+  const hasHours = !!hours && Object.keys(hours).length > 0;
+  const openNow = isOpenNow(hours);
+  const fullAddress = infoData ? [
+    [infoData.address, infoData.address_number].filter(Boolean).join(", "),
+    infoData.complement,
+    infoData.neighborhood,
+    [infoData.city, infoData.state].filter(Boolean).join(" - "),
+    infoData.zip_code,
+  ].filter(Boolean).join(" · ") : "";
+  const hasLocation = !!infoData && !!(infoData.google_maps_url || (infoData.latitude && infoData.longitude) || fullAddress);
+  const mapsQuery = infoData?.latitude && infoData?.longitude
+    ? `${infoData.latitude},${infoData.longitude}`
+    : encodeURIComponent(fullAddress || infoData?.name || restaurant.name);
+  const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
+  const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+  const infoRows = infoData ? [
+    { icon: MapPin, label: "Endereço", value: infoData.address, href: mapsOpen },
+    { icon: MapPin, label: "Número", value: infoData.address_number, href: mapsOpen },
+    { icon: MapPin, label: "Complemento", value: infoData.complement, href: mapsOpen },
+    { icon: MapPin, label: "Bairro", value: infoData.neighborhood, href: mapsOpen },
+    { icon: MapPin, label: "Cidade", value: infoData.city, href: mapsOpen },
+    { icon: MapPin, label: "Estado", value: infoData.state, href: mapsOpen },
+    { icon: MapPin, label: "CEP", value: infoData.zip_code, href: mapsOpen },
+    { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
+    { icon: MessageCircle, label: "WhatsApp", value: "Falar pelo WhatsApp", href: `/r/${slug}` },
+    { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
+    { icon: Facebook, label: "Facebook", value: infoData.facebook, href: infoData.facebook?.startsWith("http") ? infoData.facebook : `https://facebook.com/${infoData.facebook}` },
+    { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
+    { icon: Mail, label: "E-mail", value: infoData.email, href: `mailto:${infoData.email}` },
+  ].filter((row) => isFilled(row.value)) : [];
+
+  const pm = paymentsData?.payment_methods ?? {};
+  const paymentMethods = [
+    { key: "pix", label: "Pix", icon: Smartphone },
+    { key: "cash", label: "Dinheiro", icon: Banknote },
+    { key: "credit", label: "Cartão Crédito", icon: CreditCard },
+    { key: "debit", label: "Cartão Débito", icon: CreditCard },
+    { key: "meal_voucher", label: "Vale Refeição", icon: Utensils },
+    { key: "food_voucher", label: "Vale Alimentação", icon: Utensils },
+    { key: "ticket", label: "Ticket", icon: Utensils },
+    { key: "alelo", label: "Alelo", icon: Utensils },
+    { key: "sodexo", label: "Sodexo", icon: Utensils },
+    { key: "vr", label: "VR", icon: Utensils },
+    { key: "ben", label: "Ben", icon: Utensils },
+    { key: "online_pix", label: "Pix Online", icon: Smartphone },
+    { key: "online_credit", label: "Cartão Online", icon: Wallet },
+    { key: "online_debit", label: "Cartão Online", icon: Wallet },
+  ];
+  const activePaymentMethods = paymentMethods.filter((method) => !!pm[method.key]);
 
   return (
     <div className="min-h-screen bg-muted/30 pb-12 animate-in fade-in duration-300">
@@ -184,7 +325,7 @@ function SobrePage() {
             </Button>
           </Link>
           <div className="min-w-0">
-            <h1 className="truncate font-display text-lg font-extrabold">{data.name}</h1>
+            <h1 className="truncate font-display text-lg font-extrabold">{restaurant.name}</h1>
             <p className="text-xs text-muted-foreground">Sobre o estabelecimento</p>
           </div>
         </div>
@@ -209,208 +350,221 @@ function SobrePage() {
 
           {/* AVALIAÇÕES */}
           <TabsContent value="avaliacoes" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
-            <Card className="rounded-2xl p-6 shadow-elegant">
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="font-display text-5xl font-extrabold text-primary">{stats.avg.toFixed(1)}</p>
-                  <div className="mt-1 flex justify-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className={`h-4 w-4 ${i <= Math.round(stats.avg) ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
-                    ))}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{stats.total} avaliações</p>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  {stats.dist.map((d) => {
-                    const pct = (d.count / stats.total) * 100;
-                    return (
-                      <button
-                        key={d.stars}
-                        onClick={() => setFilter(filter === d.stars ? null : d.stars)}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs transition hover:bg-muted ${filter === d.stars ? "bg-muted" : ""}`}
-                      >
-                        <span className="w-3 font-semibold">{d.stars}</span>
-                        <Star className="h-3 w-3 fill-warning text-warning" />
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="w-6 text-right text-muted-foreground">{d.count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </Card>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar nas avaliações..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="rounded-2xl pl-9"
-              />
-            </div>
-
-            <div className="space-y-3">
-              {filteredReviews.map((r) => {
-                const displayName = r.customer_name?.trim() || "Cliente";
-                return (
-                  <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                          {displayName[0]?.toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold">{displayName}</p>
-                          <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-0.5">
+            {isReviewsLoading ? (
+              <TabSkeleton />
+            ) : (
+              <>
+                <Card className="rounded-2xl p-6 shadow-elegant">
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <p className="font-display text-5xl font-extrabold text-primary">{stats.avg.toFixed(1)}</p>
+                      <div className="mt-1 flex justify-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                          <Star key={i} className={`h-4 w-4 ${i <= Math.round(stats.avg) ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
                         ))}
                       </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{stats.total} avaliações</p>
                     </div>
-                    {r.comment && <p className="mt-3 text-sm">{r.comment}</p>}
-                    {r.owner_reply && (
-                      <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/40 p-3">
-                        <p className="text-xs font-bold text-primary">Resposta do estabelecimento</p>
-                        <p className="mt-1 text-sm">{r.owner_reply}</p>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-              {filteredReviews.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  {reviews.length === 0 ? "Seja o primeiro a avaliar este estabelecimento!" : "Nenhuma avaliação encontrada"}
-                </p>
-              )}
-            </div>
+                    <div className="flex-1 space-y-1.5">
+                      {stats.dist.map((d) => {
+                        const pct = stats.total ? (d.count / stats.total) * 100 : 0;
+                        return (
+                          <button
+                            key={d.stars}
+                            onClick={() => setFilter(filter === d.stars ? null : d.stars)}
+                            className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs transition hover:bg-muted ${filter === d.stars ? "bg-muted" : ""}`}
+                          >
+                            <span className="w-3 font-semibold">{d.stars}</span>
+                            <Star className="h-3 w-3 fill-warning text-warning" />
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                              <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="w-6 text-right text-muted-foreground">{d.count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Card>
 
-            <p className="text-center text-xs text-muted-foreground">
-              Apenas clientes que finalizaram pedido podem avaliar.
-            </p>
+                {reviews.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar nas avaliações..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="rounded-2xl pl-9"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {filteredReviews.map((r) => {
+                    const displayName = r.customer_name?.trim() || "Cliente";
+                    return (
+                      <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
+                              {displayName[0]?.toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold">{displayName}</p>
+                              <p className="text-xs text-muted-foreground">{formatDate(r.created_at)} · {timeAgo(r.created_at)}</p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-0.5" aria-label={`Nota ${r.rating} de 5`}>
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                            ))}
+                          </div>
+                        </div>
+                        {r.comment && <p className="mt-3 text-sm">{r.comment}</p>}
+                      </Card>
+                    );
+                  })}
+                  {reviews.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Este estabelecimento ainda não possui avaliações.
+                    </p>
+                  )}
+                  {reviews.length > 0 && filteredReviews.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma avaliação encontrada</p>
+                  )}
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* HORÁRIOS */}
           <TabsContent value="horarios" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
-            <Card className="rounded-2xl p-6 shadow-elegant">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold">Horário de Funcionamento</h2>
-                <Badge variant={openNow ? "default" : "secondary"} className={openNow ? "bg-success text-success-foreground" : "bg-destructive/15 text-destructive"}>
-                  {openNow ? "🟢 Aberto agora" : "🔴 Fechado agora"}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                {DAYS.map((d) => {
-                  const h = (data.opening_hours as Hours | null)?.[d.id];
-                  const isToday = new Date().getDay() === d.jsDay;
-                  return (
-                    <div
-                      key={d.id}
-                      className={`flex items-center justify-between rounded-xl border px-4 py-3 ${isToday ? "border-primary bg-primary/5" : ""}`}
-                    >
-                      <span className={`font-medium ${isToday ? "text-primary" : ""}`}>
-                        {d.label} {isToday && <span className="ml-1 text-xs">(hoje)</span>}
-                      </span>
-                      {h?.enabled ? (
-                        <div className="text-right text-sm font-mono">
-                          <div>{h.open} — {h.close}</div>
-                          {h.open2 && h.close2 && (
-                            <div>{h.open2} — {h.close2}</div>
+            {isHoursLoading ? (
+              <TabSkeleton />
+            ) : (
+              <Card className="rounded-2xl p-6 shadow-elegant">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="font-display text-lg font-bold">Horário de Funcionamento</h2>
+                  {hasHours && (
+                    <Badge variant={openNow ? "default" : "secondary"} className={openNow ? "bg-success text-success-foreground" : "bg-destructive/15 text-destructive"}>
+                      {openNow ? "🟢 Aberto agora" : "🔴 Fechado agora"}
+                    </Badge>
+                  )}
+                </div>
+                {!hasHours ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Horários ainda não configurados.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {DAYS.map((d) => {
+                      const h = hours?.[d.id];
+                      const isToday = new Date().getDay() === d.jsDay;
+                      return (
+                        <div
+                          key={d.id}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-3 ${isToday ? "border-primary bg-primary/5" : ""}`}
+                        >
+                          <span className={`font-medium ${isToday ? "text-primary" : ""}`}>
+                            {d.label} {isToday && <span className="ml-1 text-xs">(hoje)</span>}
+                          </span>
+                          {h?.enabled ? (
+                            <div className="text-right text-sm font-mono">
+                              <div>{h.open} — {h.close}</div>
+                              {h.open2 && h.close2 && (
+                                <div>{h.open2} — {h.close2}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Fechado</span>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Fechado</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            )}
           </TabsContent>
 
           {/* INFORMAÇÕES */}
           <TabsContent value="info" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
-            <Card className="overflow-hidden rounded-2xl shadow-elegant">
-              <div className="aspect-video w-full bg-muted">
-                <iframe
-                  src={mapsEmbed}
-                  className="h-full w-full border-0"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Mapa"
-                />
-              </div>
-              <div className="p-5">
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold">Endereço</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{fullAddress || "Endereço não informado"}</p>
-                  </div>
-                </div>
-                <Button asChild className="mt-3 w-full" variant="outline">
-                  <a href={mapsOpen} target="_blank" rel="noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
-                  </a>
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="rounded-2xl p-5 shadow-elegant">
-              <h3 className="mb-3 font-display text-base font-bold">Contato</h3>
-              <div className="space-y-2">
-                <InfoRow icon={MessageCircle} label="WhatsApp" value="Falar pelo WhatsApp" href={`/r/${slug}`} />
-                {data.landline_phone && <InfoRow icon={Phone} label="Telefone fixo" value={data.landline_phone} href={`tel:${data.landline_phone.replace(/\D/g, "")}`} />}
-                {data.email && <InfoRow icon={Mail} label="E-mail" value={data.email} href={`mailto:${data.email}`} />}
-                {data.instagram && <InfoRow icon={Instagram} label="Instagram" value={`@${data.instagram.replace(/^@/, "")}`} href={`https://instagram.com/${data.instagram.replace(/^@/, "")}`} />}
-                {data.facebook && <InfoRow icon={Facebook} label="Facebook" value={data.facebook} href={data.facebook.startsWith("http") ? data.facebook : `https://facebook.com/${data.facebook}`} />}
-                {data.website && <InfoRow icon={Globe} label="Site" value={data.website} href={data.website.startsWith("http") ? data.website : `https://${data.website}`} />}
-                {!data.landline_phone && !data.email && !data.instagram && !data.facebook && !data.website && (
-                  <p className="py-3 text-center text-xs text-muted-foreground">Outros canais de contato em breve</p>
+            {isInfoLoading ? (
+              <TabSkeleton />
+            ) : (
+              <>
+                {hasLocation && (
+                  <Card className="overflow-hidden rounded-2xl shadow-elegant">
+                    <div className="aspect-video w-full bg-muted">
+                      <iframe
+                        src={mapsEmbed}
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Mapa"
+                      />
+                    </div>
+                    <div className="p-5">
+                      {fullAddress && (
+                        <div className="flex items-start gap-3">
+                          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold">Localização</p>
+                            <p className="mt-0.5 text-sm text-muted-foreground">{fullAddress}</p>
+                          </div>
+                        </div>
+                      )}
+                      <Button asChild className="mt-3 w-full" variant="outline">
+                        <a href={mapsOpen} target="_blank" rel="noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
+                        </a>
+                      </Button>
+                    </div>
+                  </Card>
                 )}
-              </div>
-            </Card>
 
-            {data.description && (
-              <Card className="rounded-2xl p-5 shadow-elegant">
-                <h3 className="mb-2 font-display text-base font-bold">Sobre nós</h3>
-                <p className="text-sm text-muted-foreground">{data.description}</p>
-              </Card>
+                <Card className="rounded-2xl p-5 shadow-elegant">
+                  <h3 className="mb-3 font-display text-base font-bold">Informações</h3>
+                  {infoRows.length === 0 ? (
+                    <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma informação cadastrada.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {infoRows.map((row) => (
+                        <InfoRow key={row.label} icon={row.icon} label={row.label} value={String(row.value)} href={row.href} />
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {infoData?.description && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <h3 className="mb-2 font-display text-base font-bold">Descrição</h3>
+                    <p className="text-sm text-muted-foreground">{infoData.description}</p>
+                  </Card>
+                )}
+              </>
             )}
           </TabsContent>
 
           {/* PAGAMENTOS */}
           <TabsContent value="pagamentos" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
-            <PaymentGroup
-              title="Pagamento na entrega"
-              icon={Banknote}
-              methods={[
-                { key: "cash", label: "Dinheiro", note: "Aceita troco", icon: Banknote },
-                { key: "pix", label: "Pix", icon: Smartphone },
-                { key: "credit", label: "Cartão de Crédito", icon: CreditCard },
-                { key: "debit", label: "Cartão de Débito", icon: CreditCard },
-                { key: "meal_voucher", label: "Vale Refeição", icon: Utensils },
-                { key: "food_voucher", label: "Vale Alimentação", icon: Utensils },
-              ]}
-              pm={pm}
-            />
-            <PaymentGroup
-              title="Pagamento Online"
-              icon={Wallet}
-              methods={[
-                { key: "online_pix", label: "Pix Online", icon: Smartphone },
-                { key: "online_credit", label: "Cartão de Crédito Online", icon: CreditCard },
-                { key: "online_debit", label: "Cartão de Débito Online", icon: CreditCard },
-                { key: "google_pay", label: "Google Pay", icon: Wallet },
-                { key: "apple_pay", label: "Apple Pay", icon: Wallet },
-              ]}
-              pm={pm}
-            />
+            {isPaymentsLoading ? (
+              <TabSkeleton />
+            ) : (
+              <Card className="rounded-2xl p-5 shadow-elegant">
+                <div className="mb-4 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <h3 className="font-display text-base font-bold">Formas de Pagamento</h3>
+                </div>
+                {activePaymentMethods.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma forma de pagamento cadastrada.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {activePaymentMethods.map((method) => (
+                      <PaymentMethod key={method.key} icon={method.icon} label={method.label} />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -419,8 +573,24 @@ function SobrePage() {
 }
 
 function InfoRow({ icon: Icon, label, value, href }: { icon: any; label: string; value: string; href: string }) {
+  const isExternal = href.startsWith("http");
+  const isActionable = href.length > 0 && !href.endsWith("undefined") && !href.endsWith("null") && href !== "mailto:null" && href !== "tel:";
+  if (!isActionable) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
+        <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="truncate text-sm font-medium">{value}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40 hover:bg-muted/40">
+    <a href={href} target={isExternal ? "_blank" : undefined} rel="noreferrer" className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40 hover:bg-muted/40">
       <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
         <Icon className="h-4 w-4" />
       </div>
@@ -433,46 +603,22 @@ function InfoRow({ icon: Icon, label, value, href }: { icon: any; label: string;
   );
 }
 
-function PaymentGroup({
-  title,
-  icon: GroupIcon,
-  methods,
-  pm,
-}: {
-  title: string;
-  icon: any;
-  methods: { key: string; label: string; note?: string; icon: any }[];
-  pm: Record<string, boolean>;
-}) {
-  const enabled = methods.filter((m) => pm[m.key]);
+function PaymentMethod({ icon: Icon, label }: { icon: any; label: string }) {
   return (
-    <Card className="rounded-2xl p-5 shadow-elegant">
-      <div className="mb-4 flex items-center gap-2">
-        <GroupIcon className="h-5 w-5 text-primary" />
-        <h3 className="font-display text-base font-bold">{title}</h3>
-      </div>
-      {enabled.length === 0 ? (
-        <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma forma habilitada</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {methods.map((m) => {
-            const on = !!pm[m.key];
-            return (
-              <div
-                key={m.key}
-                className={`flex items-center gap-3 rounded-xl border p-3 transition ${on ? "border-success/30 bg-success/5" : "border-dashed opacity-50"}`}
-              >
-                <m.icon className={`h-5 w-5 shrink-0 ${on ? "text-success" : "text-muted-foreground"}`} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{m.label}</p>
-                  {m.note && on && <p className="text-[10px] text-muted-foreground">{m.note}</p>}
-                </div>
-                {on ? <CheckCircle2 className="h-4 w-4 text-success" /> : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Card>
+    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-3">
+      <Icon className="h-5 w-5 shrink-0 text-success" />
+      <p className="flex-1 text-sm font-medium">{label}</p>
+      <CheckCircle2 className="h-4 w-4 text-success" />
+    </div>
+  );
+}
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <Skeleton className="h-16 w-full rounded-2xl" />
+      <Skeleton className="h-16 w-full rounded-2xl" />
+    </div>
   );
 }
