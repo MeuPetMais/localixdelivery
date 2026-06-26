@@ -16,7 +16,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Bike, Loader2, Ticket, Check, Star, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/r/$slug")({
+export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
   component: PublicMenu,
 });
