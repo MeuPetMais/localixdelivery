@@ -619,19 +619,26 @@ export type Database = {
           delivery_radius: number | null
           delivery_time: string | null
           description: string | null
+          email: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
           is_open: boolean
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           manager_name: string | null
           min_order: number
           name: string
           opening_hours: Json | null
           owner_id: string
           owner_name: string | null
+          payment_methods: Json | null
           phone: string | null
           primary_color: string | null
           slug: string
           updated_at: string
+          website: string | null
           whatsapp_phone: string
         }
         Insert: {
@@ -645,19 +652,26 @@ export type Database = {
           delivery_radius?: number | null
           delivery_time?: string | null
           description?: string | null
+          email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_open?: boolean
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           manager_name?: string | null
           min_order?: number
           name: string
           opening_hours?: Json | null
           owner_id: string
           owner_name?: string | null
+          payment_methods?: Json | null
           phone?: string | null
           primary_color?: string | null
           slug: string
           updated_at?: string
+          website?: string | null
           whatsapp_phone: string
         }
         Update: {
@@ -671,19 +685,26 @@ export type Database = {
           delivery_radius?: number | null
           delivery_time?: string | null
           description?: string | null
+          email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_open?: boolean
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           manager_name?: string | null
           min_order?: number
           name?: string
           opening_hours?: Json | null
           owner_id?: string
           owner_name?: string | null
+          payment_methods?: Json | null
           phone?: string | null
           primary_color?: string | null
           slug?: string
           updated_at?: string
+          website?: string | null
           whatsapp_phone?: string
         }
         Relationships: []
@@ -828,43 +849,82 @@ export type Database = {
     Views: {
       restaurants_public: {
         Row: {
+          address: string | null
+          category: string | null
           cover_url: string | null
           created_at: string | null
           delivery_fee: number | null
+          delivery_radius: number | null
+          delivery_time: string | null
           description: string | null
+          email: string | null
+          facebook: string | null
           id: string | null
+          instagram: string | null
           is_open: boolean | null
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           min_order: number | null
           name: string | null
+          opening_hours: Json | null
+          payment_methods: Json | null
+          primary_color: string | null
           slug: string | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          category?: string | null
           cover_url?: string | null
           created_at?: string | null
           delivery_fee?: number | null
+          delivery_radius?: number | null
+          delivery_time?: string | null
           description?: string | null
+          email?: string | null
+          facebook?: string | null
           id?: string | null
+          instagram?: string | null
           is_open?: boolean | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           min_order?: number | null
           name?: string | null
+          opening_hours?: Json | null
+          payment_methods?: Json | null
+          primary_color?: string | null
           slug?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          category?: string | null
           cover_url?: string | null
           created_at?: string | null
           delivery_fee?: number | null
+          delivery_radius?: number | null
+          delivery_time?: string | null
           description?: string | null
+          email?: string | null
+          facebook?: string | null
           id?: string | null
+          instagram?: string | null
           is_open?: boolean | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           min_order?: number | null
           name?: string | null
+          opening_hours?: Json | null
+          payment_methods?: Json | null
+          primary_color?: string | null
           slug?: string | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
