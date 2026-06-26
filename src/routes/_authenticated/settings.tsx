@@ -37,7 +37,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Configurações — Localix" }] }),
+  head: () => ({ meta: [{ title: "Perfil do Estabelecimento — Localix" }] }),
   component: SettingsPage,
 });
 
@@ -93,21 +93,31 @@ function SettingsPage() {
     slug: "",
     description: "",
     whatsapp_phone: "",
+    landline_phone: "",
     logo_url: "",
     cover_url: "",
     delivery_fee: "0",
     min_order: "0",
     delivery_time: "",
     delivery_radius: "",
+    avg_delivery_minutes: "",
+    avg_pickup_minutes: "",
     primary_color: "orange",
     is_open: true,
     address: "",
+    address_number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zip_code: "",
     instagram: "",
     facebook: "",
     website: "",
     email: "",
     latitude: "",
     longitude: "",
+    google_maps_url: "",
   });
   const [payments, setPayments] = useState<Record<string, boolean>>({
     cash: true, pix: true, credit: true, debit: false,
@@ -131,21 +141,31 @@ function SettingsPage() {
       slug: r.slug,
       description: r.description ?? "",
       whatsapp_phone: r.whatsapp_phone,
+      landline_phone: r.landline_phone ?? "",
       logo_url: r.logo_url ?? "",
       cover_url: r.cover_url ?? "",
       delivery_fee: String(r.delivery_fee ?? 0),
       min_order: String(r.min_order ?? 0),
       delivery_time: r.delivery_time ?? "",
-      delivery_radius: String(r.delivery_radius ?? ""),
+      delivery_radius: r.delivery_radius != null ? String(r.delivery_radius) : "",
+      avg_delivery_minutes: r.avg_delivery_minutes != null ? String(r.avg_delivery_minutes) : "",
+      avg_pickup_minutes: r.avg_pickup_minutes != null ? String(r.avg_pickup_minutes) : "",
       primary_color: r.primary_color ?? "orange",
       is_open: r.is_open,
       address: r.address ?? "",
+      address_number: r.address_number ?? "",
+      complement: r.complement ?? "",
+      neighborhood: r.neighborhood ?? "",
+      city: r.city ?? "",
+      state: r.state ?? "",
+      zip_code: r.zip_code ?? "",
       instagram: r.instagram ?? "",
       facebook: r.facebook ?? "",
       website: r.website ?? "",
       email: r.email ?? "",
       latitude: r.latitude != null ? String(r.latitude) : "",
       longitude: r.longitude != null ? String(r.longitude) : "",
+      google_maps_url: r.google_maps_url ?? "",
     });
     const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
@@ -201,26 +221,36 @@ function SettingsPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    const toNum = (v: string) => (v ? Number(v.replace(",", ".")) : null);
+    const toInt = (v: string) => (v ? parseInt(v, 10) || null : null);
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
         description: form.description || null,
         whatsapp_phone: form.whatsapp_phone,
-        delivery_fee: Number(form.delivery_fee.replace(",", ".")) || 0,
-        min_order: Number(form.min_order.replace(",", ".")) || 0,
+        landline_phone: form.landline_phone || null,
+        delivery_fee: toNum(form.delivery_fee) ?? 0,
+        min_order: toNum(form.min_order) ?? 0,
         delivery_time: form.delivery_time || null,
-        delivery_radius: form.delivery_radius
-          ? Number(form.delivery_radius.replace(",", "."))
-          : null,
+        delivery_radius: toNum(form.delivery_radius),
+        avg_delivery_minutes: toInt(form.avg_delivery_minutes),
+        avg_pickup_minutes: toInt(form.avg_pickup_minutes),
         primary_color: form.primary_color,
         opening_hours: hours as any,
         address: form.address || null,
+        address_number: form.address_number || null,
+        complement: form.complement || null,
+        neighborhood: form.neighborhood || null,
+        city: form.city || null,
+        state: form.state || null,
+        zip_code: form.zip_code || null,
         instagram: form.instagram || null,
         facebook: form.facebook || null,
         website: form.website || null,
         email: form.email || null,
-        latitude: form.latitude ? Number(form.latitude.replace(",", ".")) : null,
-        longitude: form.longitude ? Number(form.longitude.replace(",", ".")) : null,
+        latitude: toNum(form.latitude),
+        longitude: toNum(form.longitude),
+        google_maps_url: form.google_maps_url || null,
         payment_methods: payments,
         updated_at: new Date().toISOString(),
       })
@@ -228,7 +258,7 @@ function SettingsPage() {
 
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Configurações salvas");
+    toast.success("Perfil atualizado");
     refetch();
   }
 
@@ -238,9 +268,9 @@ function SettingsPage() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Configurações</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Perfil do Estabelecimento</h1>
         <p className="text-sm text-muted-foreground">
-          Personalize a identidade visual e as regras da sua loja.
+          Todos os dados aqui aparecem automaticamente na sua página pública.
         </p>
       </div>
 
@@ -363,16 +393,28 @@ function SettingsPage() {
               />
               <p className="text-right text-xs text-muted-foreground">{form.name.length}/60</p>
             </div>
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" /> WhatsApp (com DDD)
-              </Label>
-              <Input
-                required
-                value={form.whatsapp_phone}
-                onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
-                placeholder="+55 11 99999-9999"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" /> WhatsApp (com DDD)
+                </Label>
+                <Input
+                  required
+                  value={form.whatsapp_phone}
+                  onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
+                  placeholder="+55 11 99999-9999"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" /> Telefone fixo
+                </Label>
+                <Input
+                  value={form.landline_phone}
+                  onChange={(e) => setForm({ ...form, landline_phone: e.target.value })}
+                  placeholder="(11) 3000-0000"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Descrição</Label>
@@ -427,6 +469,40 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Tempo médio de entrega
+              </Label>
+              <Input
+                placeholder="30-45 min"
+                value={form.delivery_time}
+                onChange={(e) => setForm({ ...form, delivery_time: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Entrega (minutos, número)
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="40"
+                value={form.avg_delivery_minutes}
+                onChange={(e) => setForm({ ...form, avg_delivery_minutes: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <ShoppingBag className="h-3.5 w-3.5" /> Retirada (minutos)
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="15"
+                value={form.avg_pickup_minutes}
+                onChange={(e) => setForm({ ...form, avg_pickup_minutes: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" /> Raio de atendimento (km)
               </Label>
               <Input
@@ -445,13 +521,68 @@ function SettingsPage() {
             <h3 className="text-lg font-bold">Endereço & Localização</h3>
           </div>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Endereço completo</Label>
-              <Input
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Rua, número, bairro, cidade — UF"
-              />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_140px]">
+              <div className="space-y-1.5">
+                <Label>Rua / Logradouro</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Av. Paulista"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Número</Label>
+                <Input
+                  value={form.address_number}
+                  onChange={(e) => setForm({ ...form, address_number: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Complemento</Label>
+                <Input
+                  value={form.complement}
+                  onChange={(e) => setForm({ ...form, complement: e.target.value })}
+                  placeholder="Loja 2"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Bairro</Label>
+                <Input
+                  value={form.neighborhood}
+                  onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+                  placeholder="Centro"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_80px_140px]">
+              <div className="space-y-1.5">
+                <Label>Cidade</Label>
+                <Input
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="São Paulo"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>UF</Label>
+                <Input
+                  maxLength={2}
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
+                  placeholder="SP"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>CEP</Label>
+                <Input
+                  value={form.zip_code}
+                  onChange={(e) => setForm({ ...form, zip_code: e.target.value })}
+                  placeholder="01310-000"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -471,8 +602,19 @@ function SettingsPage() {
                 />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> Link do Google Maps
+              </Label>
+              <Input
+                value={form.google_maps_url}
+                onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })}
+                placeholder="https://maps.app.goo.gl/..."
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              Sem coordenadas, o mapa usa o endereço informado.
+              Se preencher o link do Google Maps, ele será usado no botão "Abrir no Maps".
+              Sem coordenadas nem link, o mapa usa o endereço informado.
             </p>
           </div>
         </Card>
