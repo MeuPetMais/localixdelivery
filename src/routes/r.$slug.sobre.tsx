@@ -49,13 +49,28 @@ const DAYS = [
   { id: "sat", label: "Sábado", jsDay: 6 },
 ];
 
-const MOCK_REVIEWS = [
-  { id: "1", name: "Ana S.", rating: 5, comment: "Comida sensacional, chegou rapidinho!", date: "Há 2 dias", reply: "Obrigado, Ana! Volte sempre 💚" },
-  { id: "2", name: "Carlos M.", rating: 5, comment: "Melhor da região, sem dúvidas.", date: "Há 4 dias" },
-  { id: "3", name: "Júlia P.", rating: 4, comment: "Muito bom, só demorou um pouquinho.", date: "Há 1 semana" },
-  { id: "4", name: "Roberto F.", rating: 5, comment: "Atendimento nota 10!", date: "Há 1 semana", reply: "Valeu, Roberto!" },
-  { id: "5", name: "Marina L.", rating: 4, comment: "Sabor excelente, embalagem caprichada.", date: "Há 2 semanas" },
-];
+type Review = {
+  id: string;
+  customer_name: string | null;
+  rating: number;
+  comment: string | null;
+  owner_reply: string | null;
+  created_at: string;
+};
+
+function timeAgo(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)} h`;
+  const d = Math.floor(diff / 86400);
+  if (d < 7) return `há ${d} ${d === 1 ? "dia" : "dias"}`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `há ${w} ${w === 1 ? "semana" : "semanas"}`;
+  const m = Math.floor(d / 30);
+  return `há ${m} ${m === 1 ? "mês" : "meses"}`;
+}
+
 
 function isOpenNow(hours: Hours | null | undefined): boolean {
   if (!hours) return false;
