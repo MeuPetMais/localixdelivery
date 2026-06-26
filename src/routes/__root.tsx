@@ -118,7 +118,27 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <CustomerBottomNav />
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }
+
+const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
+  (p) => p === "/",
+  (p) => p.startsWith("/buscar"),
+  (p) => p.startsWith("/favoritos"),
+  (p) => p.startsWith("/meus-pedidos"),
+  (p) => p.startsWith("/cliente"),
+  (p) => p.startsWith("/pedido"),
+];
+
+function CustomerBottomNav() {
+  const pathname = useRouter().state.location.pathname;
+  const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
+  if (!show) return null;
+  // Lazy import to keep root bundle lean and avoid SSR pathname loops.
+  const { BottomNav } = require("@/components/BottomNav") as typeof import("@/components/BottomNav");
+  return <BottomNav />;
+}
+
