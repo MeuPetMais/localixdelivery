@@ -38,7 +38,7 @@ export const Route = createFileRoute("/r/$slug/sobre")({
   component: SobrePage,
 });
 
-type Hours = Record<string, { open: string; close: string; enabled: boolean }>;
+type Hours = Record<string, { open: string; close: string; enabled: boolean; open2?: string | null; close2?: string | null }>;
 const DAYS = [
   { id: "sun", label: "Domingo", jsDay: 0 },
   { id: "mon", label: "Segunda", jsDay: 1 },
@@ -72,6 +72,14 @@ function timeAgo(iso: string) {
 }
 
 
+function inShift(curr: number, open: string, close: string) {
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  const o = oh * 60 + om;
+  const c = ch * 60 + cm;
+  return c > o ? curr >= o && curr <= c : curr >= o || curr <= c;
+}
+
 function isOpenNow(hours: Hours | null | undefined): boolean {
   if (!hours) return false;
   const now = new Date();
@@ -79,12 +87,10 @@ function isOpenNow(hours: Hours | null | undefined): boolean {
   if (!day) return false;
   const h = hours[day.id];
   if (!h?.enabled) return false;
-  const [oh, om] = h.open.split(":").map(Number);
-  const [ch, cm] = h.close.split(":").map(Number);
   const curr = now.getHours() * 60 + now.getMinutes();
-  const open = oh * 60 + om;
-  const close = ch * 60 + cm;
-  return close > open ? curr >= open && curr <= close : curr >= open || curr <= close;
+  if (inShift(curr, h.open, h.close)) return true;
+  if (h.open2 && h.close2 && inShift(curr, h.open2, h.close2)) return true;
+  return false;
 }
 
 function SobrePage() {
@@ -311,7 +317,12 @@ function SobrePage() {
                         {d.label} {isToday && <span className="ml-1 text-xs">(hoje)</span>}
                       </span>
                       {h?.enabled ? (
-                        <span className="text-sm font-mono">{h.open} — {h.close}</span>
+                        <div className="text-right text-sm font-mono">
+                          <div>{h.open} — {h.close}</div>
+                          {h.open2 && h.close2 && (
+                            <div>{h.open2} — {h.close2}</div>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">Fechado</span>
                       )}
