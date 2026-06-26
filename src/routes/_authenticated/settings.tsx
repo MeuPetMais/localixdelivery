@@ -438,6 +438,128 @@ function SettingsPage() {
           </div>
         </Card>
 
+        {/* SEÇÃO — Endereço & Localização */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Endereço & Localização</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Endereço completo</Label>
+              <Input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="Rua, número, bairro, cidade — UF"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Latitude</Label>
+                <Input
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                  placeholder="-23.55052"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Longitude</Label>
+                <Input
+                  value={form.longitude}
+                  onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                  placeholder="-46.633308"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sem coordenadas, o mapa usa o endereço informado.
+            </p>
+          </div>
+        </Card>
+
+        {/* SEÇÃO — Redes Sociais */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Redes Sociais & Contato</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Instagram className="h-3.5 w-3.5" /> Instagram</Label>
+              <Input value={form.instagram} onChange={(e) => setForm({ ...form, instagram: e.target.value })} placeholder="@sualoja" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5" /> Facebook</Label>
+              <Input value={form.facebook} onChange={(e) => setForm({ ...form, facebook: e.target.value })} placeholder="sualoja" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Site</Label>
+              <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> E-mail</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="contato@loja.com" />
+            </div>
+          </div>
+        </Card>
+
+        {/* SEÇÃO — Formas de Pagamento */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Formas de Pagamento</h3>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Na entrega</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[
+                  { k: "cash", l: "Dinheiro" },
+                  { k: "pix", l: "Pix" },
+                  { k: "credit", l: "Crédito" },
+                  { k: "debit", l: "Débito" },
+                  { k: "meal_voucher", l: "Vale Refeição" },
+                  { k: "food_voucher", l: "Vale Alimentação" },
+                ].map((m) => (
+                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!payments[m.k]}
+                      onChange={(e) => setPayments({ ...payments, [m.k]: e.target.checked })}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{m.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Online</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[
+                  { k: "online_pix", l: "Pix Online" },
+                  { k: "online_credit", l: "Crédito Online" },
+                  { k: "online_debit", l: "Débito Online" },
+                  { k: "google_pay", l: "Google Pay" },
+                  { k: "apple_pay", l: "Apple Pay" },
+                ].map((m) => (
+                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!payments[m.k]}
+                      onChange={(e) => setPayments({ ...payments, [m.k]: e.target.checked })}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{m.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+
+
         {/* SEÇÃO 5 — Link Público */}
         <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
           <div className="mb-4 flex items-center gap-2">
