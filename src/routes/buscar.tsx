@@ -39,7 +39,7 @@ function BuscarPage() {
         </div>
       </main>
       <BottomNavSpacer />
-      <BottomNav />
+      
     </div>
   );
 }
