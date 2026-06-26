@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -147,6 +149,7 @@ function SobrePage() {
   const { tab } = Route.useSearch();
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const getWhatsApp = useServerFn(getPublicRestaurantWhatsApp);
 
   const { data: restaurant, isLoading: isRestaurantLoading } = useQuery({
     queryKey: ["public-restaurant-base", slug],
@@ -206,6 +209,12 @@ function SobrePage() {
       if (error) throw error;
       return rest as InfoData | null;
     },
+  });
+
+  const { data: whatsappData } = useQuery({
+    queryKey: ["public-restaurant-whatsapp-contact", slug],
+    enabled: tab === "info" && !!slug,
+    queryFn: () => getWhatsApp({ data: { slug } }),
   });
 
   const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
@@ -288,7 +297,7 @@ function SobrePage() {
     { icon: MapPin, label: "Estado", value: infoData.state, href: mapsOpen },
     { icon: MapPin, label: "CEP", value: infoData.zip_code, href: mapsOpen },
     { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
-    { icon: MessageCircle, label: "WhatsApp", value: "Falar pelo WhatsApp", href: `/r/${slug}` },
+    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/r/${slug}` },
     { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
     { icon: Facebook, label: "Facebook", value: infoData.facebook, href: infoData.facebook?.startsWith("http") ? infoData.facebook : `https://facebook.com/${infoData.facebook}` },
     { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
