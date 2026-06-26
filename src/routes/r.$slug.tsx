@@ -203,6 +203,31 @@ function PublicMenu() {
           </div>
         </Card>
 
+        {/* quick access buttons */}
+        <div className="mt-5 grid grid-cols-4 gap-2 sm:gap-3">
+          {[
+            { tab: "avaliacoes", icon: Star, label: "Avaliações" },
+            { tab: "horarios", icon: Clock, label: "Horários" },
+            { tab: "info", icon: ImageIcon, label: "Informações" },
+            { tab: "pagamentos", icon: Ticket, label: "Pagamentos" },
+          ].map((b) => (
+            <Link
+              key={b.tab}
+              to="/r/$slug/sobre"
+              params={{ slug }}
+              search={{ tab: b.tab }}
+              className="group flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 shadow-elegant transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-premium"
+            >
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                <b.icon className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-semibold sm:text-xs">{b.label}</span>
+            </Link>
+          ))}
+        </div>
+
+
+
 
 
 

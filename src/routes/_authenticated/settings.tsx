@@ -27,7 +27,13 @@ import {
   Palette,
   CalendarDays,
   Power,
+  Instagram,
+  Facebook,
+  Globe,
+  Mail,
+  CreditCard,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -95,7 +101,21 @@ function SettingsPage() {
     delivery_radius: "",
     primary_color: "orange",
     is_open: true,
+    address: "",
+    instagram: "",
+    facebook: "",
+    website: "",
+    email: "",
+    latitude: "",
+    longitude: "",
   });
+  const [payments, setPayments] = useState<Record<string, boolean>>({
+    cash: true, pix: true, credit: true, debit: false,
+    meal_voucher: false, food_voucher: false,
+    online_pix: false, online_credit: false, online_debit: false,
+    google_pay: false, apple_pay: false,
+  });
+
   const [hours, setHours] = useState<Hours>(DEFAULT_HOURS);
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -105,23 +125,33 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!restaurant) return;
+    const r = restaurant as any;
     setForm({
-      name: restaurant.name,
-      slug: restaurant.slug,
-      description: restaurant.description ?? "",
-      whatsapp_phone: restaurant.whatsapp_phone,
-      logo_url: restaurant.logo_url ?? "",
-      cover_url: restaurant.cover_url ?? "",
-      delivery_fee: String(restaurant.delivery_fee ?? 0),
-      min_order: String(restaurant.min_order ?? 0),
-      delivery_time: (restaurant as any).delivery_time ?? "",
-      delivery_radius: String((restaurant as any).delivery_radius ?? ""),
-      primary_color: (restaurant as any).primary_color ?? "orange",
-      is_open: restaurant.is_open,
+      name: r.name,
+      slug: r.slug,
+      description: r.description ?? "",
+      whatsapp_phone: r.whatsapp_phone,
+      logo_url: r.logo_url ?? "",
+      cover_url: r.cover_url ?? "",
+      delivery_fee: String(r.delivery_fee ?? 0),
+      min_order: String(r.min_order ?? 0),
+      delivery_time: r.delivery_time ?? "",
+      delivery_radius: String(r.delivery_radius ?? ""),
+      primary_color: r.primary_color ?? "orange",
+      is_open: r.is_open,
+      address: r.address ?? "",
+      instagram: r.instagram ?? "",
+      facebook: r.facebook ?? "",
+      website: r.website ?? "",
+      email: r.email ?? "",
+      latitude: r.latitude != null ? String(r.latitude) : "",
+      longitude: r.longitude != null ? String(r.longitude) : "",
     });
-    const h = (restaurant as any).opening_hours as Hours | null;
+    const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
+    if (r.payment_methods) setPayments((p) => ({ ...p, ...r.payment_methods }));
   }, [restaurant]);
+
 
   if (!restaurant)
     return <Card className="p-8 text-center">Crie seu restaurante primeiro no painel.</Card>;
@@ -171,8 +201,7 @@ function SettingsPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase
-      .from("restaurants")
+    const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
         description: form.description || null,
@@ -185,9 +214,18 @@ function SettingsPage() {
           : null,
         primary_color: form.primary_color,
         opening_hours: hours as any,
+        address: form.address || null,
+        instagram: form.instagram || null,
+        facebook: form.facebook || null,
+        website: form.website || null,
+        email: form.email || null,
+        latitude: form.latitude ? Number(form.latitude.replace(",", ".")) : null,
+        longitude: form.longitude ? Number(form.longitude.replace(",", ".")) : null,
+        payment_methods: payments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", restaurant!.id);
+
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
@@ -399,6 +437,128 @@ function SettingsPage() {
             </div>
           </div>
         </Card>
+
+        {/* SEÇÃO — Endereço & Localização */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Endereço & Localização</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Endereço completo</Label>
+              <Input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="Rua, número, bairro, cidade — UF"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Latitude</Label>
+                <Input
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                  placeholder="-23.55052"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Longitude</Label>
+                <Input
+                  value={form.longitude}
+                  onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                  placeholder="-46.633308"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sem coordenadas, o mapa usa o endereço informado.
+            </p>
+          </div>
+        </Card>
+
+        {/* SEÇÃO — Redes Sociais */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Redes Sociais & Contato</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Instagram className="h-3.5 w-3.5" /> Instagram</Label>
+              <Input value={form.instagram} onChange={(e) => setForm({ ...form, instagram: e.target.value })} placeholder="@sualoja" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5" /> Facebook</Label>
+              <Input value={form.facebook} onChange={(e) => setForm({ ...form, facebook: e.target.value })} placeholder="sualoja" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Site</Label>
+              <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> E-mail</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="contato@loja.com" />
+            </div>
+          </div>
+        </Card>
+
+        {/* SEÇÃO — Formas de Pagamento */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Formas de Pagamento</h3>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Na entrega</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[
+                  { k: "cash", l: "Dinheiro" },
+                  { k: "pix", l: "Pix" },
+                  { k: "credit", l: "Crédito" },
+                  { k: "debit", l: "Débito" },
+                  { k: "meal_voucher", l: "Vale Refeição" },
+                  { k: "food_voucher", l: "Vale Alimentação" },
+                ].map((m) => (
+                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!payments[m.k]}
+                      onChange={(e) => setPayments({ ...payments, [m.k]: e.target.checked })}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{m.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Online</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[
+                  { k: "online_pix", l: "Pix Online" },
+                  { k: "online_credit", l: "Crédito Online" },
+                  { k: "online_debit", l: "Débito Online" },
+                  { k: "google_pay", l: "Google Pay" },
+                  { k: "apple_pay", l: "Apple Pay" },
+                ].map((m) => (
+                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!payments[m.k]}
+                      onChange={(e) => setPayments({ ...payments, [m.k]: e.target.checked })}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{m.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+
 
         {/* SEÇÃO 5 — Link Público */}
         <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
