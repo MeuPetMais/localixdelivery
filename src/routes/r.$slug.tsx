@@ -141,49 +141,50 @@ function PublicMenu() {
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
       {/* cover */}
-      <div className="relative h-[180px] w-full overflow-hidden bg-gradient-warm sm:h-[220px]">
+      <div className="relative h-[200px] w-full overflow-hidden rounded-b-2xl bg-gradient-warm" style={{ zIndex: 1 }}>
         {restaurant.cover_url && <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover" />}
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-3xl px-4">
         {/* premium store card */}
-        <Card className="-mt-8 overflow-visible rounded-3xl border bg-card p-5 pt-4 shadow-premium sm:-mt-10">
-          <div className="flex items-start gap-4">
-            <div className="-mt-12 shrink-0 sm:-mt-14">
-              {restaurant.logo_url ? (
-                <img
-                  src={restaurant.logo_url}
-                  alt={restaurant.name}
-                  className="h-[88px] w-[88px] rounded-2xl border-4 border-card bg-white object-cover shadow-elegant sm:h-[100px] sm:w-[100px]"
-                />
-              ) : (
-                <div className="grid h-[88px] w-[88px] place-items-center rounded-2xl border-4 border-card bg-gradient-warm text-3xl font-extrabold text-primary-foreground shadow-elegant sm:h-[100px] sm:w-[100px]">
-                  {restaurant.name[0]}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                  {restaurant.is_open ? "● Aberto" : "● Fechado"}
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm">
-                  <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                  <span className="font-semibold">4.8</span>
-                </span>
-                {restaurant.category && (
-                  <span className="text-xs text-muted-foreground">· {restaurant.category}</span>
-                )}
+        <Card className="relative rounded-3xl border bg-card p-5 shadow-premium" style={{ marginTop: "-50px", zIndex: 5 }}>
+          {/* logo absolute inside card */}
+          <div className="absolute" style={{ top: "-45px", left: "24px", zIndex: 10 }}>
+            {restaurant.logo_url ? (
+              <img
+                src={restaurant.logo_url}
+                alt={restaurant.name}
+                className="h-24 w-24 rounded-2xl border-4 border-card bg-white object-cover shadow-elegant"
+              />
+            ) : (
+              <div className="grid h-24 w-24 place-items-center rounded-2xl border-4 border-card bg-gradient-warm text-3xl font-extrabold text-primary-foreground shadow-elegant">
+                {restaurant.name[0]}
               </div>
-              {restaurant.description && (
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>
+            )}
+          </div>
+
+          {/* content shifted right of logo */}
+          <div style={{ paddingLeft: "112px", minHeight: "80px" }}>
+            <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
+            <div className="flex flex-wrap items-center gap-2" style={{ marginTop: "8px" }}>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                {restaurant.is_open ? "● Aberto" : "● Fechado"}
+              </span>
+              <span className="inline-flex items-center gap-1 text-sm">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="font-semibold">4.8</span>
+              </span>
+              {restaurant.category && (
+                <span className="text-xs text-muted-foreground">· {restaurant.category}</span>
               )}
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+          {restaurant.description && (
+            <p className="line-clamp-2 text-sm text-muted-foreground" style={{ marginTop: "8px" }}>{restaurant.description}</p>
+          )}
+
+          <div className="grid grid-cols-3 gap-2 sm:gap-3" style={{ marginTop: "20px" }}>
             <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
               <Clock className="mx-auto mb-1 h-4 w-4 text-primary" />
               <p className="text-xs font-bold text-foreground sm:text-sm">30–45 min</p>
@@ -201,6 +202,8 @@ function PublicMenu() {
             </div>
           </div>
         </Card>
+
+
 
 
         {/* category chips */}
