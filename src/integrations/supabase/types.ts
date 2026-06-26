@@ -611,8 +611,13 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          address_number: string | null
+          avg_delivery_minutes: number | null
+          avg_pickup_minutes: number | null
           category: string | null
+          city: string | null
           cnpj: string | null
+          complement: string | null
           cover_url: string | null
           created_at: string
           delivery_fee: number
@@ -621,15 +626,18 @@ export type Database = {
           description: string | null
           email: string | null
           facebook: string | null
+          google_maps_url: string | null
           id: string
           instagram: string | null
           is_open: boolean
+          landline_phone: string | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
           manager_name: string | null
           min_order: number
           name: string
+          neighborhood: string | null
           opening_hours: Json | null
           owner_id: string
           owner_name: string | null
@@ -637,15 +645,22 @@ export type Database = {
           phone: string | null
           primary_color: string | null
           slug: string
+          state: string | null
           updated_at: string
           website: string | null
           whatsapp_phone: string
+          zip_code: string | null
         }
         Insert: {
           active?: boolean
           address?: string | null
+          address_number?: string | null
+          avg_delivery_minutes?: number | null
+          avg_pickup_minutes?: number | null
           category?: string | null
+          city?: string | null
           cnpj?: string | null
+          complement?: string | null
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
@@ -654,15 +669,18 @@ export type Database = {
           description?: string | null
           email?: string | null
           facebook?: string | null
+          google_maps_url?: string | null
           id?: string
           instagram?: string | null
           is_open?: boolean
+          landline_phone?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           manager_name?: string | null
           min_order?: number
           name: string
+          neighborhood?: string | null
           opening_hours?: Json | null
           owner_id: string
           owner_name?: string | null
@@ -670,15 +688,22 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           slug: string
+          state?: string | null
           updated_at?: string
           website?: string | null
           whatsapp_phone: string
+          zip_code?: string | null
         }
         Update: {
           active?: boolean
           address?: string | null
+          address_number?: string | null
+          avg_delivery_minutes?: number | null
+          avg_pickup_minutes?: number | null
           category?: string | null
+          city?: string | null
           cnpj?: string | null
+          complement?: string | null
           cover_url?: string | null
           created_at?: string
           delivery_fee?: number
@@ -687,15 +712,18 @@ export type Database = {
           description?: string | null
           email?: string | null
           facebook?: string | null
+          google_maps_url?: string | null
           id?: string
           instagram?: string | null
           is_open?: boolean
+          landline_phone?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           manager_name?: string | null
           min_order?: number
           name?: string
+          neighborhood?: string | null
           opening_hours?: Json | null
           owner_id?: string
           owner_name?: string | null
@@ -703,9 +731,11 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           slug?: string
+          state?: string | null
           updated_at?: string
           website?: string | null
           whatsapp_phone?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
@@ -914,7 +944,12 @@ export type Database = {
       restaurants_public: {
         Row: {
           address: string | null
+          address_number: string | null
+          avg_delivery_minutes: number | null
+          avg_pickup_minutes: number | null
           category: string | null
+          city: string | null
+          complement: string | null
           cover_url: string | null
           created_at: string | null
           delivery_fee: number | null
@@ -923,24 +958,34 @@ export type Database = {
           description: string | null
           email: string | null
           facebook: string | null
+          google_maps_url: string | null
           id: string | null
           instagram: string | null
           is_open: boolean | null
+          landline_phone: string | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
           min_order: number | null
           name: string | null
+          neighborhood: string | null
           opening_hours: Json | null
           payment_methods: Json | null
           primary_color: string | null
           slug: string | null
+          state: string | null
           updated_at: string | null
           website: string | null
+          zip_code: string | null
         }
         Insert: {
           address?: string | null
+          address_number?: string | null
+          avg_delivery_minutes?: number | null
+          avg_pickup_minutes?: number | null
           category?: string | null
+          city?: string | null
+          complement?: string | null
           cover_url?: string | null
           created_at?: string | null
           delivery_fee?: number | null
@@ -949,24 +994,34 @@ export type Database = {
           description?: string | null
           email?: string | null
           facebook?: string | null
+          google_maps_url?: string | null
           id?: string | null
           instagram?: string | null
           is_open?: boolean | null
+          landline_phone?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           min_order?: number | null
           name?: string | null
+          neighborhood?: string | null
           opening_hours?: Json | null
           payment_methods?: Json | null
           primary_color?: string | null
           slug?: string | null
+          state?: string | null
           updated_at?: string | null
           website?: string | null
+          zip_code?: string | null
         }
         Update: {
           address?: string | null
+          address_number?: string | null
+          avg_delivery_minutes?: number | null
+          avg_pickup_minutes?: number | null
           category?: string | null
+          city?: string | null
+          complement?: string | null
           cover_url?: string | null
           created_at?: string | null
           delivery_fee?: number | null
@@ -975,20 +1030,25 @@ export type Database = {
           description?: string | null
           email?: string | null
           facebook?: string | null
+          google_maps_url?: string | null
           id?: string | null
           instagram?: string | null
           is_open?: boolean | null
+          landline_phone?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           min_order?: number | null
           name?: string | null
+          neighborhood?: string | null
           opening_hours?: Json | null
           payment_methods?: Json | null
           primary_color?: string | null
           slug?: string | null
+          state?: string | null
           updated_at?: string | null
           website?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }
