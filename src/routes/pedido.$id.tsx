@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { brl } from "@/lib/format";
 import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ReviewForm } from "@/components/ReviewForm";
+
 
 export const Route = createFileRoute("/pedido/$id")({
   head: () => ({ meta: [{ title: "Acompanhar Pedido — Localix" }] }),
