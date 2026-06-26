@@ -558,15 +558,7 @@ function SobrePage() {
           </TabsContent>
 
 
-                {infoData?.description && (
-                  <Card className="rounded-2xl p-5 shadow-elegant">
-                    <h3 className="mb-2 font-display text-base font-bold">Descrição</h3>
-                    <p className="text-sm text-muted-foreground">{infoData.description}</p>
-                  </Card>
-                )}
-              </>
-            )}
-          </TabsContent>
+
 
           {/* PAGAMENTOS */}
           <TabsContent value="pagamentos" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
