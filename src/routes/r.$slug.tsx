@@ -141,56 +141,67 @@ function PublicMenu() {
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
       {/* cover */}
-      <div className="relative h-[180px] w-full overflow-hidden bg-gradient-warm">
+      <div className="relative h-[180px] w-full overflow-hidden bg-gradient-warm sm:h-[220px]">
         {restaurant.cover_url && <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-3xl px-4">
         {/* premium store card */}
-        <Card className="-mt-16 overflow-hidden rounded-3xl border bg-card p-5 shadow-premium">
+        <Card className="-mt-8 overflow-visible rounded-3xl border bg-card p-5 pt-4 shadow-premium sm:-mt-10">
           <div className="flex items-start gap-4">
-            {restaurant.logo_url ? (
-              <img src={restaurant.logo_url} alt={restaurant.name} className="h-24 w-24 shrink-0 rounded-2xl border-4 border-card bg-card object-cover shadow-elegant" />
-            ) : (
-              <div className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl border-4 border-card bg-gradient-warm text-3xl font-extrabold text-primary-foreground shadow-elegant">
-                {restaurant.name[0]}
-              </div>
-            )}
-            <div className="min-w-0 flex-1 pt-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate font-display text-2xl font-extrabold leading-tight">{restaurant.name}</h1>
+            <div className="-mt-12 shrink-0 sm:-mt-14">
+              {restaurant.logo_url ? (
+                <img
+                  src={restaurant.logo_url}
+                  alt={restaurant.name}
+                  className="h-[88px] w-[88px] rounded-2xl border-4 border-card bg-white object-cover shadow-elegant sm:h-[100px] sm:w-[100px]"
+                />
+              ) : (
+                <div className="grid h-[88px] w-[88px] place-items-center rounded-2xl border-4 border-card bg-gradient-warm text-3xl font-extrabold text-primary-foreground shadow-elegant sm:h-[100px] sm:w-[100px]">
+                  {restaurant.name[0]}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
                   {restaurant.is_open ? "● Aberto" : "● Fechado"}
                 </span>
+                <span className="inline-flex items-center gap-1 text-sm">
+                  <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                  <span className="font-semibold">4.8</span>
+                </span>
+                {restaurant.category && (
+                  <span className="text-xs text-muted-foreground">· {restaurant.category}</span>
+                )}
               </div>
-              {restaurant.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>}
-              <div className="mt-2 flex items-center gap-1 text-sm">
-                <Star className="h-4 w-4 fill-warning text-warning" />
-                <span className="font-semibold">4.8</span>
-                <span className="text-muted-foreground">· {restaurant.category ?? "Restaurante"}</span>
-              </div>
+              {restaurant.description && (
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>
+              )}
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-2xl border bg-muted/40 text-center text-xs">
-            <div className="px-2 py-3">
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
               <Clock className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="font-bold text-foreground">30–45 min</p>
-              <p className="text-muted-foreground">Entrega</p>
+              <p className="text-xs font-bold text-foreground sm:text-sm">30–45 min</p>
+              <p className="text-[10px] text-muted-foreground sm:text-xs">Entrega</p>
             </div>
-            <div className="px-2 py-3">
+            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
               <Bike className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="font-bold text-foreground">{Number(restaurant.delivery_fee) === 0 ? "Grátis" : brl(restaurant.delivery_fee)}</p>
-              <p className="text-muted-foreground">Taxa</p>
+              <p className="text-xs font-bold text-foreground sm:text-sm">{Number(restaurant.delivery_fee) === 0 ? "Grátis" : brl(restaurant.delivery_fee)}</p>
+              <p className="text-[10px] text-muted-foreground sm:text-xs">Taxa</p>
             </div>
-            <div className="px-2 py-3">
+            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
               <ShoppingBag className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="font-bold text-foreground">{brl(restaurant.min_order)}</p>
-              <p className="text-muted-foreground">Mínimo</p>
+              <p className="text-xs font-bold text-foreground sm:text-sm">{brl(restaurant.min_order)}</p>
+              <p className="text-[10px] text-muted-foreground sm:text-xs">Mínimo</p>
             </div>
           </div>
         </Card>
+
 
         {/* category chips */}
         {categories.length > 0 && (
