@@ -14,7 +14,6 @@ import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
@@ -32,6 +31,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as RSlugIndexRouteImport } from './routes/r.$slug.index'
 import { Route as RSlugSobreRouteImport } from './routes/r.$slug.sobre'
 
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
@@ -56,11 +56,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RSlugRoute = RSlugRouteImport.update({
-  id: '/r/$slug',
-  path: '/r/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PedidoIdRoute = PedidoIdRouteImport.update({
@@ -148,10 +143,15 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const RSlugIndexRoute = RSlugIndexRouteImport.update({
+  id: '/r/$slug/',
+  path: '/r/$slug/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RSlugSobreRoute = RSlugSobreRouteImport.update({
-  id: '/sobre',
-  path: '/sobre',
-  getParentRoute: () => RSlugRoute,
+  id: '/r/$slug/sobre',
+  path: '/r/$slug/sobre',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -176,8 +176,8 @@ export interface FileRoutesByFullPath {
   '/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/sobre': typeof RSlugSobreRoute
+  '/r/$slug/': typeof RSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -201,8 +201,8 @@ export interface FileRoutesByTo {
   '/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/sobre': typeof RSlugSobreRoute
+  '/r/$slug': typeof RSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -228,8 +228,8 @@ export interface FileRoutesById {
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/sobre': typeof RSlugSobreRoute
+  '/r/$slug/': typeof RSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -255,8 +255,8 @@ export interface FileRouteTypes {
     | '/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
-    | '/r/$slug'
     | '/r/$slug/sobre'
+    | '/r/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -280,8 +280,8 @@ export interface FileRouteTypes {
     | '/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
-    | '/r/$slug'
     | '/r/$slug/sobre'
+    | '/r/$slug'
   id:
     | '__root__'
     | '/'
@@ -306,8 +306,8 @@ export interface FileRouteTypes {
     | '/_authenticated/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
-    | '/r/$slug'
     | '/r/$slug/sobre'
+    | '/r/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -318,7 +318,8 @@ export interface RootRouteChildren {
   MeusPedidosRoute: typeof MeusPedidosRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
-  RSlugRoute: typeof RSlugRouteWithChildren
+  RSlugSobreRoute: typeof RSlugSobreRoute
+  RSlugIndexRoute: typeof RSlugIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -356,13 +357,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/r/$slug': {
-      id: '/r/$slug'
-      path: '/r/$slug'
-      fullPath: '/r/$slug'
-      preLoaderRoute: typeof RSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pedido/$id': {
@@ -484,12 +478,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/r/$slug/': {
+      id: '/r/$slug/'
+      path: '/r/$slug'
+      fullPath: '/r/$slug/'
+      preLoaderRoute: typeof RSlugIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/r/$slug/sobre': {
       id: '/r/$slug/sobre'
-      path: '/sobre'
+      path: '/r/$slug/sobre'
       fullPath: '/r/$slug/sobre'
       preLoaderRoute: typeof RSlugSobreRouteImport
-      parentRoute: typeof RSlugRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -533,16 +534,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface RSlugRouteChildren {
-  RSlugSobreRoute: typeof RSlugSobreRoute
-}
-
-const RSlugRouteChildren: RSlugRouteChildren = {
-  RSlugSobreRoute: RSlugSobreRoute,
-}
-
-const RSlugRouteWithChildren = RSlugRoute._addFileChildren(RSlugRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -551,18 +542,9 @@ const rootRouteChildren: RootRouteChildren = {
   MeusPedidosRoute: MeusPedidosRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
-  RSlugRoute: RSlugRouteWithChildren,
+  RSlugSobreRoute: RSlugSobreRoute,
+  RSlugIndexRoute: RSlugIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
