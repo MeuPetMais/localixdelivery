@@ -1,0 +1,2 @@
+ALTER VIEW public.restaurants_public SET (security_invoker = on);
+GRANT SELECT (id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, created_at, updated_at, address, category, primary_color, delivery_time, delivery_radius, opening_hours, instagram, facebook, website, email, latitude, longitude, payment_methods, active) ON public.restaurants TO anon, authenticated;
