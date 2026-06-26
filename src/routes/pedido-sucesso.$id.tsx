@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
-import { CheckCircle2, Clock, CreditCard, Loader2, MapPin, ArrowRight, Store } from "lucide-react";
+import { CheckCircle2, Clock, CreditCard, Loader2, MapPin, ArrowRight, Store, Gift } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
