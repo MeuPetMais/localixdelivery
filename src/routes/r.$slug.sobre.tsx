@@ -152,11 +152,18 @@ function SobrePage() {
   }
 
   const openNow = isOpenNow(data.opening_hours);
+  const fullAddress = [
+    [data.address, data.address_number].filter(Boolean).join(", "),
+    data.complement,
+    data.neighborhood,
+    [data.city, data.state].filter(Boolean).join(" - "),
+    data.zip_code,
+  ].filter(Boolean).join(" · ");
   const mapsQuery = data.latitude && data.longitude
     ? `${data.latitude},${data.longitude}`
-    : encodeURIComponent(data.address ?? data.name);
+    : encodeURIComponent(fullAddress || data.name);
   const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
-  const mapsOpen = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+  const mapsOpen = data.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 
   const pm = data.payment_methods ?? {};
 
@@ -332,7 +339,7 @@ function SobrePage() {
                   <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                   <div className="flex-1">
                     <p className="text-sm font-semibold">Endereço</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{data.address ?? "Endereço não informado"}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{fullAddress || "Endereço não informado"}</p>
                   </div>
                 </div>
                 <Button asChild className="mt-3 w-full" variant="outline">
