@@ -53,6 +53,8 @@ function AuthLayout() {
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
     { to: "/customers", label: "Clientes", icon: Users },
     { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
+    { to: "/reviews", label: "Avaliações", icon: Star },
+
     { to: "/ai", label: "Central de IA", icon: Brain },
     { to: "/consultor", label: "Consultor IA", icon: Bot },
     { to: "/finance", label: "Financeiro", icon: Wallet },
