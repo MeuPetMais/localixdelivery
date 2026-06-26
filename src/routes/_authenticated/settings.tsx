@@ -101,7 +101,21 @@ function SettingsPage() {
     delivery_radius: "",
     primary_color: "orange",
     is_open: true,
+    address: "",
+    instagram: "",
+    facebook: "",
+    website: "",
+    email: "",
+    latitude: "",
+    longitude: "",
   });
+  const [payments, setPayments] = useState<Record<string, boolean>>({
+    cash: true, pix: true, credit: true, debit: false,
+    meal_voucher: false, food_voucher: false,
+    online_pix: false, online_credit: false, online_debit: false,
+    google_pay: false, apple_pay: false,
+  });
+
   const [hours, setHours] = useState<Hours>(DEFAULT_HOURS);
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
