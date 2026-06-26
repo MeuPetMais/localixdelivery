@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
-import { CheckCircle2, Clock, CreditCard, Loader2, MapPin, ArrowRight, Store } from "lucide-react";
+import { CheckCircle2, Clock, CreditCard, Loader2, MapPin, ArrowRight, Store, Gift } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
@@ -16,6 +17,7 @@ function SuccessPage() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -68,9 +70,32 @@ function SuccessPage() {
           </div>
         </Card>
 
+        {!user && (
+          <Card className="mt-4 border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                <Gift className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold">Crie sua conta em 30 segundos</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Acompanhe pedidos, acumule pontos e receba ofertas exclusivas. Seu pedido já está garantido.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" onClick={() => navigate({ to: "/auth" })}>Criar conta</Button>
+                  <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/pedido/$id", params: { id } })}>
+                    Agora não
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <p className="mt-4 text-center text-xs text-muted-foreground">
           <Link to="/meus-pedidos" className="hover:underline">Ver meus pedidos</Link>
         </p>
+
       </main>
     </div>
   );
