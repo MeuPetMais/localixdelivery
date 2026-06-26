@@ -277,27 +277,17 @@ function SobrePage() {
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
   const openNow = isOpenNow(hours);
-  const fullAddress = infoData ? [
-    [infoData.address, infoData.address_number].filter(Boolean).join(", "),
-    infoData.complement,
-    infoData.neighborhood,
-    [infoData.city, infoData.state].filter(Boolean).join(" - "),
-    infoData.zip_code,
-  ].filter(Boolean).join(" · ") : "";
-  const hasLocation = !!infoData && !!(infoData.google_maps_url || (infoData.latitude && infoData.longitude) || fullAddress);
+  const addrLine1 = infoData ? [infoData.address, infoData.address_number].filter(isFilled).join(", ") : "";
+  const addrLine2 = infoData ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")].filter((v) => isFilled(v) && v !== "").join(" · ") : "";
+  const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code].filter((v) => isFilled(v) && v !== "").join(" · ");
+  const hasAddress = !!infoData && (isFilled(infoData.address) || isFilled(infoData.city) || isFilled(infoData.state) || isFilled(infoData.neighborhood) || isFilled(infoData.zip_code));
+  const hasMap = !!infoData && (isFilled(infoData.google_maps_url) || (isFilled(infoData.latitude) && isFilled(infoData.longitude)) || hasAddress);
   const mapsQuery = infoData?.latitude && infoData?.longitude
     ? `${infoData.latitude},${infoData.longitude}`
     : encodeURIComponent(fullAddress || infoData?.name || restaurant.name);
   const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
   const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-  const infoRows = infoData ? [
-    { icon: MapPin, label: "Endereço", value: infoData.address, href: mapsOpen },
-    { icon: MapPin, label: "Número", value: infoData.address_number, href: mapsOpen },
-    { icon: MapPin, label: "Complemento", value: infoData.complement, href: mapsOpen },
-    { icon: MapPin, label: "Bairro", value: infoData.neighborhood, href: mapsOpen },
-    { icon: MapPin, label: "Cidade", value: infoData.city, href: mapsOpen },
-    { icon: MapPin, label: "Estado", value: infoData.state, href: mapsOpen },
-    { icon: MapPin, label: "CEP", value: infoData.zip_code, href: mapsOpen },
+  const contactRows = infoData ? [
     { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
     { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/r/${slug}` },
     { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
@@ -305,6 +295,8 @@ function SobrePage() {
     { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
     { icon: Mail, label: "E-mail", value: infoData.email, href: `mailto:${infoData.email}` },
   ].filter((row) => isFilled(row.value)) : [];
+  const hasAnyInfo = hasAddress || contactRows.length > 0 || isFilled(infoData?.description);
+
 
   const pm = paymentsData?.payment_methods ?? {};
   const paymentMethods = [
