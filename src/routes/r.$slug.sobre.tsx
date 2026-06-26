@@ -336,7 +336,30 @@ function SobrePage() {
   ];
   const activePaymentMethods = paymentMethods.filter((method) => method.keys.some((key) => !!pm[key]));
 
+  console.log("[sobre] === RENDER ===", {
+    tab,
+    slug,
+    restaurantId,
+    "Render Info": infoData,
+    "Render Hours": hoursData,
+    "Render Payments": paymentsData,
+    "Render Reviews": reviews,
+    "Render WhatsApp": whatsappData,
+    derived: {
+      hasAddress,
+      hasMap,
+      hasAnyInfo,
+      contactRowsCount: contactRows.length,
+      activePaymentMethodsCount: activePaymentMethods.length,
+      hasHours,
+      openNow,
+      reviewsCount: reviews.length,
+    },
+    loading: { isRestaurantLoading, isInfoLoading, isHoursLoading, isPaymentsLoading, isReviewsLoading },
+  });
+
   return (
+
     <div className="min-h-screen bg-muted/30 pb-12 animate-in fade-in duration-300">
       {/* header */}
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
