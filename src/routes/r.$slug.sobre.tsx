@@ -239,37 +239,43 @@ function SobrePage() {
             </div>
 
             <div className="space-y-3">
-              {filteredReviews.map((r) => (
-                <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                        {r.name[0]}
+              {filteredReviews.map((r) => {
+                const displayName = r.customer_name?.trim() || "Cliente";
+                return (
+                  <Card key={r.id} className="rounded-2xl p-4 shadow-elegant">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
+                          {displayName[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{displayName}</p>
+                          <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.date}</p>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                        ))}
                       </div>
                     </div>
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-3 text-sm">{r.comment}</p>
-                  {r.reply && (
-                    <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/40 p-3">
-                      <p className="text-xs font-bold text-primary">Resposta do estabelecimento</p>
-                      <p className="mt-1 text-sm">{r.reply}</p>
-                    </div>
-                  )}
-                </Card>
-              ))}
+                    {r.comment && <p className="mt-3 text-sm">{r.comment}</p>}
+                    {r.owner_reply && (
+                      <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/40 p-3">
+                        <p className="text-xs font-bold text-primary">Resposta do estabelecimento</p>
+                        <p className="mt-1 text-sm">{r.owner_reply}</p>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
               {filteredReviews.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma avaliação encontrada</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {reviews.length === 0 ? "Seja o primeiro a avaliar este estabelecimento!" : "Nenhuma avaliação encontrada"}
+                </p>
               )}
             </div>
+
             <p className="text-center text-xs text-muted-foreground">
               Apenas clientes que finalizaram pedido podem avaliar.
             </p>
