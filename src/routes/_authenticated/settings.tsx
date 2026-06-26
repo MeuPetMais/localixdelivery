@@ -172,7 +172,14 @@ function SettingsPage() {
     });
     const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
-    if (r.payment_methods) setPayments((p) => ({ ...p, ...r.payment_methods }));
+    if (r.payment_methods) {
+      const saved = r.payment_methods as Record<string, boolean>;
+      setPayments((p) => ({
+        ...p,
+        ...saved,
+        online_card: !!(saved.online_card || saved.online_credit || saved.online_debit),
+      }));
+    }
   }, [restaurant]);
 
 
@@ -226,6 +233,11 @@ function SettingsPage() {
     setLoading(true);
     const toNum = (v: string) => (v ? Number(v.replace(",", ".")) : null);
     const toInt = (v: string) => (v ? parseInt(v, 10) || null : null);
+    const normalizedPayments = {
+      ...payments,
+      online_credit: !!(payments.online_card || payments.online_credit),
+      online_debit: !!(payments.online_card || payments.online_debit),
+    };
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
@@ -254,7 +266,7 @@ function SettingsPage() {
         latitude: toNum(form.latitude),
         longitude: toNum(form.longitude),
         google_maps_url: form.google_maps_url || null,
-        payment_methods: payments,
+        payment_methods: normalizedPayments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", restaurant!.id);
