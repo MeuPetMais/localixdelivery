@@ -297,22 +297,21 @@ function SobrePage() {
 
   const pm = paymentsData?.payment_methods ?? {};
   const paymentMethods = [
-    { key: "pix", label: "Pix", icon: Smartphone },
-    { key: "cash", label: "Dinheiro", icon: Banknote },
-    { key: "credit", label: "Cartão Crédito", icon: CreditCard },
-    { key: "debit", label: "Cartão Débito", icon: CreditCard },
-    { key: "meal_voucher", label: "Vale Refeição", icon: Utensils },
-    { key: "food_voucher", label: "Vale Alimentação", icon: Utensils },
-    { key: "ticket", label: "Ticket", icon: Utensils },
-    { key: "alelo", label: "Alelo", icon: Utensils },
-    { key: "sodexo", label: "Sodexo", icon: Utensils },
-    { key: "vr", label: "VR", icon: Utensils },
-    { key: "ben", label: "Ben", icon: Utensils },
-    { key: "online_pix", label: "Pix Online", icon: Smartphone },
-    { key: "online_credit", label: "Cartão Online", icon: Wallet },
-    { key: "online_debit", label: "Cartão Online", icon: Wallet },
+    { keys: ["pix"], label: "Pix", icon: Smartphone },
+    { keys: ["cash"], label: "Dinheiro", icon: Banknote },
+    { keys: ["credit"], label: "Cartão Crédito", icon: CreditCard },
+    { keys: ["debit"], label: "Cartão Débito", icon: CreditCard },
+    { keys: ["meal_voucher"], label: "Vale Refeição", icon: Utensils },
+    { keys: ["food_voucher"], label: "Vale Alimentação", icon: Utensils },
+    { keys: ["ticket"], label: "Ticket", icon: Utensils },
+    { keys: ["alelo"], label: "Alelo", icon: Utensils },
+    { keys: ["sodexo"], label: "Sodexo", icon: Utensils },
+    { keys: ["vr"], label: "VR", icon: Utensils },
+    { keys: ["ben"], label: "Ben", icon: Utensils },
+    { keys: ["online_pix"], label: "Pix Online", icon: Smartphone },
+    { keys: ["online_card", "online_credit", "online_debit"], label: "Cartão Online", icon: Wallet },
   ];
-  const activePaymentMethods = paymentMethods.filter((method) => !!pm[method.key]);
+  const activePaymentMethods = paymentMethods.filter((method) => method.keys.some((key) => !!pm[key]));
 
   return (
     <div className="min-h-screen bg-muted/30 pb-12 animate-in fade-in duration-300">
@@ -559,7 +558,7 @@ function SobrePage() {
                 ) : (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activePaymentMethods.map((method) => (
-                      <PaymentMethod key={method.key} icon={method.icon} label={method.label} />
+                      <PaymentMethod key={method.label} icon={method.icon} label={method.label} />
                     ))}
                   </div>
                 )}
