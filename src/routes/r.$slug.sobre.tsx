@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +89,7 @@ function isOpenNow(hours: Hours | null | undefined): boolean {
 
 function SobrePage() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
   const { tab } = Route.useSearch();
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -177,7 +178,7 @@ function SobrePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-4 pt-4">
-        <Tabs defaultValue={tab} className="w-full">
+        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/r/$slug/sobre", params: { slug }, search: { tab: v } })} className="w-full">
           <TabsList className="grid h-12 w-full grid-cols-4 rounded-2xl bg-card p-1 shadow-elegant">
             <TabsTrigger value="avaliacoes" className="rounded-xl text-xs sm:text-sm">
               <Star className="mr-1 h-3.5 w-3.5" /> Avaliações
