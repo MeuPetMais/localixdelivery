@@ -125,23 +125,33 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!restaurant) return;
+    const r = restaurant as any;
     setForm({
-      name: restaurant.name,
-      slug: restaurant.slug,
-      description: restaurant.description ?? "",
-      whatsapp_phone: restaurant.whatsapp_phone,
-      logo_url: restaurant.logo_url ?? "",
-      cover_url: restaurant.cover_url ?? "",
-      delivery_fee: String(restaurant.delivery_fee ?? 0),
-      min_order: String(restaurant.min_order ?? 0),
-      delivery_time: (restaurant as any).delivery_time ?? "",
-      delivery_radius: String((restaurant as any).delivery_radius ?? ""),
-      primary_color: (restaurant as any).primary_color ?? "orange",
-      is_open: restaurant.is_open,
+      name: r.name,
+      slug: r.slug,
+      description: r.description ?? "",
+      whatsapp_phone: r.whatsapp_phone,
+      logo_url: r.logo_url ?? "",
+      cover_url: r.cover_url ?? "",
+      delivery_fee: String(r.delivery_fee ?? 0),
+      min_order: String(r.min_order ?? 0),
+      delivery_time: r.delivery_time ?? "",
+      delivery_radius: String(r.delivery_radius ?? ""),
+      primary_color: r.primary_color ?? "orange",
+      is_open: r.is_open,
+      address: r.address ?? "",
+      instagram: r.instagram ?? "",
+      facebook: r.facebook ?? "",
+      website: r.website ?? "",
+      email: r.email ?? "",
+      latitude: r.latitude != null ? String(r.latitude) : "",
+      longitude: r.longitude != null ? String(r.longitude) : "",
     });
-    const h = (restaurant as any).opening_hours as Hours | null;
+    const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
+    if (r.payment_methods) setPayments((p) => ({ ...p, ...r.payment_methods }));
   }, [restaurant]);
+
 
   if (!restaurant)
     return <Card className="p-8 text-center">Crie seu restaurante primeiro no painel.</Card>;
