@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
@@ -26,15 +27,19 @@ function PublicMenu() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["public-restaurant", slug],
+    enabled: !!slug,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
     queryFn: async () => {
-      const { data: rest } = await (supabase as any)
+      const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("*")
         .eq("slug", slug)
         .maybeSingle();
-      if (!rest) return null;
+      if (error) throw error;
+      if (!rest) return { restaurant: null, categories: [], items: [] };
       const [cats, items] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
@@ -45,6 +50,11 @@ function PublicMenu() {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [openSheet, setOpenSheet] = useState(false);
+  const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
+  }, [data, activeCat]);
 
   useEffect(() => {
     try {
@@ -72,9 +82,31 @@ function PublicMenu() {
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
+  if (isLoading || (!data && !isError)) {
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <div className="h-[180px] w-full animate-pulse bg-muted" />
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="-mt-16 rounded-3xl border bg-card p-5 shadow-premium">
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-24 w-24 rounded-2xl" />
+              <div className="flex-1 space-y-2 pt-2">
+                <Skeleton className="h-6 w-2/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+            <Skeleton className="mt-4 h-16 w-full rounded-2xl" />
+          </div>
+          <div className="mt-6 space-y-3">
+            {[0,1,2,3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!data) return (
+  if (!data || !data.restaurant) return (
     <div className="grid min-h-screen place-items-center px-4 text-center">
       <div>
         <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
@@ -86,8 +118,6 @@ function PublicMenu() {
 
   const { restaurant, categories, items } = data;
 
-  const firstCatId = categories[0]?.id;
-  const [activeCat, setActiveCat] = useState<string | undefined>(firstCatId);
 
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
