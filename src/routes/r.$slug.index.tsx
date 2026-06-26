@@ -184,23 +184,55 @@ function PublicMenu() {
             <p className="line-clamp-2 text-sm text-muted-foreground" style={{ marginTop: "8px" }}>{restaurant.description}</p>
           )}
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3" style={{ marginTop: "20px" }}>
-            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
-              <Clock className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="text-xs font-bold text-foreground sm:text-sm">30–45 min</p>
-              <p className="text-[10px] text-muted-foreground sm:text-xs">Entrega</p>
-            </div>
-            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
-              <Bike className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="text-xs font-bold text-foreground sm:text-sm">{Number(restaurant.delivery_fee) === 0 ? "Grátis" : brl(restaurant.delivery_fee)}</p>
-              <p className="text-[10px] text-muted-foreground sm:text-xs">Taxa</p>
-            </div>
-            <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
-              <ShoppingBag className="mx-auto mb-1 h-4 w-4 text-primary" />
-              <p className="text-xs font-bold text-foreground sm:text-sm">{brl(restaurant.min_order)}</p>
-              <p className="text-[10px] text-muted-foreground sm:text-xs">Mínimo</p>
-            </div>
-          </div>
+          {(() => {
+            const PAYMENT_LABELS: Record<string, string> = {
+              pix: "Pix", cash: "Dinheiro", credit: "Crédito", debit: "Débito",
+              meal_voucher: "VR", food_voucher: "VA", ticket: "Ticket", alelo: "Alelo",
+              sodexo: "Sodexo", vr: "VR", ben: "Ben",
+              online_pix: "Pix online", online_credit: "Crédito online", online_debit: "Débito online", online_card: "Cartão online",
+              apple_pay: "Apple Pay", google_pay: "Google Pay",
+            };
+            const pm = (restaurant.payment_methods ?? {}) as Record<string, boolean>;
+            const enabled = Object.entries(pm).filter(([, v]) => v).map(([k]) => PAYMENT_LABELS[k] ?? k);
+            const paymentsSummary = enabled.length === 0
+              ? "—"
+              : enabled.length <= 2
+                ? enabled.join(" • ")
+                : `${enabled.slice(0, 2).join(" • ")} +${enabled.length - 2}`;
+
+            const avgDel = Number(restaurant.avg_delivery_minutes ?? 0);
+            const avgPick = Number(restaurant.avg_pickup_minutes ?? 0);
+            const timeLabel = restaurant.delivery_time?.trim()
+              ? restaurant.delivery_time
+              : avgDel > 0
+                ? `${Math.max(10, avgDel - 10)}–${avgDel + 5} min`
+                : "—";
+            const modality = avgDel > 0 && avgPick > 0
+              ? "Entrega e Retirada"
+              : avgPick > 0
+                ? "Retirada"
+                : "Entrega";
+
+            return (
+              <div className="grid grid-cols-3 gap-2 sm:gap-3" style={{ marginTop: "20px" }}>
+                <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
+                  <div className="mb-1 text-lg leading-none">🕒</div>
+                  <p className="text-xs font-bold text-foreground sm:text-sm">{timeLabel}</p>
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">Tempo</p>
+                </div>
+                <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
+                  <div className="mb-1 text-lg leading-none">🚚</div>
+                  <p className="text-xs font-bold leading-tight text-foreground sm:text-sm">{modality}</p>
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">Modalidade</p>
+                </div>
+                <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
+                  <div className="mb-1 text-lg leading-none">💳</div>
+                  <p className="line-clamp-1 text-xs font-bold text-foreground sm:text-sm">{paymentsSummary}</p>
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">Pagamentos</p>
+                </div>
+              </div>
+            );
+          })()}
         </Card>
 
         {/* quick access buttons */}
