@@ -325,7 +325,8 @@ function SobrePage() {
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">Fechado</span>
-                      )}
+                    </div>
+                  );
                 })}
               </div>
             </Card>
