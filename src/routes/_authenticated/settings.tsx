@@ -276,6 +276,58 @@ function SettingsPage() {
         </p>
       </div>
 
+      {/* AUDITORIA DE COMPLETUDE */}
+      {(() => {
+        const checks = [
+          { label: "Logo", ok: !!form.logo_url },
+          { label: "Capa", ok: !!form.cover_url },
+          { label: "Descrição", ok: !!form.description },
+          { label: "WhatsApp", ok: !!form.whatsapp_phone },
+          { label: "Endereço completo", ok: !!(form.address && form.city && form.state) },
+          { label: "Tempo de entrega", ok: !!form.delivery_time },
+          { label: "Pagamentos", ok: Object.values(payments).some(Boolean) },
+          { label: "Horários", ok: Object.values(hours).some((h) => h.enabled) },
+          { label: "Redes sociais", ok: !!(form.instagram || form.facebook || form.website) },
+        ];
+        const done = checks.filter((c) => c.ok).length;
+        const pct = Math.round((done / checks.length) * 100);
+        return (
+          <Card className="rounded-2xl border-border/60 p-5 shadow-elegant">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">Perfil {pct}% completo</p>
+                <p className="text-xs text-muted-foreground">
+                  {done} de {checks.length} itens preenchidos
+                </p>
+              </div>
+              <Badge variant={pct === 100 ? "default" : "secondary"}>
+                {pct === 100 ? "Tudo pronto" : "Continue"}
+              </Badge>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {checks.map((c) => (
+                <span
+                  key={c.label}
+                  className={`rounded-full border px-2.5 py-1 text-xs ${
+                    c.ok
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {c.ok ? "✓" : "○"} {c.label}
+                </span>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* SEÇÃO 1 — Perfil da Loja */}
       <Card className="overflow-hidden rounded-2xl border-border/60 shadow-elegant">
         <div className="relative h-32 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent" />
