@@ -393,16 +393,28 @@ function SettingsPage() {
               />
               <p className="text-right text-xs text-muted-foreground">{form.name.length}/60</p>
             </div>
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" /> WhatsApp (com DDD)
-              </Label>
-              <Input
-                required
-                value={form.whatsapp_phone}
-                onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
-                placeholder="+55 11 99999-9999"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" /> WhatsApp (com DDD)
+                </Label>
+                <Input
+                  required
+                  value={form.whatsapp_phone}
+                  onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
+                  placeholder="+55 11 99999-9999"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" /> Telefone fixo
+                </Label>
+                <Input
+                  value={form.landline_phone}
+                  onChange={(e) => setForm({ ...form, landline_phone: e.target.value })}
+                  placeholder="(11) 3000-0000"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Descrição</Label>
@@ -457,6 +469,40 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Tempo médio de entrega
+              </Label>
+              <Input
+                placeholder="30-45 min"
+                value={form.delivery_time}
+                onChange={(e) => setForm({ ...form, delivery_time: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Entrega (minutos, número)
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="40"
+                value={form.avg_delivery_minutes}
+                onChange={(e) => setForm({ ...form, avg_delivery_minutes: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <ShoppingBag className="h-3.5 w-3.5" /> Retirada (minutos)
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="15"
+                value={form.avg_pickup_minutes}
+                onChange={(e) => setForm({ ...form, avg_pickup_minutes: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" /> Raio de atendimento (km)
               </Label>
               <Input
@@ -475,14 +521,81 @@ function SettingsPage() {
             <h3 className="text-lg font-bold">Endereço & Localização</h3>
           </div>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Endereço completo</Label>
-              <Input
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Rua, número, bairro, cidade — UF"
-              />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_140px]">
+              <div className="space-y-1.5">
+                <Label>Rua / Logradouro</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Av. Paulista"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Número</Label>
+                <Input
+                  value={form.address_number}
+                  onChange={(e) => setForm({ ...form, address_number: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
             </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Complemento</Label>
+                <Input
+                  value={form.complement}
+                  onChange={(e) => setForm({ ...form, complement: e.target.value })}
+                  placeholder="Loja 2"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Bairro</Label>
+                <Input
+                  value={form.neighborhood}
+                  onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+                  placeholder="Centro"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_80px_140px]">
+              <div className="space-y-1.5">
+                <Label>Cidade</Label>
+                <Input
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="São Paulo"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>UF</Label>
+                <Input
+                  maxLength={2}
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
+                  placeholder="SP"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>CEP</Label>
+                <Input
+                  value={form.zip_code}
+                  onChange={(e) => setForm({ ...form, zip_code: e.target.value })}
+                  placeholder="01310-000"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Latitude</Label>
+                <Input
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                  placeholder="-23.55052"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Longitude</Label>
+                <Input
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Latitude</Label>
