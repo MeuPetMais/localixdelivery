@@ -18,9 +18,11 @@ import {
   Building2,
   Store,
   Bot,
+  Star,
   Menu as MenuIcon,
   X,
 } from "lucide-react";
+
 import { useIsAdmin } from "@/hooks/use-role";
 
 export const Route = createFileRoute("/_authenticated")({
