@@ -13,7 +13,7 @@ function maskPhone(value: string | null | undefined) {
   return `${digits.slice(0, visibleStart)} •••••-${digits.slice(-4)}`;
 }
 
-export const getPublicRestaurantWhatsApp = createServerFn({ method: "GET" })
+export const getPublicRestaurantWhatsApp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
