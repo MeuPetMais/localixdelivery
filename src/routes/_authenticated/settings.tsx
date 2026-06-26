@@ -596,26 +596,25 @@ function SettingsPage() {
               <div className="space-y-1.5">
                 <Label>Longitude</Label>
                 <Input
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Latitude</Label>
-                <Input
-                  value={form.latitude}
-                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                  placeholder="-23.55052"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Longitude</Label>
-                <Input
                   value={form.longitude}
                   onChange={(e) => setForm({ ...form, longitude: e.target.value })}
                   placeholder="-46.633308"
                 />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> Link do Google Maps
+              </Label>
+              <Input
+                value={form.google_maps_url}
+                onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })}
+                placeholder="https://maps.app.goo.gl/..."
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              Sem coordenadas, o mapa usa o endereço informado.
+              Se preencher o link do Google Maps, ele será usado no botão "Abrir no Maps".
+              Sem coordenadas nem link, o mapa usa o endereço informado.
             </p>
           </div>
         </Card>
