@@ -158,12 +158,14 @@ function SobrePage() {
     enabled: !!slug,
     retry: 3,
     queryFn: async () => {
+      console.log("[sobre] public-restaurant-base → slug:", slug, "| query: restaurants_public.select(id,name,slug).eq(slug,", slug, ").maybeSingle()");
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
+      if (error) { console.error("[sobre] public-restaurant-base ERROR:", error); throw error; }
+      console.log("[sobre] public-restaurant-base ← returned:", rest, "| restaurant.id:", rest?.id);
       return rest as RestaurantBase | null;
     },
   });
@@ -174,13 +176,15 @@ function SobrePage() {
     queryKey: ["public-reviews", restaurantId],
     enabled: tab === "avaliacoes" && !!restaurantId,
     queryFn: async () => {
+      console.log("[sobre] public-reviews → restaurant_id:", restaurantId);
       const { data: rows, error } = await (supabase as any)
         .from("reviews")
         .select("id, customer_name, rating, comment, created_at")
         .eq("restaurant_id", restaurantId!)
         .order("created_at", { ascending: false })
         .limit(100);
-      if (error) throw error;
+      if (error) { console.error("[sobre] public-reviews ERROR:", error); throw error; }
+      console.log("[sobre] public-reviews ← count:", rows?.length ?? 0, "| rows:", rows);
       return (rows ?? []) as Review[];
     },
   });
@@ -189,12 +193,14 @@ function SobrePage() {
     queryKey: ["public-restaurant-hours", slug],
     enabled: tab === "horarios" && !!slug,
     queryFn: async () => {
+      console.log("[sobre] public-restaurant-hours → slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, opening_hours")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
+      if (error) { console.error("[sobre] public-restaurant-hours ERROR:", error); throw error; }
+      console.log("[sobre] public-restaurant-hours ← returned:", rest, "| opening_hours:", rest?.opening_hours);
       return rest as HoursData | null;
     },
   });
@@ -203,12 +209,15 @@ function SobrePage() {
     queryKey: ["public-restaurant-info", slug],
     enabled: tab === "info" && !!slug,
     queryFn: async () => {
+      console.log("[sobre] public-restaurant-info → slug:", slug, "| columns: id,name,slug,description,address,address_number,complement,neighborhood,city,state,zip_code,landline_phone,instagram,facebook,website,email,latitude,longitude,google_maps_url");
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, description, address, address_number, complement, neighborhood, city, state, zip_code, landline_phone, instagram, facebook, website, email, latitude, longitude, google_maps_url")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
+      if (error) { console.error("[sobre] public-restaurant-info ERROR:", error); throw error; }
+      console.log("[sobre] public-restaurant-info ← returned object:", rest);
+      if (rest) console.table(rest);
       return rest as InfoData | null;
     },
   });
@@ -216,22 +225,33 @@ function SobrePage() {
   const { data: whatsappData } = useQuery({
     queryKey: ["public-restaurant-whatsapp-contact", slug],
     enabled: tab === "info" && !!slug,
-    queryFn: () => getWhatsApp({ data: { slug } }),
+    queryFn: async () => {
+      console.log("[sobre] public-restaurant-whatsapp-contact → slug:", slug);
+      const r = await getWhatsApp({ data: { slug } });
+      console.log("[sobre] public-restaurant-whatsapp-contact ← returned:", r);
+      return r;
+    },
   });
 
   const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
     queryKey: ["public-restaurant-payments", slug],
     enabled: tab === "pagamentos" && !!slug,
     queryFn: async () => {
+      console.log("[sobre] public-restaurant-payments → slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, payment_methods")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
+      if (error) { console.error("[sobre] public-restaurant-payments ERROR:", error); throw error; }
+      const methods = rest?.payment_methods ?? {};
+      const active = Object.entries(methods).filter(([, v]) => !!v).map(([k]) => k);
+      console.log("[sobre] public-restaurant-payments ← returned:", rest, "| active methods:", active);
       return rest as PaymentsData | null;
     },
   });
+
+
 
   const stats = useMemo(() => {
     const total = reviews.length;
