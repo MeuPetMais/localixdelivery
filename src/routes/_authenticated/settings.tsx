@@ -776,49 +776,103 @@ function SettingsPage() {
             <CalendarDays className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-bold">Horário de Funcionamento</h3>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {DAYS.map((d) => {
               const h = hours[d.id];
+              const hasShift2 = h.open2 != null && h.close2 != null;
               return (
                 <div
                   key={d.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border bg-card/50 p-3 sm:grid-cols-[140px_1fr_auto]"
+                  className="rounded-xl border bg-card/50 p-3 space-y-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={h.enabled}
-                      onChange={(e) =>
-                        setHours({ ...hours, [d.id]: { ...h, enabled: e.target.checked } })
-                      }
-                      className="h-4 w-4 accent-primary"
-                    />
-                    <span className="font-medium">{d.label}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={h.enabled}
+                        onChange={(e) =>
+                          setHours({ ...hours, [d.id]: { ...h, enabled: e.target.checked } })
+                        }
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span className="font-medium w-20">{d.label}</span>
+                    </label>
+                    <Badge variant={h.enabled ? "default" : "secondary"}>
+                      {h.enabled ? "Aberto" : "Fechado"}
+                    </Badge>
                   </div>
-                  <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
-                    <Input
-                      type="time"
-                      value={h.open}
-                      disabled={!h.enabled}
-                      onChange={(e) =>
-                        setHours({ ...hours, [d.id]: { ...h, open: e.target.value } })
-                      }
-                      className="w-32"
-                    />
-                    <span className="text-muted-foreground">às</span>
-                    <Input
-                      type="time"
-                      value={h.close}
-                      disabled={!h.enabled}
-                      onChange={(e) =>
-                        setHours({ ...hours, [d.id]: { ...h, close: e.target.value } })
-                      }
-                      className="w-32"
-                    />
-                  </div>
-                  <Badge variant={h.enabled ? "default" : "secondary"} className="justify-self-end">
-                    {h.enabled ? "Aberto" : "Fechado"}
-                  </Badge>
+
+                  {h.enabled && (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground w-16">1º turno</span>
+                        <Input
+                          type="time"
+                          value={h.open}
+                          onChange={(e) =>
+                            setHours({ ...hours, [d.id]: { ...h, open: e.target.value } })
+                          }
+                          className="w-32"
+                        />
+                        <span className="text-muted-foreground">às</span>
+                        <Input
+                          type="time"
+                          value={h.close}
+                          onChange={(e) =>
+                            setHours({ ...hours, [d.id]: { ...h, close: e.target.value } })
+                          }
+                          className="w-32"
+                        />
+                      </div>
+
+                      {hasShift2 ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground w-16">2º turno</span>
+                          <Input
+                            type="time"
+                            value={h.open2 ?? ""}
+                            onChange={(e) =>
+                              setHours({ ...hours, [d.id]: { ...h, open2: e.target.value } })
+                            }
+                            className="w-32"
+                          />
+                          <span className="text-muted-foreground">às</span>
+                          <Input
+                            type="time"
+                            value={h.close2 ?? ""}
+                            onChange={(e) =>
+                              setHours({ ...hours, [d.id]: { ...h, close2: e.target.value } })
+                            }
+                            className="w-32"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setHours({ ...hours, [d.id]: { ...h, open2: null, close2: null } })
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setHours({
+                              ...hours,
+                              [d.id]: { ...h, open2: "18:00", close2: "22:00" },
+                            })
+                          }
+                        >
+                          + Adicionar 2º turno (ex: almoço e jantar)
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               );
             })}
