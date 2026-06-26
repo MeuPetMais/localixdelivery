@@ -124,7 +124,8 @@ function SettingsPage() {
   const [payments, setPayments] = useState<Record<string, boolean>>({
     cash: true, pix: true, credit: true, debit: false,
     meal_voucher: false, food_voucher: false,
-    online_pix: false, online_credit: false, online_debit: false,
+    ticket: false, alelo: false, sodexo: false, vr: false, ben: false,
+    online_pix: false, online_card: false, online_credit: false, online_debit: false,
     google_pay: false, apple_pay: false,
   });
 
@@ -171,7 +172,14 @@ function SettingsPage() {
     });
     const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
-    if (r.payment_methods) setPayments((p) => ({ ...p, ...r.payment_methods }));
+    if (r.payment_methods) {
+      const saved = r.payment_methods as Record<string, boolean>;
+      setPayments((p) => ({
+        ...p,
+        ...saved,
+        online_card: !!(saved.online_card || saved.online_credit || saved.online_debit),
+      }));
+    }
   }, [restaurant]);
 
 
@@ -225,6 +233,11 @@ function SettingsPage() {
     setLoading(true);
     const toNum = (v: string) => (v ? Number(v.replace(",", ".")) : null);
     const toInt = (v: string) => (v ? parseInt(v, 10) || null : null);
+    const normalizedPayments = {
+      ...payments,
+      online_credit: !!(payments.online_card || payments.online_credit),
+      online_debit: !!(payments.online_card || payments.online_debit),
+    };
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
@@ -253,7 +266,7 @@ function SettingsPage() {
         latitude: toNum(form.latitude),
         longitude: toNum(form.longitude),
         google_maps_url: form.google_maps_url || null,
-        payment_methods: payments,
+        payment_methods: normalizedPayments,
         updated_at: new Date().toISOString(),
       })
       .eq("id", restaurant!.id);
@@ -702,10 +715,15 @@ function SettingsPage() {
                 {[
                   { k: "cash", l: "Dinheiro" },
                   { k: "pix", l: "Pix" },
-                  { k: "credit", l: "Crédito" },
-                  { k: "debit", l: "Débito" },
+                  { k: "credit", l: "Cartão Crédito" },
+                  { k: "debit", l: "Cartão Débito" },
                   { k: "meal_voucher", l: "Vale Refeição" },
                   { k: "food_voucher", l: "Vale Alimentação" },
+                  { k: "ticket", l: "Ticket" },
+                  { k: "alelo", l: "Alelo" },
+                  { k: "sodexo", l: "Sodexo" },
+                  { k: "vr", l: "VR" },
+                  { k: "ben", l: "Ben" },
                 ].map((m) => (
                   <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
                     <input
@@ -724,10 +742,7 @@ function SettingsPage() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {[
                   { k: "online_pix", l: "Pix Online" },
-                  { k: "online_credit", l: "Crédito Online" },
-                  { k: "online_debit", l: "Débito Online" },
-                  { k: "google_pay", l: "Google Pay" },
-                  { k: "apple_pay", l: "Apple Pay" },
+                  { k: "online_card", l: "Cartão Online" },
                 ].map((m) => (
                   <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
                     <input
