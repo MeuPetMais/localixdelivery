@@ -491,9 +491,13 @@ function SobrePage() {
           <TabsContent value="info" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
             {isInfoLoading ? (
               <TabSkeleton />
+            ) : !hasAnyInfo ? (
+              <Card className="rounded-2xl p-8 text-center shadow-elegant">
+                <p className="text-sm text-muted-foreground">Nenhuma informação pública cadastrada ainda.</p>
+              </Card>
             ) : (
               <>
-                {hasLocation && (
+                {hasMap && (
                   <Card className="overflow-hidden rounded-2xl shadow-elegant">
                     <div className="aspect-video w-full bg-muted">
                       <iframe
@@ -504,37 +508,55 @@ function SobrePage() {
                         title="Mapa"
                       />
                     </div>
-                    <div className="p-5">
-                      {fullAddress && (
-                        <div className="flex items-start gap-3">
-                          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold">Localização</p>
-                            <p className="mt-0.5 text-sm text-muted-foreground">{fullAddress}</p>
-                          </div>
+                  </Card>
+                )}
+
+                {hasAddress && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <div className="flex items-start gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display text-base font-bold">Endereço</p>
+                        <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                          {isFilled(addrLine1) && <p>{addrLine1}</p>}
+                          {isFilled(infoData?.complement) && <p>{infoData!.complement}</p>}
+                          {isFilled(infoData?.neighborhood) && <p>{infoData!.neighborhood}</p>}
+                          {isFilled(addrLine2) && addrLine2 !== "" && !addrLine2.startsWith(" · ") && <p>{addrLine2}</p>}
+                          {isFilled(infoData?.zip_code) && <p>CEP {infoData!.zip_code}</p>}
                         </div>
-                      )}
-                      <Button asChild className="mt-3 w-full" variant="outline">
-                        <a href={mapsOpen} target="_blank" rel="noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
-                        </a>
-                      </Button>
+                        <Button asChild className="mt-3" variant="outline" size="sm">
+                          <a href={mapsOpen} target="_blank" rel="noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 )}
 
-                <Card className="rounded-2xl p-5 shadow-elegant">
-                  <h3 className="mb-3 font-display text-base font-bold">Informações</h3>
-                  {infoRows.length === 0 ? (
-                    <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma informação cadastrada.</p>
-                  ) : (
+                {contactRows.length > 0 && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <h3 className="mb-3 font-display text-base font-bold">Contato & Redes</h3>
                     <div className="space-y-2">
-                      {infoRows.map((row) => (
+                      {contactRows.map((row) => (
                         <InfoRow key={row.label} icon={row.icon} label={row.label} value={String(row.value)} href={row.href} />
                       ))}
                     </div>
-                  )}
-                </Card>
+                  </Card>
+                )}
+
+                {isFilled(infoData?.description) && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <h3 className="mb-2 font-display text-base font-bold">Sobre</h3>
+                    <p className="text-sm text-muted-foreground">{infoData!.description}</p>
+                  </Card>
+                )}
+              </>
+            )}
+          </TabsContent>
+
 
                 {infoData?.description && (
                   <Card className="rounded-2xl p-5 shadow-elegant">
