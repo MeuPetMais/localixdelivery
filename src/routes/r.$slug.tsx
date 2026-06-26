@@ -27,26 +27,45 @@ function PublicMenu() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
 
-  const { data, isLoading, isError } = useQuery({
+  useEffect(() => {
+    console.log("[r/$slug] Página iniciou. Slug recebido:", slug);
+  }, [slug]);
+
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-restaurant", slug],
     enabled: !!slug,
     retry: 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
+    staleTime: 60_000,
     queryFn: async () => {
+      console.log("[r/$slug] Consulta iniciada para slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("*")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
-      if (!rest) return { restaurant: null, categories: [], items: [] };
+      if (error) {
+        console.error("[r/$slug] Erro retornado pelo Supabase:", error);
+        throw error;
+      }
+      if (!rest) {
+        console.warn("[r/$slug] Consulta finalizada. Restaurante não existe para slug:", slug);
+        return { restaurant: null, categories: [], items: [] };
+      }
+      console.log("[r/$slug] Restaurante encontrado:", rest.id, rest.name);
       const [cats, items] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
       ]);
+      console.log("[r/$slug] Consulta finalizada. Categorias:", cats.data?.length ?? 0, "Itens:", items.data?.length ?? 0);
       return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [] };
     },
   });
+
+  useEffect(() => {
+    if (isError) console.error("[r/$slug] Estado de erro após retries:", error);
+  }, [isError, error]);
+
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [openSheet, setOpenSheet] = useState(false);
