@@ -277,27 +277,17 @@ function SobrePage() {
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
   const openNow = isOpenNow(hours);
-  const fullAddress = infoData ? [
-    [infoData.address, infoData.address_number].filter(Boolean).join(", "),
-    infoData.complement,
-    infoData.neighborhood,
-    [infoData.city, infoData.state].filter(Boolean).join(" - "),
-    infoData.zip_code,
-  ].filter(Boolean).join(" · ") : "";
-  const hasLocation = !!infoData && !!(infoData.google_maps_url || (infoData.latitude && infoData.longitude) || fullAddress);
+  const addrLine1 = infoData ? [infoData.address, infoData.address_number].filter(isFilled).join(", ") : "";
+  const addrLine2 = infoData ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")].filter((v) => isFilled(v) && v !== "").join(" · ") : "";
+  const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code].filter((v) => isFilled(v) && v !== "").join(" · ");
+  const hasAddress = !!infoData && (isFilled(infoData.address) || isFilled(infoData.city) || isFilled(infoData.state) || isFilled(infoData.neighborhood) || isFilled(infoData.zip_code));
+  const hasMap = !!infoData && (isFilled(infoData.google_maps_url) || (isFilled(infoData.latitude) && isFilled(infoData.longitude)) || hasAddress);
   const mapsQuery = infoData?.latitude && infoData?.longitude
     ? `${infoData.latitude},${infoData.longitude}`
     : encodeURIComponent(fullAddress || infoData?.name || restaurant.name);
   const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
   const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-  const infoRows = infoData ? [
-    { icon: MapPin, label: "Endereço", value: infoData.address, href: mapsOpen },
-    { icon: MapPin, label: "Número", value: infoData.address_number, href: mapsOpen },
-    { icon: MapPin, label: "Complemento", value: infoData.complement, href: mapsOpen },
-    { icon: MapPin, label: "Bairro", value: infoData.neighborhood, href: mapsOpen },
-    { icon: MapPin, label: "Cidade", value: infoData.city, href: mapsOpen },
-    { icon: MapPin, label: "Estado", value: infoData.state, href: mapsOpen },
-    { icon: MapPin, label: "CEP", value: infoData.zip_code, href: mapsOpen },
+  const contactRows = infoData ? [
     { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
     { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/r/${slug}` },
     { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
@@ -305,6 +295,8 @@ function SobrePage() {
     { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
     { icon: Mail, label: "E-mail", value: infoData.email, href: `mailto:${infoData.email}` },
   ].filter((row) => isFilled(row.value)) : [];
+  const hasAnyInfo = hasAddress || contactRows.length > 0 || isFilled(infoData?.description);
+
 
   const pm = paymentsData?.payment_methods ?? {};
   const paymentMethods = [
@@ -499,9 +491,13 @@ function SobrePage() {
           <TabsContent value="info" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
             {isInfoLoading ? (
               <TabSkeleton />
+            ) : !hasAnyInfo ? (
+              <Card className="rounded-2xl p-8 text-center shadow-elegant">
+                <p className="text-sm text-muted-foreground">Nenhuma informação pública cadastrada ainda.</p>
+              </Card>
             ) : (
               <>
-                {hasLocation && (
+                {hasMap && (
                   <Card className="overflow-hidden rounded-2xl shadow-elegant">
                     <div className="aspect-video w-full bg-muted">
                       <iframe
@@ -512,47 +508,57 @@ function SobrePage() {
                         title="Mapa"
                       />
                     </div>
-                    <div className="p-5">
-                      {fullAddress && (
-                        <div className="flex items-start gap-3">
-                          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold">Localização</p>
-                            <p className="mt-0.5 text-sm text-muted-foreground">{fullAddress}</p>
-                          </div>
+                  </Card>
+                )}
+
+                {hasAddress && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <div className="flex items-start gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display text-base font-bold">Endereço</p>
+                        <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                          {isFilled(addrLine1) && <p>{addrLine1}</p>}
+                          {isFilled(infoData?.complement) && <p>{infoData!.complement}</p>}
+                          {isFilled(infoData?.neighborhood) && <p>{infoData!.neighborhood}</p>}
+                          {isFilled(addrLine2) && addrLine2 !== "" && !addrLine2.startsWith(" · ") && <p>{addrLine2}</p>}
+                          {isFilled(infoData?.zip_code) && <p>CEP {infoData!.zip_code}</p>}
                         </div>
-                      )}
-                      <Button asChild className="mt-3 w-full" variant="outline">
-                        <a href={mapsOpen} target="_blank" rel="noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
-                        </a>
-                      </Button>
+                        <Button asChild className="mt-3" variant="outline" size="sm">
+                          <a href={mapsOpen} target="_blank" rel="noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" /> Abrir no Google Maps
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 )}
 
-                <Card className="rounded-2xl p-5 shadow-elegant">
-                  <h3 className="mb-3 font-display text-base font-bold">Informações</h3>
-                  {infoRows.length === 0 ? (
-                    <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma informação cadastrada.</p>
-                  ) : (
+                {contactRows.length > 0 && (
+                  <Card className="rounded-2xl p-5 shadow-elegant">
+                    <h3 className="mb-3 font-display text-base font-bold">Contato & Redes</h3>
                     <div className="space-y-2">
-                      {infoRows.map((row) => (
+                      {contactRows.map((row) => (
                         <InfoRow key={row.label} icon={row.icon} label={row.label} value={String(row.value)} href={row.href} />
                       ))}
                     </div>
-                  )}
-                </Card>
+                  </Card>
+                )}
 
-                {infoData?.description && (
+                {isFilled(infoData?.description) && (
                   <Card className="rounded-2xl p-5 shadow-elegant">
-                    <h3 className="mb-2 font-display text-base font-bold">Descrição</h3>
-                    <p className="text-sm text-muted-foreground">{infoData.description}</p>
+                    <h3 className="mb-2 font-display text-base font-bold">Sobre</h3>
+                    <p className="text-sm text-muted-foreground">{infoData!.description}</p>
                   </Card>
                 )}
               </>
             )}
           </TabsContent>
+
+
+
 
           {/* PAGAMENTOS */}
           <TabsContent value="pagamentos" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
