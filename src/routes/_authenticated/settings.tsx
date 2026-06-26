@@ -461,17 +461,7 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" /> Tempo médio de entrega
-              </Label>
-              <Input
-                placeholder="30-45 min"
-                value={form.delivery_time}
-                onChange={(e) => setForm({ ...form, delivery_time: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" /> Tempo médio de entrega
+                <Clock className="h-3.5 w-3.5" /> Tempo médio de entrega (texto)
               </Label>
               <Input
                 placeholder="30-45 min"
