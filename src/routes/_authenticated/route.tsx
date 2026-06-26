@@ -62,7 +62,7 @@ function AuthLayout() {
     { to: "/finance-ai", label: "Relatórios", icon: LineChart },
     { to: "/units", label: "Multiunidades", icon: Building2 },
     { to: "/suppliers", label: "Compras", icon: Store },
-    { to: "/settings", label: "Configurações", icon: Settings },
+    { to: "/settings", label: "Perfil do Estabelecimento", icon: Settings },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
 

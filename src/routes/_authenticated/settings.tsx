@@ -37,7 +37,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Configurações — Localix" }] }),
+  head: () => ({ meta: [{ title: "Perfil do Estabelecimento — Localix" }] }),
   component: SettingsPage,
 });
 
@@ -93,21 +93,31 @@ function SettingsPage() {
     slug: "",
     description: "",
     whatsapp_phone: "",
+    landline_phone: "",
     logo_url: "",
     cover_url: "",
     delivery_fee: "0",
     min_order: "0",
     delivery_time: "",
     delivery_radius: "",
+    avg_delivery_minutes: "",
+    avg_pickup_minutes: "",
     primary_color: "orange",
     is_open: true,
     address: "",
+    address_number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zip_code: "",
     instagram: "",
     facebook: "",
     website: "",
     email: "",
     latitude: "",
     longitude: "",
+    google_maps_url: "",
   });
   const [payments, setPayments] = useState<Record<string, boolean>>({
     cash: true, pix: true, credit: true, debit: false,
@@ -131,21 +141,31 @@ function SettingsPage() {
       slug: r.slug,
       description: r.description ?? "",
       whatsapp_phone: r.whatsapp_phone,
+      landline_phone: r.landline_phone ?? "",
       logo_url: r.logo_url ?? "",
       cover_url: r.cover_url ?? "",
       delivery_fee: String(r.delivery_fee ?? 0),
       min_order: String(r.min_order ?? 0),
       delivery_time: r.delivery_time ?? "",
-      delivery_radius: String(r.delivery_radius ?? ""),
+      delivery_radius: r.delivery_radius != null ? String(r.delivery_radius) : "",
+      avg_delivery_minutes: r.avg_delivery_minutes != null ? String(r.avg_delivery_minutes) : "",
+      avg_pickup_minutes: r.avg_pickup_minutes != null ? String(r.avg_pickup_minutes) : "",
       primary_color: r.primary_color ?? "orange",
       is_open: r.is_open,
       address: r.address ?? "",
+      address_number: r.address_number ?? "",
+      complement: r.complement ?? "",
+      neighborhood: r.neighborhood ?? "",
+      city: r.city ?? "",
+      state: r.state ?? "",
+      zip_code: r.zip_code ?? "",
       instagram: r.instagram ?? "",
       facebook: r.facebook ?? "",
       website: r.website ?? "",
       email: r.email ?? "",
       latitude: r.latitude != null ? String(r.latitude) : "",
       longitude: r.longitude != null ? String(r.longitude) : "",
+      google_maps_url: r.google_maps_url ?? "",
     });
     const h = r.opening_hours as Hours | null;
     if (h) setHours({ ...DEFAULT_HOURS, ...h });
@@ -201,26 +221,36 @@ function SettingsPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    const toNum = (v: string) => (v ? Number(v.replace(",", ".")) : null);
+    const toInt = (v: string) => (v ? parseInt(v, 10) || null : null);
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
         description: form.description || null,
         whatsapp_phone: form.whatsapp_phone,
-        delivery_fee: Number(form.delivery_fee.replace(",", ".")) || 0,
-        min_order: Number(form.min_order.replace(",", ".")) || 0,
+        landline_phone: form.landline_phone || null,
+        delivery_fee: toNum(form.delivery_fee) ?? 0,
+        min_order: toNum(form.min_order) ?? 0,
         delivery_time: form.delivery_time || null,
-        delivery_radius: form.delivery_radius
-          ? Number(form.delivery_radius.replace(",", "."))
-          : null,
+        delivery_radius: toNum(form.delivery_radius),
+        avg_delivery_minutes: toInt(form.avg_delivery_minutes),
+        avg_pickup_minutes: toInt(form.avg_pickup_minutes),
         primary_color: form.primary_color,
         opening_hours: hours as any,
         address: form.address || null,
+        address_number: form.address_number || null,
+        complement: form.complement || null,
+        neighborhood: form.neighborhood || null,
+        city: form.city || null,
+        state: form.state || null,
+        zip_code: form.zip_code || null,
         instagram: form.instagram || null,
         facebook: form.facebook || null,
         website: form.website || null,
         email: form.email || null,
-        latitude: form.latitude ? Number(form.latitude.replace(",", ".")) : null,
-        longitude: form.longitude ? Number(form.longitude.replace(",", ".")) : null,
+        latitude: toNum(form.latitude),
+        longitude: toNum(form.longitude),
+        google_maps_url: form.google_maps_url || null,
         payment_methods: payments,
         updated_at: new Date().toISOString(),
       })
@@ -228,7 +258,7 @@ function SettingsPage() {
 
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Configurações salvas");
+    toast.success("Perfil atualizado");
     refetch();
   }
 
@@ -238,9 +268,9 @@ function SettingsPage() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Configurações</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Perfil do Estabelecimento</h1>
         <p className="text-sm text-muted-foreground">
-          Personalize a identidade visual e as regras da sua loja.
+          Todos os dados aqui aparecem automaticamente na sua página pública.
         </p>
       </div>
 
