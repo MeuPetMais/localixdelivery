@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
+import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as ClienteRouteImport } from './routes/cliente'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -40,9 +42,19 @@ const MeusPedidosRoute = MeusPedidosRouteImport.update({
   path: '/meus-pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoritosRoute = FavoritosRouteImport.update({
+  id: '/favoritos',
+  path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClienteRoute = ClienteRouteImport.update({
   id: '/cliente',
   path: '/cliente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -163,7 +175,9 @@ const RSlugSobreRoute = RSlugSobreRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -189,7 +203,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -216,7 +232,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -244,7 +262,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/buscar'
     | '/cliente'
+    | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
     | '/ai'
@@ -270,7 +290,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/buscar'
     | '/cliente'
+    | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
     | '/ai'
@@ -296,7 +318,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/buscar'
     | '/cliente'
+    | '/favoritos'
     | '/meus-pedidos'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
@@ -324,7 +348,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  BuscarRoute: typeof BuscarRoute
   ClienteRoute: typeof ClienteRoute
+  FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
@@ -340,11 +366,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeusPedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favoritos': {
+      id: '/favoritos'
+      path: '/favoritos'
+      fullPath: '/favoritos'
+      preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cliente': {
       id: '/cliente'
       path: '/cliente'
       fullPath: '/cliente'
       preLoaderRoute: typeof ClienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -566,7 +606,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  BuscarRoute: BuscarRoute,
   ClienteRoute: ClienteRoute,
+  FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,

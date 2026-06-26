@@ -14,12 +14,14 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BottomNav } from "@/components/BottomNav";
 
 function NotFoundComponent() {
   return (
@@ -118,7 +120,27 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <CustomerBottomNav />
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }
+
+const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
+  (p) => p === "/",
+  (p) => p.startsWith("/buscar"),
+  (p) => p.startsWith("/favoritos"),
+  (p) => p.startsWith("/meus-pedidos"),
+  (p) => p.startsWith("/cliente"),
+  (p) => p.startsWith("/pedido"),
+  (p) => p.startsWith("/r/"),
+];
+
+function CustomerBottomNav() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
+  if (!show) return null;
+  return <BottomNav />;
+}
+
+

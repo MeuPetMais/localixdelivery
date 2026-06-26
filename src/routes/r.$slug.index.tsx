@@ -340,9 +340,12 @@ function PublicMenu() {
         </div>
       </div>
 
-      {/* floating cart */}
+      {/* floating cart — sits above the BottomNav */}
       {totalQty > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-4 pt-2">
+        <div
+          className="fixed inset-x-0 z-30 px-3 pt-2 animate-in slide-in-from-bottom-2 duration-300"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        >
           <div className="mx-auto max-w-3xl">
             <Sheet open={openSheet} onOpenChange={setOpenSheet}>
               <SheetTrigger asChild>
