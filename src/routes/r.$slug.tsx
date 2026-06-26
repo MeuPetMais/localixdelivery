@@ -41,7 +41,7 @@ function PublicMenu() {
       console.log("[r/$slug] Consulta iniciada para slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("*")
+        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category")
         .eq("slug", slug)
         .maybeSingle();
       if (error) {
