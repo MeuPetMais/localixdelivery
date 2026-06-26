@@ -35,7 +35,7 @@ function FavoritosPage() {
         </div>
       </main>
       <BottomNavSpacer />
-      <BottomNav />
+      
     </div>
   );
 }
