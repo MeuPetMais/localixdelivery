@@ -61,13 +61,26 @@ const BENEFITS = [
   { icon: Zap, label: "Checkout rápido", desc: "Peça em 1 toque" },
 ];
 
+function getRestaurantReturnPath(): string | null {
+  try {
+    const slug = sessionStorage.getItem("localix:last-restaurant-slug");
+    if (slug) return `/${slug}`;
+  } catch {}
+  return null;
+}
+
 function AuthView() {
   const [loading, setLoading] = useState<null | "google" | "apple">(null);
+  const returnPath = getRestaurantReturnPath();
+  const emailRedirect = returnPath ?? "/cliente";
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
+    try {
+      if (returnPath) sessionStorage.setItem("postLoginRedirect", returnPath);
+    } catch {}
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + "/cliente",
+      redirect_uri: window.location.origin + (returnPath ?? "/cliente"),
     });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -129,13 +142,13 @@ function AuthView() {
           </div>
 
           <Button asChild variant="secondary" className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold">
-            <Link to="/entrar" search={{ redirect: "/cliente" }}>
+            <Link to="/entrar" search={{ redirect: emailRedirect }}>
               <Mail className="h-5 w-5" /> Entrar com e-mail
             </Link>
           </Button>
 
           <div className="flex flex-col gap-1 pt-1 text-center text-sm">
-            <Link to="/entrar" search={{ redirect: "/cliente" }} className="font-semibold text-primary hover:underline">
+            <Link to="/entrar" search={{ redirect: emailRedirect }} className="font-semibold text-primary hover:underline">
               Criar uma conta
             </Link>
             <Link to="/esqueci-senha" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
@@ -164,10 +177,16 @@ function ProfileView({ user }: { user: User }) {
     .join("")
     .toUpperCase();
 
+  const restaurantPath = getRestaurantReturnPath();
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
-    navigate({ to: "/home" });
+    if (restaurantPath) {
+      window.location.assign(restaurantPath);
+    } else {
+      navigate({ to: "/cliente", replace: true });
+    }
   }
 
   return (
@@ -204,7 +223,8 @@ function ProfileView({ user }: { user: User }) {
           <ProfileLink to="/favoritos" icon={Heart} label="Favoritos" />
           <ProfileLink to="/beneficios" icon={Tag} label="Cupons & Pontos" />
           <ProfileLink to="/meus-pedidos" icon={History} label="Meus Pedidos" />
-          <ProfileLink to="/home" icon={Zap} label="Pedir agora" />
+          <ProfileLink to={restaurantPath ?? "/cliente"} icon={Zap} label="Pedir agora" />
+
         </div>
 
         <Card className="p-4 text-sm text-muted-foreground">
