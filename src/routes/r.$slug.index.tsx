@@ -21,12 +21,8 @@ import type { Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
-  loader: ({ params, location }) => {
-    console.log("[LOADER]", { slug: params.slug, pathname: location.pathname });
-    return null;
-  },
   errorComponent: ({ error }) => {
-    console.error("[LOADER ERROR]", error);
+    console.error("[r/$slug] error:", error);
     return <div className="grid min-h-screen place-items-center px-4 text-center">Não conseguimos carregar esta página.</div>;
   },
   notFoundComponent: () => <div className="grid min-h-screen place-items-center px-4 text-center">Restaurante não encontrado.</div>,
@@ -43,9 +39,6 @@ function PublicMenu() {
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    console.log("[r/$slug] Página iniciou. Slug recebido:", slug);
-  }, [slug]);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-restaurant", slug],
