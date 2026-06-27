@@ -19,7 +19,7 @@ import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check,
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 
-export const Route = createFileRoute("/r/$slug/")({
+export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
   errorComponent: ({ error }) => {
     console.error("[r/$slug] error:", error);

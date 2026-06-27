@@ -34,7 +34,7 @@ import {
 const VALID_TABS = ["avaliacoes", "horarios", "info", "pagamentos"] as const;
 type ProfileTab = (typeof VALID_TABS)[number];
 
-export const Route = createFileRoute("/r/$slug/sobre")({
+export const Route = createFileRoute("/$slug/sobre")({
   head: () => ({ meta: [{ title: "Sobre o estabelecimento — Localix" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     tab: VALID_TABS.includes(s.tab as ProfileTab) ? (s.tab as ProfileTab) : "avaliacoes",

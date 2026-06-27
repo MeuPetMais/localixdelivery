@@ -15,7 +15,7 @@ import type { Builder } from "@/components/BuilderConfigurator";
 
 type Selection = Record<string, Record<string, number>>;
 
-export const Route = createFileRoute("/r/$slug/montar")({
+export const Route = createFileRoute("/$slug/montar")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     builder: typeof s.builder === "string" ? s.builder : undefined,
