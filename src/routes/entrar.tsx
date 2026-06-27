@@ -25,7 +25,7 @@ const RESERVED_TOP = new Set([
 ]);
 
 function validRestaurantRedirect(path?: string | null) {
-  if (!path || !path.startsWith("/") || path === "/" || path.startsWith("/home") || path.startsWith("/inicio")) return null;
+  if (!path || !path.startsWith("/") || path === "/") return null;
   const slug = path.split(/[?#]/)[0]?.split("/")[1] ?? "";
   if (!slug || slug.includes(".") || RESERVED_TOP.has(slug)) return null;
   return { path: `/${slug}`, slug };
