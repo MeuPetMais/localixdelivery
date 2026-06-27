@@ -223,7 +223,8 @@ function ProfileView({ user }: { user: User }) {
           <ProfileLink to="/favoritos" icon={Heart} label="Favoritos" />
           <ProfileLink to="/beneficios" icon={Tag} label="Cupons & Pontos" />
           <ProfileLink to="/meus-pedidos" icon={History} label="Meus Pedidos" />
-          <ProfileLink to="/home" icon={Zap} label="Pedir agora" />
+          <ProfileLink to={restaurantPath ?? "/cliente"} icon={Zap} label="Pedir agora" />
+
         </div>
 
         <Card className="p-4 text-sm text-muted-foreground">
