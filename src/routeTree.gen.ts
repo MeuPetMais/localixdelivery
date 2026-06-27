@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
@@ -39,6 +40,11 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as RSlugIndexRouteImport } from './routes/r.$slug.index'
 import { Route as RSlugSobreRouteImport } from './routes/r.$slug.sobre'
 
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/admin'
     | '/ai'
     | '/consultor'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/admin'
     | '/ai'
     | '/consultor'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/consultor'
@@ -378,6 +390,7 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSlugRoute: typeof RSlugRouteWithChildren
@@ -385,6 +398,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meus-pedidos': {
       id: '/meus-pedidos'
       path: '/meus-pedidos'
@@ -652,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSlugRoute: RSlugRouteWithChildren,
