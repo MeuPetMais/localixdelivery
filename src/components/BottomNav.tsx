@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import type { MouseEvent } from "react";
 import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
@@ -37,7 +38,7 @@ export function BottomNav() {
   const { lastRestaurantSlug, currentRestaurantSlug, navigateToRestaurant, rememberRestaurantRoute } = useCustomerNavigation();
   const activeSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
-  function handleClick(e: React.MouseEvent, key: string) {
+  function handleClick(e: MouseEvent, key: string) {
     if (activeSlug && isRestaurantPath(pathname)) {
       rememberRestaurantRoute(activeSlug, { route: `/${activeSlug}`, scrollY: typeof window !== "undefined" ? window.scrollY : 0 });
     }
