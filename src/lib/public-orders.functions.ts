@@ -18,17 +18,33 @@ export const getPublicOrderById = createServerFn({ method: "POST" })
     return { order };
   });
 
-export const searchOrdersByPhone = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ phone: z.string().min(10) }).parse(d))
-  .handler(async ({ data }) => {
-    const digits = data.phone.replace(/\D+/g, "");
-    if (digits.length < 10) return { orders: [] as any[] };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: orders } = await supabaseAdmin
+export const getMyOrders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: orders } = await context.supabase
       .from("orders")
-      .select("id, order_number, status, total, items, created_at, restaurant_id, customer_phone")
-      .eq("customer_phone", digits)
+      .select("id, order_number, status, total, items, created_at, restaurant_id, estimated_delivery_time")
+      .eq("customer_id", context.userId)
       .order("created_at", { ascending: false })
-      .limit(50);
-    return { orders: orders ?? [] };
+      .limit(100);
+
+    const list = orders ?? [];
+    const restaurantIds = Array.from(new Set(list.map((o) => o.restaurant_id)));
+    let restaurants: Array<{ id: string; name: string; slug: string; logo_url: string | null }> = [];
+    if (restaurantIds.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: rs } = await supabaseAdmin
+        .from("restaurants")
+        .select("id, name, slug, logo_url")
+        .in("id", restaurantIds);
+      restaurants = rs ?? [];
+    }
+
+    const favoritesCount = await context.supabase
+      .from("customer_favorites")
+      .select("restaurant_id", { count: "exact", head: true })
+      .then((r) => r.count ?? 0);
+
+    return { orders: list, restaurants, favoritesCount };
   });
+
