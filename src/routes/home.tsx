@@ -133,8 +133,9 @@ function CustomerHome() {
               {filtered.map((r) => (
                 <li key={r.slug}>
                   <Link
-                    to="/r/$slug"
+                    to="/$slug"
                     params={{ slug: r.slug }}
+
                     className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-3 transition hover:border-primary/40 hover:shadow-md"
                   >
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">

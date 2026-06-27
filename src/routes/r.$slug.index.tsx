@@ -21,12 +21,8 @@ import type { Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
-  loader: ({ params, location }) => {
-    console.log("[LOADER]", { slug: params.slug, pathname: location.pathname });
-    return null;
-  },
   errorComponent: ({ error }) => {
-    console.error("[LOADER ERROR]", error);
+    console.error("[r/$slug] error:", error);
     return <div className="grid min-h-screen place-items-center px-4 text-center">Não conseguimos carregar esta página.</div>;
   },
   notFoundComponent: () => <div className="grid min-h-screen place-items-center px-4 text-center">Restaurante não encontrado.</div>,
@@ -43,9 +39,6 @@ function PublicMenu() {
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    console.log("[r/$slug] Página iniciou. Slug recebido:", slug);
-  }, [slug]);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-restaurant", slug],
@@ -57,43 +50,30 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const pathname = typeof window !== "undefined" ? window.location.pathname : `/r/${slug}`;
-      const slugExtraido = slug;
-      console.log("[LOADER]", { slug, pathname });
-      console.log({ pathname, slugExtraido });
-      console.log("[r/$slug] Consulta iniciada para slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
-      console.log("[LOADER RESULT]", rest);
       if (error) {
-        console.error("[r/$slug] Erro retornado pelo Supabase:", error);
+        console.error("[r/$slug] supabase error:", error);
         throw error;
       }
-      if (!rest) {
-        console.warn("[r/$slug] Consulta finalizada. Restaurante não existe para slug:", slug);
-        return { restaurant: null, categories: [], items: [] };
-      }
-      console.log("[r/$slug] Restaurante encontrado:", rest.id, rest.name);
+      if (!rest) return { restaurant: null, categories: [], items: [], builders: [] };
       const [cats, items, builders] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
         (supabase as any).from("builders").select("*, builder_groups(*, builder_options(*))").eq("restaurant_id", rest.id).eq("is_active", true).order("position"),
       ]);
-      console.log("[r/$slug] Consulta finalizada. Categorias:", cats.data?.length ?? 0, "Itens:", items.data?.length ?? 0);
-      console.log("[Monte do Seu Jeito] restaurante:", rest.id, "configuradores ativos:", builders.data?.length ?? 0, builders.error ?? "");
-      console.log("[Build] slug:", slug);
-      console.log("[Build] restaurant:", rest);
-      console.log("[Build] config:", builders.data ?? []);
       return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [], builders: builders.data ?? [] };
     },
   });
 
   useEffect(() => {
-    if (isError) console.error("[r/$slug] Estado de erro após retries:", error);
+    if (isError) console.error("[r/$slug] query error:", error);
   }, [isError, error]);
+
+
 
   useEffect(() => {
     if (data?.restaurant?.slug) {
@@ -169,12 +149,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const openBuilder = (builder: Builder) => {
-    const destination = `/r/${slug}/montar?builder=${builder.id}`;
-    console.log(destination);
-    console.log("[Build] slug:", slug);
-    console.log("[Build] restaurant:", data?.restaurant ?? null);
-    console.log("[Build] config:", builder);
-
     if (!data?.restaurant?.is_open) {
       toast.error("Restaurante fechado");
       return;
@@ -185,6 +159,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
     navigate({ to: "/r/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
   };
+
 
   if (isLoading || (!data && !isError)) {
     return (
@@ -213,7 +188,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   if (!data || !data.restaurant) {
     // Clear cached slug so the BottomNav "Home" button stops pointing at a broken slug.
     try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
-    console.warn("[r/$slug] Renderizando fallback 'Restaurante não encontrado' para slug:", slug);
+
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
