@@ -666,6 +666,7 @@ export type Database = {
           address: string | null
           coupon_id: string | null
           created_at: string
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
           discount: number
@@ -683,6 +684,7 @@ export type Database = {
           address?: string | null
           coupon_id?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
           discount?: number
@@ -700,6 +702,7 @@ export type Database = {
           address?: string | null
           coupon_id?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           discount?: number

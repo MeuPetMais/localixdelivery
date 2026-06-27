@@ -26,6 +26,20 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Optional: link order to the authenticated customer when a bearer token is present.
+    let customerId: string | null = null;
+    try {
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const req = getRequest();
+      const auth = req?.headers.get("authorization") ?? "";
+      const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+      if (token && token.split(".").length === 3) {
+        const { data: u } = await supabaseAdmin.auth.getUser(token);
+        if (u?.user?.id) customerId = u.user.id;
+      }
+    } catch {}
+
     const { data: rest, error } = await supabaseAdmin
       .from("restaurants")
       .select("id, whatsapp_phone, is_open, delivery_time")
@@ -66,6 +80,7 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         restaurant_id: rest.id,
+        customer_id: customerId,
         customer_name: data.customer.name,
         customer_phone: data.customer.phone,
         address: data.customer.address,
