@@ -26,20 +26,10 @@ export const Route = createFileRoute("/cliente")({
   component: MinhaContaPage,
 });
 
-function MinhaContaPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+function MinhaContaPage() {
+  const { user, loading } = useCustomerAuth();
 
   if (loading) {
     return (
