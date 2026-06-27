@@ -39,7 +39,9 @@ function CustomerAuthPage() {
 
   function goNext() {
     const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/cliente";
-    navigate({ to: target, replace: true });
+    const reason = "customer_auth_complete";
+    console.log("[ROUTER] before redirect", { from: location.pathname, reason });
+    navigate({ to: target, replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
   }
 
   async function handleOAuth(provider: "google" | "apple") {

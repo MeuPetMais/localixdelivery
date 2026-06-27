@@ -29,7 +29,11 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) {
+        const reason = "auth_page_existing_session";
+        console.log("[ROUTER] before redirect", { from: location.pathname, reason });
+        navigate({ to: "/dashboard", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
+      }
     });
   }, [navigate]);
 
@@ -70,11 +74,13 @@ function AuthPage() {
           }
         }
         toast.success("Conta criada! Painel pronto.");
-        navigate({ to: "/dashboard", replace: true });
+        console.log("[ROUTER] before redirect", { from: location.pathname, reason: "restaurant_signup_complete" });
+        navigate({ to: "/dashboard", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/dashboard", replace: true });
+        console.log("[ROUTER] before redirect", { from: location.pathname, reason: "restaurant_signin_complete" });
+        navigate({ to: "/dashboard", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
@@ -92,7 +98,8 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    console.log("[ROUTER] before redirect", { from: location.pathname, reason: "restaurant_google_signin_complete" });
+    navigate({ to: "/dashboard", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
   }
 
   return (
