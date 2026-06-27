@@ -68,7 +68,7 @@ function MyOrders() {
         id: it.id, name: it.name, price: Number(it.price), qty: Number(it.qty),
       }))));
     } catch {}
-    navigate({ to: "/r/$slug", params: { slug: r.slug } });
+    navigate({ to: "/$slug", params: { slug: r.slug } });
   }
 
   return (

@@ -127,7 +127,7 @@ function BeneficiosPage() {
         {lastSlug && (
           <div className="mt-5 text-center">
             <Button asChild variant="outline" className="rounded-full">
-              <Link to="/r/$slug" params={{ slug: lastSlug }}>Voltar ao restaurante</Link>
+              <Link to="/$slug" params={{ slug: lastSlug }}>Voltar ao restaurante</Link>
             </Button>
           </div>
         )}

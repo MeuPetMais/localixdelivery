@@ -67,7 +67,7 @@ function SuccessPage() {
               Acompanhar pedido <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
             {restaurant?.slug && (
-              <Button variant="outline" onClick={() => navigate({ to: "/r/$slug", params: { slug: restaurant.slug } })}>
+              <Button variant="outline" onClick={() => navigate({ to: "/$slug", params: { slug: restaurant.slug } })}>
                 <Store className="mr-1.5 h-4 w-4" /> Fazer novo pedido
               </Button>
             )}

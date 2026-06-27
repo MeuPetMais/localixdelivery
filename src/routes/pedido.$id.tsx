@@ -115,7 +115,7 @@ function TrackOrder() {
         JSON.stringify(items.map((it: any) => ({ id: it.id, name: it.name, price: Number(it.price), qty: Number(it.qty) }))),
       );
     } catch {}
-    navigate({ to: "/r/$slug", params: { slug: restaurant.slug } });
+    navigate({ to: "/$slug", params: { slug: restaurant.slug } });
   }
 
   return (

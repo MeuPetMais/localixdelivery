@@ -278,7 +278,7 @@ function SettingsPage() {
   }
 
   const publicUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/r/${form.slug}` : `/r/${form.slug}`;
+    typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">

@@ -163,7 +163,7 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
                       <Button size="sm" variant="ghost" onClick={() => handleToggleFav(r.id)} aria-label="Favoritar">
                         <Heart className={`h-4 w-4 ${fav ? "fill-rose-500 text-rose-500" : ""}`} />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/r/$slug", params: { slug: r.slug } })}>
+                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/$slug", params: { slug: r.slug } })}>
                         Pedir
                       </Button>
                     </div>
@@ -246,7 +246,7 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
                       size="sm"
                       variant="outline"
                       className="w-full"
-                      onClick={() => navigate({ to: "/r/$slug", params: { slug: r.slug } })}
+                      onClick={() => navigate({ to: "/$slug", params: { slug: r.slug } })}
                     >
                       Pedir novamente <ArrowRight className="ml-1 h-4 w-4" />
                     </Button>

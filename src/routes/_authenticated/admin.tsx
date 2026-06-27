@@ -89,7 +89,7 @@ function AdminPage() {
             <div key={r.id} className="flex items-center justify-between py-3">
               <div>
                 <p className="font-medium">{r.name}</p>
-                <p className="text-xs text-muted-foreground">/r/{r.slug}</p>
+                <p className="text-xs text-muted-foreground">/{r.slug}</p>
               </div>
               <Badge variant={r.is_open ? "default" : "outline"}>
                 {r.is_open ? "Aberto" : "Fechado"}
