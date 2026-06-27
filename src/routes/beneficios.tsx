@@ -19,9 +19,40 @@ function BeneficiosPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
-    try {
-      setLastSlug(sessionStorage.getItem(LAST_SLUG_KEY));
-    } catch {}
+    let cancelled = false;
+
+    async function loadLastRestaurant() {
+      let saved: string | null = null;
+      try {
+        saved = sessionStorage.getItem(LAST_SLUG_KEY);
+      } catch {
+        saved = null;
+      }
+
+      if (!saved) {
+        if (!cancelled) setLastSlug(null);
+        return;
+      }
+
+      const { data, error } = await (supabase as any)
+        .from("restaurants_public")
+        .select("slug")
+        .eq("slug", saved)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !data?.slug) {
+        try { sessionStorage.removeItem(LAST_SLUG_KEY); } catch {}
+        setLastSlug(null);
+        return;
+      }
+
+      setLastSlug(data.slug);
+    }
+
+    loadLastRestaurant();
+    return () => { cancelled = true; };
   }, []);
 
   const benefits = [
