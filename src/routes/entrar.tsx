@@ -38,8 +38,23 @@ function CustomerAuthPage() {
   }, []);
 
   function goNext() {
-    const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/cliente";
-    navigate({ to: target, replace: true });
+    let target = search.redirect && search.redirect.startsWith("/") ? search.redirect : null;
+    if (!target) {
+      try {
+        const stored = sessionStorage.getItem("postLoginRedirect");
+        if (stored && stored.startsWith("/")) {
+          target = stored;
+          sessionStorage.removeItem("postLoginRedirect");
+        }
+      } catch {}
+    }
+    if (!target) {
+      try {
+        const slug = sessionStorage.getItem("localix:last-restaurant-slug");
+        if (slug) target = `/${slug}`;
+      } catch {}
+    }
+    navigate({ to: target ?? "/cliente", replace: true });
   }
 
   async function handleOAuth(provider: "google" | "apple") {
