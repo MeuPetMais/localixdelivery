@@ -288,7 +288,17 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
         </div>
         <div className="space-y-1.5"><Label>Descrição</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5"><Label>Imagem (URL)</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." /></div>
+          <div className="space-y-1.5">
+            <Label>Imagem do modelo</Label>
+            <BuilderImageUpload
+              restaurantId={builder.restaurant_id}
+              value={form.image_url}
+              onChange={async (url) => {
+                setForm({ ...form, image_url: url });
+                await supabase.from("builders").update({ image_url: url || null }).eq("id", builder.id);
+              }}
+            />
+          </div>
           <div className="space-y-1.5"><Label>Preço base (R$)</Label><Input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></div>
         </div>
         <div className="flex justify-end"><Button size="sm" onClick={saveMeta}>Salvar dados</Button></div>
