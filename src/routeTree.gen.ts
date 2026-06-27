@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BuscarRouteImport } from './routes/buscar'
@@ -46,6 +47,11 @@ const MeusPedidosRoute = MeusPedidosRouteImport.update({
 const FavoritosRoute = FavoritosRouteImport.update({
   id: '/favoritos',
   path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarRoute = EntrarRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/cliente'
     | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/cliente'
     | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/cliente'
     | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
     | '/_authenticated/admin'
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   ClienteRoute: typeof ClienteRoute
   EntrarRoute: typeof EntrarRoute
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/favoritos'
       fullPath: '/favoritos'
       preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar': {
@@ -629,6 +649,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   ClienteRoute: ClienteRoute,
   EntrarRoute: EntrarRoute,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
