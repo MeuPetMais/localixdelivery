@@ -17,7 +17,7 @@ import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { BuilderConfigurator, type Builder } from "@/components/BuilderConfigurator";
+import type { Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -87,7 +87,6 @@ function PublicMenu() {
   });
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
-  const [activeBuilder, setActiveBuilder] = useState<Builder | null>(null);
   const [builderUnavailableOpen, setBuilderUnavailableOpen] = useState(false);
 
   useEffect(() => {
@@ -494,13 +493,6 @@ function PublicMenu() {
           )}
         </div>
       </div>
-
-      <BuilderConfigurator
-        builder={activeBuilder}
-        open={!!activeBuilder}
-        onOpenChange={(v) => { if (!v) setActiveBuilder(null); }}
-        onAdd={(it) => { setCart((c) => [...c, { ...it, qty: 1 }]); }}
-      />
 
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
         <DialogContent className="max-w-sm rounded-2xl">
