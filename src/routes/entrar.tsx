@@ -55,9 +55,6 @@ function CustomerAuthPage() {
   }, []);
 
   function getRestaurantLoginTarget() {
-    const slug = currentRestaurantSlug ?? lastRestaurantSlug;
-    if (slug) return { path: `/${slug}`, slug };
-
     const fromSearch = validRestaurantRedirect(search.redirect);
     if (fromSearch) return fromSearch;
 
@@ -66,6 +63,9 @@ function CustomerAuthPage() {
       const fromStored = validRestaurantRedirect(stored);
       if (fromStored) return fromStored;
     } catch {}
+
+    const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+    if (slug) return { path: `/${slug}`, slug };
 
     return null;
   }
