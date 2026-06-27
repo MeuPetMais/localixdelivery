@@ -140,6 +140,54 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     } catch {}
   }, [cart, slug]);
 
+  // Favorites state (per restaurant) for the current authenticated customer
+  const { isAuthenticated } = useCustomerAuth();
+  const restaurantId: string | undefined = data?.restaurant?.id;
+  const [favItems, setFavItems] = useState<Set<string>>(new Set());
+  const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isAuthenticated || !restaurantId) {
+      setFavItems(new Set());
+      setFavBuilders(new Set());
+      return;
+    }
+    let active = true;
+    fetchFavoriteIdsForRestaurant(restaurantId).then(({ items, builders }) => {
+      if (!active) return;
+      setFavItems(items);
+      setFavBuilders(builders);
+    });
+    return () => { active = false; };
+  }, [isAuthenticated, restaurantId]);
+
+  async function handleToggleFavorite(kind: "menu_item" | "builder", itemId: string) {
+    if (!isAuthenticated) {
+      toast.info("Entre na sua conta para favoritar este produto.");
+      navigate({ to: "/cliente" });
+      return;
+    }
+    if (!restaurantId) return;
+    const setter = kind === "menu_item" ? setFavItems : setFavBuilders;
+    // optimistic
+    setter((prev) => {
+      const next = new Set(prev);
+      next.has(itemId) ? next.delete(itemId) : next.add(itemId);
+      return next;
+    });
+    try {
+      await toggleFav({ restaurantId, kind, itemId });
+    } catch (e: any) {
+      // revert on error
+      setter((prev) => {
+        const next = new Set(prev);
+        next.has(itemId) ? next.delete(itemId) : next.add(itemId);
+        return next;
+      });
+      toast.error(e?.message ?? "Não foi possível atualizar favoritos");
+    }
+  }
+
+
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
