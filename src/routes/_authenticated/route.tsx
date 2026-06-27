@@ -53,6 +53,7 @@ function AuthLayout() {
     { to: "/orders", label: "Pedidos", icon: ClipboardList },
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
     { to: "/promotions", label: "Promoções", icon: Flame },
+    { to: "/builders", label: "Monte do Seu Jeito", icon: Sparkles },
     { to: "/customers", label: "Clientes", icon: Users },
     { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
     { to: "/reviews", label: "Avaliações", icon: Star },
