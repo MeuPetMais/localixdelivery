@@ -215,7 +215,7 @@ function BuildYourOwnPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-28">
+    <div className="min-h-screen bg-muted/30 pb-44">
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate({ to: "/r/$slug", params: { slug } })}>
@@ -316,7 +316,10 @@ function BuildYourOwnPage() {
         </Card>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 px-4 py-3 shadow-float backdrop-blur" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}>
+      <div
+        className="fixed inset-x-0 z-50 border-t bg-card/95 px-4 py-3 shadow-float backdrop-blur"
+        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+      >
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold text-muted-foreground">Total</p>
