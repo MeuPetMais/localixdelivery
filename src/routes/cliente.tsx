@@ -53,7 +53,11 @@ function ClienteArea() {
                 <ShoppingBag className="h-6 w-6" />
               </div>
               <h1 className="font-display text-2xl font-extrabold">Minha conta</h1>
-              <p className="text-sm text-muted-foreground">Acesse com seu WhatsApp para ver seus pedidos.</p>
+              <p className="text-sm text-muted-foreground">Informe seu telefone para localizar seus pedidos.</p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Prefere entrar com Google, Apple ou e-mail?{" "}
+                <Link to="/entrar" className="font-semibold text-primary hover:underline">Acessar minha conta</Link>
+              </p>
             </div>
             <form onSubmit={handleLogin} className="space-y-3">
               <label className="text-sm font-medium">WhatsApp</label>
