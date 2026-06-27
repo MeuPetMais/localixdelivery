@@ -484,12 +484,22 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {builders.map((b: any) => (
-                <button
+                <div
                   key={b.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openBuilder(b as Builder)}
-                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openBuilder(b as Builder); }}
+                  className="group relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
                 >
+                  <button
+                    type="button"
+                    aria-label="Favoritar"
+                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite("builder", b.id); }}
+                    className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                  >
+                    <Heart className={`h-4 w-4 ${favBuilders.has(b.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                  </button>
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-card text-3xl shadow-sm">
                     {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : (b.emoji ?? "✨")}
                   </div>
@@ -504,8 +514,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                       Começar <ChevronRight className="h-3 w-3" />
                     </span>
                   </div>
-                </button>
+                </div>
               ))}
+
             </div>
           </section>
         )}
