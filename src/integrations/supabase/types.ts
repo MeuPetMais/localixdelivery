@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      builder_groups: {
+        Row: {
+          builder_id: string
+          created_at: string
+          id: string
+          is_required: boolean
+          max_select: number
+          min_select: number
+          name: string
+          position: number
+        }
+        Insert: {
+          builder_id: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name: string
+          position?: number
+        }
+        Update: {
+          builder_id?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_groups_builder_id_fkey"
+            columns: ["builder_id"]
+            isOneToOne: false
+            referencedRelation: "builders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builder_options: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          max_qty: number
+          name: string
+          position: number
+          price_delta: number
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          max_qty?: number
+          name: string
+          position?: number
+          price_delta?: number
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          max_qty?: number
+          name?: string
+          position?: number
+          price_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builder_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "builder_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      builders: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          emoji: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          position: number
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          position?: number
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          position?: number
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
@@ -741,6 +877,7 @@ export type Database = {
           address_number: string | null
           avg_delivery_minutes: number | null
           avg_pickup_minutes: number | null
+          builders_enabled: boolean
           category: string | null
           city: string | null
           cnpj: string | null
@@ -784,6 +921,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_minutes?: number | null
           avg_pickup_minutes?: number | null
+          builders_enabled?: boolean
           category?: string | null
           city?: string | null
           cnpj?: string | null
@@ -827,6 +965,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_minutes?: number | null
           avg_pickup_minutes?: number | null
+          builders_enabled?: boolean
           category?: string | null
           city?: string | null
           cnpj?: string | null
