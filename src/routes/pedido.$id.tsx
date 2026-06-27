@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getPublicOrderById } from "@/lib/public-orders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,39 +51,45 @@ function statusIndex(status: string) {
 function TrackOrder() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const fetchOrder = useServerFn(getPublicOrderById);
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
-      if (!mounted) return;
-      if (!data) { setLoading(false); return; }
-      setOrder(data as Order);
-      const { data: r } = await (supabase as any)
-        .from("restaurants_public")
-        .select("id, name, slug, delivery_fee")
-        .eq("id", (data as Order).restaurant_id)
-        .maybeSingle();
-      if (!mounted) return;
-      setRestaurant(r as Restaurant);
-      setLoading(false);
+    async function load(initial = false) {
+      try {
+        const res = await fetchOrder({ data: { id } });
+        if (!mounted) return;
+        const next = (res?.order ?? null) as Order | null;
+        if (!next) { if (initial) setLoading(false); return; }
+        if (lastStatusRef.current && lastStatusRef.current !== next.status) {
+          toast.success(`Status atualizado: ${labelOf(next.status)}`);
+        }
+        lastStatusRef.current = next.status;
+        setOrder(next);
+        if (initial) {
+          const { data: r } = await (supabase as any)
+            .from("restaurants_public")
+            .select("id, name, slug, delivery_fee")
+            .eq("id", next.restaurant_id)
+            .maybeSingle();
+          if (!mounted) return;
+          setRestaurant(r as Restaurant);
+          setLoading(false);
+        }
+      } catch {
+        if (initial) setLoading(false);
+      }
     }
-    load();
-    const channel = supabase
-      .channel(`order-${id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` }, (payload) => {
-        const next = payload.new as Order;
-        setOrder((prev) => {
-          if (prev && prev.status !== next.status) toast.success(`Status atualizado: ${labelOf(next.status)}`);
-          return next;
-        });
-      })
-      .subscribe();
-    return () => { mounted = false; supabase.removeChannel(channel); };
-  }, [id]);
+    load(true);
+    const poll = setInterval(() => load(false), 20000);
+    const onFocus = () => load(false);
+    window.addEventListener("focus", onFocus);
+    return () => { mounted = false; clearInterval(poll); window.removeEventListener("focus", onFocus); };
+  }, [id, fetchOrder]);
 
   if (loading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!order) return (

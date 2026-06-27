@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getPublicOrderById } from "@/lib/public-orders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
@@ -15,20 +17,22 @@ export const Route = createFileRoute("/pedido-sucesso/$id")({
 function SuccessPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const fetchOrder = useServerFn(getPublicOrderById);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
   const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+      const res = await fetchOrder({ data: { id } });
+      const data = res?.order;
       if (!data) return;
       setOrder(data);
       const { data: r } = await (supabase as any)
         .from("restaurants_public").select("id, name, slug").eq("id", data.restaurant_id).maybeSingle();
       setRestaurant(r);
     })();
-  }, [id]);
+  }, [id, fetchOrder]);
 
   if (!order) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
