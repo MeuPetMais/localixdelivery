@@ -298,7 +298,7 @@ function SobrePage() {
   const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
   const contactRows = infoData ? [
     { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
-    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/r/${slug}` },
+    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/${slug}` },
     { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
     { icon: Facebook, label: "Facebook", value: infoData.facebook, href: infoData.facebook?.startsWith("http") ? infoData.facebook : `https://facebook.com/${infoData.facebook}` },
     { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
