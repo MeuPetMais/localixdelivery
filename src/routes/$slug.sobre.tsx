@@ -209,7 +209,6 @@ function SobrePage() {
         .eq("slug", slug)
         .maybeSingle();
       if (error) { console.error("[sobre] public-restaurant-info ERROR:", error); throw error; }
-      if (rest) console.table(rest);
       return rest as InfoData | null;
     },
   });
@@ -277,7 +276,6 @@ function SobrePage() {
         <div>
           <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
           <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
-          <Link to="/home" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
         </div>
       </div>
     );
