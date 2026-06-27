@@ -37,6 +37,10 @@ type CartItem = { id: string; name: string; price: number; qty: number };
 
 function PublicMenu() {
   const { slug } = Route.useParams();
+  return <PublicMenuScreen slug={slug} />;
+}
+
+export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
 
   useEffect(() => {
