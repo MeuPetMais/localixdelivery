@@ -290,7 +290,7 @@ function SobrePage() {
         <div>
           <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
           <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
-          <Link to="/" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
+          <Link to="/home" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
         </div>
       </div>
     );
