@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { searchOrdersByPhone } from "@/lib/public-orders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ type Order = {
 function MyOrders() {
   const { phone: initial } = Route.useSearch();
   const navigate = useNavigate();
+  const fetchByPhone = useServerFn(searchOrdersByPhone);
   const [phone, setPhone] = useState(initial ?? "");
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -36,15 +39,10 @@ function MyOrders() {
     if (digits.length < 10) { toast.error("Digite um telefone válido com DDD"); return; }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, status, total, items, created_at, restaurant_id, customer_phone")
-        .eq("customer_phone", digits)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      setOrders((data ?? []) as Order[]);
-      const ids = Array.from(new Set((data ?? []).map((o: any) => o.restaurant_id)));
+      const res = await fetchByPhone({ data: { phone: digits } });
+      const data = res?.orders ?? [];
+      setOrders(data as Order[]);
+      const ids = Array.from(new Set(data.map((o: any) => o.restaurant_id)));
       if (ids.length) {
         const { data: rs } = await (supabase as any)
           .from("restaurants_public").select("id, name, slug").in("id", ids);
