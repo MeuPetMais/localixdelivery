@@ -261,8 +261,15 @@ function PublicMenu() {
 
         {/* 🔥 Promoções do Dia */}
         {(() => {
+          const now = new Date();
           const promos = (items as any[])
-            .filter((i) => i.is_available && i.promo_price && Number(i.promo_price) > 0 && Number(i.promo_price) < Number(i.price))
+            .filter((i) => {
+              if (!i.is_available) return false;
+              if (!i.promo_price || Number(i.promo_price) <= 0 || Number(i.promo_price) >= Number(i.price)) return false;
+              if (i.promo_starts_at && now.getTime() < new Date(i.promo_starts_at).getTime()) return false;
+              if (i.promo_ends_at && now.getTime() > new Date(i.promo_ends_at).getTime()) return false;
+              return true;
+            })
             .map((i) => {
               const pct = Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100);
               return { ...i, _pct: pct };
