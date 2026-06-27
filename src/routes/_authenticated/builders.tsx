@@ -174,6 +174,29 @@ function BuildersPage() {
         </Card>
       </div>
 
+      {(() => {
+        const activeCount = (builders ?? []).filter((b: any) => b.is_active).length;
+        const totalCount = (builders ?? []).length;
+        const visible = !!restaurant.builders_enabled && activeCount > 0;
+        const reason = !restaurant.builders_enabled
+          ? "Módulo desativado."
+          : totalCount === 0
+          ? "Nenhum configurador criado."
+          : activeCount === 0
+          ? "Todos os configuradores estão pausados."
+          : null;
+        return (
+          <Card className={`rounded-2xl border p-4 ${visible ? "bg-success/5 border-success/30" : "bg-amber-500/5 border-amber-500/30"}`}>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+              <span className="font-bold">{restaurant.builders_enabled ? "✅ Módulo ativado" : "⛔ Módulo desativado"}</span>
+              <span>Configuradores publicados: <strong>{activeCount}</strong>{totalCount > activeCount && <span className="text-muted-foreground"> / {totalCount}</span>}</span>
+              <span>Exibido para clientes: <strong>{visible ? "Sim" : "Não"}</strong></span>
+              {!visible && reason && <span className="text-amber-700 dark:text-amber-400">Motivo: {reason}</span>}
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* Templates */}
       <Card className="rounded-2xl p-5">
         <h2 className="mb-3 font-display text-lg font-bold">Comece a partir de um modelo</h2>
