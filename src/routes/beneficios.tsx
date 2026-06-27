@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNavSpacer } from "@/components/BottomNav";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { getMyBenefits, type BenefitsPayload } from "@/lib/benefits.functions";
-import { formatCurrency } from "@/lib/format";
+import { brl } from "@/lib/format";
 
 export const Route = createFileRoute("/beneficios")({
   head: () => ({ meta: [{ title: "Meus Benefícios — Localix" }] }),
