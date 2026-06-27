@@ -554,7 +554,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   {catItems.map((it: any) => {
                     const hasPromo = isPromoActiveNow(it);
                     return (
-                      <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                      <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                        <button
+                          type="button"
+                          aria-label="Favoritar"
+                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                        >
+                          <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                        </button>
+
                         <div className="flex min-w-0 flex-1 flex-col">
                           <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
                           {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
