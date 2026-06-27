@@ -76,7 +76,7 @@ function MyOrders() {
       <header className="border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <h1 className="font-display text-xl font-extrabold">Meus pedidos</h1>
-          <Link to="/" className="text-xs text-muted-foreground hover:underline">Início</Link>
+          <Link to="/home" className="text-xs text-muted-foreground hover:underline">Início</Link>
         </div>
       </header>
       <main className="mx-auto max-w-2xl space-y-4 px-4 py-5">

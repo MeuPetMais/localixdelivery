@@ -96,7 +96,7 @@ function TrackOrder() {
     <div className="grid min-h-screen place-items-center px-4 text-center">
       <div>
         <p className="text-lg font-bold">Pedido não encontrado</p>
-        <Link to="/" className="text-sm text-primary hover:underline">Voltar para o início</Link>
+        <Link to="/home" className="text-sm text-primary hover:underline">Voltar para o início</Link>
       </div>
     </div>
   );
