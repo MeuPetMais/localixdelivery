@@ -56,6 +56,10 @@ function AuthView() {
   const { restaurantPath, prepareLoginRedirect, currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
   const emailRedirect = restaurantPath ?? "/cliente";
 
+  function prepareEmailLogin() {
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+  }
+
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
     prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
@@ -123,12 +127,14 @@ function AuthView() {
 
           <Button asChild variant="secondary" className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold">
             <Link to="/entrar" search={{ redirect: emailRedirect }}>
-              <Mail className="h-5 w-5" /> Entrar com e-mail
+              <span onClick={prepareEmailLogin} className="flex items-center gap-2">
+                <Mail className="h-5 w-5" /> Entrar com e-mail
+              </span>
             </Link>
           </Button>
 
           <div className="flex flex-col gap-1 pt-1 text-center text-sm">
-            <Link to="/entrar" search={{ redirect: emailRedirect }} className="font-semibold text-primary hover:underline">
+            <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin} className="font-semibold text-primary hover:underline">
               Criar uma conta
             </Link>
             <Link to="/esqueci-senha" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
