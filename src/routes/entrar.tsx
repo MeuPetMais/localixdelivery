@@ -48,9 +48,20 @@ function CustomerAuthPage() {
   const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
 
   useEffect(() => {
+    let redirected = false;
+    const redirectIfAuthenticated = (session: unknown) => {
+      if (!session || redirected) return;
+      redirected = true;
+      goNext();
+    };
+
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) goNext();
+      redirectIfAuthenticated(data.session);
     });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      redirectIfAuthenticated(session);
+    });
+    return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
