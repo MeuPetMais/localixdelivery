@@ -183,15 +183,20 @@ function PublicMenu() {
     );
   }
 
-  if (!data || !data.restaurant) return (
-    <div className="grid min-h-screen place-items-center px-4 text-center">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
-        <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
-        <Link to="/" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
+  if (!data || !data.restaurant) {
+    // Clear cached slug so the BottomNav "Home" button stops pointing at a broken slug.
+    try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+    console.warn("[r/$slug] Renderizando fallback 'Restaurante não encontrado' para slug:", slug);
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
+          <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
+          <Link to="/" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
