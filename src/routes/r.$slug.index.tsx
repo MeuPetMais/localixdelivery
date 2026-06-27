@@ -327,6 +327,42 @@ function PublicMenu() {
           );
         })()}
 
+        {/* 🍕 Monte do Seu Jeito */}
+        {builders && builders.length > 0 && (
+          <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-xl font-extrabold tracking-tight">🍕 Monte do Seu Jeito</h2>
+              <span className="text-xs font-semibold text-muted-foreground">{builders.length} {builders.length === 1 ? "opção" : "opções"}</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {builders.map((b: any) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => { if (!restaurant.is_open) { toast.error("Restaurante fechado"); return; } setActiveBuilder(b as Builder); }}
+                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
+                >
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-card text-3xl shadow-sm">
+                    {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : (b.emoji ?? "✨")}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-primary">Personalizado</span>
+                    </div>
+                    <h3 className="font-display text-base font-extrabold leading-tight">{b.name}</h3>
+                    {b.description && <p className="line-clamp-1 text-xs text-muted-foreground">{b.description}</p>}
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+                      Começar <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+
         {/* category chips */}
         {categories.length > 0 && (
           <nav className="sticky top-0 z-20 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur">
