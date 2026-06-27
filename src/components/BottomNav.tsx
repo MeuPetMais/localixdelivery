@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Search, Heart, Receipt, User } from "lucide-react";
+import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -12,7 +12,7 @@ type Item = {
 
 const items: Item[] = [
   { key: "home", label: "Início", icon: Home, match: (p) => p === "/" || p.startsWith("/r/") },
-  { key: "buscar", label: "Buscar", icon: Search, match: (p) => p.startsWith("/buscar") },
+  { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
@@ -60,8 +60,8 @@ export function BottomNav() {
               ? lastSlug
                 ? `/r/${lastSlug}`
                 : "/"
-              : key === "buscar"
-                ? "/buscar"
+              : key === "beneficios"
+                ? "/beneficios"
                 : key === "favoritos"
                   ? "/favoritos"
                   : key === "pedidos"
