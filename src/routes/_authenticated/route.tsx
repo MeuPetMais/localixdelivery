@@ -30,7 +30,12 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) {
+      const reason = "authenticated_area_without_session";
+      console.log("[ROUTER] before redirect", { from: location.pathname, reason });
+      setTimeout(() => console.log("[ROUTER] after redirect", location.pathname), 0);
+      throw redirect({ to: "/auth" });
+    }
     return { user: data.user };
   },
   component: AuthLayout,
@@ -45,7 +50,9 @@ function AuthLayout() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    const reason = "restaurant_panel_logout";
+    console.log("[ROUTER] before redirect", { from: location.pathname, reason });
+    navigate({ to: "/auth", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
   }
 
   const nav = [

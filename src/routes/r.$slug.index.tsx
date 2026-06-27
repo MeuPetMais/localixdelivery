@@ -21,6 +21,15 @@ import type { Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
+  loader: ({ params, location }) => {
+    console.log("[LOADER]", { slug: params.slug, pathname: location.pathname });
+    return null;
+  },
+  errorComponent: ({ error }) => {
+    console.error("[LOADER ERROR]", error);
+    return <div className="grid min-h-screen place-items-center px-4 text-center">Não conseguimos carregar esta página.</div>;
+  },
+  notFoundComponent: () => <div className="grid min-h-screen place-items-center px-4 text-center">Restaurante não encontrado.</div>,
   component: PublicMenu,
 });
 
@@ -28,6 +37,10 @@ type CartItem = { id: string; name: string; price: number; qty: number };
 
 function PublicMenu() {
   const { slug } = Route.useParams();
+  return <PublicMenuScreen slug={slug} />;
+}
+
+export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,14 +52,22 @@ function PublicMenu() {
     enabled: !!slug,
     retry: 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
     queryFn: async () => {
+      const pathname = typeof window !== "undefined" ? window.location.pathname : `/r/${slug}`;
+      const slugExtraido = slug;
+      console.log("[LOADER]", { slug, pathname });
+      console.log({ pathname, slugExtraido });
       console.log("[r/$slug] Consulta iniciada para slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
+      console.log("[LOADER RESULT]", rest);
       if (error) {
         console.error("[r/$slug] Erro retornado pelo Supabase:", error);
         throw error;

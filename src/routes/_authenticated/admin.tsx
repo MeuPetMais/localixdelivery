@@ -35,7 +35,11 @@ function AdminPage() {
   });
 
   useEffect(() => {
-    if (!rolesLoading && !isAdmin) navigate({ to: "/dashboard", replace: true });
+    if (!rolesLoading && !isAdmin) {
+      const reason = "admin_route_without_admin_role";
+      console.log("[ROUTER] before redirect", { from: location.pathname, reason });
+      navigate({ to: "/dashboard", replace: true }).then(() => console.log("[ROUTER] after redirect", location.pathname));
+    }
   }, [rolesLoading, isAdmin, navigate]);
 
   if (rolesLoading || !isAdmin) {
