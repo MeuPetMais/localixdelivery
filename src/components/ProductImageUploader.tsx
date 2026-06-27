@@ -34,21 +34,17 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      const list = Array.from(files);
-      for (const f of list) {
+      let acc = [...images];
+      for (const f of Array.from(files)) {
         setProgress(5);
         try {
           const { storage_path, url } = await uploadProductImage(f, restaurantId, setProgress);
-          const next: ProductImage = {
-            storage_path,
-            url,
-            is_primary: visible.length === 0,
-            position: visible.length,
-            _new: true,
-          };
-          // recompute on next iteration with the updated array
-          images = [...images, next];
-          onChange([...images]);
+          const vis = acc.filter((i) => !i._delete);
+          acc = [
+            ...acc,
+            { storage_path, url, is_primary: vis.length === 0, position: vis.length, _new: true },
+          ];
+          onChange([...acc]);
           toast.success("Foto enviada");
         } catch (e: any) {
           toast.error(e?.message ?? "Falha no upload");
@@ -57,7 +53,7 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
         }
       }
     },
-    [restaurantId, images, visible.length, onChange],
+    [restaurantId, images, onChange],
   );
 
   function onDrop(e: React.DragEvent) {
