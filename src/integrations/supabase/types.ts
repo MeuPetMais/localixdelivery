@@ -432,6 +432,7 @@ export type Database = {
           is_available: boolean
           is_bestseller: boolean
           is_featured: boolean
+          is_paused: boolean
           name: string
           position: number
           prep_time_minutes: number | null
@@ -440,6 +441,9 @@ export type Database = {
           promo_ends_at: string | null
           promo_price: number | null
           promo_starts_at: string | null
+          recurrence_days: number[] | null
+          recurrence_end_time: string | null
+          recurrence_start_time: string | null
           restaurant_id: string
           updated_at: string
         }
@@ -455,6 +459,7 @@ export type Database = {
           is_available?: boolean
           is_bestseller?: boolean
           is_featured?: boolean
+          is_paused?: boolean
           name: string
           position?: number
           prep_time_minutes?: number | null
@@ -463,6 +468,9 @@ export type Database = {
           promo_ends_at?: string | null
           promo_price?: number | null
           promo_starts_at?: string | null
+          recurrence_days?: number[] | null
+          recurrence_end_time?: string | null
+          recurrence_start_time?: string | null
           restaurant_id: string
           updated_at?: string
         }
@@ -478,6 +486,7 @@ export type Database = {
           is_available?: boolean
           is_bestseller?: boolean
           is_featured?: boolean
+          is_paused?: boolean
           name?: string
           position?: number
           prep_time_minutes?: number | null
@@ -486,6 +495,9 @@ export type Database = {
           promo_ends_at?: string | null
           promo_price?: number | null
           promo_starts_at?: string | null
+          recurrence_days?: number[] | null
+          recurrence_end_time?: string | null
+          recurrence_start_time?: string | null
           restaurant_id?: string
           updated_at?: string
         }
