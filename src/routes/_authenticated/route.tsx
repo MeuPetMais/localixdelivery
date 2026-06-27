@@ -21,6 +21,7 @@ import {
   Star,
   Menu as MenuIcon,
   X,
+  Flame,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-role";
