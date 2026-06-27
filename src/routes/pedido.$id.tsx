@@ -219,7 +219,7 @@ function TrackOrder() {
           <Button variant="outline" onClick={handleRepeat} disabled={!restaurant?.slug}>
             <RotateCw className="mr-1.5 h-4 w-4" /> Pedir novamente
           </Button>
-          <Button variant="secondary" onClick={() => navigate({ to: "/meus-pedidos", search: { phone: order.customer_phone } })}>
+          <Button variant="secondary" onClick={() => navigate({ to: "/meus-pedidos" })}>
             <Store className="mr-1.5 h-4 w-4" /> Meus pedidos
           </Button>
         </div>
