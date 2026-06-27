@@ -25,17 +25,14 @@ export function BottomNav() {
   const navigate = useNavigate();
   const [lastSlug, setLastSlug] = useState<string | null>(null);
 
-  // Track the last restaurant the customer visited so "Início" returns to it.
+  // Read the last validated restaurant slug so "Início" returns to it.
+  // The restaurant page writes this only after confirming the slug exists.
   useEffect(() => {
-    const m = pathname.match(/^\/r\/([^/]+)/);
-    if (m) {
-      try { sessionStorage.setItem(LAST_SLUG_KEY, m[1]); } catch {}
-      setLastSlug(m[1]);
-    } else {
-      try {
-        const v = sessionStorage.getItem(LAST_SLUG_KEY);
-        if (v) setLastSlug(v);
-      } catch {}
+    try {
+      const v = sessionStorage.getItem(LAST_SLUG_KEY);
+      setLastSlug(v || null);
+    } catch {
+      setLastSlug(null);
     }
   }, [pathname]);
 
