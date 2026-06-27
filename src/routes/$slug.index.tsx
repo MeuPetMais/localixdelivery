@@ -15,9 +15,12 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart } from "lucide-react";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
+import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
+
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -100,6 +103,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
   }, [data, activeCat]);
 
+  // Deep-link from Favoritos: /{slug}?add={menuItemId}
+  const [addHandled, setAddHandled] = useState(false);
+  useEffect(() => {
+    if (addHandled || !data?.items?.length || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const addId = params.get("add");
+    if (!addId) return;
+    const item: any = (data.items as any[]).find((i) => i.id === addId);
+    if (item) {
+      const price = isPromoActiveNow(item) ? Number(item.promo_price) : Number(item.price);
+      setCart((c) => {
+        const found = c.find((x) => x.id === item.id);
+        if (found) return c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x);
+        return [...c, { id: item.id, name: item.name, price, qty: 1 }];
+      });
+      setOpenSheet(true);
+      toast.success(`${item.name} adicionado`);
+    } else {
+      toast.error("Produto não está mais disponível");
+    }
+    params.delete("add");
+    const q = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (q ? `?${q}` : ""));
+    setAddHandled(true);
+  }, [data, addHandled]);
+
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(`repeat:${slug}`);
@@ -136,6 +166,54 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       sessionStorage.setItem(`cart:${slug}`, JSON.stringify(cart));
     } catch {}
   }, [cart, slug]);
+
+  // Favorites state (per restaurant) for the current authenticated customer
+  const { isAuthenticated } = useCustomerAuth();
+  const restaurantId: string | undefined = data?.restaurant?.id;
+  const [favItems, setFavItems] = useState<Set<string>>(new Set());
+  const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isAuthenticated || !restaurantId) {
+      setFavItems(new Set());
+      setFavBuilders(new Set());
+      return;
+    }
+    let active = true;
+    fetchFavoriteIdsForRestaurant(restaurantId).then(({ items, builders }) => {
+      if (!active) return;
+      setFavItems(items);
+      setFavBuilders(builders);
+    });
+    return () => { active = false; };
+  }, [isAuthenticated, restaurantId]);
+
+  async function handleToggleFavorite(kind: "menu_item" | "builder", itemId: string) {
+    if (!isAuthenticated) {
+      toast.info("Entre na sua conta para favoritar este produto.");
+      navigate({ to: "/cliente" });
+      return;
+    }
+    if (!restaurantId) return;
+    const setter = kind === "menu_item" ? setFavItems : setFavBuilders;
+    // optimistic
+    setter((prev) => {
+      const next = new Set(prev);
+      next.has(itemId) ? next.delete(itemId) : next.add(itemId);
+      return next;
+    });
+    try {
+      await toggleFav({ restaurantId, kind, itemId });
+    } catch (e: any) {
+      // revert on error
+      setter((prev) => {
+        const next = new Set(prev);
+        next.has(itemId) ? next.delete(itemId) : next.add(itemId);
+        return next;
+      });
+      toast.error(e?.message ?? "Não foi possível atualizar favoritos");
+    }
+  }
+
 
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
@@ -356,6 +434,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         -{it._pct}%
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      aria-label="Favoritar"
+                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                      className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                    >
+                      <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                    </button>
                     <div className="relative h-32 w-full bg-muted">
                       {it.image_url ? (
                         <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
@@ -365,6 +451,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         </div>
                       )}
                     </div>
+
                     <div className="flex flex-1 flex-col gap-1 p-3">
                       <h3 className="line-clamp-1 text-sm font-bold leading-snug">{it.name}</h3>
                       {it.description && <p className="line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
@@ -397,12 +484,22 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {builders.map((b: any) => (
-                <button
+                <div
                   key={b.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openBuilder(b as Builder)}
-                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openBuilder(b as Builder); }}
+                  className="group relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
                 >
+                  <button
+                    type="button"
+                    aria-label="Favoritar"
+                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite("builder", b.id); }}
+                    className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                  >
+                    <Heart className={`h-4 w-4 ${favBuilders.has(b.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                  </button>
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-card text-3xl shadow-sm">
                     {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : (b.emoji ?? "✨")}
                   </div>
@@ -417,8 +514,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                       Começar <ChevronRight className="h-3 w-3" />
                     </span>
                   </div>
-                </button>
+                </div>
               ))}
+
             </div>
           </section>
         )}
@@ -456,7 +554,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   {catItems.map((it: any) => {
                     const hasPromo = isPromoActiveNow(it);
                     return (
-                      <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                      <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                        <button
+                          type="button"
+                          aria-label="Favoritar"
+                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                        >
+                          <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                        </button>
+
                         <div className="flex min-w-0 flex-1 flex-col">
                           <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
                           {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
