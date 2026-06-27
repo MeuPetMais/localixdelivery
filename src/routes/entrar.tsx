@@ -16,6 +16,21 @@ const searchSchema = z.object({
   redirect: z.string().optional(),
 });
 
+const RESERVED_TOP = new Set([
+  "", "home", "inicio", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
+  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
+  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
+  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
+  "reviews", "suppliers", "units", "builders", "r", "api",
+]);
+
+function validRestaurantRedirect(path?: string | null) {
+  if (!path || !path.startsWith("/") || path === "/" || path.startsWith("/home") || path.startsWith("/inicio")) return null;
+  const slug = path.split("/")[1] ?? "";
+  if (!slug || slug.includes(".") || RESERVED_TOP.has(slug)) return null;
+  return { path: `/${slug}`, slug };
+}
+
 export const Route = createFileRoute("/entrar")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
   validateSearch: searchSchema,
@@ -39,27 +54,38 @@ function CustomerAuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function getRestaurantLoginTarget() {
+    const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+    if (slug) return { path: `/${slug}`, slug };
+
+    const fromSearch = validRestaurantRedirect(search.redirect);
+    if (fromSearch) return fromSearch;
+
+    try {
+      const stored = sessionStorage.getItem("postLoginRedirect");
+      const fromStored = validRestaurantRedirect(stored);
+      if (fromStored) return fromStored;
+    } catch {}
+
+    return null;
+  }
+
+  function persistLoginTarget() {
+    const target = getRestaurantLoginTarget();
+    if (target) return prepareLoginRedirect(target.slug);
+    try { sessionStorage.setItem("postLoginRedirect", "/cliente"); } catch {}
+    return "/cliente";
+  }
+
   function goNext() {
-    let target = search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("/home") && !search.redirect.startsWith("/inicio") && search.redirect !== "/" ? search.redirect : null;
-    if (!target) {
-      try {
-        const stored = sessionStorage.getItem("postLoginRedirect");
-        if (stored && stored.startsWith("/") && !stored.startsWith("/home") && !stored.startsWith("/inicio") && stored !== "/") {
-          target = stored;
-          sessionStorage.removeItem("postLoginRedirect");
-        }
-      } catch {}
-    }
-    if (!target) {
-      const slug = currentRestaurantSlug ?? lastRestaurantSlug;
-      if (slug) target = `/${slug}`;
-    }
-    navigate({ to: target ?? "/cliente", replace: true });
+    const target = getRestaurantLoginTarget();
+    try { sessionStorage.removeItem("postLoginRedirect"); } catch {}
+    navigate({ to: target?.path ?? "/cliente", replace: true });
   }
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+    persistLoginTarget();
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/entrar" });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -73,7 +99,7 @@ function CustomerAuthPage() {
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");
-    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+    persistLoginTarget();
     try {
       if (tab === "signup") {
         const { error } = await supabase.auth.signUp({
