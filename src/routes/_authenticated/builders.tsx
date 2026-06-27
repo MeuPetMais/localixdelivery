@@ -11,9 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles, ImagePlus, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import { brl } from "@/lib/format";
+import { uploadProductImage, deleteProductImage } from "@/lib/image-upload";
+import { Progress } from "@/components/ui/progress";
+import { useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
