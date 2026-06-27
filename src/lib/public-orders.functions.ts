@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 
 const ORDER_FIELDS =
   "id, order_number, status, total, discount, items, customer_name, customer_phone, address, payment_method, created_at, updated_at, estimated_delivery_time, restaurant_id";
