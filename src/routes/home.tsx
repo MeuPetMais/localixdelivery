@@ -21,8 +21,8 @@ type PublicRestaurant = {
   name: string;
   logo_url: string | null;
   cover_url: string | null;
-  cuisine: string | null;
-  active: boolean | null;
+  category: string | null;
+  is_open: boolean | null;
 };
 
 function CustomerHome() {
@@ -33,8 +33,7 @@ function CustomerHome() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("slug, name, logo_url, cover_url, cuisine, active")
-        .eq("active", true)
+        .select("slug, name, logo_url, cover_url, category, is_open")
         .order("name", { ascending: true })
         .limit(60);
       if (error) throw error;
