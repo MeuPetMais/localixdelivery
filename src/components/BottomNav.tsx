@@ -2,6 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Item = {
   key: string;
@@ -28,12 +29,40 @@ export function BottomNav() {
   // Read the last validated restaurant slug so "Início" returns to it.
   // The restaurant page writes this only after confirming the slug exists.
   useEffect(() => {
-    try {
-      const v = sessionStorage.getItem(LAST_SLUG_KEY);
-      setLastSlug(v || null);
-    } catch {
-      setLastSlug(null);
+    let cancelled = false;
+
+    async function loadLastRestaurant() {
+      let saved: string | null = null;
+      try {
+        saved = sessionStorage.getItem(LAST_SLUG_KEY);
+      } catch {
+        saved = null;
+      }
+
+      if (!saved) {
+        if (!cancelled) setLastSlug(null);
+        return;
+      }
+
+      const { data, error } = await (supabase as any)
+        .from("restaurants_public")
+        .select("slug")
+        .eq("slug", saved)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !data?.slug) {
+        try { sessionStorage.removeItem(LAST_SLUG_KEY); } catch {}
+        setLastSlug(null);
+        return;
+      }
+
+      setLastSlug(data.slug);
     }
+
+    loadLastRestaurant();
+    return () => { cancelled = true; };
   }, [pathname]);
 
   function handleClick(e: React.MouseEvent, key: string) {
