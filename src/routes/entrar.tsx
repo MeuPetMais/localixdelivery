@@ -45,7 +45,7 @@ function CustomerAuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
-  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect, restaurantPath } = useCustomerNavigation();
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -80,7 +80,20 @@ function CustomerAuthPage() {
   function goNext() {
     const target = getRestaurantLoginTarget();
     try { sessionStorage.removeItem("postLoginRedirect"); } catch {}
-    navigate({ to: target?.path ?? "/cliente", replace: true });
+    if (target?.slug) {
+      navigate({ to: "/$slug", params: { slug: target.slug }, replace: true });
+      return;
+    }
+    navigate({ to: "/cliente", replace: true });
+  }
+
+  function goBack() {
+    const target = getRestaurantLoginTarget();
+    if (target?.slug) {
+      navigate({ to: "/$slug", params: { slug: target.slug }, replace: true });
+      return;
+    }
+    navigate({ to: "/cliente", replace: true });
   }
 
   async function handleOAuth(provider: "google" | "apple") {
@@ -130,7 +143,7 @@ function CustomerAuthPage() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
         <button
-          onClick={() => navigate({ to: restaurantPath ?? "/cliente", replace: true })}
+          onClick={goBack}
           className="mb-4 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar
