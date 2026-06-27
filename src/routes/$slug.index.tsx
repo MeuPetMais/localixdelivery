@@ -103,6 +103,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
   }, [data, activeCat]);
 
+  // Deep-link from Favoritos: /{slug}?add={menuItemId}
+  const [addHandled, setAddHandled] = useState(false);
+  useEffect(() => {
+    if (addHandled || !data?.items?.length || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const addId = params.get("add");
+    if (!addId) return;
+    const item: any = (data.items as any[]).find((i) => i.id === addId);
+    if (item) {
+      const price = isPromoActiveNow(item) ? Number(item.promo_price) : Number(item.price);
+      setCart((c) => {
+        const found = c.find((x) => x.id === item.id);
+        if (found) return c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x);
+        return [...c, { id: item.id, name: item.name, price, qty: 1 }];
+      });
+      setOpenSheet(true);
+      toast.success(`${item.name} adicionado`);
+    } else {
+      toast.error("Produto não está mais disponível");
+    }
+    params.delete("add");
+    const q = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (q ? `?${q}` : ""));
+    setAddHandled(true);
+  }, [data, addHandled]);
+
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(`repeat:${slug}`);
