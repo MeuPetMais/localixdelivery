@@ -109,57 +109,16 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    console.group("[BOOT]");
-    console.log("href:", window.location.href);
-    console.log("pathname:", window.location.pathname);
-    console.log("search:", window.location.search);
-    console.log("hash:", window.location.hash);
-    console.log("userAgent:", navigator.userAgent);
-    console.log("isStandalone:", window.matchMedia("(display-mode: standalone)").matches);
-    console.groupEnd();
-
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
-        console.log("[SW]", registrations);
-        registrations.forEach((registration) => {
-          console.log("[SW] unregistering legacy registration", registration.scope);
-          registration.unregister();
-        });
-      }).catch((error) => console.warn("[SW] failed to inspect registrations", error));
-    } else {
-      console.log("[SW]", []);
+        registrations.forEach((registration) => registration.unregister());
+      }).catch(() => {});
     }
-
-    if ("caches" in window) {
-      caches.keys().then((keys) => {
-        console.log("[CACHE]", keys);
-        if (import.meta.env.DEV) {
-          keys.forEach((key) => {
-            console.log("[CACHE] deleting during development", key);
-            caches.delete(key);
-          });
-        }
-      }).catch((error) => console.warn("[CACHE] failed to inspect keys", error));
-    } else {
-      console.log("[CACHE]", []);
+    if ("caches" in window && import.meta.env.DEV) {
+      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key))).catch(() => {});
     }
   }, []);
 
-  useEffect(() => {
-    const unsubscribeBeforeNavigate = router.subscribe("onBeforeNavigate", (event) => {
-      console.log("[NAVIGATION before]", {
-        from: event.fromLocation?.pathname,
-        to: event.toLocation.pathname,
-      });
-    });
-    const unsubscribeResolved = router.subscribe("onResolved", () => {
-      console.log("[NAVIGATION]", router.state.location.pathname);
-    });
-    return () => {
-      unsubscribeBeforeNavigate();
-      unsubscribeResolved();
-    };
-  }, [router]);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
