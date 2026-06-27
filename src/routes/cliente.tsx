@@ -177,10 +177,16 @@ function ProfileView({ user }: { user: User }) {
     .join("")
     .toUpperCase();
 
+  const restaurantPath = getRestaurantReturnPath();
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
-    navigate({ to: "/home" });
+    if (restaurantPath) {
+      window.location.assign(restaurantPath);
+    } else {
+      navigate({ to: "/cliente", replace: true });
+    }
   }
 
   return (
