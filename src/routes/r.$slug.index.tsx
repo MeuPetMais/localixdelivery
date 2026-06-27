@@ -75,7 +75,16 @@ function PublicMenu() {
   }, [isError, error]);
 
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(`cart:${slug}`);
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [activeBuilder, setActiveBuilder] = useState<Builder | null>(null);
@@ -100,6 +109,28 @@ function PublicMenu() {
     } catch {}
   }, [slug]);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`builder:add:${slug}`);
+      if (!raw) return;
+      const item = JSON.parse(raw) as { id: string; name: string; price: number };
+      if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
+        setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
+        setOpenSheet(true);
+        toast.success("Item personalizado adicionado ao carrinho");
+      }
+      sessionStorage.removeItem(`builder:add:${slug}`);
+    } catch {
+      sessionStorage.removeItem(`builder:add:${slug}`);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(`cart:${slug}`, JSON.stringify(cart));
+    } catch {}
+  }, [cart, slug]);
+
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
@@ -112,7 +143,7 @@ function PublicMenu() {
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const openBuilder = (builder: Builder) => {
-    const destination = `/r/${slug}/montar`;
+    const destination = `/r/${slug}/montar?builder=${builder.id}`;
     console.log(destination);
     console.log("[Build] slug:", slug);
     console.log("[Build] restaurant:", data?.restaurant ?? null);
@@ -126,7 +157,7 @@ function PublicMenu() {
       setBuilderUnavailableOpen(true);
       return;
     }
-    setActiveBuilder(builder);
+    navigate({ to: "/r/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
   };
 
   if (isLoading || (!data && !isError)) {
