@@ -40,11 +40,7 @@ export const getMyOrders = createServerFn({ method: "GET" })
       restaurants = rs ?? [];
     }
 
-    const favoritesCount = await context.supabase
-      .from("customer_favorites")
-      .select("restaurant_id", { count: "exact", head: true })
-      .then((r) => r.count ?? 0);
-
-    return { orders: list, restaurants, favoritesCount };
+    return { orders: list, restaurants };
   });
+
 
