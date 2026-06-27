@@ -11,13 +11,27 @@ type Item = {
   match: (p: string) => boolean;
 };
 
+const RESERVED_TOP = new Set([
+  "", "home", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
+  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
+  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
+  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
+  "reviews", "suppliers", "units", "builders", "r",
+]);
+
+function isRestaurantPath(p: string) {
+  const seg = p.split("/")[1] ?? "";
+  return !!seg && !RESERVED_TOP.has(seg) && !seg.includes(".");
+}
+
 const items: Item[] = [
-  { key: "home", label: "Início", icon: Home, match: (p) => p === "/home" || p.startsWith("/r/") },
+  { key: "home", label: "Início", icon: Home, match: (p) => p === "/home" || isRestaurantPath(p) },
   { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
 ];
+
 
 const LAST_SLUG_KEY = "localix:last-restaurant-slug";
 
@@ -68,7 +82,7 @@ export function BottomNav() {
   function handleClick(e: React.MouseEvent, key: string) {
     if (key !== "home") return;
     e.preventDefault();
-    if (lastSlug) navigate({ to: "/r/$slug", params: { slug: lastSlug } });
+    if (lastSlug) navigate({ to: "/$slug", params: { slug: lastSlug } });
     else navigate({ to: "/home" });
   }
 
@@ -84,7 +98,7 @@ export function BottomNav() {
           const to =
             key === "home"
               ? lastSlug
-                ? `/r/${lastSlug}`
+                ? `/${lastSlug}`
                 : "/home"
               : key === "beneficios"
                 ? "/beneficios"

@@ -880,7 +880,7 @@ function Onboarding({ ownerId, onCreated }: { ownerId: string; onCreated: () => 
           <div className="space-y-1.5">
             <Label htmlFor="slug">URL pública</Label>
             <div className="flex items-center rounded-md border bg-muted/40 px-3">
-              <span className="text-sm text-muted-foreground"><//span>
+              <span className="text-sm text-muted-foreground">/</span>
               <Input
                 id="slug"
                 required
