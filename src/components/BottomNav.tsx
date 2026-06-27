@@ -42,6 +42,7 @@ export function BottomNav() {
       rememberRestaurantRoute(activeSlug, { route: `/${activeSlug}`, scrollY: typeof window !== "undefined" ? window.scrollY : 0 });
     }
     if (key !== "home") return;
+    if (!activeSlug) return;
     e.preventDefault();
     navigateToRestaurant(activeSlug);
   }
