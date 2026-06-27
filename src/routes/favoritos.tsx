@@ -29,7 +29,7 @@ function FavoritosPage() {
               <Link to="/cliente">Abrir Área do Cliente</Link>
             </Button>
             <Button asChild variant="ghost" size="sm" className="rounded-full">
-              <Link to="/">Voltar ao início</Link>
+              <Link to="/home">Voltar ao início</Link>
             </Button>
           </div>
         </div>

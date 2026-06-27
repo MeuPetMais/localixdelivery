@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -51,6 +52,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritosRoute = FavoritosRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/home': typeof HomeRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/home': typeof HomeRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/home': typeof HomeRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/home'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/admin'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/home'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/admin'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/home'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/_authenticated/admin'
@@ -425,6 +437,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
+  HomeRoute: typeof HomeRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -446,6 +459,13 @@ declare module '@tanstack/react-router' {
       path: '/meus-pedidos'
       fullPath: '/meus-pedidos'
       preLoaderRoute: typeof MeusPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/favoritos': {
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
+  HomeRoute: HomeRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,

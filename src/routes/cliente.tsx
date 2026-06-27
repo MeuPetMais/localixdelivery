@@ -258,7 +258,7 @@ function ClienteDashboard({ data, onExit }: { data: AreaData; onExit: () => void
         </section>
 
         <p className="pt-4 text-center text-xs text-muted-foreground">
-          <Link to="/" className="hover:underline">← Voltar para o início</Link>
+          <Link to="/home" className="hover:underline">← Voltar para o início</Link>
         </p>
       </main>
     </div>
