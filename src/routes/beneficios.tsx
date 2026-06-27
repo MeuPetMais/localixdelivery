@@ -22,13 +22,12 @@ import { BottomNavSpacer } from "@/components/BottomNav";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { getMyBenefits, type BenefitsPayload } from "@/lib/benefits.functions";
 import { brl } from "@/lib/format";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/beneficios")({
   head: () => ({ meta: [{ title: "Meus Benefícios — Localix" }] }),
   component: BeneficiosPage,
 });
-
-const LAST_SLUG_KEY = "localix:last-restaurant-slug";
 
 function formatDate(iso: string | null) {
   if (!iso) return null;
@@ -111,15 +110,8 @@ function SectionTitle({ icon: Icon, title, subtitle }: { icon: React.ElementType
 function BeneficiosPage() {
   const { loading: authLoading, isAuthenticated } = useCustomerAuth();
   const navigate = useNavigate();
-  const [lastSlug, setLastSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      setLastSlug(sessionStorage.getItem(LAST_SLUG_KEY));
-    } catch {
-      setLastSlug(null);
-    }
-  }, []);
+  const { lastRestaurantSlug, currentRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const lastSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
   const fetchBenefits = useServerFn(getMyBenefits);
   const { data, isLoading } = useQuery<BenefitsPayload>({
@@ -160,10 +152,10 @@ function BeneficiosPage() {
                 </p>
                 <div className="mt-4 flex gap-2">
                   <Button asChild size="sm" className="rounded-full">
-                    <Link to="/entrar">Entrar</Link>
+                    <Link to="/entrar" search={{ redirect: prepareLoginRedirect(lastSlug) }}>Entrar</Link>
                   </Button>
                   <Button asChild size="sm" variant="ghost" className="rounded-full">
-                    <Link to="/entrar">Criar conta</Link>
+                    <Link to="/entrar" search={{ redirect: prepareLoginRedirect(lastSlug) }}>Criar conta</Link>
                   </Button>
                 </div>
               </div>

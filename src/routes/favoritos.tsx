@@ -11,6 +11,7 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { listMyFavoritesEnriched, toggleFavorite, type EnrichedFavorite } from "@/lib/favorites";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/favoritos")({
   head: () => ({ meta: [{ title: "Favoritos — Localix" }] }),
@@ -28,14 +29,6 @@ function FavoritosPage() {
       <BottomNavSpacer />
     </div>
   );
-}
-
-function getLastSlug(): string | null {
-  try {
-    return sessionStorage.getItem("localix:last-restaurant-slug");
-  } catch {
-    return null;
-  }
 }
 
 function LoadingState() {
@@ -211,9 +204,10 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
 }
 
 function EmptyState() {
-  const lastSlug = getLastSlug();
   const [slugInput, setSlugInput] = useState("");
   const navigate = useNavigate();
+  const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const lastSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
   function explore() {
     const target = (slugInput.trim() || lastSlug || "").replace(/^\/+/, "").split("/")[0];
@@ -260,6 +254,9 @@ function EmptyState() {
 }
 
 function LoginPrompt() {
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const redirect = prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+
   return (
     <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="relative mx-auto mb-7 grid h-24 w-24 place-items-center">
@@ -274,7 +271,7 @@ function LoginPrompt() {
       </p>
       <div className="mt-7 flex flex-col gap-2">
         <Button asChild size="lg" className="rounded-full">
-          <Link to="/cliente">
+          <Link to="/entrar" search={{ redirect }}>
             <LogIn className="mr-2 h-4 w-4" /> Entrar na minha conta
           </Link>
         </Button>

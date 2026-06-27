@@ -20,13 +20,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/cliente")({
   head: () => ({ meta: [{ title: "Minha Conta — Localix" }] }),
   component: MinhaContaPage,
 });
-
-import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 function MinhaContaPage() {
   const { user, loading } = useCustomerAuth();
@@ -43,7 +43,7 @@ function MinhaContaPage() {
 }
 
 const BENEFITS = [
-  { icon: Heart, label: "Favoritos", desc: "Salve seus restaurantes" },
+  { icon: Heart, label: "Favoritos", desc: "Salve seus pratos" },
   { icon: Tag, label: "Promoções", desc: "Cupons exclusivos" },
   { icon: Sparkles, label: "Fidelidade", desc: "Acumule pontos" },
   { icon: History, label: "Histórico", desc: "Todos os pedidos" },
@@ -51,26 +51,16 @@ const BENEFITS = [
   { icon: Zap, label: "Checkout rápido", desc: "Peça em 1 toque" },
 ];
 
-function getRestaurantReturnPath(): string | null {
-  try {
-    const slug = sessionStorage.getItem("localix:last-restaurant-slug");
-    if (slug) return `/${slug}`;
-  } catch {}
-  return null;
-}
-
 function AuthView() {
   const [loading, setLoading] = useState<null | "google" | "apple">(null);
-  const returnPath = getRestaurantReturnPath();
-  const emailRedirect = returnPath ?? "/cliente";
+  const { restaurantPath, prepareLoginRedirect, currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const emailRedirect = restaurantPath ?? "/cliente";
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    try {
-      if (returnPath) sessionStorage.setItem("postLoginRedirect", returnPath);
-    } catch {}
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + (returnPath ?? "/cliente"),
+      redirect_uri: window.location.origin + "/entrar",
     });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -157,6 +147,7 @@ function AuthView() {
 
 function ProfileView({ user }: { user: User }) {
   const navigate = useNavigate();
+  const { restaurantPath } = useCustomerNavigation();
   const meta = (user.user_metadata ?? {}) as Record<string, any>;
   const name = meta.full_name || meta.name || user.email?.split("@")[0] || "Cliente";
   const avatar = meta.avatar_url || meta.picture;
@@ -167,13 +158,11 @@ function ProfileView({ user }: { user: User }) {
     .join("")
     .toUpperCase();
 
-  const restaurantPath = getRestaurantReturnPath();
-
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
     if (restaurantPath) {
-      window.location.assign(restaurantPath);
+      navigate({ to: restaurantPath as any, replace: true });
     } else {
       navigate({ to: "/cliente", replace: true });
     }
