@@ -15,7 +15,7 @@ import type { Builder } from "@/components/BuilderConfigurator";
 
 type Selection = Record<string, Record<string, number>>;
 
-export const Route = createFileRoute("/r/$slug/montar")({
+export const Route = createFileRoute("/$slug/montar")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     builder: typeof s.builder === "string" ? s.builder : undefined,
@@ -195,7 +195,7 @@ function BuildYourOwnPage() {
       sessionStorage.setItem(`builder:add:${slug}`, JSON.stringify(item));
     } catch {}
     toast.success("Adicionado ao carrinho");
-    navigate({ to: "/r/$slug", params: { slug } });
+    navigate({ to: "/$slug", params: { slug } });
   }
 
   if (isLoading) return <BuildSkeleton />;
@@ -212,7 +212,7 @@ function BuildYourOwnPage() {
     <div className="min-h-screen bg-muted/30 pb-44">
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate({ to: "/r/$slug", params: { slug } })}>
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate({ to: "/$slug", params: { slug } })}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           {data.restaurant.logo_url && <img src={data.restaurant.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" />}
@@ -352,7 +352,7 @@ function BuildUnavailable({ slug, title, description }: { slug: string; title: s
         <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-2xl">✨</div>
         <h1 className="font-display text-2xl font-extrabold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-        <Link to="/r/$slug" params={{ slug }} className="mt-5 inline-flex w-full">
+        <Link to="/$slug" params={{ slug }} className="mt-5 inline-flex w-full">
           <Button className="w-full">Voltar ao cardápio</Button>
         </Link>
       </Card>

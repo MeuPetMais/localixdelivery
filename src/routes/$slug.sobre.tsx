@@ -34,7 +34,7 @@ import {
 const VALID_TABS = ["avaliacoes", "horarios", "info", "pagamentos"] as const;
 type ProfileTab = (typeof VALID_TABS)[number];
 
-export const Route = createFileRoute("/r/$slug/sobre")({
+export const Route = createFileRoute("/$slug/sobre")({
   head: () => ({ meta: [{ title: "Sobre o estabelecimento — Localix" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     tab: VALID_TABS.includes(s.tab as ProfileTab) ? (s.tab as ProfileTab) : "avaliacoes",
@@ -298,7 +298,7 @@ function SobrePage() {
   const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
   const contactRows = infoData ? [
     { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
-    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/r/${slug}` },
+    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/${slug}` },
     { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
     { icon: Facebook, label: "Facebook", value: infoData.facebook, href: infoData.facebook?.startsWith("http") ? infoData.facebook : `https://facebook.com/${infoData.facebook}` },
     { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
@@ -332,7 +332,7 @@ function SobrePage() {
       {/* header */}
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <Link to="/r/$slug" params={{ slug }}>
+          <Link to="/$slug" params={{ slug }}>
             <Button variant="ghost" size="icon" className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -345,7 +345,7 @@ function SobrePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-4 pt-4">
-        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/r/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })} className="w-full">
+        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })} className="w-full">
           <TabsList className="grid h-12 w-full grid-cols-4 rounded-2xl bg-card p-1 shadow-elegant">
             <TabsTrigger value="avaliacoes" className="rounded-xl text-xs sm:text-sm">
               <Star className="mr-1 h-3.5 w-3.5" /> Avaliações

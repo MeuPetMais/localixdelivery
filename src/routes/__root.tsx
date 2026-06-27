@@ -138,6 +138,14 @@ function RootComponent() {
   );
 }
 
+const RESERVED_TOP = new Set([
+  "", "home", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
+  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
+  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
+  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
+  "reviews", "suppliers", "units", "builders", "r",
+]);
+
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
   (p) => p === "/home",
   (p) => p.startsWith("/beneficios"),
@@ -145,8 +153,13 @@ const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
   (p) => p.startsWith("/meus-pedidos"),
   (p) => p.startsWith("/cliente"),
   (p) => p.startsWith("/pedido"),
-  (p) => p.startsWith("/r/"),
+  (p) => {
+    // /{slug}/* — público do restaurante
+    const seg = p.split("/")[1] ?? "";
+    return !!seg && !RESERVED_TOP.has(seg) && !seg.includes(".");
+  },
 ];
+
 
 function CustomerBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
