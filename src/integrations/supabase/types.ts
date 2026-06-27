@@ -436,7 +436,10 @@ export type Database = {
           position: number
           prep_time_minutes: number | null
           price: number
+          promo_campaign: string | null
+          promo_ends_at: string | null
           promo_price: number | null
+          promo_starts_at: string | null
           restaurant_id: string
           updated_at: string
         }
@@ -456,7 +459,10 @@ export type Database = {
           position?: number
           prep_time_minutes?: number | null
           price: number
+          promo_campaign?: string | null
+          promo_ends_at?: string | null
           promo_price?: number | null
+          promo_starts_at?: string | null
           restaurant_id: string
           updated_at?: string
         }
@@ -476,7 +482,10 @@ export type Database = {
           position?: number
           prep_time_minutes?: number | null
           price?: number
+          promo_campaign?: string | null
+          promo_ends_at?: string | null
           promo_price?: number | null
+          promo_starts_at?: string | null
           restaurant_id?: string
           updated_at?: string
         }

@@ -261,8 +261,15 @@ function PublicMenu() {
 
         {/* 🔥 Promoções do Dia */}
         {(() => {
+          const now = new Date();
           const promos = (items as any[])
-            .filter((i) => i.is_available && i.promo_price && Number(i.promo_price) > 0 && Number(i.promo_price) < Number(i.price))
+            .filter((i) => {
+              if (!i.is_available) return false;
+              if (!i.promo_price || Number(i.promo_price) <= 0 || Number(i.promo_price) >= Number(i.price)) return false;
+              if (i.promo_starts_at && now.getTime() < new Date(i.promo_starts_at).getTime()) return false;
+              if (i.promo_ends_at && now.getTime() > new Date(i.promo_ends_at).getTime()) return false;
+              return true;
+            })
             .map((i) => {
               const pct = Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100);
               return { ...i, _pct: pct };
@@ -356,7 +363,11 @@ function PublicMenu() {
                 <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
                 <div className="grid gap-3">
                   {catItems.map((it: any) => {
-                    const hasPromo = it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price);
+                    const _now = Date.now();
+                    const _inWindow =
+                      (!it.promo_starts_at || _now >= new Date(it.promo_starts_at).getTime()) &&
+                      (!it.promo_ends_at || _now <= new Date(it.promo_ends_at).getTime());
+                    const hasPromo = !!(it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price) && _inWindow);
                     return (
                       <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
                         <div className="flex min-w-0 flex-1 flex-col">

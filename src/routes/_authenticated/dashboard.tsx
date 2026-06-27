@@ -177,6 +177,8 @@ function Dashboard() {
         </div>
       </header>
 
+      <ActivePromosBanner restaurantId={restaurant.id} />
+
       {/* Loja Online + Marketing cards */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="relative overflow-hidden border-primary/20 p-5 shadow-sm">
@@ -695,6 +697,44 @@ function Dashboard() {
         </div>
       </section>
     </div>
+  );
+}
+
+function ActivePromosBanner({ restaurantId }: { restaurantId: string }) {
+  const { data: count = 0 } = useQuery({
+    queryKey: ["active-promos-count", restaurantId],
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id,price,promo_price,promo_starts_at,promo_ends_at,is_available")
+        .eq("restaurant_id", restaurantId)
+        .not("promo_price", "is", null);
+      return (data ?? []).filter((i: any) => {
+        if (!i.is_available) return false;
+        if (!i.promo_price || Number(i.promo_price) >= Number(i.price)) return false;
+        if (i.promo_starts_at && nowIso < i.promo_starts_at) return false;
+        if (i.promo_ends_at && nowIso > i.promo_ends_at) return false;
+        return true;
+      }).length;
+    },
+    refetchInterval: 60_000,
+  });
+  if (count === 0) return null;
+  return (
+    <Link
+      to="/promotions"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-gradient-to-r from-destructive/10 to-primary/5 px-4 py-3 transition hover:shadow-sm"
+    >
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-destructive text-destructive-foreground shadow">🔥</span>
+        <div>
+          <p className="font-display text-base font-extrabold">{count} {count === 1 ? "Promoção Ativa" : "Promoções Ativas"}</p>
+          <p className="text-xs text-muted-foreground">Toque para gerenciar suas ofertas</p>
+        </div>
+      </div>
+      <span className="text-sm font-semibold text-primary">Ver todas →</span>
+    </Link>
   );
 }
 
