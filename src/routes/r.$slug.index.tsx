@@ -137,7 +137,7 @@ function PublicMenu() {
     </div>
   );
 
-  const { restaurant, categories, items } = data;
+  const { restaurant, categories, items, builders } = data as any;
 
 
   return (
