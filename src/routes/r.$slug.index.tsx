@@ -363,7 +363,11 @@ function PublicMenu() {
                 <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
                 <div className="grid gap-3">
                   {catItems.map((it: any) => {
-                    const hasPromo = it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price);
+                    const _now = Date.now();
+                    const _inWindow =
+                      (!it.promo_starts_at || _now >= new Date(it.promo_starts_at).getTime()) &&
+                      (!it.promo_ends_at || _now <= new Date(it.promo_ends_at).getTime());
+                    const hasPromo = !!(it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price) && _inWindow);
                     return (
                       <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
                         <div className="flex min-w-0 flex-1 flex-col">
