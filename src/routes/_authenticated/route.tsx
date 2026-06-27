@@ -52,6 +52,7 @@ function AuthLayout() {
     { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
     { to: "/orders", label: "Pedidos", icon: ClipboardList },
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
+    { to: "/promotions", label: "Promoções", icon: Flame },
     { to: "/customers", label: "Clientes", icon: Users },
     { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
     { to: "/reviews", label: "Avaliações", icon: Star },
