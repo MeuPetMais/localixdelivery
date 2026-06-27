@@ -61,7 +61,7 @@ function AuthLayout() {
     { to: "/inventory", label: "Estoque", icon: Package },
     { to: "/finance-ai", label: "Relatórios", icon: LineChart },
     { to: "/units", label: "Multiunidades", icon: Building2 },
-    { to: "/suppliers", label: "Compras", icon: Store },
+    { to: "/suppliers", label: "Central de Negócios", icon: Store },
     { to: "/settings", label: "Perfil do Estabelecimento", icon: Settings },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
