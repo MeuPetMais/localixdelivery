@@ -188,7 +188,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   if (!data || !data.restaurant) {
     // Clear cached slug so the BottomNav "Home" button stops pointing at a broken slug.
     try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
-    console.warn("[r/$slug] Renderizando fallback 'Restaurante não encontrado' para slug:", slug);
+    try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
