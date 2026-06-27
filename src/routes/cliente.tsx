@@ -61,13 +61,26 @@ const BENEFITS = [
   { icon: Zap, label: "Checkout rápido", desc: "Peça em 1 toque" },
 ];
 
+function getRestaurantReturnPath(): string | null {
+  try {
+    const slug = sessionStorage.getItem("localix:last-restaurant-slug");
+    if (slug) return `/${slug}`;
+  } catch {}
+  return null;
+}
+
 function AuthView() {
   const [loading, setLoading] = useState<null | "google" | "apple">(null);
+  const returnPath = getRestaurantReturnPath();
+  const emailRedirect = returnPath ?? "/cliente";
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
+    try {
+      if (returnPath) sessionStorage.setItem("postLoginRedirect", returnPath);
+    } catch {}
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + "/cliente",
+      redirect_uri: window.location.origin + (returnPath ?? "/cliente"),
     });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
