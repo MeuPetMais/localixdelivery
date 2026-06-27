@@ -61,6 +61,7 @@ function PublicMenu() {
         (supabase as any).from("builders").select("*, builder_groups(*, builder_options(*))").eq("restaurant_id", rest.id).eq("is_active", true).order("position"),
       ]);
       console.log("[r/$slug] Consulta finalizada. Categorias:", cats.data?.length ?? 0, "Itens:", items.data?.length ?? 0);
+      console.log("[Monte do Seu Jeito] restaurante:", rest.id, "configuradores ativos:", builders.data?.length ?? 0, builders.error ?? "");
       return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [], builders: builders.data ?? [] };
     },
   });
