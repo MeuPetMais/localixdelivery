@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -45,6 +46,11 @@ const MeusPedidosRoute = MeusPedidosRouteImport.update({
 const FavoritosRoute = FavoritosRouteImport.update({
   id: '/favoritos',
   path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClienteRoute = ClienteRouteImport.update({
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
     | '/admin'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
     | '/favoritos'
     | '/meus-pedidos'
     | '/_authenticated/admin'
@@ -350,6 +362,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BuscarRoute: typeof BuscarRoute
   ClienteRoute: typeof ClienteRoute
+  EntrarRoute: typeof EntrarRoute
   FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/favoritos'
       fullPath: '/favoritos'
       preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cliente': {
@@ -608,6 +628,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BuscarRoute: BuscarRoute,
   ClienteRoute: ClienteRoute,
+  EntrarRoute: EntrarRoute,
   FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
