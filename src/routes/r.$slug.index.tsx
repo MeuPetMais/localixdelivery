@@ -440,6 +440,13 @@ function PublicMenu() {
         </div>
       </div>
 
+      <BuilderConfigurator
+        builder={activeBuilder}
+        open={!!activeBuilder}
+        onOpenChange={(v) => { if (!v) setActiveBuilder(null); }}
+        onAdd={(it) => { setCart((c) => [...c, { ...it, qty: 1 }]); }}
+      />
+
       {/* floating cart — sits above the BottomNav */}
       {totalQty > 0 && (
         <div
