@@ -12,7 +12,7 @@ type Item = {
 };
 
 const items: Item[] = [
-  { key: "home", label: "Início", icon: Home, match: (p) => p === "/" || p.startsWith("/r/") },
+  { key: "home", label: "Início", icon: Home, match: (p) => p === "/home" || p.startsWith("/r/") },
   { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
@@ -69,7 +69,7 @@ export function BottomNav() {
     if (key !== "home") return;
     e.preventDefault();
     if (lastSlug) navigate({ to: "/r/$slug", params: { slug: lastSlug } });
-    else navigate({ to: "/" });
+    else navigate({ to: "/home" });
   }
 
   return (
@@ -85,7 +85,7 @@ export function BottomNav() {
             key === "home"
               ? lastSlug
                 ? `/r/${lastSlug}`
-                : "/"
+                : "/home"
               : key === "beneficios"
                 ? "/beneficios"
                 : key === "favoritos"
