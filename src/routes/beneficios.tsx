@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BottomNavSpacer } from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 export const Route = createFileRoute("/beneficios")({
   head: () => ({ meta: [{ title: "Benefícios — Localix" }] }),
@@ -14,11 +15,10 @@ export const Route = createFileRoute("/beneficios")({
 const LAST_SLUG_KEY = "localix:last-restaurant-slug";
 
 function BeneficiosPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const { loading, isAuthenticated } = useCustomerAuth();
   const [lastSlug, setLastSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
     let cancelled = false;
 
     async function loadLastRestaurant() {
@@ -77,7 +77,7 @@ function BeneficiosPage() {
           </p>
         </header>
 
-        {authed === false && (
+        {!loading && !isAuthenticated && (
           <Card className="mb-6 border-primary/30 bg-primary/5 p-5 animate-in fade-in duration-500">
             <div className="flex items-start gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">

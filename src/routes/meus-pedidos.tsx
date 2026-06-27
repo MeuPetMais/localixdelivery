@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 import { getMyOrders } from "@/lib/public-orders.functions";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,33 +55,15 @@ function getLastSlug(): string | null {
 function MyOrders() {
   const navigate = useNavigate();
   const fetchMyOrders = useServerFn(getMyOrders);
-  const [authReady, setAuthReady] = useState(false);
-  const [user, setUser] = useState<{ id: string; email?: string; meta?: any } | null>(null);
+  const { user, loading: authLoading, isAuthenticated } = useCustomerAuth();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Record<string, RestaurantInfo>>({});
 
   useEffect(() => {
-    let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      const u = data.user;
-      setUser(u ? { id: u.id, email: u.email, meta: u.user_metadata } : null);
-      setAuthReady(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      const u = session?.user;
-      setUser(u ? { id: u.id, email: u.email, meta: u.user_metadata } : null);
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!authReady || !user) {
-      if (authReady && !user) setLoading(false);
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setLoading(false);
       return;
     }
     let active = true;
@@ -99,7 +81,7 @@ function MyOrders() {
     return () => {
       active = false;
     };
-  }, [authReady, user, fetchMyOrders]);
+  }, [authLoading, isAuthenticated, fetchMyOrders]);
 
   const { active, finished, stats } = useMemo(() => {
     const activeList = orders.filter((o) => ACTIVE_STATUSES.has(o.status));
