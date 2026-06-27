@@ -31,6 +31,10 @@ function validRestaurantRedirect(path?: string | null) {
   return { path: `/${slug}`, slug };
 }
 
+function readStoredLoginRedirect() {
+  try { return sessionStorage.getItem("postLoginRedirect"); } catch { return null; }
+}
+
 export const Route = createFileRoute("/entrar")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
   validateSearch: searchSchema,
@@ -69,11 +73,8 @@ function CustomerAuthPage() {
     const fromSearch = validRestaurantRedirect(search.redirect);
     if (fromSearch) return fromSearch;
 
-    try {
-      const stored = sessionStorage.getItem("postLoginRedirect");
-      const fromStored = validRestaurantRedirect(stored);
-      if (fromStored) return fromStored;
-    } catch {}
+    const fromStored = validRestaurantRedirect(readStoredLoginRedirect());
+    if (fromStored) return fromStored;
 
     const slug = currentRestaurantSlug ?? lastRestaurantSlug;
     if (slug) return { path: `/${slug}`, slug };
@@ -84,8 +85,7 @@ function CustomerAuthPage() {
   function persistLoginTarget() {
     const target = getRestaurantLoginTarget();
     if (target) return prepareLoginRedirect(target.slug);
-    try { sessionStorage.setItem("postLoginRedirect", "/cliente"); } catch {}
-    return "/cliente";
+    return null;
   }
 
   function goNext() {
@@ -109,7 +109,12 @@ function CustomerAuthPage() {
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    persistLoginTarget();
+    const redirectPath = persistLoginTarget();
+    if (!redirectPath) {
+      toast.error("Abra o link do restaurante antes de entrar.");
+      setLoading(null);
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/entrar" });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -123,7 +128,12 @@ function CustomerAuthPage() {
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");
-    persistLoginTarget();
+    const redirectPath = persistLoginTarget();
+    if (!redirectPath) {
+      toast.error("Abra o link do restaurante antes de entrar.");
+      setLoading(null);
+      return;
+    }
     try {
       if (tab === "signup") {
         const { error } = await supabase.auth.signUp({
