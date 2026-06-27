@@ -54,12 +54,13 @@ function PublicMenu() {
         return { restaurant: null, categories: [], items: [] };
       }
       console.log("[r/$slug] Restaurante encontrado:", rest.id, rest.name);
-      const [cats, items] = await Promise.all([
+      const [cats, items, builders] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
         supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
+        (supabase as any).from("builders").select("*, builder_groups(*, builder_options(*))").eq("restaurant_id", rest.id).eq("is_active", true).order("position"),
       ]);
       console.log("[r/$slug] Consulta finalizada. Categorias:", cats.data?.length ?? 0, "Itens:", items.data?.length ?? 0);
-      return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [] };
+      return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [], builders: builders.data ?? [] };
     },
   });
 
