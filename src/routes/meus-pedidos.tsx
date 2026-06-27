@@ -46,7 +46,7 @@ function MyOrders() {
   const navigate = useNavigate();
   const fetchMyOrders = useServerFn(getMyOrders);
   const { user, loading: authLoading, isAuthenticated } = useCustomerAuth();
-  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Record<string, RestaurantInfo>>({});
@@ -142,7 +142,7 @@ function MyOrders() {
               Faça login para acompanhar seus pedidos, favoritos e histórico de compras.
             </p>
             <Button asChild className="mt-6 rounded-full" size="lg">
-              <Link to="/entrar" search={{ redirect: prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug) }}>
+              <Link to="/entrar" search={{ redirect: currentRestaurantSlug || lastRestaurantSlug ? `/${currentRestaurantSlug ?? lastRestaurantSlug}` : "/cliente" }}>
                 Entrar na minha conta
               </Link>
             </Button>

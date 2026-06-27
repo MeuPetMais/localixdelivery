@@ -254,8 +254,9 @@ function EmptyState() {
 }
 
 function LoginPrompt() {
-  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
-  const redirect = prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+  const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+  const redirect = slug ? `/${slug}` : "/cliente";
 
   return (
     <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">

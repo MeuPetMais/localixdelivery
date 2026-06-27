@@ -110,8 +110,9 @@ function SectionTitle({ icon: Icon, title, subtitle }: { icon: React.ElementType
 function BeneficiosPage() {
   const { loading: authLoading, isAuthenticated } = useCustomerAuth();
   const navigate = useNavigate();
-  const { lastRestaurantSlug, currentRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const { lastRestaurantSlug, currentRestaurantSlug } = useCustomerNavigation();
   const lastSlug = currentRestaurantSlug ?? lastRestaurantSlug;
+  const loginRedirect = lastSlug ? `/${lastSlug}` : "/cliente";
 
   const fetchBenefits = useServerFn(getMyBenefits);
   const { data, isLoading } = useQuery<BenefitsPayload>({
@@ -152,10 +153,10 @@ function BeneficiosPage() {
                 </p>
                 <div className="mt-4 flex gap-2">
                   <Button asChild size="sm" className="rounded-full">
-                    <Link to="/entrar" search={{ redirect: prepareLoginRedirect(lastSlug) }}>Entrar</Link>
+                    <Link to="/entrar" search={{ redirect: loginRedirect }}>Entrar</Link>
                   </Button>
                   <Button asChild size="sm" variant="ghost" className="rounded-full">
-                    <Link to="/entrar" search={{ redirect: prepareLoginRedirect(lastSlug) }}>Criar conta</Link>
+                    <Link to="/entrar" search={{ redirect: loginRedirect }}>Criar conta</Link>
                   </Button>
                 </div>
               </div>
