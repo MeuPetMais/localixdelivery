@@ -128,7 +128,7 @@ function RootComponent() {
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
   (p) => p === "/",
-  (p) => p.startsWith("/buscar"),
+  (p) => p.startsWith("/beneficios"),
   (p) => p.startsWith("/favoritos"),
   (p) => p.startsWith("/meus-pedidos"),
   (p) => p.startsWith("/cliente"),

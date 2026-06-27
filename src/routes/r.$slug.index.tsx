@@ -74,6 +74,12 @@ function PublicMenu() {
     if (isError) console.error("[r/$slug] Estado de erro após retries:", error);
   }, [isError, error]);
 
+  useEffect(() => {
+    if (data?.restaurant?.slug) {
+      try { sessionStorage.setItem("localix:last-restaurant-slug", data.restaurant.slug); } catch {}
+    }
+  }, [data?.restaurant?.slug]);
+
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
