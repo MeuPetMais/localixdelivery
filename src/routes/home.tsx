@@ -47,14 +47,14 @@ function CustomerHome() {
     return restaurants.filter(
       (r) =>
         r.name?.toLowerCase().includes(term) ||
-        (r.cuisine ?? "").toLowerCase().includes(term),
+        (r.category ?? "").toLowerCase().includes(term),
     );
   }, [restaurants, q]);
 
   const categories = useMemo(() => {
     const set = new Map<string, number>();
     for (const r of restaurants) {
-      const c = (r.cuisine ?? "").trim();
+      const c = (r.category ?? "").trim();
       if (!c) continue;
       set.set(c, (set.get(c) ?? 0) + 1);
     }
@@ -148,8 +148,8 @@ function CustomerHome() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold">{r.name}</p>
-                      {r.cuisine && (
-                        <p className="truncate text-xs text-muted-foreground">{r.cuisine}</p>
+                      {r.category && (
+                        <p className="truncate text-xs text-muted-foreground">{r.category}</p>
                       )}
                     </div>
                   </Link>
