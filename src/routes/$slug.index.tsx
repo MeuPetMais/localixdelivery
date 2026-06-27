@@ -15,9 +15,12 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart } from "lucide-react";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
+import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
+
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
