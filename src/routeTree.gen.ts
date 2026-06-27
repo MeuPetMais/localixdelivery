@@ -9,8 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -37,6 +40,11 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as RSlugIndexRouteImport } from './routes/r.$slug.index'
 import { Route as RSlugSobreRouteImport } from './routes/r.$slug.sobre'
 
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
@@ -45,6 +53,16 @@ const MeusPedidosRoute = MeusPedidosRouteImport.update({
 const FavoritosRoute = FavoritosRouteImport.update({
   id: '/favoritos',
   path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClienteRoute = ClienteRouteImport.update({
@@ -177,8 +195,11 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -205,8 +226,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -234,8 +258,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/cliente': typeof ClienteRoute
+  '/entrar': typeof EntrarRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
@@ -264,8 +291,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/admin'
     | '/ai'
     | '/consultor'
@@ -292,8 +322,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/admin'
     | '/ai'
     | '/consultor'
@@ -320,8 +353,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/cliente'
+    | '/entrar'
+    | '/esqueci-senha'
     | '/favoritos'
     | '/meus-pedidos'
+    | '/redefinir-senha'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/consultor'
@@ -350,8 +386,11 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BuscarRoute: typeof BuscarRoute
   ClienteRoute: typeof ClienteRoute
+  EntrarRoute: typeof EntrarRoute
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSlugRoute: typeof RSlugRouteWithChildren
@@ -359,6 +398,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meus-pedidos': {
       id: '/meus-pedidos'
       path: '/meus-pedidos'
@@ -371,6 +417,20 @@ declare module '@tanstack/react-router' {
       path: '/favoritos'
       fullPath: '/favoritos'
       preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cliente': {
@@ -608,8 +668,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BuscarRoute: BuscarRoute,
   ClienteRoute: ClienteRoute,
+  EntrarRoute: EntrarRoute,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSlugRoute: RSlugRouteWithChildren,
