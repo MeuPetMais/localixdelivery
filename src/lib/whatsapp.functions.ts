@@ -80,6 +80,7 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         restaurant_id: rest.id,
+        customer_id: customerId,
         customer_name: data.customer.name,
         customer_phone: data.customer.phone,
         address: data.customer.address,
