@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 import { getMyOrders } from "@/lib/public-orders.functions";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,33 +55,15 @@ function getLastSlug(): string | null {
 function MyOrders() {
   const navigate = useNavigate();
   const fetchMyOrders = useServerFn(getMyOrders);
-  const [authReady, setAuthReady] = useState(false);
-  const [user, setUser] = useState<{ id: string; email?: string; meta?: any } | null>(null);
+  const { user, loading: authLoading, isAuthenticated } = useCustomerAuth();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Record<string, RestaurantInfo>>({});
 
   useEffect(() => {
-    let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      const u = data.user;
-      setUser(u ? { id: u.id, email: u.email, meta: u.user_metadata } : null);
-      setAuthReady(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      const u = session?.user;
-      setUser(u ? { id: u.id, email: u.email, meta: u.user_metadata } : null);
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!authReady || !user) {
-      if (authReady && !user) setLoading(false);
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setLoading(false);
       return;
     }
     let active = true;
@@ -99,7 +81,7 @@ function MyOrders() {
     return () => {
       active = false;
     };
-  }, [authReady, user, fetchMyOrders]);
+  }, [authLoading, isAuthenticated, fetchMyOrders]);
 
   const { active, finished, stats } = useMemo(() => {
     const activeList = orders.filter((o) => ACTIVE_STATUSES.has(o.status));
@@ -141,8 +123,22 @@ function MyOrders() {
     navigate({ to: "/$slug", params: { slug: r.slug } });
   }
 
+  // Loading session — show skeleton, never the login screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
+        <Header name={null} avatarUrl={null} />
+        <main className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-2xl" />
+        </main>
+      </div>
+    );
+  }
+
   // Unauthenticated state
-  if (authReady && !user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
         <Header name={null} avatarUrl={null} />
@@ -164,13 +160,14 @@ function MyOrders() {
     );
   }
 
+  const meta = (user?.user_metadata ?? {}) as Record<string, any>;
   const displayName =
-    (user?.meta?.full_name as string | undefined) ??
-    (user?.meta?.name as string | undefined) ??
+    (meta.full_name as string | undefined) ??
+    (meta.name as string | undefined) ??
     user?.email?.split("@")[0] ??
     "Cliente";
   const avatarUrl =
-    (user?.meta?.avatar_url as string | undefined) ?? (user?.meta?.picture as string | undefined) ?? null;
+    (meta.avatar_url as string | undefined) ?? (meta.picture as string | undefined) ?? null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
