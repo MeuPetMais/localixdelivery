@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
+import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -261,19 +262,9 @@ function PublicMenu() {
 
         {/* 🔥 Promoções do Dia */}
         {(() => {
-          const now = new Date();
           const promos = (items as any[])
-            .filter((i) => {
-              if (!i.is_available) return false;
-              if (!i.promo_price || Number(i.promo_price) <= 0 || Number(i.promo_price) >= Number(i.price)) return false;
-              if (i.promo_starts_at && now.getTime() < new Date(i.promo_starts_at).getTime()) return false;
-              if (i.promo_ends_at && now.getTime() > new Date(i.promo_ends_at).getTime()) return false;
-              return true;
-            })
-            .map((i) => {
-              const pct = Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100);
-              return { ...i, _pct: pct };
-            })
+            .filter((i) => isPromoActiveNow(i))
+            .map((i) => ({ ...i, _pct: Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100) }))
             .sort((a, b) =>
               b._pct - a._pct ||
               Number(!!b.is_featured) - Number(!!a.is_featured) ||
@@ -363,11 +354,7 @@ function PublicMenu() {
                 <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
                 <div className="grid gap-3">
                   {catItems.map((it: any) => {
-                    const _now = Date.now();
-                    const _inWindow =
-                      (!it.promo_starts_at || _now >= new Date(it.promo_starts_at).getTime()) &&
-                      (!it.promo_ends_at || _now <= new Date(it.promo_ends_at).getTime());
-                    const hasPromo = !!(it.promo_price && Number(it.promo_price) > 0 && Number(it.promo_price) < Number(it.price) && _inWindow);
+                    const hasPromo = isPromoActiveNow(it);
                     return (
                       <Card key={it.id} className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
                         <div className="flex min-w-0 flex-1 flex-col">
