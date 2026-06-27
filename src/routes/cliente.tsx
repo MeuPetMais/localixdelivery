@@ -126,10 +126,8 @@ function AuthView() {
           </div>
 
           <Button asChild variant="secondary" className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold">
-            <Link to="/entrar" search={{ redirect: emailRedirect }}>
-              <span onClick={prepareEmailLogin} className="flex items-center gap-2">
-                <Mail className="h-5 w-5" /> Entrar com e-mail
-              </span>
+            <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin}>
+              <Mail className="h-5 w-5" /> Entrar com e-mail
             </Link>
           </Button>
 
