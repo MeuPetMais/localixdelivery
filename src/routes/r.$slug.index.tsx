@@ -73,6 +73,7 @@ function PublicMenu() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
+  const [activeBuilder, setActiveBuilder] = useState<Builder | null>(null);
 
   useEffect(() => {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
