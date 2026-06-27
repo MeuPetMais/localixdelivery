@@ -347,3 +347,78 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     </Dialog>
   );
 }
+
+function BuilderImageUpload({
+  restaurantId, value, onChange,
+}: { restaurantId: string; value: string; onChange: (url: string) => void | Promise<void> }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [path, setPath] = useState<string | null>(null);
+
+  async function handleFile(f: File) {
+    try {
+      setProgress(5);
+      const { storage_path, url } = await uploadProductImage(f, restaurantId, setProgress);
+      // remove previous upload from this session
+      if (path) deleteProductImage(path).catch(() => {});
+      setPath(storage_path);
+      await onChange(url);
+      toast.success("Imagem enviada");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha no upload");
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  async function clear() {
+    if (path) deleteProductImage(path).catch(() => {});
+    setPath(null);
+    await onChange("");
+  }
+
+  return (
+    <div className="space-y-2">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+
+      {value ? (
+        <div className="relative h-32 w-full overflow-hidden rounded-xl border bg-muted">
+          <img src={value} alt="" className="h-full w-full object-cover" />
+          <button type="button" onClick={clear}
+            className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className="grid h-32 w-full place-items-center rounded-xl border-2 border-dashed border-muted-foreground/25 text-muted-foreground">
+          <div className="text-center text-xs">
+            <ImagePlus className="mx-auto mb-1 h-5 w-5" />
+            Sem imagem
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={progress !== null}>
+          <ImagePlus className="mr-2 h-4 w-4" /> {value ? "Trocar" : "Enviar"}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => cameraRef.current?.click()} disabled={progress !== null}>
+          <Camera className="mr-2 h-4 w-4" /> Câmera
+        </Button>
+      </div>
+
+      {progress !== null && (
+        <div className="space-y-1">
+          <Progress value={progress} />
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Enviando… {progress}%
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
