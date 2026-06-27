@@ -90,13 +90,13 @@ export function BuilderConfigurator({
   };
 
   const subtotal = useMemo(() => {
-    let s = Number(builder.base_price) || 0;
+    let s = Number(builder?.base_price ?? 0) || 0;
     for (const g of groups) {
       const picks = sel[g.id] ?? {};
       for (const o of g.builder_options) s += (picks[o.id] ?? 0) * Number(o.price_delta);
     }
     return s;
-  }, [sel, groups, builder.base_price]);
+  }, [sel, groups, builder?.base_price]);
 
   function next() {
     if (currentGroup) {
