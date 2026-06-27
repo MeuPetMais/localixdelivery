@@ -1213,6 +1213,7 @@ export type Database = {
           address_number: string | null
           avg_delivery_minutes: number | null
           avg_pickup_minutes: number | null
+          builders_enabled: boolean | null
           category: string | null
           city: string | null
           complement: string | null
@@ -1249,6 +1250,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_minutes?: number | null
           avg_pickup_minutes?: number | null
+          builders_enabled?: boolean | null
           category?: string | null
           city?: string | null
           complement?: string | null
@@ -1285,6 +1287,7 @@ export type Database = {
           address_number?: string | null
           avg_delivery_minutes?: number | null
           avg_pickup_minutes?: number | null
+          builders_enabled?: boolean | null
           category?: string | null
           city?: string | null
           complement?: string | null

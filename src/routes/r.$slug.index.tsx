@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
@@ -16,7 +17,7 @@ import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { BuilderConfigurator, type Builder } from "@/components/BuilderConfigurator";
+import type { Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -43,7 +44,7 @@ function PublicMenu() {
       console.log("[r/$slug] Consulta iniciada para slug:", slug);
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods")
+        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
       if (error) {
@@ -62,6 +63,9 @@ function PublicMenu() {
       ]);
       console.log("[r/$slug] Consulta finalizada. Categorias:", cats.data?.length ?? 0, "Itens:", items.data?.length ?? 0);
       console.log("[Monte do Seu Jeito] restaurante:", rest.id, "configuradores ativos:", builders.data?.length ?? 0, builders.error ?? "");
+      console.log("[Build] slug:", slug);
+      console.log("[Build] restaurant:", rest);
+      console.log("[Build] config:", builders.data ?? []);
       return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [], builders: builders.data ?? [] };
     },
   });
@@ -71,10 +75,19 @@ function PublicMenu() {
   }, [isError, error]);
 
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(`cart:${slug}`);
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
-  const [activeBuilder, setActiveBuilder] = useState<Builder | null>(null);
+  const [builderUnavailableOpen, setBuilderUnavailableOpen] = useState(false);
 
   useEffect(() => {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
@@ -95,6 +108,28 @@ function PublicMenu() {
     } catch {}
   }, [slug]);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`builder:add:${slug}`);
+      if (!raw) return;
+      const item = JSON.parse(raw) as { id: string; name: string; price: number };
+      if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
+        setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
+        setOpenSheet(true);
+        toast.success("Item personalizado adicionado ao carrinho");
+      }
+      sessionStorage.removeItem(`builder:add:${slug}`);
+    } catch {
+      sessionStorage.removeItem(`builder:add:${slug}`);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(`cart:${slug}`, JSON.stringify(cart));
+    } catch {}
+  }, [cart, slug]);
+
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
@@ -105,6 +140,24 @@ function PublicMenu() {
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
+
+  const openBuilder = (builder: Builder) => {
+    const destination = `/r/${slug}/montar?builder=${builder.id}`;
+    console.log(destination);
+    console.log("[Build] slug:", slug);
+    console.log("[Build] restaurant:", data?.restaurant ?? null);
+    console.log("[Build] config:", builder);
+
+    if (!data?.restaurant?.is_open) {
+      toast.error("Restaurante fechado");
+      return;
+    }
+    if (!data?.restaurant?.builders_enabled) {
+      setBuilderUnavailableOpen(true);
+      return;
+    }
+    navigate({ to: "/r/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
+  };
 
   if (isLoading || (!data && !isError)) {
     return (
@@ -329,7 +382,7 @@ function PublicMenu() {
         })()}
 
         {/* 🍕 Monte do Seu Jeito */}
-        {builders && builders.length > 0 && (
+        {restaurant.builders_enabled && builders && builders.length > 0 && (
           <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-extrabold tracking-tight">🍕 Monte do Seu Jeito</h2>
@@ -340,7 +393,7 @@ function PublicMenu() {
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() => { if (!restaurant.is_open) { toast.error("Restaurante fechado"); return; } setActiveBuilder(b as Builder); }}
+                  onClick={() => openBuilder(b as Builder)}
                   className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
                 >
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-card text-3xl shadow-sm">
@@ -441,12 +494,16 @@ function PublicMenu() {
         </div>
       </div>
 
-      <BuilderConfigurator
-        builder={activeBuilder}
-        open={!!activeBuilder}
-        onOpenChange={(v) => { if (!v) setActiveBuilder(null); }}
-        onAdd={(it) => { setCart((c) => [...c, { ...it, qty: 1 }]); }}
-      />
+      <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Monte do seu jeito estará disponível em breve.</DialogTitle>
+            <DialogDescription>
+              O restaurante ainda está preparando essa experiência personalizada.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       {/* floating cart — sits above the BottomNav */}
       {totalQty > 0 && (

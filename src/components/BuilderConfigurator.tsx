@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,9 +39,7 @@ export function BuilderConfigurator({
   const [notes, setNotes] = useState("");
 
   // reset when builder changes
-  useMemo(() => { setStep(0); setSel({}); setNotes(""); }, [builder?.id]);
-
-  if (!builder) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
+  useEffect(() => { setStep(0); setSel({}); setNotes(""); }, [builder?.id]);
 
   const currentGroup: Group | undefined = groups[step];
 
@@ -97,6 +95,8 @@ export function BuilderConfigurator({
     }
     return s;
   }, [sel, groups, builder?.base_price]);
+
+  if (!builder) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
 
   function next() {
     if (currentGroup) {
