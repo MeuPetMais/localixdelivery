@@ -283,6 +283,8 @@ function SobrePage() {
   }
 
   if (!restaurant) {
+    try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+    console.warn("[sobre] Renderizando fallback 'Restaurante não encontrado' para slug:", slug);
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
