@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -29,6 +30,7 @@ function CustomerAuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect, restaurantPath } = useCustomerNavigation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -38,30 +40,26 @@ function CustomerAuthPage() {
   }, []);
 
   function goNext() {
-    let target = search.redirect && search.redirect.startsWith("/") ? search.redirect : null;
+    let target = search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("/home") && !search.redirect.startsWith("/inicio") && search.redirect !== "/" ? search.redirect : null;
     if (!target) {
       try {
         const stored = sessionStorage.getItem("postLoginRedirect");
-        if (stored && stored.startsWith("/")) {
+        if (stored && stored.startsWith("/") && !stored.startsWith("/home") && !stored.startsWith("/inicio") && stored !== "/") {
           target = stored;
           sessionStorage.removeItem("postLoginRedirect");
         }
       } catch {}
     }
     if (!target) {
-      try {
-        const slug = sessionStorage.getItem("localix:last-restaurant-slug");
-        if (slug) target = `/${slug}`;
-      } catch {}
+      const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+      if (slug) target = `/${slug}`;
     }
     navigate({ to: target ?? "/cliente", replace: true });
   }
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    if (search.redirect) {
-      try { sessionStorage.setItem("postLoginRedirect", search.redirect); } catch {}
-    }
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/entrar" });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -105,7 +103,7 @@ function CustomerAuthPage() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
         <button
-          onClick={() => history.length > 1 ? history.back() : navigate({ to: "/" })}
+          onClick={() => navigate({ to: restaurantPath ?? "/cliente", replace: true })}
           className="mb-4 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar
