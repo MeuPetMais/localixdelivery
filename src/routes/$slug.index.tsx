@@ -434,6 +434,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         -{it._pct}%
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      aria-label="Favoritar"
+                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                      className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                    >
+                      <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                    </button>
                     <div className="relative h-32 w-full bg-muted">
                       {it.image_url ? (
                         <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
@@ -443,6 +451,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         </div>
                       )}
                     </div>
+
                     <div className="flex flex-1 flex-col gap-1 p-3">
                       <h3 className="line-clamp-1 text-sm font-bold leading-snug">{it.name}</h3>
                       {it.description && <p className="line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
