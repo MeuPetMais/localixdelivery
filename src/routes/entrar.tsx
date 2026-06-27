@@ -73,6 +73,7 @@ function CustomerAuthPage() {
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
     try {
       if (tab === "signup") {
         const { error } = await supabase.auth.signUp({
