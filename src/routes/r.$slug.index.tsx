@@ -259,9 +259,72 @@ function PublicMenu() {
         </div>
 
 
-
-
-
+        {/* 🔥 Promoções do Dia */}
+        {(() => {
+          const promos = (items as any[])
+            .filter((i) => i.is_available && i.promo_price && Number(i.promo_price) > 0 && Number(i.promo_price) < Number(i.price))
+            .map((i) => {
+              const pct = Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100);
+              return { ...i, _pct: pct };
+            })
+            .sort((a, b) =>
+              b._pct - a._pct ||
+              Number(!!b.is_featured) - Number(!!a.is_featured) ||
+              Number(!!b.is_bestseller) - Number(!!a.is_bestseller) ||
+              (a.position ?? 0) - (b.position ?? 0),
+            );
+          if (promos.length === 0) return null;
+          return (
+            <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-display text-xl font-extrabold tracking-tight">🔥 Promoções do Dia</h2>
+                <span className="text-xs font-semibold text-muted-foreground">{promos.length} {promos.length === 1 ? "oferta" : "ofertas"}</span>
+              </div>
+              <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {promos.map((it: any) => (
+                  <Card
+                    key={`promo-${it.id}`}
+                    className="group relative flex w-[200px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border-2 border-destructive/20 bg-card shadow-sm transition hover:shadow-elegant sm:w-[220px]"
+                  >
+                    <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+                      <span className="rounded-full bg-destructive px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-destructive-foreground shadow">
+                        Promoção
+                      </span>
+                      <span className="rounded-full bg-foreground px-2 py-0.5 text-center text-[10px] font-extrabold text-background shadow">
+                        -{it._pct}%
+                      </span>
+                    </div>
+                    <div className="relative h-32 w-full bg-muted">
+                      {it.image_url ? (
+                        <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center text-muted-foreground">
+                          <ImageIcon className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 p-3">
+                      <h3 className="line-clamp-1 text-sm font-bold leading-snug">{it.name}</h3>
+                      {it.description && <p className="line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                      <div className="mt-auto flex items-baseline gap-2 pt-2">
+                        <span className="font-display text-base font-extrabold text-primary">{brl(it.promo_price)}</span>
+                        <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="mt-2 w-full rounded-xl"
+                        disabled={!restaurant.is_open}
+                        onClick={() => { add({ id: it.id, name: it.name, price: Number(it.promo_price) }); toast.success(`${it.name} adicionado`); }}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* category chips */}
         {categories.length > 0 && (
