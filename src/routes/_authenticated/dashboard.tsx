@@ -177,6 +177,8 @@ function Dashboard() {
         </div>
       </header>
 
+      <ActivePromosBanner restaurantId={restaurant.id} />
+
       {/* Loja Online + Marketing cards */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="relative overflow-hidden border-primary/20 p-5 shadow-sm">
