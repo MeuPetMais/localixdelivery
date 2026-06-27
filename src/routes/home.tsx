@@ -1,12 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Sparkles, Store, Tag, Heart, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
+import { getStoredRestaurantPath } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/home")({
+  beforeLoad: () => {
+    const restaurantPath = getStoredRestaurantPath();
+    if (restaurantPath) throw redirect({ to: restaurantPath as any, replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Localix — Peça do seu restaurante favorito" },
