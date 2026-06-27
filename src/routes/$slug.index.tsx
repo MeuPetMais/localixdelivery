@@ -157,7 +157,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       setBuilderUnavailableOpen(true);
       return;
     }
-    navigate({ to: "/r/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
+    navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
   };
 
 
@@ -310,7 +310,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           ].map((b) => (
             <Link
               key={b.tab}
-              to="/r/$slug/sobre"
+              to="/$slug/sobre"
               params={{ slug }}
               search={{ tab: b.tab }}
               className="group flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 shadow-elegant transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-premium"

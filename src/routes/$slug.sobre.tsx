@@ -332,7 +332,7 @@ function SobrePage() {
       {/* header */}
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <Link to="/r/$slug" params={{ slug }}>
+          <Link to="/$slug" params={{ slug }}>
             <Button variant="ghost" size="icon" className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -345,7 +345,7 @@ function SobrePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-4 pt-4">
-        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/r/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })} className="w-full">
+        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })} className="w-full">
           <TabsList className="grid h-12 w-full grid-cols-4 rounded-2xl bg-card p-1 shadow-elegant">
             <TabsTrigger value="avaliacoes" className="rounded-xl text-xs sm:text-sm">
               <Star className="mr-1 h-3.5 w-3.5" /> Avaliações

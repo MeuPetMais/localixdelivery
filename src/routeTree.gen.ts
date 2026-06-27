@@ -18,9 +18,11 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BeneficiosRouteImport } from './routes/beneficios'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugIndexRouteImport } from './routes/$slug.index'
+import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
@@ -88,6 +90,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SlugRoute = SlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -98,8 +105,13 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugIndexRoute = SlugIndexRouteImport.update({
-  id: '/$slug/',
-  path: '/$slug/',
+  id: '/',
+  path: '/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const RSplatRoute = RSplatRouteImport.update({
+  id: '/r/$',
+  path: '/r/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PedidoIdRoute = PedidoIdRouteImport.update({
@@ -198,18 +210,19 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const SlugSobreRoute = SlugSobreRouteImport.update({
-  id: '/$slug/sobre',
-  path: '/$slug/sobre',
-  getParentRoute: () => rootRouteImport,
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => SlugRoute,
 } as any)
 const SlugMontarRoute = SlugMontarRouteImport.update({
-  id: '/$slug/montar',
-  path: '/$slug/montar',
-  getParentRoute: () => rootRouteImport,
+  id: '/montar',
+  path: '/montar',
+  getParentRoute: () => SlugRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$slug': typeof SlugRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -240,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
 }
 export interface FileRoutesByTo {
@@ -274,12 +288,14 @@ export interface FileRoutesByTo {
   '/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/$slug': typeof SlugRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -310,12 +326,14 @@ export interface FileRoutesById {
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
+  '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$slug'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -346,6 +364,7 @@ export interface FileRouteTypes {
     | '/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
+    | '/r/$'
     | '/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -380,11 +399,13 @@ export interface FileRouteTypes {
     | '/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
+    | '/r/$'
     | '/$slug'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/$slug'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -415,12 +436,14 @@ export interface FileRouteTypes {
     | '/_authenticated/units'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
+    | '/r/$'
     | '/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  SlugRoute: typeof SlugRouteWithChildren
   AuthRoute: typeof AuthRoute
   BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
@@ -430,11 +453,9 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
-  SlugMontarRoute: typeof SlugMontarRoute
-  SlugSobreRoute: typeof SlugSobreRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
-  SlugIndexRoute: typeof SlugIndexRoute
+  RSplatRoute: typeof RSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -502,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$slug': {
+      id: '/$slug'
+      path: '/$slug'
+      fullPath: '/$slug'
+      preLoaderRoute: typeof SlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -518,9 +546,16 @@ declare module '@tanstack/react-router' {
     }
     '/$slug/': {
       id: '/$slug/'
-      path: '/$slug'
+      path: '/'
       fullPath: '/$slug/'
       preLoaderRoute: typeof SlugIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/r/$': {
+      id: '/r/$'
+      path: '/r/$'
+      fullPath: '/r/$'
+      preLoaderRoute: typeof RSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pedido/$id': {
@@ -658,17 +693,17 @@ declare module '@tanstack/react-router' {
     }
     '/$slug/sobre': {
       id: '/$slug/sobre'
-      path: '/$slug/sobre'
+      path: '/sobre'
       fullPath: '/$slug/sobre'
       preLoaderRoute: typeof SlugSobreRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SlugRoute
     }
     '/$slug/montar': {
       id: '/$slug/montar'
-      path: '/$slug/montar'
+      path: '/montar'
       fullPath: '/$slug/montar'
       preLoaderRoute: typeof SlugMontarRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SlugRoute
     }
   }
 }
@@ -716,9 +751,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface SlugRouteChildren {
+  SlugMontarRoute: typeof SlugMontarRoute
+  SlugSobreRoute: typeof SlugSobreRoute
+  SlugIndexRoute: typeof SlugIndexRoute
+}
+
+const SlugRouteChildren: SlugRouteChildren = {
+  SlugMontarRoute: SlugMontarRoute,
+  SlugSobreRoute: SlugSobreRoute,
+  SlugIndexRoute: SlugIndexRoute,
+}
+
+const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  SlugRoute: SlugRouteWithChildren,
   AuthRoute: AuthRoute,
   BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
@@ -728,11 +778,9 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
-  SlugMontarRoute: SlugMontarRoute,
-  SlugSobreRoute: SlugSobreRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
-  SlugIndexRoute: SlugIndexRoute,
+  RSplatRoute: RSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
