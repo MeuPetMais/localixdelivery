@@ -334,43 +334,119 @@ export type Database = {
           },
         ]
       }
+      menu_item_images: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          menu_item_id: string
+          position: number
+          restaurant_id: string
+          storage_path: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          menu_item_id: string
+          position?: number
+          restaurant_id: string
+          storage_path: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          menu_item_id?: string
+          position?: number
+          restaurant_id?: string
+          storage_path?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_images_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_images_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_images_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
+          available_delivery: boolean
+          available_pickup: boolean
           category_id: string | null
           created_at: string
           description: string | null
           id: string
           image_url: string | null
+          is_active: boolean
           is_available: boolean
+          is_bestseller: boolean
+          is_featured: boolean
           name: string
           position: number
+          prep_time_minutes: number | null
           price: number
+          promo_price: number | null
           restaurant_id: string
           updated_at: string
         }
         Insert: {
+          available_delivery?: boolean
+          available_pickup?: boolean
           category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_available?: boolean
+          is_bestseller?: boolean
+          is_featured?: boolean
           name: string
           position?: number
+          prep_time_minutes?: number | null
           price: number
+          promo_price?: number | null
           restaurant_id: string
           updated_at?: string
         }
         Update: {
+          available_delivery?: boolean
+          available_pickup?: boolean
           category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_available?: boolean
+          is_bestseller?: boolean
+          is_featured?: boolean
           name?: string
           position?: number
+          prep_time_minutes?: number | null
           price?: number
+          promo_price?: number | null
           restaurant_id?: string
           updated_at?: string
         }
