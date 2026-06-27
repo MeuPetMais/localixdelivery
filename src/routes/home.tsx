@@ -10,7 +10,7 @@ import { getStoredRestaurantPath } from "@/contexts/CustomerNavigationContext";
 export const Route = createFileRoute("/home")({
   beforeLoad: () => {
     const restaurantPath = getStoredRestaurantPath();
-    if (restaurantPath) throw redirect({ to: restaurantPath as any, replace: true });
+    if (restaurantPath) throw redirect({ href: restaurantPath, replace: true });
   },
   head: () => ({
     meta: [
