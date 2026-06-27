@@ -14,8 +14,9 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { BuilderConfigurator, type Builder } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/r/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
