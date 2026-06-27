@@ -127,6 +127,7 @@ export function BuilderConfigurator({
       if (names.length) parts.push(`${g.name}: ${names.join(", ")}`);
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
+    if (!builder) return;
     const name = `${builder.emoji ?? ""} ${builder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim();
     onAdd({ id: `builder:${builder.id}:${Date.now()}`, name, price: subtotal });
     toast.success("Adicionado ao carrinho");
