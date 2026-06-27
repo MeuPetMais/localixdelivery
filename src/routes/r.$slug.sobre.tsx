@@ -325,26 +325,6 @@ function SobrePage() {
   ];
   const activePaymentMethods = paymentMethods.filter((method) => method.keys.some((key) => !!pm[key]));
 
-    tab,
-    slug,
-    restaurantId,
-    "Render Info": infoData,
-    "Render Hours": hoursData,
-    "Render Payments": paymentsData,
-    "Render Reviews": reviews,
-    "Render WhatsApp": whatsappData,
-    derived: {
-      hasAddress,
-      hasMap,
-      hasAnyInfo,
-      contactRowsCount: contactRows.length,
-      activePaymentMethodsCount: activePaymentMethods.length,
-      hasHours,
-      openNow,
-      reviewsCount: reviews.length,
-    },
-    loading: { isRestaurantLoading, isInfoLoading, isHoursLoading, isPaymentsLoading, isReviewsLoading },
-  });
 
   return (
 
