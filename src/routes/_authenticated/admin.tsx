@@ -36,7 +36,6 @@ function AdminPage() {
 
   useEffect(() => {
     if (!rolesLoading && !isAdmin) {
-      const reason = "admin_route_without_admin_role";
       navigate({ to: "/dashboard", replace: true });
     }
   }, [rolesLoading, isAdmin, navigate]);

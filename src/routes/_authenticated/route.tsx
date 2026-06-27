@@ -31,7 +31,6 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      const reason = "authenticated_area_without_session";
       throw redirect({ to: "/auth" });
     }
     return { user: data.user };
@@ -48,7 +47,6 @@ function AuthLayout() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    const reason = "restaurant_panel_logout";
     navigate({ to: "/auth", replace: true });
   }
 

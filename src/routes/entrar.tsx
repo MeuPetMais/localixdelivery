@@ -39,7 +39,6 @@ function CustomerAuthPage() {
 
   function goNext() {
     const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/cliente";
-    const reason = "customer_auth_complete";
     navigate({ to: target, replace: true });
   }
 
