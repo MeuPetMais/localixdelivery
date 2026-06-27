@@ -21,6 +21,7 @@ import {
   Utensils,
   Sparkles,
 } from "lucide-react";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/meus-pedidos")({
   head: () => ({ meta: [{ title: "Meus Pedidos — Localix" }] }),
@@ -41,21 +42,11 @@ type RestaurantInfo = { id: string; name: string; slug: string; logo_url: string
 
 const ACTIVE_STATUSES = new Set(["novo", "em_preparo", "saiu_para_entrega"]);
 
-function getLastSlug(): string | null {
-  try {
-    return (
-      sessionStorage.getItem("localix:last-restaurant-slug") ??
-      localStorage.getItem("localix:last-restaurant-slug")
-    );
-  } catch {
-    return null;
-  }
-}
-
 function MyOrders() {
   const navigate = useNavigate();
   const fetchMyOrders = useServerFn(getMyOrders);
   const { user, loading: authLoading, isAuthenticated } = useCustomerAuth();
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Record<string, RestaurantInfo>>({});
@@ -98,9 +89,8 @@ function MyOrders() {
   }, [orders]);
 
   function goToRestaurant(slug?: string | null) {
-    const target = slug ?? getLastSlug();
+    const target = slug ?? currentRestaurantSlug ?? lastRestaurantSlug;
     if (target) navigate({ to: "/$slug", params: { slug: target } });
-    else navigate({ to: "/home" });
   }
 
   function repeatOrder(o: Order) {
@@ -152,7 +142,9 @@ function MyOrders() {
               Faça login para acompanhar seus pedidos, favoritos e histórico de compras.
             </p>
             <Button asChild className="mt-6 rounded-full" size="lg">
-              <Link to="/cliente">Entrar na minha conta</Link>
+              <Link to="/entrar" search={{ redirect: prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug) }}>
+                Entrar na minha conta
+              </Link>
             </Button>
           </Card>
         </main>
