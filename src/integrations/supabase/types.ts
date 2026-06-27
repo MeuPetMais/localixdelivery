@@ -1320,10 +1320,7 @@ export type Database = {
       }
     }
     Functions: {
-      is_builders_enabled: {
-        Args: { _restaurant_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "partner" | "customer"
