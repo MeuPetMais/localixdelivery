@@ -11,9 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles, ImagePlus, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import { brl } from "@/lib/format";
+import { uploadProductImage, deleteProductImage } from "@/lib/image-upload";
+import { Progress } from "@/components/ui/progress";
+import { useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
@@ -285,7 +288,17 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
         </div>
         <div className="space-y-1.5"><Label>Descrição</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5"><Label>Imagem (URL)</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." /></div>
+          <div className="space-y-1.5">
+            <Label>Imagem do modelo</Label>
+            <BuilderImageUpload
+              restaurantId={builder.restaurant_id}
+              value={form.image_url}
+              onChange={async (url) => {
+                setForm({ ...form, image_url: url });
+                await supabase.from("builders").update({ image_url: url || null }).eq("id", builder.id);
+              }}
+            />
+          </div>
           <div className="space-y-1.5"><Label>Preço base (R$)</Label><Input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></div>
         </div>
         <div className="flex justify-end"><Button size="sm" onClick={saveMeta}>Salvar dados</Button></div>
@@ -332,5 +345,80 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
         <DialogFooter><Button onClick={() => onOpenChange(false)}>Concluir</Button></DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function BuilderImageUpload({
+  restaurantId, value, onChange,
+}: { restaurantId: string; value: string; onChange: (url: string) => void | Promise<void> }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [path, setPath] = useState<string | null>(null);
+
+  async function handleFile(f: File) {
+    try {
+      setProgress(5);
+      const { storage_path, url } = await uploadProductImage(f, restaurantId, setProgress);
+      // remove previous upload from this session
+      if (path) deleteProductImage(path).catch(() => {});
+      setPath(storage_path);
+      await onChange(url);
+      toast.success("Imagem enviada");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha no upload");
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  async function clear() {
+    if (path) deleteProductImage(path).catch(() => {});
+    setPath(null);
+    await onChange("");
+  }
+
+  return (
+    <div className="space-y-2">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+
+      {value ? (
+        <div className="relative h-32 w-full overflow-hidden rounded-xl border bg-muted">
+          <img src={value} alt="" className="h-full w-full object-cover" />
+          <button type="button" onClick={clear}
+            className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className="grid h-32 w-full place-items-center rounded-xl border-2 border-dashed border-muted-foreground/25 text-muted-foreground">
+          <div className="text-center text-xs">
+            <ImagePlus className="mx-auto mb-1 h-5 w-5" />
+            Sem imagem
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={progress !== null}>
+          <ImagePlus className="mr-2 h-4 w-4" /> {value ? "Trocar" : "Enviar"}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => cameraRef.current?.click()} disabled={progress !== null}>
+          <Camera className="mr-2 h-4 w-4" /> Câmera
+        </Button>
+      </div>
+
+      {progress !== null && (
+        <div className="space-y-1">
+          <Progress value={progress} />
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Enviando… {progress}%
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
