@@ -263,7 +263,7 @@ function BenefitsContent({
                   image={p.imageUrl}
                   icon={<Sparkles className="h-4 w-4" />}
                   title={p.name}
-                  description={`De ${formatCurrency(p.price)} por ${formatCurrency(p.promoPrice)}`}
+                  description={`De ${brl(p.price)} por ${brl(p.promoPrice)}`}
                   meta={p.promoEndsAt ? `Termina em ${formatDate(p.promoEndsAt)}` : null}
                   badge={`-${discount}%`}
                   ctaLabel="Ver oferta"
