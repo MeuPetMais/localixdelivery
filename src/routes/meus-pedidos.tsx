@@ -123,8 +123,22 @@ function MyOrders() {
     navigate({ to: "/$slug", params: { slug: r.slug } });
   }
 
+  // Loading session — show skeleton, never the login screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
+        <Header name={null} avatarUrl={null} />
+        <main className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-2xl" />
+        </main>
+      </div>
+    );
+  }
+
   // Unauthenticated state
-  if (authReady && !user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
         <Header name={null} avatarUrl={null} />
@@ -146,13 +160,14 @@ function MyOrders() {
     );
   }
 
+  const meta = (user?.user_metadata ?? {}) as Record<string, any>;
   const displayName =
-    (user?.meta?.full_name as string | undefined) ??
-    (user?.meta?.name as string | undefined) ??
+    (meta.full_name as string | undefined) ??
+    (meta.name as string | undefined) ??
     user?.email?.split("@")[0] ??
     "Cliente";
   const avatarUrl =
-    (user?.meta?.avatar_url as string | undefined) ?? (user?.meta?.picture as string | undefined) ?? null;
+    (meta.avatar_url as string | undefined) ?? (meta.picture as string | undefined) ?? null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background pb-24">
