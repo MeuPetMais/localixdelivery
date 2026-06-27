@@ -60,7 +60,7 @@ function ClienteArea() {
               </p>
             </div>
             <form onSubmit={handleLogin} className="space-y-3">
-              <label className="text-sm font-medium">WhatsApp</label>
+              <label className="text-sm font-medium">Telefone</label>
               <div className="relative">
                 <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
