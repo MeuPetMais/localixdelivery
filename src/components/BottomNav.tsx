@@ -34,10 +34,13 @@ const items: Item[] = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { lastRestaurantSlug, currentRestaurantSlug, navigateToRestaurant } = useCustomerNavigation();
+  const { lastRestaurantSlug, currentRestaurantSlug, navigateToRestaurant, rememberRestaurantRoute } = useCustomerNavigation();
   const activeSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
   function handleClick(e: React.MouseEvent, key: string) {
+    if (activeSlug && isRestaurantPath(pathname)) {
+      rememberRestaurantRoute(activeSlug, { route: `/${activeSlug}`, scrollY: typeof window !== "undefined" ? window.scrollY : 0 });
+    }
     if (key !== "home") return;
     e.preventDefault();
     navigateToRestaurant(activeSlug);

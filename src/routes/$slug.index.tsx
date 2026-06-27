@@ -82,8 +82,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (data?.restaurant?.slug) {
-      rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
       restoreRestaurantScroll(data.restaurant.slug);
+      rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
     }
   }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
 

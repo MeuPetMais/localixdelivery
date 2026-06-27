@@ -122,13 +122,18 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
 
   const rememberRestaurantRoute = useCallback((slug: string, options: RememberOptions = {}) => {
     const route = options.route ?? currentRoute() ?? `/${slug}`;
+    const explicitScroll = options.scrollY !== undefined;
     commit((prev) => ({
       ...prev,
       currentRestaurantSlug: slug,
       lastRestaurantSlug: slug,
       lastVisitedRoute: route,
       pendingCart: options.pendingCart !== undefined ? options.pendingCart : prev.pendingCart,
-      scrollY: options.scrollY ?? (isBrowser() ? window.scrollY : prev.scrollY),
+      scrollY: (() => {
+        const nextScroll = explicitScroll ? Number(options.scrollY) || 0 : (isBrowser() ? window.scrollY : prev.scrollY);
+        if (!explicitScroll && prev.currentRestaurantSlug === slug && nextScroll <= 0 && prev.scrollY > 0) return prev.scrollY;
+        return nextScroll;
+      })(),
     }));
   }, [commit]);
 
@@ -154,7 +159,7 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
   const prepareLoginRedirect = useCallback((fallbackSlug?: string | null) => {
     const slug = fallbackSlug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
     const target = safeRestaurantPath(slug);
-    if (slug) rememberRestaurantRoute(slug, { route: target });
+    if (slug) rememberRestaurantRoute(slug, { route: target, scrollY: isBrowser() ? window.scrollY : 0 });
     if (isBrowser()) {
       try { sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, target); } catch {}
     }
