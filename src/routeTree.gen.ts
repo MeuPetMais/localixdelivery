@@ -15,7 +15,7 @@ import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
-import { Route as BuscarRouteImport } from './routes/buscar'
+import { Route as BeneficiosRouteImport } from './routes/beneficios'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -70,9 +70,9 @@ const ClienteRoute = ClienteRouteImport.update({
   path: '/cliente',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BuscarRoute = BuscarRouteImport.update({
-  id: '/buscar',
-  path: '/buscar',
+const BeneficiosRoute = BeneficiosRouteImport.update({
+  id: '/beneficios',
+  path: '/beneficios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -193,7 +193,7 @@ const RSlugSobreRoute = RSlugSobreRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/buscar': typeof BuscarRoute
+  '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
@@ -224,7 +224,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/buscar': typeof BuscarRoute
+  '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
@@ -256,7 +256,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/buscar': typeof BuscarRoute
+  '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
@@ -289,7 +289,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/buscar'
+    | '/beneficios'
     | '/cliente'
     | '/entrar'
     | '/esqueci-senha'
@@ -320,7 +320,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/buscar'
+    | '/beneficios'
     | '/cliente'
     | '/entrar'
     | '/esqueci-senha'
@@ -351,7 +351,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/buscar'
+    | '/beneficios'
     | '/cliente'
     | '/entrar'
     | '/esqueci-senha'
@@ -384,7 +384,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  BuscarRoute: typeof BuscarRoute
+  BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
   EntrarRoute: typeof EntrarRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
@@ -440,11 +440,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClienteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/buscar': {
-      id: '/buscar'
-      path: '/buscar'
-      fullPath: '/buscar'
-      preLoaderRoute: typeof BuscarRouteImport
+    '/beneficios': {
+      id: '/beneficios'
+      path: '/beneficios'
+      fullPath: '/beneficios'
+      preLoaderRoute: typeof BeneficiosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -666,7 +666,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  BuscarRoute: BuscarRoute,
+  BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
   EntrarRoute: EntrarRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
