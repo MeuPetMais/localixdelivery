@@ -37,7 +37,6 @@ function BuildYourOwnPage() {
   }, [builderId]);
 
   useEffect(() => {
-    console.log("[Build] slug:", slug);
   }, [slug]);
 
   const { data, isLoading, isError } = useQuery({
@@ -51,8 +50,6 @@ function BuildYourOwnPage() {
         .eq("slug", slug)
         .maybeSingle();
 
-      console.log("[Build] slug:", slug);
-      console.log("[Build] restaurant:", restaurant);
 
       if (restaurantError) {
         console.error("[Build] restaurant error:", restaurantError);
@@ -60,12 +57,10 @@ function BuildYourOwnPage() {
       }
 
       if (!restaurant) {
-        console.log("[Build] config:", []);
         return { restaurant: null, builders: [] as Builder[] };
       }
 
       if (!restaurant.builders_enabled) {
-        console.log("[Build] config:", []);
         return { restaurant, builders: [] as Builder[] };
       }
 
@@ -76,7 +71,6 @@ function BuildYourOwnPage() {
         .eq("is_active", true)
         .order("position");
 
-      console.log("[Build] config:", buildConfig ?? []);
 
       if (buildError) {
         console.error("[Build] config error:", buildError);
