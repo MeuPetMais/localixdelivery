@@ -204,20 +204,26 @@ export type Database = {
       customer_favorites: {
         Row: {
           created_at: string
+          customer_id: string
           id: string
-          phone: string
+          item_id: string
+          item_kind: string
           restaurant_id: string
         }
         Insert: {
           created_at?: string
+          customer_id: string
           id?: string
-          phone: string
+          item_id: string
+          item_kind: string
           restaurant_id: string
         }
         Update: {
           created_at?: string
+          customer_id?: string
           id?: string
-          phone?: string
+          item_id?: string
+          item_kind?: string
           restaurant_id?: string
         }
         Relationships: [
