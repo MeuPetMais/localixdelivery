@@ -149,12 +149,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const openBuilder = (builder: Builder) => {
-    const destination = `/r/${slug}/montar?builder=${builder.id}`;
-    console.log(destination);
-    console.log("[Build] slug:", slug);
-    console.log("[Build] restaurant:", data?.restaurant ?? null);
-    console.log("[Build] config:", builder);
-
     if (!data?.restaurant?.is_open) {
       toast.error("Restaurante fechado");
       return;
@@ -165,6 +159,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
     navigate({ to: "/r/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
   };
+
 
   if (isLoading || (!data && !isError)) {
     return (
