@@ -77,9 +77,10 @@ function readStoredState(): NavigationSnapshot {
     const raw = sessionStorage.getItem(NAV_STATE_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<NavigationSnapshot>) : {};
     const legacySlug = sessionStorage.getItem(LEGACY_LAST_SLUG_KEY) || localStorage.getItem(LEGACY_LAST_SLUG_KEY);
+    const postLoginSlug = restaurantSlugFromPath(sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY) ?? "");
     return {
-      lastRestaurantSlug: parsed.lastRestaurantSlug ?? parsed.currentRestaurantSlug ?? legacySlug ?? null,
-      currentRestaurantSlug: parsed.currentRestaurantSlug ?? legacySlug ?? null,
+      lastRestaurantSlug: postLoginSlug ?? parsed.lastRestaurantSlug ?? parsed.currentRestaurantSlug ?? legacySlug ?? null,
+      currentRestaurantSlug: postLoginSlug ?? parsed.currentRestaurantSlug ?? legacySlug ?? null,
       lastVisitedRoute: parsed.lastVisitedRoute ?? null,
       pendingCart: parsed.pendingCart ?? null,
       scrollY: Number(parsed.scrollY ?? 0) || 0,
