@@ -19,15 +19,15 @@ export const validateCoupon = createServerFn({ method: "POST" })
 
     const { data: coupon } = await supabaseAdmin
       .from("coupons")
-      .select("id, code, discount_percent, valid_until, is_active")
+      .select("discount_percent, valid_until, is_active")
       .eq("restaurant_id", rest.id)
       .ilike("code", data.code.trim())
       .maybeSingle();
 
     if (!coupon) return { valid: false as const, reason: "Cupom inválido" };
-    if (!coupon.is_active) return { valid: false as const, reason: "Cupom desativado" };
+    if (!coupon.is_active) return { valid: false as const, reason: "Cupom inválido" };
     if (coupon.valid_until && new Date(coupon.valid_until) < new Date(new Date().toDateString())) {
       return { valid: false as const, reason: "Cupom expirado" };
     }
-    return { valid: true as const, id: coupon.id, code: coupon.code, discountPercent: coupon.discount_percent };
+    return { valid: true as const, discountPercent: coupon.discount_percent };
   });
