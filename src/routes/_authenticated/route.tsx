@@ -22,6 +22,7 @@ import {
   Menu as MenuIcon,
   X,
   Flame,
+  UserCircle,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-role";
@@ -68,6 +69,7 @@ function AuthLayout() {
     { to: "/units", label: "Multiunidades", icon: Building2 },
     { to: "/suppliers", label: "Central de Negócios", icon: Store },
     { to: "/settings", label: "Perfil do Estabelecimento", icon: Settings },
+    { to: "/perfil", label: "Meu Perfil", icon: UserCircle },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
 

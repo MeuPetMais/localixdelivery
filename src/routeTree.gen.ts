@@ -30,6 +30,7 @@ import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
@@ -149,6 +150,11 @@ const AuthenticatedPromotionsRoute = AuthenticatedPromotionsRouteImport.update({
   path: '/promotions',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/orders'
+    | '/perfil'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/orders'
+    | '/perfil'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/_authenticated/loyalty'
     | '/_authenticated/menu'
     | '/_authenticated/orders'
+    | '/_authenticated/perfil'
     | '/_authenticated/promotions'
     | '/_authenticated/reviews'
     | '/_authenticated/settings'
@@ -607,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPromotionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/orders': {
       id: '/_authenticated/orders'
       path: '/orders'
@@ -721,6 +740,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -741,6 +761,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
