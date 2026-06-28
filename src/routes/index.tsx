@@ -1,16 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, Smartphone, Zap, Receipt, Store, Sparkles, ArrowRight, Check } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Sparkles,
+  LayoutDashboard,
+  ListOrdered,
+  UtensilsCrossed,
+  Tag,
+  Wand2,
+  Store,
+  UserCircle,
+  ImagePlus,
+  LineChart,
+  Gift,
+  Wallet,
+  Ticket,
+  Heart,
+  ShoppingBag,
+  CircleCheck,
+} from "lucide-react";
 import heroFood from "@/assets/hero-food.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Localix Delivery — Delivery próprio para restaurantes" },
-      { name: "description", content: "Receba pedidos pelo WhatsApp e por uma página própria de cardápio. Sem comissão de marketplaces. Setup em minutos." },
-      { property: "og:title", content: "Localix Delivery — Delivery próprio sem marketplaces" },
-      { property: "og:description", content: "Cardápio digital + pedidos pelo WhatsApp para pizzarias, hamburguerias e lanchonetes." },
+      { title: "Localix — Cadastro gratuito durante o lançamento" },
+      {
+        name: "description",
+        content:
+          "Cadastre seu estabelecimento gratuitamente e receba pedidos pelo seu próprio cardápio digital. Gestão completa em um único painel, sem mensalidade no período de validação.",
+      },
+      { property: "og:title", content: "Localix — Seu delivery profissional, sem mensalidade no lançamento" },
+      {
+        property: "og:description",
+        content:
+          "Cardápio digital, gestão de pedidos em tempo real, promoções, produtos personalizados e muito mais. Cadastro 100% gratuito durante o período de validação.",
+      },
     ],
   }),
   component: Landing,
@@ -21,13 +48,27 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero />
-      <Logos />
-      <Features />
-      <HowItWorks />
-      <Pricing />
-      <CTA />
+      <WhyLocalix />
+      <ControlPanel />
+      <ComingSoon />
+      <Benefits />
+      <FinalCTA />
       <Footer />
     </div>
+  );
+}
+
+function FreeBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold text-success ${className}`}
+    >
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+      </span>
+      Cadastro gratuito por tempo limitado
+    </span>
   );
 }
 
@@ -36,17 +77,23 @@ function Header() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-xl font-extrabold">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-warm text-primary-foreground shadow-glow">L</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-warm text-primary-foreground shadow-glow">
+            L
+          </span>
           Localix
         </Link>
         <nav className="hidden gap-8 text-sm font-medium text-muted-foreground md:flex">
-          <a href="#recursos" className="hover:text-foreground">Recursos</a>
-          <a href="#como-funciona" className="hover:text-foreground">Como funciona</a>
-          <a href="#precos" className="hover:text-foreground">Preços</a>
+          <a href="#plataforma" className="hover:text-foreground">Plataforma</a>
+          <a href="#novidades" className="hover:text-foreground">Novidades</a>
+          <a href="#beneficios" className="hover:text-foreground">Benefícios</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/auth"><Button variant="ghost" size="sm">Entrar</Button></Link>
-          <Link to="/auth"><Button size="sm">Começar grátis</Button></Link>
+          <Link to="/auth">
+            <Button variant="ghost" size="sm">Entrar</Button>
+          </Link>
+          <Link to="/auth">
+            <Button size="sm">Cadastrar grátis</Button>
+          </Link>
         </div>
       </div>
     </header>
@@ -58,70 +105,74 @@ function Hero() {
     <section className="relative overflow-hidden bg-gradient-hero">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:grid-cols-2 md:py-28">
         <div className="flex flex-col justify-center">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Sem comissão de marketplace
-          </span>
-          <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
-            Seu delivery,<br/>
-            <span className="bg-gradient-warm bg-clip-text text-transparent">no seu nome.</span>
+          <FreeBadge />
+          <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+            Seu delivery profissional,
+            <br />
+            <span className="bg-gradient-warm bg-clip-text text-transparent">
+              sem mensalidade no lançamento.
+            </span>
           </h1>
           <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-            Cardápio digital + pedidos direto no <strong className="text-foreground">WhatsApp</strong>. Para pizzarias, hamburguerias, restaurantes e lanchonetes que querem parar de pagar comissão.
+            Receba pedidos pelo seu próprio cardápio digital, organize seu atendimento e tenha controle completo da
+            operação em um único painel.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/auth"><Button size="lg" className="shadow-glow">Criar meu cardápio grátis <ArrowRight className="ml-1 h-4 w-4" /></Button></Link>
-            <a href="#como-funciona"><Button size="lg" variant="outline">Ver como funciona</Button></a>
-          </div>
-          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            {["Configure em 5 min", "Sem cartão", "0% comissão"].map((t) => (
-              <li key={t} className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {t}</li>
-            ))}
+          <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> Sem instalação complicada</li>
+            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> Sem taxas de adesão durante o período de validação</li>
           </ul>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link to="/auth">
+              <Button size="lg" className="shadow-glow">
+                Cadastrar meu estabelecimento gratuitamente <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+            <a href="#plataforma">
+              <Button size="lg" variant="outline">Conhecer a plataforma</Button>
+            </a>
+          </div>
         </div>
         <div className="relative">
           <div className="absolute -inset-6 rounded-3xl bg-gradient-warm opacity-20 blur-3xl" />
           <img
             src={heroFood}
-            alt="Hambúrguer artesanal, pizza e batatas fritas"
+            alt="Diversidade de estabelecimentos: pizzaria, hamburgueria, açaí e mais"
             width={1600}
             height={1200}
             className="relative rounded-3xl object-cover shadow-glow"
           />
+          <div className="absolute -bottom-4 -left-4 hidden rounded-2xl border border-border/60 bg-card/90 px-4 py-3 shadow-elegant backdrop-blur md:block">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Para todo tipo de estabelecimento</p>
+            <p className="mt-0.5 text-sm font-bold">Pizzaria · Hamburgueria · Cafeteria · Açaí · Marmitaria</p>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function Logos() {
-  return (
-    <div className="border-y bg-card/50 py-6">
-      <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        Feito para pizzarias · hamburguerias · restaurantes · lanchonetes · açaiterias
-      </p>
-    </div>
-  );
-}
-
-function Features() {
+function WhyLocalix() {
   const items = [
-    { icon: MessageCircle, title: "Pedidos no WhatsApp", desc: "Cliente finaliza o pedido e ele chega formatado direto no seu WhatsApp. Sem app, sem fricção." },
-    { icon: Smartphone, title: "Cardápio mobile-first", desc: "Página linda em /seurestaurante. Compartilhe o link no Instagram, perfil do Google e no balcão." },
-    { icon: Zap, title: "Setup em minutos", desc: "Cadastre seus produtos com foto e preço. Está pronto para vender hoje." },
-    { icon: Receipt, title: "Taxa e mínimo de pedido", desc: "Defina taxa de entrega e valor mínimo para começar a preparar." },
-    { icon: Store, title: "Abrir e fechar com 1 toque", desc: "Pausou o atendimento? Feche a loja e o cardápio mostra automaticamente." },
-    { icon: Sparkles, title: "0% de comissão", desc: "Você paga uma mensalidade fixa. Todo o lucro do pedido fica com você." },
+    { icon: Sparkles, title: "Cadastro gratuito", desc: "Crie sua conta sem custo durante a fase de validação da plataforma." },
+    { icon: UtensilsCrossed, title: "Seu cardápio digital", desc: "Organize categorias, produtos, adicionais e combos com facilidade." },
+    { icon: ListOrdered, title: "Pedidos em tempo real", desc: "Receba, acompanhe e gerencie todos os pedidos em um único painel." },
+    { icon: LayoutDashboard, title: "Controle completo", desc: "Administre preços, horários, promoções, formas de pagamento e muito mais." },
   ];
   return (
-    <section id="recursos" className="mx-auto max-w-6xl px-4 py-24">
+    <section className="mx-auto max-w-6xl px-4 py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-4xl font-extrabold tracking-tight">Tudo que você precisa para vender direto.</h2>
-        <p className="mt-3 text-muted-foreground">Sem depender de iFood, sem brigar por destaque, sem perder margem.</p>
+        <h2 className="font-display text-4xl font-extrabold tracking-tight">Por que escolher a Localix?</h2>
+        <p className="mt-3 text-muted-foreground">
+          Uma plataforma pensada para o seu segmento — adapta-se ao seu estabelecimento, não o contrário.
+        </p>
       </div>
-      <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {items.map(({ icon: Icon, title, desc }) => (
-          <Card key={title} className="group relative overflow-hidden border-border/60 p-6 transition hover:border-primary/40 hover:shadow-glow">
-            <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-gradient-warm group-hover:text-primary-foreground">
+          <Card
+            key={title}
+            className="group relative overflow-hidden border-border/60 p-6 transition hover:border-primary/40 hover:shadow-glow"
+          >
+            <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-success/10 text-success transition group-hover:bg-success group-hover:text-success-foreground">
               <Icon className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-bold">{title}</h3>
@@ -133,26 +184,51 @@ function Features() {
   );
 }
 
-function HowItWorks() {
-  const steps = [
-    { n: "01", title: "Crie sua conta", desc: "Cadastre seu estabelecimento e escolha sua URL: localix.app/seurestaurante." },
-    { n: "02", title: "Monte seu cardápio", desc: "Adicione categorias e produtos com foto, descrição e preço." },
-    { n: "03", title: "Compartilhe o link", desc: "Cole no Instagram, status do WhatsApp, Google Meu Negócio e cardápio impresso." },
-    { n: "04", title: "Receba no WhatsApp", desc: "O pedido chega completo e formatado, pronto para você confirmar." },
+function ControlPanel() {
+  const features = [
+    { icon: LayoutDashboard, title: "Dashboard", desc: "Indicadores claros da sua operação em tempo real." },
+    { icon: ListOrdered, title: "Gestão de pedidos", desc: "Receba e acompanhe pedidos em tempo real, sem perder nenhum." },
+    {
+      icon: UtensilsCrossed,
+      title: "Cardápio inteligente",
+      desc: "Categorias, produtos, combos, adicionais, disponibilidade e fotos.",
+    },
+    { icon: Tag, title: "Promoções", desc: "Campanhas promocionais, produtos em destaque e ofertas do dia." },
+    {
+      icon: Wand2,
+      title: "Monte do seu jeito",
+      desc: "Clientes personalizam pizzas, hambúrgueres e pratos diretamente pelo cardápio.",
+    },
+    {
+      icon: Store,
+      title: "Perfil do estabelecimento",
+      desc: "Horários, endereço, entrega, retirada, taxas, pedido mínimo, redes sociais e pagamentos.",
+    },
+    { icon: UserCircle, title: "Meu Perfil", desc: "Conta do proprietário com dados pessoais, segurança e senha." },
+    { icon: ImagePlus, title: "Upload de imagens", desc: "Fotos de produtos, logo, banner e galeria do estabelecimento." },
+    { icon: LineChart, title: "Área financeira", desc: "Relatórios, indicadores e histórico — em evolução constante." },
   ];
   return (
-    <section id="como-funciona" className="bg-sidebar text-sidebar-foreground">
+    <section id="plataforma" className="bg-sidebar text-sidebar-foreground">
       <div className="mx-auto max-w-6xl px-4 py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-display text-4xl font-extrabold tracking-tight">Como funciona</h2>
-          <p className="mt-3 text-sidebar-foreground/70">Do cadastro ao primeiro pedido em menos de 10 minutos.</p>
+          <FreeBadge className="border-success/40 bg-success/15" />
+          <h2 className="mt-4 font-display text-4xl font-extrabold tracking-tight">Conheça o painel de controle</h2>
+          <p className="mt-3 text-sidebar-foreground/70">
+            Tudo o que você precisa para gerenciar seu negócio — em um único lugar, com simplicidade.
+          </p>
         </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-4">
-          {steps.map((s) => (
-            <div key={s.n} className="relative rounded-2xl border border-sidebar-border bg-sidebar-accent/40 p-6">
-              <div className="font-display text-3xl font-extrabold text-primary">{s.n}</div>
-              <h3 className="mt-2 text-lg font-bold">{s.title}</h3>
-              <p className="mt-1 text-sm text-sidebar-foreground/70">{s.desc}</p>
+        <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="group relative rounded-2xl border border-sidebar-border bg-sidebar-accent/40 p-6 transition hover:border-primary/40 hover:bg-sidebar-accent/60"
+            >
+              <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary transition group-hover:bg-gradient-warm group-hover:text-primary-foreground">
+                <Icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold">{title}</h3>
+              <p className="mt-1 text-sm text-sidebar-foreground/70">{desc}</p>
             </div>
           ))}
         </div>
@@ -161,49 +237,117 @@ function HowItWorks() {
   );
 }
 
-function Pricing() {
+function ComingSoon() {
+  const items = [
+    { icon: Gift, title: "Fidelidade", desc: "Programa de pontos para recompensar seus clientes mais fiéis." },
+    { icon: Wallet, title: "Cashback", desc: "Campanhas de retorno automático para incentivar novas compras." },
+    { icon: Ticket, title: "Cupons inteligentes", desc: "Descontos automáticos aplicados nas condições certas." },
+    { icon: Heart, title: "Benefícios para clientes", desc: "Promoções exclusivas para a base de clientes do seu estabelecimento." },
+    {
+      icon: ShoppingBag,
+      title: "Compras para parceiros",
+      desc:
+        "Marketplace exclusivo para adquirir embalagens, insumos, bebidas, equipamentos, uniformes e soluções para delivery.",
+      featured: true,
+    },
+  ];
   return (
-    <section id="precos" className="mx-auto max-w-4xl px-4 py-24">
+    <section id="novidades" className="mx-auto max-w-6xl px-4 py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-4xl font-extrabold tracking-tight">Comece grátis. Cresça sem comissão.</h2>
-        <p className="mt-3 text-muted-foreground">Mensalidade fixa, pedidos ilimitados. Sem letras miúdas.</p>
+        <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+          <Sparkles className="h-3.5 w-3.5" /> Em breve na Localix
+        </span>
+        <h2 className="mt-4 font-display text-4xl font-extrabold tracking-tight">Próximas novidades</h2>
+        <p className="mt-3 text-muted-foreground">
+          A plataforma continua evoluindo. Cadastre-se agora e tenha acesso antecipado às novas funcionalidades.
+        </p>
       </div>
-      <div className="mt-12 grid gap-6 md:grid-cols-2">
-        <Card className="border-border/60 p-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Free</p>
-          <p className="mt-2 font-display text-4xl font-extrabold">R$ 0</p>
-          <p className="text-sm text-muted-foreground">/ para sempre</p>
-          <ul className="mt-6 space-y-2 text-sm">
-            {["1 estabelecimento", "Cardápio digital ilimitado", "Pedidos via WhatsApp", "Sem cartão de crédito"].map(t => (
-              <li key={t} className="flex gap-2"><Check className="h-4 w-4 text-success" /> {t}</li>
-            ))}
-          </ul>
-          <Link to="/auth" className="block"><Button variant="outline" className="mt-8 w-full">Começar grátis</Button></Link>
-        </Card>
-        <Card className="relative border-primary/40 bg-gradient-warm p-8 text-primary-foreground shadow-glow">
-          <span className="absolute right-4 top-4 rounded-full bg-background/20 px-2 py-0.5 text-[10px] font-bold uppercase backdrop-blur">Em breve</span>
-          <p className="text-sm font-semibold uppercase tracking-wider opacity-80">Pro</p>
-          <p className="mt-2 font-display text-4xl font-extrabold">R$ 79</p>
-          <p className="text-sm opacity-80">/ mês</p>
-          <ul className="mt-6 space-y-2 text-sm">
-            {["Tudo do Free", "Múltiplas unidades", "Domínio personalizado", "Cupons e promoções", "Relatórios de vendas"].map(t => (
-              <li key={t} className="flex gap-2"><Check className="h-4 w-4" /> {t}</li>
-            ))}
-          </ul>
-          <Button disabled className="mt-8 w-full bg-background/15 text-primary-foreground hover:bg-background/25">Em breve</Button>
-        </Card>
+      <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.map(({ icon: Icon, title, desc, featured }) => (
+          <Card
+            key={title}
+            className={`group relative overflow-hidden p-6 transition hover:shadow-glow ${
+              featured ? "border-primary/40 bg-gradient-warm text-primary-foreground lg:col-span-1" : "border-border/60"
+            }`}
+          >
+            <span
+              className={`absolute right-4 top-4 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase backdrop-blur ${
+                featured ? "bg-background/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              Em breve
+            </span>
+            <div
+              className={`mb-4 grid h-11 w-11 place-items-center rounded-xl transition ${
+                featured ? "bg-background/15 text-primary-foreground" : "bg-primary/10 text-primary group-hover:bg-gradient-warm group-hover:text-primary-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-bold">{title}</h3>
+            <p className={`mt-1 text-sm ${featured ? "opacity-90" : "text-muted-foreground"}`}>{desc}</p>
+          </Card>
+        ))}
       </div>
     </section>
   );
 }
 
-function CTA() {
+function Benefits() {
+  const items = [
+    "Cadastro gratuito",
+    "Cardápio digital",
+    "Gestão de pedidos",
+    "Promoções",
+    "Produtos personalizados",
+    "Upload de fotos",
+    "Controle de horários",
+    "Perfil do estabelecimento",
+    "Área do proprietário",
+    "Relatórios",
+    "Atualizações constantes",
+    "Suporte durante o lançamento",
+  ];
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-24">
-      <div className="rounded-3xl bg-sidebar p-10 text-center text-sidebar-foreground shadow-glow md:p-16">
-        <h2 className="font-display text-4xl font-extrabold md:text-5xl">Pronto para parar de pagar comissão?</h2>
-        <p className="mx-auto mt-4 max-w-xl text-sidebar-foreground/70">Crie seu cardápio digital agora e comece a receber pedidos pelo WhatsApp hoje mesmo.</p>
-        <Link to="/auth" className="inline-block"><Button size="lg" className="mt-8 shadow-glow">Quero meu Localix grátis <ArrowRight className="ml-1 h-4 w-4" /></Button></Link>
+    <section id="beneficios" className="bg-muted/40">
+      <div className="mx-auto max-w-6xl px-4 py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="font-display text-4xl font-extrabold tracking-tight">Benefícios da plataforma</h2>
+          <p className="mt-3 text-muted-foreground">Tudo isso incluso, gratuitamente, durante o período de validação.</p>
+        </div>
+        <div className="mx-auto mt-12 grid max-w-4xl gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {items.map((item) => (
+            <div
+              key={item}
+              className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-elegant transition hover:border-success/40 hover:shadow-premium"
+            >
+              <CircleCheck className="h-5 w-5 shrink-0 text-success" />
+              <span className="text-sm font-medium">{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTA() {
+  return (
+    <section className="mx-auto max-w-5xl px-4 py-24">
+      <div className="relative overflow-hidden rounded-3xl bg-sidebar p-10 text-center text-sidebar-foreground shadow-glow md:p-16">
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-warm opacity-20 blur-3xl" />
+        <FreeBadge />
+        <h2 className="mt-5 font-display text-4xl font-extrabold md:text-5xl">Comece gratuitamente hoje.</h2>
+        <p className="mx-auto mt-4 max-w-xl text-sidebar-foreground/70">
+          Cadastre seu estabelecimento em poucos minutos e utilize gratuitamente todas as funcionalidades disponíveis
+          durante o período de validação da plataforma. Acompanhe a evolução da Localix e tenha acesso antecipado às
+          próximas novidades.
+        </p>
+        <Link to="/auth" className="inline-block">
+          <Button size="lg" className="mt-8 shadow-glow">
+            Quero cadastrar meu estabelecimento gratuitamente <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </Link>
       </div>
     </section>
   );
@@ -213,8 +357,8 @@ function Footer() {
   return (
     <footer className="border-t bg-card">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-8 text-sm text-muted-foreground md:flex-row">
-        <p>© {new Date().getFullYear()} Localix Delivery. Todos os direitos reservados.</p>
-        <p>Feito com 🔥 para quem ama a cozinha.</p>
+        <p>© {new Date().getFullYear()} Localix. Todos os direitos reservados.</p>
+        <p>Feito com 🔥 para quem move a cozinha.</p>
       </div>
     </footer>
   );
