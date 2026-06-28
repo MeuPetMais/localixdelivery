@@ -670,7 +670,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const min = Number(restaurant.min_order ?? 0);
 
   const [couponInput, setCouponInput] = useState("");
-  const [coupon, setCoupon] = useState<{ id: string; code: string; discountPercent: number } | null>(null);
+  const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [validating, setValidating] = useState(false);
   const checkCoupon = useServerFn(validateCoupon);
 
