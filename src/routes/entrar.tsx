@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -224,7 +225,7 @@ function CustomerAuthPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">Senha</Label>
-                <Input id="pwd" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                <PasswordInput id="pwd" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={tab === "signup" ? "new-password" : "current-password"} />
               </div>
 
               <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={isBusy}>
