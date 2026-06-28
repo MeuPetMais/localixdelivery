@@ -84,17 +84,6 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) {
-      toast.error("Não foi possível entrar com Google");
-      setLoading(false);
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
-  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">
