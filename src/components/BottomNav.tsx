@@ -4,8 +4,10 @@ import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
+type ItemKey = "home" | "beneficios" | "favoritos" | "pedidos" | "perfil";
+
 type Item = {
-  key: string;
+  key: ItemKey;
   label: string;
   icon: LucideIcon;
   match: (p: string) => boolean;
@@ -32,20 +34,23 @@ const items: Item[] = [
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
 ];
 
-
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { lastRestaurantSlug, currentRestaurantSlug, navigateToRestaurant, rememberRestaurantRoute } = useCustomerNavigation();
+  const { lastRestaurantSlug, currentRestaurantSlug, rememberRestaurantRoute } = useCustomerNavigation();
   const activeSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
-  function handleClick(e: MouseEvent, key: string) {
-    if (activeSlug && isRestaurantPath(pathname)) {
-      rememberRestaurantRoute(activeSlug, { route: `/${activeSlug}`, scrollY: typeof window !== "undefined" ? window.scrollY : 0 });
+  function handleClick(_e: MouseEvent, key: ItemKey, targetPath: string) {
+    // Lembra a posição do restaurante antes de sair dele (não interfere na navegação).
+    if (activeSlug && isRestaurantPath(pathname) && key !== "home") {
+      rememberRestaurantRoute(activeSlug, {
+        route: `/${activeSlug}`,
+        scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+      });
     }
-    if (key !== "home") return;
-    if (!activeSlug) return;
-    e.preventDefault();
-    navigateToRestaurant(activeSlug);
+    // Se já estamos exatamente na rota, só rola pro topo — dá feedback visual em vez de "nada acontecer".
+    if (typeof window !== "undefined" && window.location.pathname === targetPath) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   return (
@@ -57,24 +62,27 @@ export function BottomNav() {
       <ul className="mx-auto flex h-[64px] max-w-3xl items-stretch justify-around px-1">
         {items.map(({ key, label, icon: Icon, match }) => {
           const active = match(pathname);
-          const to =
-            key === "home"
-              ? activeSlug
-                ? `/${activeSlug}`
-                : "/cliente"
-              : key === "beneficios"
-                ? "/beneficios"
-                : key === "favoritos"
-                  ? "/favoritos"
-                  : key === "pedidos"
-                    ? "/meus-pedidos"
-                    : "/cliente";
+          const isHome = key === "home";
+          const homeTarget = activeSlug ? `/${activeSlug}` : "/cliente";
+          const linkProps =
+            isHome && activeSlug
+              ? ({ to: "/$slug", params: { slug: activeSlug } } as const)
+              : isHome
+                ? ({ to: "/cliente" } as const)
+                : key === "beneficios"
+                  ? ({ to: "/beneficios" } as const)
+                  : key === "favoritos"
+                    ? ({ to: "/favoritos" } as const)
+                    : key === "pedidos"
+                      ? ({ to: "/meus-pedidos" } as const)
+                      : ({ to: "/cliente" } as const);
+          const targetPath = isHome ? homeTarget : (linkProps as { to: string }).to;
           return (
             <li key={key} className="flex-1">
               <Link
-                to={to}
-                onClick={(e) => handleClick(e, key)}
-                className="group relative flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium outline-none"
+                {...(linkProps as any)}
+                onClick={(e) => handleClick(e, key, targetPath)}
+                className="group relative flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium outline-none touch-manipulation"
                 aria-current={active ? "page" : undefined}
               >
                 <span
