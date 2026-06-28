@@ -173,8 +173,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   }, [cart, slug, setPendingCart, data?.restaurant?.slug, rememberRestaurantRoute]);
 
   // Favorites state (per restaurant) for the current authenticated customer
-  const { isAuthenticated } = useCustomerAuth();
+  const { isAuthenticated, session } = useCustomerAuth();
   const restaurantId: string | undefined = data?.restaurant?.id;
+
   const [favItems, setFavItems] = useState<Set<string>>(new Set());
   const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -269,19 +270,77 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     );
   }
 
-  if (!data || !data.restaurant) {
-    // Clear cached slug so the BottomNav "Home" button stops pointing at a broken slug.
-    try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+  if (!data || !data.restaurant || isError) {
+    // Diagnostic logs — required for mobile troubleshooting
+    if (typeof window !== "undefined") {
+      console.log("[PUBLIC MENU]");
+      console.log("pathname:", window.location.pathname);
+      console.log("slug:", slug);
+      console.log("session:", session?.user?.id ?? null);
+      console.log("query error:", error);
+      console.log("query data:", data);
+      console.log("navigator.userAgent:", navigator.userAgent);
+      console.log("online:", navigator.onLine);
+    }
+
+    // Scenario detection
+    const emptySlug = !slug || !slug.trim();
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    const anyErr = error as any;
+    const isNetworkError =
+      offline ||
+      (anyErr && (anyErr.message === "Failed to fetch" || /NetworkError|fetch/i.test(String(anyErr?.message ?? ""))));
+    const isSupabaseError = !!anyErr && !isNetworkError;
+
+    let title = "Restaurante não encontrado";
+    let message = "Verifique o link e tente novamente.";
+    let detail: string | null = null;
+
+    if (emptySlug) {
+      title = "Link inválido";
+      message = "Nenhum identificador de restaurante foi informado na URL.";
+    } else if (offline) {
+      title = "Você está offline";
+      message = "Verifique sua conexão com a internet e tente novamente.";
+    } else if (isNetworkError) {
+      title = "Falha de rede";
+      message = "Não foi possível alcançar o servidor. Tente novamente em instantes.";
+      detail = anyErr?.message ?? null;
+    } else if (isSupabaseError) {
+      title = "Erro ao carregar o cardápio";
+      message = "Ocorreu um erro ao consultar o estabelecimento.";
+      detail = anyErr?.message ?? String(anyErr);
+    } else {
+      // Genuine zero-results case
+      try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+    }
 
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
-          <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
+        <div className="max-w-md">
+          <h1 className="font-display text-3xl font-extrabold">{title}</h1>
+          <p className="mt-2 text-muted-foreground">{message}</p>
+          {detail && (
+            <p className="mt-3 break-words rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+              {detail}
+            </p>
+          )}
+          {slug && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Slug solicitado: <code className="font-mono">{slug}</code>
+            </p>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
   }
+
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
