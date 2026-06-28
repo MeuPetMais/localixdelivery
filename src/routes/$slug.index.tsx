@@ -686,7 +686,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     try {
       const res = await checkCoupon({ data: { slug: restaurant.slug, code: couponInput.trim() } });
       if (!res.valid) { setCoupon(null); toast.error(res.reason); return; }
-      setCoupon({ id: res.id, code: res.code, discountPercent: res.discountPercent });
+      setCoupon({ code: couponInput.trim().toUpperCase(), discountPercent: res.discountPercent });
       toast.success(`Cupom aplicado: -${res.discountPercent}%`);
     } finally {
       setValidating(false);
