@@ -10,6 +10,7 @@ import { brl } from "@/lib/format";
 import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 
 export const Route = createFileRoute("/pedido/$id")({
@@ -51,6 +52,7 @@ function statusIndex(status: string) {
 function TrackOrder() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { restaurantPath } = useCustomerNavigation();
   const fetchOrder = useServerFn(getPublicOrderById);
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -96,7 +98,11 @@ function TrackOrder() {
     <div className="grid min-h-screen place-items-center px-4 text-center">
       <div>
         <p className="text-lg font-bold">Pedido não encontrado</p>
-        <Link to="/home" className="text-sm text-primary hover:underline">Voltar para o início</Link>
+        {restaurantPath ? (
+          <Link to={restaurantPath as any} className="text-sm text-primary hover:underline">Voltar ao cardápio</Link>
+        ) : (
+          <Link to="/cliente" className="text-sm text-primary hover:underline">Voltar à minha conta</Link>
+        )}
       </div>
     </div>
   );
@@ -213,7 +219,7 @@ function TrackOrder() {
           <Button variant="outline" onClick={handleRepeat} disabled={!restaurant?.slug}>
             <RotateCw className="mr-1.5 h-4 w-4" /> Pedir novamente
           </Button>
-          <Button variant="secondary" onClick={() => navigate({ to: "/meus-pedidos", search: { phone: order.customer_phone } })}>
+          <Button variant="secondary" onClick={() => navigate({ to: "/meus-pedidos" })}>
             <Store className="mr-1.5 h-4 w-4" /> Meus pedidos
           </Button>
         </div>

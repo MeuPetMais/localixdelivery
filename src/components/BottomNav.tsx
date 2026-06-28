@@ -1,8 +1,8 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import type { MouseEvent } from "react";
 import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 type Item = {
   key: string;
@@ -25,7 +25,7 @@ function isRestaurantPath(p: string) {
 }
 
 const items: Item[] = [
-  { key: "home", label: "Início", icon: Home, match: (p) => p === "/home" || isRestaurantPath(p) },
+  { key: "home", label: "Início", icon: Home, match: (p) => isRestaurantPath(p) },
   { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
@@ -33,57 +33,19 @@ const items: Item[] = [
 ];
 
 
-const LAST_SLUG_KEY = "localix:last-restaurant-slug";
-
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
-  const [lastSlug, setLastSlug] = useState<string | null>(null);
+  const { lastRestaurantSlug, currentRestaurantSlug, navigateToRestaurant, rememberRestaurantRoute } = useCustomerNavigation();
+  const activeSlug = currentRestaurantSlug ?? lastRestaurantSlug;
 
-  // Read the last validated restaurant slug so "Início" returns to it.
-  // The restaurant page writes this only after confirming the slug exists.
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLastRestaurant() {
-      let saved: string | null = null;
-      try {
-        saved = sessionStorage.getItem(LAST_SLUG_KEY);
-      } catch {
-        saved = null;
-      }
-
-      if (!saved) {
-        if (!cancelled) setLastSlug(null);
-        return;
-      }
-
-      const { data, error } = await (supabase as any)
-        .from("restaurants_public")
-        .select("slug")
-        .eq("slug", saved)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (error || !data?.slug) {
-        try { sessionStorage.removeItem(LAST_SLUG_KEY); } catch {}
-        setLastSlug(null);
-        return;
-      }
-
-      setLastSlug(data.slug);
+  function handleClick(e: MouseEvent, key: string) {
+    if (activeSlug && isRestaurantPath(pathname)) {
+      rememberRestaurantRoute(activeSlug, { route: `/${activeSlug}`, scrollY: typeof window !== "undefined" ? window.scrollY : 0 });
     }
-
-    loadLastRestaurant();
-    return () => { cancelled = true; };
-  }, [pathname]);
-
-  function handleClick(e: React.MouseEvent, key: string) {
     if (key !== "home") return;
+    if (!activeSlug) return;
     e.preventDefault();
-    if (lastSlug) navigate({ to: "/$slug", params: { slug: lastSlug } });
-    else navigate({ to: "/home" });
+    navigateToRestaurant(activeSlug);
   }
 
   return (
@@ -97,9 +59,9 @@ export function BottomNav() {
           const active = match(pathname);
           const to =
             key === "home"
-              ? lastSlug
-                ? `/${lastSlug}`
-                : "/home"
+              ? activeSlug
+                ? `/${activeSlug}`
+                : "/cliente"
               : key === "beneficios"
                 ? "/beneficios"
                 : key === "favoritos"

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, KeyRound } from "lucide-react";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({ meta: [{ title: "Redefinir senha — Localix" }] }),
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/redefinir-senha")({
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +27,12 @@ function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       toast.success("Senha atualizada com sucesso");
-      navigate({ to: "/cliente", replace: true });
+      const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+      if (slug) {
+        navigate({ to: "/$slug", params: { slug }, replace: true });
+      } else {
+        navigate({ to: "/cliente", replace: true });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao atualizar senha");
     } finally {

@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
 import { CheckCircle2, Clock, CreditCard, Loader2, MapPin, ArrowRight, Store, Gift } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
@@ -20,7 +21,8 @@ function SuccessPage() {
   const fetchOrder = useServerFn(getPublicOrderById);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
-  const { user } = useAuth();
+  const { user } = useCustomerAuth();
+  const { rememberRestaurantRoute, prepareLoginRedirect } = useCustomerNavigation();
 
   useEffect(() => {
     (async () => {
@@ -31,8 +33,9 @@ function SuccessPage() {
       const { data: r } = await (supabase as any)
         .from("restaurants_public").select("id, name, slug").eq("id", data.restaurant_id).maybeSingle();
       setRestaurant(r);
+      if (r?.slug) rememberRestaurantRoute(r.slug, { route: `/${r.slug}` });
     })();
-  }, [id, fetchOrder]);
+  }, [id, fetchOrder, rememberRestaurantRoute]);
 
   if (!order) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -86,7 +89,7 @@ function SuccessPage() {
                   Acompanhe pedidos, acumule pontos e receba ofertas exclusivas. Seu pedido já está garantido.
                 </p>
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => navigate({ to: "/auth" })}>Criar conta</Button>
+                  <Button size="sm" onClick={() => navigate({ to: "/entrar", search: { redirect: prepareLoginRedirect(restaurant?.slug) } })}>Criar conta</Button>
                   <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/pedido/$id", params: { id } })}>
                     Agora não
                   </Button>

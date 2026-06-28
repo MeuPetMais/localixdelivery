@@ -10,10 +10,30 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
 });
+
+const RESERVED_TOP = new Set([
+  "", "home", "inicio", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
+  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
+  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
+  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
+  "reviews", "suppliers", "units", "builders", "r", "api",
+]);
+
+function validRestaurantRedirect(path?: string | null) {
+  if (!path || !path.startsWith("/") || path === "/") return null;
+  const slug = path.split(/[?#]/)[0]?.split("/")[1] ?? "";
+  if (!slug || slug.includes(".") || RESERVED_TOP.has(slug)) return null;
+  return { path: `/${slug}`, slug };
+}
+
+function readStoredLoginRedirect() {
+  try { return sessionStorage.getItem("postLoginRedirect"); } catch { return null; }
+}
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
@@ -29,38 +49,71 @@ function CustomerAuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
 
   useEffect(() => {
+    let redirected = false;
+    const redirectIfAuthenticated = (session: unknown) => {
+      if (!session || redirected) return;
+      redirected = true;
+      goNext();
+    };
+
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) goNext();
+      redirectIfAuthenticated(data.session);
     });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      redirectIfAuthenticated(session);
+    });
+    return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function getRestaurantLoginTarget() {
+    const fromSearch = validRestaurantRedirect(search.redirect);
+    if (fromSearch) return fromSearch;
+
+    const fromStored = validRestaurantRedirect(readStoredLoginRedirect());
+    if (fromStored) return fromStored;
+
+    const slug = currentRestaurantSlug ?? lastRestaurantSlug;
+    if (slug) return { path: `/${slug}`, slug };
+
+    return null;
+  }
+
+  function persistLoginTarget() {
+    const target = getRestaurantLoginTarget();
+    if (target) return prepareLoginRedirect(target.slug);
+    return null;
+  }
+
   function goNext() {
-    let target = search.redirect && search.redirect.startsWith("/") ? search.redirect : null;
-    if (!target) {
-      try {
-        const stored = sessionStorage.getItem("postLoginRedirect");
-        if (stored && stored.startsWith("/")) {
-          target = stored;
-          sessionStorage.removeItem("postLoginRedirect");
-        }
-      } catch {}
+    const target = getRestaurantLoginTarget();
+    try { sessionStorage.removeItem("postLoginRedirect"); } catch {}
+    if (target?.slug) {
+      navigate({ to: "/$slug", params: { slug: target.slug }, replace: true });
+      return;
     }
-    if (!target) {
-      try {
-        const slug = sessionStorage.getItem("localix:last-restaurant-slug");
-        if (slug) target = `/${slug}`;
-      } catch {}
+    navigate({ to: "/cliente", replace: true });
+  }
+
+  function goBack() {
+    const target = getRestaurantLoginTarget();
+    if (target?.slug) {
+      navigate({ to: "/$slug", params: { slug: target.slug }, replace: true });
+      return;
     }
-    navigate({ to: target ?? "/cliente", replace: true });
+    navigate({ to: "/cliente", replace: true });
   }
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    if (search.redirect) {
-      try { sessionStorage.setItem("postLoginRedirect", search.redirect); } catch {}
+    const redirectPath = persistLoginTarget();
+    if (!redirectPath) {
+      toast.error("Abra o link do restaurante antes de entrar.");
+      setLoading(null);
+      return;
     }
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/entrar" });
     if (result.error) {
@@ -75,6 +128,12 @@ function CustomerAuthPage() {
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");
+    const redirectPath = persistLoginTarget();
+    if (!redirectPath) {
+      toast.error("Abra o link do restaurante antes de entrar.");
+      setLoading(null);
+      return;
+    }
     try {
       if (tab === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -105,7 +164,7 @@ function CustomerAuthPage() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
         <button
-          onClick={() => history.length > 1 ? history.back() : navigate({ to: "/" })}
+          onClick={goBack}
           className="mb-4 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar

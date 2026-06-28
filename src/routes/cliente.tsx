@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/cliente")({
   head: () => ({ meta: [{ title: "Minha Conta — Localix" }] }),
   component: MinhaContaPage,
 });
-
-import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 function MinhaContaPage() {
   const { user, loading } = useCustomerAuth();
@@ -43,7 +43,7 @@ function MinhaContaPage() {
 }
 
 const BENEFITS = [
-  { icon: Heart, label: "Favoritos", desc: "Salve seus restaurantes" },
+  { icon: Heart, label: "Favoritos", desc: "Salve seus pratos" },
   { icon: Tag, label: "Promoções", desc: "Cupons exclusivos" },
   { icon: Sparkles, label: "Fidelidade", desc: "Acumule pontos" },
   { icon: History, label: "Histórico", desc: "Todos os pedidos" },
@@ -51,26 +51,20 @@ const BENEFITS = [
   { icon: Zap, label: "Checkout rápido", desc: "Peça em 1 toque" },
 ];
 
-function getRestaurantReturnPath(): string | null {
-  try {
-    const slug = sessionStorage.getItem("localix:last-restaurant-slug");
-    if (slug) return `/${slug}`;
-  } catch {}
-  return null;
-}
-
 function AuthView() {
   const [loading, setLoading] = useState<null | "google" | "apple">(null);
-  const returnPath = getRestaurantReturnPath();
-  const emailRedirect = returnPath ?? "/cliente";
+  const { restaurantPath, prepareLoginRedirect, currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const emailRedirect = restaurantPath ?? "/cliente";
+
+  function prepareEmailLogin() {
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+  }
 
   async function handleOAuth(provider: "google" | "apple") {
     setLoading(provider);
-    try {
-      if (returnPath) sessionStorage.setItem("postLoginRedirect", returnPath);
-    } catch {}
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + (returnPath ?? "/cliente"),
+      redirect_uri: window.location.origin + "/entrar",
     });
     if (result.error) {
       toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
@@ -132,13 +126,13 @@ function AuthView() {
           </div>
 
           <Button asChild variant="secondary" className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold">
-            <Link to="/entrar" search={{ redirect: emailRedirect }}>
+            <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin}>
               <Mail className="h-5 w-5" /> Entrar com e-mail
             </Link>
           </Button>
 
           <div className="flex flex-col gap-1 pt-1 text-center text-sm">
-            <Link to="/entrar" search={{ redirect: emailRedirect }} className="font-semibold text-primary hover:underline">
+            <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin} className="font-semibold text-primary hover:underline">
               Criar uma conta
             </Link>
             <Link to="/esqueci-senha" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
@@ -157,6 +151,7 @@ function AuthView() {
 
 function ProfileView({ user }: { user: User }) {
   const navigate = useNavigate();
+  const { restaurantPath } = useCustomerNavigation();
   const meta = (user.user_metadata ?? {}) as Record<string, any>;
   const name = meta.full_name || meta.name || user.email?.split("@")[0] || "Cliente";
   const avatar = meta.avatar_url || meta.picture;
@@ -167,13 +162,11 @@ function ProfileView({ user }: { user: User }) {
     .join("")
     .toUpperCase();
 
-  const restaurantPath = getRestaurantReturnPath();
-
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
     if (restaurantPath) {
-      window.location.assign(restaurantPath);
+      navigate({ to: restaurantPath as any, replace: true });
     } else {
       navigate({ to: "/cliente", replace: true });
     }

@@ -22,6 +22,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { CustomerNavigationProvider } from "@/contexts/CustomerNavigationContext";
 
 function NotFoundComponent() {
   return (
@@ -131,8 +132,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <CustomerBottomNav />
+      <CustomerNavigationProvider>
+        <Outlet />
+        <CustomerBottomNav />
+      </CustomerNavigationProvider>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
@@ -147,7 +150,6 @@ const RESERVED_TOP = new Set([
 ]);
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
-  (p) => p === "/home",
   (p) => p.startsWith("/beneficios"),
   (p) => p.startsWith("/favoritos"),
   (p) => p.startsWith("/meus-pedidos"),

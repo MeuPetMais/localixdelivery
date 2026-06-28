@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -41,6 +42,7 @@ function PublicMenu() {
 
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
+  const { rememberRestaurantRoute, prepareLoginRedirect, restoreRestaurantScroll, setPendingCart } = useCustomerNavigation();
 
 
   const { data, isLoading, isError, error } = useQuery({
@@ -80,9 +82,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (data?.restaurant?.slug) {
-      try { sessionStorage.setItem("localix:last-restaurant-slug", data.restaurant.slug); } catch {}
+      restoreRestaurantScroll(data.restaurant.slug);
+      rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
     }
-  }, [data?.restaurant?.slug]);
+  }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
 
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -165,7 +168,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       sessionStorage.setItem(`cart:${slug}`, JSON.stringify(cart));
     } catch {}
-  }, [cart, slug]);
+    setPendingCart(cart.length ? { slug, items: cart, updatedAt: new Date().toISOString() } : null);
+    if (data?.restaurant?.slug) rememberRestaurantRoute(data.restaurant.slug, { pendingCart: cart.length ? { slug, items: cart, updatedAt: new Date().toISOString() } : null });
+  }, [cart, slug, setPendingCart, data?.restaurant?.slug, rememberRestaurantRoute]);
 
   // Favorites state (per restaurant) for the current authenticated customer
   const { isAuthenticated } = useCustomerAuth();
@@ -190,7 +195,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   async function handleToggleFavorite(kind: "menu_item" | "builder", itemId: string) {
     if (!isAuthenticated) {
       toast.info("Entre na sua conta para favoritar este produto.");
-      navigate({ to: "/cliente" });
+      const redirect = prepareLoginRedirect(slug);
+      navigate({ to: "/entrar", search: { redirect } });
       return;
     }
     if (!restaurantId) return;
@@ -272,7 +278,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         <div>
           <h1 className="font-display text-3xl font-extrabold">Restaurante não encontrado</h1>
           <p className="mt-2 text-muted-foreground">Verifique o link e tente novamente.</p>
-          <Link to="/home" className="mt-4 inline-flex"><Button>Ir para o Localix</Button></Link>
         </div>
       </div>
     );
