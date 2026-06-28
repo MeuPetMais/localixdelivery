@@ -161,7 +161,7 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
     const slug = fallbackSlug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
     const target = safeRestaurantPath(slug);
     if (slug) rememberRestaurantRoute(slug, { route: target, scrollY: isBrowser() ? window.scrollY : 0 });
-    if (isBrowser()) {
+    if (slug && isBrowser()) {
       try { sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, target); } catch {}
     }
     return target;
