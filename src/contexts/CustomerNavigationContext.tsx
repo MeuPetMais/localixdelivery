@@ -212,3 +212,8 @@ export function getStoredRestaurantPath() {
   const snapshot = readStoredState();
   return restaurantPathFromSlug(snapshot.currentRestaurantSlug ?? snapshot.lastRestaurantSlug);
 }
+
+export function getStoredRestaurantSlug() {
+  const snapshot = readStoredState();
+  return snapshot.currentRestaurantSlug ?? snapshot.lastRestaurantSlug;
+}
