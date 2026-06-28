@@ -5,12 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
-import { getStoredRestaurantPath } from "@/contexts/CustomerNavigationContext";
+import { getStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/home")({
   beforeLoad: () => {
-    const restaurantPath = getStoredRestaurantPath();
-    if (restaurantPath) throw redirect({ href: restaurantPath, replace: true });
+    const slug = getStoredRestaurantSlug();
+    if (slug) throw redirect({ to: "/$slug", params: { slug }, replace: true });
   },
   head: () => ({
     meta: [
