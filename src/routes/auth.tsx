@@ -141,13 +141,6 @@ function AuthPage() {
                 {tab === "signup" ? "Criar conta" : "Entrar"}
               </Button>
             </form>
-
-            <div className="my-4 flex items-center gap-3 text-xs uppercase text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />ou<span className="h-px flex-1 bg-border" />
-            </div>
-            <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-              <GoogleIcon /> Continuar com Google
-            </Button>
           </Tabs>
         </Card>
         <Link to="/" className="mt-6 text-center text-sm text-muted-foreground hover:text-foreground">← Voltar para o site</Link>
@@ -156,8 +149,3 @@ function AuthPage() {
   );
 }
 
-function GoogleIcon() {
-  return (
-    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z"/></svg>
-  );
-}
