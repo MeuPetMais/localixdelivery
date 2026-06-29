@@ -2,6 +2,8 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { RestaurantProvider } from "@/contexts/RestaurantContext";
+import { OwnerOnboarding } from "@/components/OwnerOnboarding";
 import {
   LayoutDashboard,
   UtensilsCrossed,
