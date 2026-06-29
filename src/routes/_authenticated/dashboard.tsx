@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { brl, slugify } from "@/lib/format";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { toast } from "sonner";
 import {
   ExternalLink,
