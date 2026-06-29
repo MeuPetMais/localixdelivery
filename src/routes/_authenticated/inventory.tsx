@@ -63,17 +63,16 @@ function InventoryPage() {
   const [recIngId, setRecIngId] = useState<string>("");
   const [recQty, setRecQty] = useState("1");
 
+  const ctxRestaurant = useRestaurant();
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const { data: r } = await supabase.from("restaurants").select("id").eq("owner_id", u.user.id).maybeSingle();
-      if (!r) { setLoading(false); return; }
-      setRestaurantId(r.id);
-      await reload(r.id);
+      setRestaurantId(ctxRestaurant.id);
+      await reload(ctxRestaurant.id);
       setLoading(false);
     })();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctxRestaurant.id]);
+
 
   async function reload(rid: string) {
     const [ing, mi, rc] = await Promise.all([

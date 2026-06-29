@@ -84,12 +84,10 @@ async function uploadAsset(file: File, folder: "logos" | "covers", userId: strin
 }
 
 function SettingsPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
-  const { data: restaurant, refetch } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () =>
-      (await supabase.from("restaurants").select("*").eq("owner_id", user.id).maybeSingle()).data,
-  });
+  const restaurant = useRestaurant();
+  const { invalidate } = useRestaurantContext();
+  const refetch = invalidate;
+
 
   const [form, setForm] = useState({
     name: "",

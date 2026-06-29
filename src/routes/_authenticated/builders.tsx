@@ -58,15 +58,8 @@ function BuildersPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["my-restaurant"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data } = await supabase.from("restaurants").select("id, name, builders_enabled").eq("owner_id", u.user.id).maybeSingle();
-      return data;
-    },
-  });
+  const restaurant = useRestaurant();
+
 
   const { data: builders, refetch } = useQuery({
     queryKey: ["builders", restaurant?.id],
