@@ -192,7 +192,7 @@ function SettingsPage() {
     const setUp = kind === "logo" ? setUploadingLogo : setUploadingCover;
     setUp(true);
     try {
-      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", user.id);
+      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.owner_id);
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
