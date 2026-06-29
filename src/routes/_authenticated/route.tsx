@@ -164,7 +164,14 @@ function AuthLayout() {
         </header>
 
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
-          <Outlet />
+          <RestaurantProvider
+            userId={user.id}
+            fallbackWhenMissing={(refetch) => (
+              <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
+            )}
+          >
+            <Outlet />
+          </RestaurantProvider>
         </main>
       </div>
     </div>
