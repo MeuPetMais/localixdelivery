@@ -2,6 +2,8 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { RestaurantProvider } from "@/contexts/RestaurantContext";
+import { OwnerOnboarding } from "@/components/OwnerOnboarding";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -164,7 +166,14 @@ function AuthLayout() {
         </header>
 
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
-          <Outlet />
+          <RestaurantProvider
+            userId={user.id}
+            fallbackWhenMissing={(refetch) => (
+              <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
+            )}
+          >
+            <Outlet />
+          </RestaurantProvider>
         </main>
       </div>
     </div>

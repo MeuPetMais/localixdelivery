@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -101,14 +102,9 @@ function summarizeRecurrence(item: Item): string | null {
 }
 
 function PromotionsPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
   const qc = useQueryClient();
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () =>
-      (await supabase.from("restaurants").select("id,name").eq("owner_id", user.id).maybeSingle()).data,
-  });
 
   const { data: categories = [] } = useQuery<Category[]>({
     enabled: !!restaurant?.id,

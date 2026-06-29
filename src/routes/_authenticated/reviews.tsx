@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,18 +28,12 @@ type Review = {
 };
 
 function ReviewsPage() {
-  const { user } = useAuth();
   const qc = useQueryClient();
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [filter, setFilter] = useState<number | null>(null);
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["my-restaurant", user?.id],
-    enabled: !!user,
-    queryFn: async () =>
-      (await supabase.from("restaurants").select("id, name").eq("owner_id", user!.id).maybeSingle()).data,
-  });
 
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["owner-reviews", restaurant?.id],

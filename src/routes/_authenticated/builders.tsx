@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,15 +58,8 @@ function BuildersPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["my-restaurant"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data } = await supabase.from("restaurants").select("id, name, builders_enabled").eq("owner_id", u.user.id).maybeSingle();
-      return data;
-    },
-  });
+  const restaurant = useRestaurant();
+
 
   const { data: builders, refetch } = useQuery({
     queryKey: ["builders", restaurant?.id],

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { brl, slugify } from "@/lib/format";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { toast } from "sonner";
 import {
   ExternalLink,
@@ -74,15 +75,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const qc = useQueryClient();
-
-  const { data: restaurant, isLoading, refetch } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("restaurants").select("*").eq("owner_id", user.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  const restaurant = useRestaurant();
 
   const [period, setPeriod] = useState<7 | 30 | 90>(30);
   const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
@@ -111,18 +104,13 @@ function Dashboard() {
     };
   }, [restaurant?.id, qc]);
 
-  if (isLoading) return <Loader />;
-  if (!restaurant) return <Onboarding ownerId={user.id} onCreated={() => refetch()} />;
-
-  const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
-
   async function toggleOpen() {
-    const { error } = await supabase.from("restaurants").update({ is_open: !restaurant!.is_open }).eq("id", restaurant!.id);
+    const { error } = await supabase.from("restaurants").update({ is_open: !restaurant.is_open }).eq("id", restaurant.id);
     if (error) return toast.error(error.message);
-    toast.success(restaurant!.is_open ? "Loja fechada" : "Loja aberta");
-    refetch();
+    toast.success(restaurant.is_open ? "Loja fechada" : "Loja aberta");
   }
 
+  const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
   const k = dash?.kpis;
 
   return (

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,17 +29,10 @@ const PRESETS: { type: CampaignType; label: string; emoji: string }[] = [
 ];
 
 function AiCenterPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
   const fetchInsights = useServerFn(getAiInsights);
   const fetchCampaign = useServerFn(generateCampaign);
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("restaurants").select("id, name").eq("owner_id", user.id).maybeSingle();
-      return data;
-    },
-  });
 
   const restaurantId = restaurant?.id;
 

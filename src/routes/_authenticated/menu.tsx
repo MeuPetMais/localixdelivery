@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,13 +42,9 @@ type Item = {
 };
 
 function MenuPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
   const qc = useQueryClient();
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () => (await supabase.from("restaurants").select("*").eq("owner_id", user.id).maybeSingle()).data,
-  });
 
   const { data: categories = [] } = useQuery<Category[]>({
     enabled: !!restaurant?.id,

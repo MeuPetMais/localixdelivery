@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant, useRestaurantContext } from "@/contexts/RestaurantContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -83,12 +84,10 @@ async function uploadAsset(file: File, folder: "logos" | "covers", userId: strin
 }
 
 function SettingsPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
-  const { data: restaurant, refetch } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () =>
-      (await supabase.from("restaurants").select("*").eq("owner_id", user.id).maybeSingle()).data,
-  });
+  const restaurant = useRestaurant();
+  const { invalidate } = useRestaurantContext();
+  const refetch = invalidate;
+
 
   const [form, setForm] = useState({
     name: "",
@@ -193,7 +192,7 @@ function SettingsPage() {
     const setUp = kind === "logo" ? setUploadingLogo : setUploadingCover;
     setUp(true);
     try {
-      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", user.id);
+      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.owner_id);
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
