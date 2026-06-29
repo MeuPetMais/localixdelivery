@@ -28,17 +28,10 @@ const PRESETS: { type: CampaignType; label: string; emoji: string }[] = [
 ];
 
 function AiCenterPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
   const fetchInsights = useServerFn(getAiInsights);
   const fetchCampaign = useServerFn(generateCampaign);
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("restaurants").select("id, name").eq("owner_id", user.id).maybeSingle();
-      return data;
-    },
-  });
 
   const restaurantId = restaurant?.id;
 

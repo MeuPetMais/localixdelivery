@@ -101,14 +101,9 @@ function summarizeRecurrence(item: Item): string | null {
 }
 
 function PromotionsPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
   const qc = useQueryClient();
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () =>
-      (await supabase.from("restaurants").select("id,name").eq("owner_id", user.id).maybeSingle()).data,
-  });
 
   const { data: categories = [] } = useQuery<Category[]>({
     enabled: !!restaurant?.id,

@@ -27,15 +27,8 @@ type Coupon = {
 };
 
 function LoyaltyPage() {
-  const { user } = Route.useRouteContext() as { user: { id: string } };
+  const restaurant = useRestaurant();
 
-  const { data: restaurant } = useQuery({
-    queryKey: ["restaurant", user.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("restaurants").select("id, name").eq("owner_id", user.id).maybeSingle();
-      return data;
-    },
-  });
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
