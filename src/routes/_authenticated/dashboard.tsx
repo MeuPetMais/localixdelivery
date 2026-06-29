@@ -110,6 +110,7 @@ function Dashboard() {
     toast.success(restaurant.is_open ? "Loja fechada" : "Loja aberta");
   }
 
+  const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
   const k = dash?.kpis;
 
   return (
