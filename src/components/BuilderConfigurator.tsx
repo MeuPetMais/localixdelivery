@@ -127,8 +127,9 @@ export function BuilderConfigurator({
   function next() {
     if (currentGroup) {
       const t = totalForGroup(currentGroup.id);
-      if (currentGroup.is_required && t < currentGroup.min_select) {
-        toast.error(`Selecione ao menos ${currentGroup.min_select} em ${currentGroup.name}`);
+      const minimumRequired = minimumRequiredFor(currentGroup);
+      if (minimumRequired > 0 && t < minimumRequired) {
+        toast.error(`Selecione ao menos ${minimumRequired} em ${currentGroup.name}`);
         return;
       }
     }
@@ -139,7 +140,8 @@ export function BuilderConfigurator({
     // validate all required
     for (const g of groups) {
       const t = totalForGroup(g.id);
-      if (g.is_required && t < g.min_select) {
+      const minimumRequired = minimumRequiredFor(g);
+      if (minimumRequired > 0 && t < minimumRequired) {
         toast.error(`Falta preencher: ${g.name}`);
         return;
       }
@@ -181,7 +183,7 @@ export function BuilderConfigurator({
                 <h3 className="font-display text-lg font-extrabold">{currentGroup.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {currentGroup.is_required ? "Obrigatório · " : "Opcional · "}
-                  {currentGroup.min_select > 0 && `mín ${currentGroup.min_select} · `}
+                  {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
                   máx {currentGroup.max_select}
                 </p>
               </div>
