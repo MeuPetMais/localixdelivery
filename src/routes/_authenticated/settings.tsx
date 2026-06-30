@@ -70,25 +70,58 @@ const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
 }, {} as Hours);
 
 async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId: string) {
-  const ext = file.name.split(".").pop() || "jpg";
-  // IMPORTANT: storage RLS expects first folder = restaurant.id
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  // RLS do bucket "restaurant-assets" exige que o 1º segmento da pasta == restaurant.id
   const path = `${restaurantId}/${folder}/${Date.now()}.${ext}`;
-  console.log("[upload] arquivo selecionado:", { name: file.name, size: file.size, type: file.type, path });
+
+  // Sanity: confirma sessão e ownership antes de tentar o upload
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData?.user?.id ?? null;
+  const { data: ownerCheck, error: ownerErr } = await supabase
+    .from("restaurants")
+    .select("id, owner_id")
+    .eq("id", restaurantId)
+    .maybeSingle();
+
+  console.log("[upload] preflight", {
+    path,
+    uid,
+    restaurantId,
+    ownerCheck,
+    ownerErr,
+    file: { name: file.name, size: file.size, type: file.type },
+  });
+
+  if (!uid) throw new Error("Sessão expirada. Faça login novamente.");
+  if (ownerErr) throw new Error(`Falha ao verificar restaurante: ${ownerErr.message}`);
+  if (!ownerCheck) throw new Error("Restaurante não encontrado (RLS).");
+  if (ownerCheck.owner_id !== uid)
+    throw new Error(`auth.uid (${uid}) ≠ owner_id (${ownerCheck.owner_id}). RLS do Storage vai bloquear.`);
+
   const { data, error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
     upsert: true,
     contentType: file.type,
   });
-  console.log("[upload] resultado:", {
-    data,
-    error,
-    code: (error as any)?.statusCode ?? (error as any)?.code,
-    message: error?.message,
-  });
-  if (error) throw error;
+  if (error) {
+    const full = {
+      name: (error as any)?.name,
+      message: error.message,
+      statusCode: (error as any)?.statusCode,
+      error: (error as any)?.error,
+      details: (error as any)?.details,
+      hint: (error as any)?.hint,
+    };
+    console.error("[upload] storage error:", full);
+    throw new Error(`Storage: ${JSON.stringify(full)}`);
+  }
+  console.log("[upload] ok:", data);
   const { data: signed, error: sErr } = await supabase.storage
     .from("restaurant-assets")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-  if (sErr) throw sErr;
+  if (sErr) {
+    console.error("[upload] signed url error:", sErr);
+    throw new Error(`SignedUrl: ${sErr.message}`);
+  }
   return signed?.signedUrl ?? null;
 }
 
