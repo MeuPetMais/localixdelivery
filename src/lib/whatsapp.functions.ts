@@ -101,11 +101,17 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     const header = orderNumber ? `*Pedido #${orderNumber}*\n\n` : "";
     const fullMessage = header + data.message;
 
+    // Demo account: never trigger real WhatsApp / external integrations.
+    const isDemo = data.slug === "demo";
+
     return {
-      url: `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`,
+      url: isDemo
+        ? `/pedido-sucesso/${orderId ?? ""}`
+        : `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`,
       orderNumber,
       orderId,
       estimatedDeliveryTime: eta,
+      demo: isDemo,
     };
   });
 
