@@ -102,6 +102,13 @@ function BuildYourOwnPage() {
 
   const totalForGroup = (gid: string) => Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
 
+  const minimumRequiredFor = (g: Builder["builder_groups"][number]) => Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
+
+  const removeWouldBreakMinimum = (g: Builder["builder_groups"][number], totalNow: number, removeQty: number) => {
+    const minimumRequired = minimumRequiredFor(g);
+    return minimumRequired > 0 && totalNow - removeQty < minimumRequired;
+  };
+
   const subtotal = useMemo(() => {
     let s = Number(activeBuilder?.base_price ?? 0) || 0;
     for (const g of groups) {
@@ -121,18 +128,30 @@ function BuildYourOwnPage() {
   };
 
   const toggle = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
-    const cur = sel[g.id] ?? {};
-    const have = cur[o.id] ?? 0;
-    if (g.max_select === 1) {
-      setSel((prev) => ({ ...prev, [g.id]: have ? {} : { [o.id]: 1 } }));
-      return;
-    }
-    const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
-    if (!have && totalNow >= g.max_select) {
-      toast.error(`Máx ${g.max_select} nesta etapa`);
-      return;
-    }
-    updateQty(g.id, o.id, have ? 0 : 1);
+    setSel((prev) => {
+      const cur = { ...(prev[g.id] ?? {}) };
+      const have = cur[o.id] ?? 0;
+      const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
+
+      if (have > 0) {
+        if (removeWouldBreakMinimum(g, totalNow, have)) {
+          toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
+          return prev;
+        }
+        delete cur[o.id];
+        return { ...prev, [g.id]: cur };
+      }
+
+      if (g.max_select === 1) return { ...prev, [g.id]: { [o.id]: 1 } };
+
+      if (totalNow >= g.max_select) {
+        toast.error("Você atingiu o limite desta etapa.");
+        return prev;
+      }
+
+      cur[o.id] = 1;
+      return { ...prev, [g.id]: cur };
+    });
   };
 
   const inc = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
@@ -141,15 +160,21 @@ function BuildYourOwnPage() {
     const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
     if (have >= o.max_qty) return;
     if (totalNow >= g.max_select) {
-      toast.error(`Máx ${g.max_select} nesta etapa`);
+      toast.error("Você atingiu o limite desta etapa.");
       return;
     }
     updateQty(g.id, o.id, have + 1);
   };
 
   const dec = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
-    const have = sel[g.id]?.[o.id] ?? 0;
+    const cur = sel[g.id] ?? {};
+    const have = cur[o.id] ?? 0;
     if (have <= 0) return;
+    const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
+    if (removeWouldBreakMinimum(g, totalNow, 1)) {
+      toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
+      return;
+    }
     updateQty(g.id, o.id, have - 1);
   };
 
@@ -272,15 +297,16 @@ function BuildYourOwnPage() {
                 {currentGroup.builder_options.slice().sort((a, b) => a.position - b.position).map((o) => {
                   const qty = sel[currentGroup.id]?.[o.id] ?? 0;
                   const selected = qty > 0;
+                  const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
                   return (
                     <button
                       key={o.id}
                       type="button"
-                      onClick={() => currentGroup.max_select === 1 ? toggle(currentGroup, o) : (selected ? undefined : inc(currentGroup, o))}
+                      onClick={() => toggle(currentGroup, o)}
                       className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`grid h-6 w-6 place-items-center rounded-full border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
+                        <span className={`grid h-6 w-6 place-items-center border-2 ${radioLike ? "rounded-full" : "rounded-md"} ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
                           {selected && <Check className="h-3.5 w-3.5" />}
                         </span>
                         <span className="font-semibold">{o.name}</span>
