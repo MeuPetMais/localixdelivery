@@ -54,6 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
+import { DemoDashboardCards, DemoExtraMetrics, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import {
   ResponsiveContainer,
   AreaChart,
