@@ -46,15 +46,23 @@ export function BuilderConfigurator({
   const totalForGroup = (gid: string) =>
     Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
 
+  const minimumRequiredFor = (g: Group) => Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
+
+  const removeWouldBreakMinimum = (g: Group, totalNow: number, removeQty: number) => {
+    const minimumRequired = minimumRequiredFor(g);
+    return minimumRequired > 0 && totalNow - removeQty < minimumRequired;
+  };
+
   const toggle = (g: Group, o: Option) => {
     setSel((prev) => {
       const cur = { ...(prev[g.id] ?? {}) };
       const have = cur[o.id] ?? 0;
       const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
+      const optionLabel = g.max_select === 1 ? "opção" : "opções";
       if (g.max_select === 1) {
         if (have) {
-          if (g.is_required && g.min_select >= 1) {
-            toast.error(`É necessário manter pelo menos ${g.min_select} opção selecionada.`);
+          if (removeWouldBreakMinimum(g, totalNow, have)) {
+            toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
             return prev;
           }
           return { ...prev, [g.id]: {} };
@@ -62,15 +70,14 @@ export function BuilderConfigurator({
         return { ...prev, [g.id]: { [o.id]: 1 } };
       }
       if (have > 0) {
-        if (g.is_required && totalNow <= g.min_select) {
-          toast.error(`É necessário manter pelo menos ${g.min_select} opção selecionada.`);
+        if (removeWouldBreakMinimum(g, totalNow, have)) {
+          toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
           return prev;
         }
-        const next = have - 1;
-        if (next <= 0) delete cur[o.id]; else cur[o.id] = next;
+        delete cur[o.id];
       } else {
         if (totalNow >= g.max_select) {
-          toast.error(`Você pode escolher no máximo ${g.max_select} ${g.max_select === 1 ? "opção" : "opções"}.`);
+          toast.error(`Você atingiu o limite desta etapa. Você pode escolher no máximo ${g.max_select} ${optionLabel}.`);
           return prev;
         }
         cur[o.id] = 1;
@@ -85,7 +92,7 @@ export function BuilderConfigurator({
       const have = cur[o.id] ?? 0;
       const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
       if (have >= o.max_qty) return prev;
-      if (totalNow >= g.max_select) { toast.error(`Máx ${g.max_select} nesta etapa`); return prev; }
+      if (totalNow >= g.max_select) { toast.error("Você atingiu o limite desta etapa."); return prev; }
       cur[o.id] = have + 1;
       return { ...prev, [g.id]: cur };
     });
@@ -95,6 +102,11 @@ export function BuilderConfigurator({
       const cur = { ...(prev[g.id] ?? {}) };
       const have = cur[o.id] ?? 0;
       if (have <= 0) return prev;
+      const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
+      if (removeWouldBreakMinimum(g, totalNow, 1)) {
+        toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
+        return prev;
+      }
       const next = have - 1;
       if (next <= 0) delete cur[o.id]; else cur[o.id] = next;
       return { ...prev, [g.id]: cur };
@@ -115,8 +127,9 @@ export function BuilderConfigurator({
   function next() {
     if (currentGroup) {
       const t = totalForGroup(currentGroup.id);
-      if (currentGroup.is_required && t < currentGroup.min_select) {
-        toast.error(`Selecione ao menos ${currentGroup.min_select} em ${currentGroup.name}`);
+      const minimumRequired = minimumRequiredFor(currentGroup);
+      if (minimumRequired > 0 && t < minimumRequired) {
+        toast.error(`Selecione ao menos ${minimumRequired} em ${currentGroup.name}`);
         return;
       }
     }
@@ -127,7 +140,8 @@ export function BuilderConfigurator({
     // validate all required
     for (const g of groups) {
       const t = totalForGroup(g.id);
-      if (g.is_required && t < g.min_select) {
+      const minimumRequired = minimumRequiredFor(g);
+      if (minimumRequired > 0 && t < minimumRequired) {
         toast.error(`Falta preencher: ${g.name}`);
         return;
       }
@@ -169,7 +183,7 @@ export function BuilderConfigurator({
                 <h3 className="font-display text-lg font-extrabold">{currentGroup.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {currentGroup.is_required ? "Obrigatório · " : "Opcional · "}
-                  {currentGroup.min_select > 0 && `mín ${currentGroup.min_select} · `}
+                  {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
                   máx {currentGroup.max_select}
                 </p>
               </div>
@@ -182,6 +196,7 @@ export function BuilderConfigurator({
                   .map((o) => {
                     const qty = sel[currentGroup.id]?.[o.id] ?? 0;
                     const selected = qty > 0;
+                    const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
                     return (
                       <button
                         type="button"
@@ -190,7 +205,7 @@ export function BuilderConfigurator({
                         className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                       >
                         <div className="flex items-center gap-3">
-                          {currentGroup.max_select === 1 ? (
+                          {radioLike ? (
                             <span className={`grid h-5 w-5 place-items-center rounded-full border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
                               {selected && <Check className="h-3 w-3" />}
                             </span>
