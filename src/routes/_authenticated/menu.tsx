@@ -62,9 +62,18 @@ function MenuPage() {
     return <Card className="p-8 text-center">Você precisa criar seu restaurante primeiro no painel.</Card>;
   }
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["categories", restaurant.id] });
-    qc.invalidateQueries({ queryKey: ["items", restaurant.id] });
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["categories", restaurant.id], refetchType: "active" }),
+      qc.invalidateQueries({ queryKey: ["items", restaurant.id], refetchType: "active" }),
+      qc.invalidateQueries({ queryKey: ["categories"] }),
+      qc.invalidateQueries({ queryKey: ["menu-items"] }),
+      qc.invalidateQueries({ queryKey: ["restaurant-menu"] }),
+      qc.invalidateQueries({ queryKey: ["public-menu"] }),
+      qc.invalidateQueries({ queryKey: ["public-restaurant"] }),
+      qc.invalidateQueries({ queryKey: ["restaurant"] }),
+      qc.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
   };
 
   return (
@@ -335,9 +344,18 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
         ));
       }
 
-      toast.success(item ? "Item atualizado" : "Item criado");
+      toast.success(item ? "✅ Produto atualizado com sucesso" : "✅ Produto salvo com sucesso");
       setOpen(false);
-      onSaved();
+      if (!item) {
+        setForm({
+          name: "", description: "", category_id: categories[0]?.id ?? "",
+          price: "", promo_price: "", prep_time_minutes: "",
+          available_delivery: true, available_pickup: true,
+          is_featured: false, is_bestseller: false, is_active: true,
+        });
+        setImages([]);
+      }
+      await onSaved();
     } catch (err: any) {
       toast.error(err?.message ?? "Erro ao salvar");
     } finally {

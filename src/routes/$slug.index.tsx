@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -86,6 +86,22 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
     }
   }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
+
+  const qc = useQueryClient();
+  useEffect(() => {
+    const restaurantId = data?.restaurant?.id;
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`public-menu:${restaurantId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_item_images", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [data?.restaurant?.id, slug, qc]);
 
 
   const [cart, setCart] = useState<CartItem[]>(() => {
