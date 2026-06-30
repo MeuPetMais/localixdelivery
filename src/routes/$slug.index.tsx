@@ -877,7 +877,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!effectiveOpen || belowMin}>
+        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!restaurant.is_open || belowMin}>
           <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
         </Button>
       </SheetFooter>
