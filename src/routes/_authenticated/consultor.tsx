@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { consultorChat, getMyRestaurantId } from "@/lib/consultor.functions";
+import { consultorChat } from "@/lib/consultor.functions";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +26,8 @@ const SUGGESTIONS = [
 ];
 
 function ConsultorPage() {
-  const fetchRest = useServerFn(getMyRestaurantId);
+  const restaurant = useRestaurant();
   const chat = useServerFn(consultorChat);
-  const { data: rest } = useQuery({ queryKey: ["my-restaurant"], queryFn: () => fetchRest() });
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +38,7 @@ function ConsultorPage() {
   }, [messages, loading]);
 
   async function send(text: string) {
-    if (!rest?.id) {
+    if (!restaurant.id) {
       toast.error("Cadastre seu restaurante primeiro.");
       return;
     }
@@ -50,7 +49,7 @@ function ConsultorPage() {
     setInput("");
     setLoading(true);
     try {
-      const res = await chat({ data: { restaurantId: rest.id, messages: next.slice(-20) } });
+      const res = await chat({ data: { restaurantId: restaurant.id, messages: next.slice(-20) } });
       setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha no consultor");
