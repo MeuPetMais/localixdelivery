@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/format";
@@ -30,6 +31,37 @@ function AuthPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) {
+      toast.error("Informe seu e-mail");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("E-mail inválido");
+      return;
+    }
+    setForgotSending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (error) throw error;
+      setForgotSent(true);
+    } catch (err) {
+      // Não revelar existência de conta — apenas exibir mensagem genérica em erros não críticos
+      setForgotSent(true);
+      console.error(err);
+    } finally {
+      setForgotSending(false);
+    }
+  }
 
 
   useEffect(() => {
@@ -161,6 +193,17 @@ function AuthPage() {
                 <Label htmlFor="pwd">Senha</Label>
                 <PasswordInput id="pwd" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={tab === "signup" ? "new-password" : "current-password"} />
               </div>
+              {tab === "signin" && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => { setForgotEmail(email); setForgotSent(false); setForgotOpen(true); }}
+                    className="text-sm font-medium text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:underline"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                </div>
+              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {tab === "signup" ? "Criar conta" : "Entrar"}
@@ -170,6 +213,53 @@ function AuthPage() {
         </Card>
         <Link to="/" className="mt-6 text-center text-sm text-muted-foreground hover:text-foreground">← Voltar para o site</Link>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) { setForgotSent(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recuperar acesso</DialogTitle>
+            <DialogDescription>
+              Informe o e-mail cadastrado e enviaremos um link para redefinir sua senha.
+            </DialogDescription>
+          </DialogHeader>
+          {forgotSent ? (
+            <div className="space-y-4">
+              <p className="rounded-md bg-muted/60 p-3 text-sm">
+                Se existir uma conta vinculada a este e-mail, enviamos um link para redefinição da senha.
+              </p>
+              <DialogFooter>
+                <Button type="button" className="w-full" onClick={() => setForgotOpen(false)}>
+                  Fechar
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <form onSubmit={handleForgot} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-email">E-mail</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="voce@restaurante.com"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotSending}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={forgotSending}>
+                  {forgotSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {forgotSending ? "Enviando..." : "Enviar link"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
