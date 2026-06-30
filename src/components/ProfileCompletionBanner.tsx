@@ -3,36 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Store, CheckCircle2, ArrowRight } from "lucide-react";
-
-type Check = { key: string; label: string; emoji: string; done: boolean };
+import { getProfileCompletion } from "@/lib/profile-completion";
 
 export function ProfileCompletionBanner({ restaurant }: { restaurant: any }) {
-  const r = restaurant ?? {};
-  const hasPayment =
-    r.payment_methods &&
-    typeof r.payment_methods === "object" &&
-    Object.values(r.payment_methods).some((v) => v === true);
-  const hasHours =
-    (r.opening_hours && typeof r.opening_hours === "object" && Object.keys(r.opening_hours).length > 0) ||
-    !!r.hours_text;
-  const hasSocial = !!(r.instagram_url || r.facebook_url || r.instagram || r.facebook);
-
-  const checks: Check[] = [
-    { key: "logo", label: "Logo", emoji: "📷", done: !!r.logo_url },
-    { key: "banner", label: "Banner", emoji: "🖼️", done: !!r.banner_url },
-    { key: "hours", label: "Horários", emoji: "🕒", done: hasHours },
-    { key: "delivery", label: "Entrega", emoji: "🚚", done: r.delivery_fee != null && r.avg_delivery_minutes != null },
-    { key: "payment", label: "Pagamentos", emoji: "💳", done: !!hasPayment },
-    { key: "address", label: "Endereço", emoji: "📍", done: !!(r.address && r.city) },
-    { key: "social", label: "Redes sociais", emoji: "📱", done: hasSocial },
-  ];
-
-  const completed = checks.filter((c) => c.done).length;
-  const total = checks.length;
-  const pct = Math.round((completed / total) * 100);
+  const { pct, completed, total, checks, isComplete } = getProfileCompletion(restaurant);
   const missing = total - completed;
 
-  if (pct >= 100) {
+  if (isComplete) {
     return (
       <Card className="flex items-center gap-3 border-emerald-500/30 bg-emerald-500/5 p-4">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-600">
