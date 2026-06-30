@@ -61,23 +61,6 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
 
   const restaurant = data?.[0] ?? null;
 
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.log("[RestaurantContext] fetchMyRestaurant", {
-      authUserId: userId,
-      queryData: data,
-        restaurantId: restaurant?.id ?? null,
-      queryError: error
-        ? {
-            code: (error as any).code,
-            message: (error as any).message,
-            details: (error as any).details,
-            hint: (error as any).hint,
-          }
-        : null,
-    });
-  }
-
   if (error) {
     const kind = classifyError(error as any);
     if (import.meta.env.DEV) {
