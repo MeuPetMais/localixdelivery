@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = Route.useRouteContext() as { user: { id: string } };
+  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const { isAdmin } = useIsAdmin(user.id);
   const [open, setOpen] = useState(false);
 
