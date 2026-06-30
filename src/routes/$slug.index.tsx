@@ -548,7 +548,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                       <Button
                         size="sm"
                         className="mt-2 w-full rounded-xl"
-                        disabled={!restaurant.is_open}
+                        disabled={!effectiveOpen}
                         onClick={() => { add({ id: it.id, name: it.name, price: Number(it.promo_price) }); toast.success(`${it.name} adicionado`); }}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
@@ -675,7 +675,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                           <Button
                             size="icon"
                             className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
-                            disabled={!restaurant.is_open}
+                            disabled={!effectiveOpen}
                             onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
                           >
                             <Plus className="h-4 w-4" />
@@ -877,7 +877,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!restaurant.is_open || belowMin}>
+        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!effectiveOpen || belowMin}>
           <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
         </Button>
       </SheetFooter>
