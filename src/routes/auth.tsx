@@ -31,6 +31,37 @@ function AuthPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) {
+      toast.error("Informe seu e-mail");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("E-mail inválido");
+      return;
+    }
+    setForgotSending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (error) throw error;
+      setForgotSent(true);
+    } catch (err) {
+      // Não revelar existência de conta — apenas exibir mensagem genérica em erros não críticos
+      setForgotSent(true);
+      console.error(err);
+    } finally {
+      setForgotSending(false);
+    }
+  }
 
 
   useEffect(() => {
