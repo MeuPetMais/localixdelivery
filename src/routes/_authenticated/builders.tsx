@@ -493,8 +493,42 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           </div>
         </div>
 
-        <DialogFooter><Button onClick={() => onOpenChange(false)}>Concluir</Button></DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={openPreview} className="sm:mr-auto">
+            <Eye className="mr-2 h-4 w-4" /> Visualizar como cliente
+          </Button>
+          <Button onClick={() => onOpenChange(false)}>Concluir</Button>
+        </DialogFooter>
       </DialogContent>
+
+      <BuilderConfigurator
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        builder={{
+          id: builder.id,
+          name: form.name,
+          emoji: form.emoji,
+          description: form.description,
+          image_url: form.image_url,
+          base_price: Number(form.base_price) || 0,
+          builder_groups: groups.map((g: any, i: number) => ({
+            id: g.id,
+            name: g.name,
+            min_select: Number(g.min_select) || 0,
+            max_select: Number(g.max_select) || 1,
+            is_required: !!g.is_required,
+            position: g.position ?? i,
+            builder_options: (g.builder_options ?? []).map((o: any, j: number) => ({
+              id: o.id,
+              name: o.name,
+              price_delta: Number(o.price_delta) || 0,
+              max_qty: Number(o.max_qty) || 1,
+              position: o.position ?? j,
+            })),
+          })),
+        }}
+        onAdd={() => toast.success("Preview: item adicionado (somente visualização)")}
+      />
     </Dialog>
   );
 }
