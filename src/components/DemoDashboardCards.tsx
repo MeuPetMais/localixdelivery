@@ -1,11 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { QrCode, Copy, ExternalLink, Download, Zap, Loader2 } from "lucide-react";
-import { createDemoOrder } from "@/lib/demo.functions";
+import { QrCode, Copy, ExternalLink, Download, Zap, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { createDemoOrder, resetDemoEnvironment } from "@/lib/demo.functions";
+
 
 // Free QR code endpoint (server-side rendering, no extra deps)
 function qrUrl(data: string, size = 240) {
