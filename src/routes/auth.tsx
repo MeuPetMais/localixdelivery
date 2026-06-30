@@ -72,11 +72,25 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  function formatSupabaseError(prefix: string, err: unknown) {
+    const e = err as { code?: string; message?: string; details?: string; hint?: string; status?: number } | null;
+    console.error(`[${prefix}]`, err);
+    const parts = [
+      e?.code && `code=${e.code}`,
+      e?.status && `status=${e.status}`,
+      e?.message && `msg=${e.message}`,
+      e?.details && `details=${e.details}`,
+      e?.hint && `hint=${e.hint}`,
+    ].filter(Boolean);
+    return `${prefix}: ${parts.join(" | ") || "erro desconhecido"}`;
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (tab === "signup") {
+        console.info("[signup] start: auth.signUp");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -85,38 +99,67 @@ function AuthPage() {
             data: { owner_name: ownerName, store_name: storeName },
           },
         });
-        if (error) throw error;
-        const userId = data.user?.id;
-        if (userId) {
-          // Create restaurant panel automatically
-          const baseSlug = slugify(storeName) || `loja-${userId.slice(0, 6)}`;
-          let finalSlug = baseSlug;
-          for (let i = 0; i < 5; i++) {
-            const { error: insErr } = await supabase.from("restaurants").insert({
-              owner_id: userId,
-              name: storeName,
-              slug: finalSlug,
-              whatsapp_phone: whatsapp,
-              owner_name: ownerName,
-              cnpj: cnpj || null,
-            });
-            if (!insErr) break;
-            if (insErr.code === "23505") {
-              finalSlug = `${baseSlug}-${Math.floor(Math.random() * 9000 + 1000)}`;
-              continue;
-            }
-            throw insErr;
-          }
+        if (error) {
+          toast.error(formatSupabaseError("auth.signUp", error));
+          return;
         }
+        console.info("[signup] auth.signUp ok", { userId: data.user?.id, hasSession: !!data.session });
+
+        const userId = data.user?.id;
+        if (!userId) {
+          toast.error("auth.signUp não retornou usuário.");
+          return;
+        }
+
+        // Se a confirmação de e-mail está ativa, não há sessão — o INSERT em restaurants
+        // será bloqueado pelo RLS (auth.uid() = owner_id). Informe o usuário.
+        if (!data.session) {
+          toast.success(
+            "Conta criada! Confirme seu e-mail para concluir o cadastro do estabelecimento.",
+            { duration: 8000 },
+          );
+          return;
+        }
+
+        console.info("[signup] start: insert restaurants");
+        const baseSlug = slugify(storeName) || `loja-${userId.slice(0, 6)}`;
+        let finalSlug = baseSlug;
+        let insertOk = false;
+        let lastErr: unknown = null;
+        for (let i = 0; i < 5; i++) {
+          const { error: insErr } = await supabase.from("restaurants").insert({
+            owner_id: userId,
+            name: storeName,
+            slug: finalSlug,
+            whatsapp_phone: whatsapp,
+            owner_name: ownerName,
+            cnpj: cnpj || null,
+          });
+          if (!insErr) { insertOk = true; break; }
+          lastErr = insErr;
+          if (insErr.code === "23505") {
+            finalSlug = `${baseSlug}-${Math.floor(Math.random() * 9000 + 1000)}`;
+            continue;
+          }
+          break;
+        }
+        if (!insertOk) {
+          toast.error(formatSupabaseError("Usuário criado, mas falhou ao criar o estabelecimento", lastErr), { duration: 10000 });
+          return;
+        }
+        console.info("[signup] insert restaurants ok", { slug: finalSlug });
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          toast.error(formatSupabaseError("auth.signInWithPassword", error));
+          return;
+        }
         navigate({ to: "/dashboard", replace: true });
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
+      toast.error(formatSupabaseError("inesperado", err));
     } finally {
       setLoading(false);
     }
