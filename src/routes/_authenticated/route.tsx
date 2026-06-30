@@ -172,6 +172,7 @@ function AuthLayout() {
               <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
             )}
           >
+            <DemoExperience userEmail={(Route.useRouteContext() as { user: { email?: string } }).user.email} />
             <Outlet />
           </RestaurantProvider>
         </main>
