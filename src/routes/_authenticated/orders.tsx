@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ const NEXT: Record<string, string | null> = {
 };
 
 function OrdersPage() {
+  const restaurant = useRestaurant();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,18 +54,7 @@ function OrdersPage() {
     let active = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) return;
-      const { data: rest } = await supabase
-        .from("restaurants")
-        .select("id")
-        .eq("owner_id", auth.user.id)
-        .maybeSingle();
-      const restaurantId = rest?.id;
-      if (!restaurantId) {
-        if (active) setLoading(false);
-        return;
-      }
+      const restaurantId = restaurant.id;
 
       const { data, error } = await supabase
         .from("orders")
@@ -106,7 +97,7 @@ function OrdersPage() {
       active = false;
       if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [restaurant.id]);
 
 
   async function updateStatus(id: string, status: string) {

@@ -56,24 +56,10 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
     .from("restaurants")
     .select("*")
     .eq("owner_id", userId)
-    .maybeSingle();
+    .order("created_at", { ascending: true })
+    .limit(1);
 
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.log("[RestaurantContext] fetchMyRestaurant", {
-      authUserId: userId,
-      queryData: data,
-      restaurantId: (data as any)?.id ?? null,
-      queryError: error
-        ? {
-            code: (error as any).code,
-            message: (error as any).message,
-            details: (error as any).details,
-            hint: (error as any).hint,
-          }
-        : null,
-    });
-  }
+  const restaurant = data?.[0] ?? null;
 
   if (error) {
     const kind = classifyError(error as any);
@@ -83,8 +69,8 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
     }
     return { kind, error } as FetchResult;
   }
-  if (!data) return { kind: "missing" };
-  return { kind: "found", restaurant: data };
+  if (!restaurant) return { kind: "missing" };
+  return { kind: "found", restaurant };
 }
 
 /**
