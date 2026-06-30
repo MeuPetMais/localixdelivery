@@ -38,7 +38,10 @@ function playChime() {
 export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: string; restaurantId: string }) {
   const qc = useQueryClient();
   const runCreate = useServerFn(createDemoOrder);
+  const runReset = useServerFn(resetDemoEnvironment);
   const [creating, setCreating] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
 
   async function downloadPng() {
     try {
