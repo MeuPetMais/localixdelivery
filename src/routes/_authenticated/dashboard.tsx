@@ -311,6 +311,11 @@ function Dashboard() {
         />
       </div>
 
+      {isDemo && <DemoExtraMetrics />}
+      {isDemo && <DemoDashboardCards publicUrl={publicUrl} restaurantId={restaurant.id} />}
+
+
+
       {/* Row 2: Revenue chart + Status donut */}
       <div className="grid gap-4 lg:grid-cols-10">
         <Card className="min-w-0 p-5 lg:col-span-7">
