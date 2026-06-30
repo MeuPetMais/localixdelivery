@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { RestaurantProvider } from "@/contexts/RestaurantContext";
 import { OwnerOnboarding } from "@/components/OwnerOnboarding";
+import { DemoExperience } from "@/components/DemoExperience";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = Route.useRouteContext() as { user: { id: string } };
+  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const { isAdmin } = useIsAdmin(user.id);
   const [open, setOpen] = useState(false);
 
@@ -172,6 +173,7 @@ function AuthLayout() {
               <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
             )}
           >
+            <DemoExperience userEmail={user.email} />
             <Outlet />
           </RestaurantProvider>
         </main>
