@@ -344,6 +344,28 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
+  const isOpenNow = (() => {
+    const h = restaurant?.opening_hours as Record<string, { enabled: boolean; open: string; close: string; open2?: string | null; close2?: string | null }> | null | undefined;
+    if (!h) return true;
+    const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const now = new Date();
+    const day = h[map[now.getDay()]];
+    if (!day) return true;
+    if (!day.enabled) return false;
+    const curr = now.getHours() * 60 + now.getMinutes();
+    const within = (o?: string | null, c?: string | null) => {
+      if (!o || !c) return false;
+      const [oh, om] = o.split(":").map(Number);
+      const [ch, cm] = c.split(":").map(Number);
+      if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
+      const a = oh * 60 + om;
+      const b = ch * 60 + cm;
+      return b > a ? curr >= a && curr <= b : curr >= a || curr <= b;
+    };
+    return within(day.open, day.close) || within(day.open2, day.close2);
+  })();
+  const effectiveOpen = !!restaurant.is_open && isOpenNow;
+
 
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
