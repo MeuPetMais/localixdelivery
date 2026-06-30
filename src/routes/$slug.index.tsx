@@ -396,8 +396,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           <div style={{ paddingLeft: "112px", minHeight: "80px" }}>
             <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
             <div className="flex flex-wrap items-center gap-2" style={{ marginTop: "8px" }}>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                {restaurant.is_open ? "● Aberto" : "● Fechado"}
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${effectiveOpen ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                {effectiveOpen ? "● Aberto" : "● Fechado"}
               </span>
               <span className="inline-flex items-center gap-1 text-sm">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
