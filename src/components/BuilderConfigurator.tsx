@@ -186,7 +186,7 @@ export function BuilderConfigurator({
                       <button
                         type="button"
                         key={o.id}
-                        onClick={() => currentGroup.max_select === 1 ? toggle(currentGroup, o) : (selected ? null : inc(currentGroup, o))}
+                        onClick={() => toggle(currentGroup, o)}
                         className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                       >
                         <div className="flex items-center gap-3">
