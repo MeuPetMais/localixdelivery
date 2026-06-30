@@ -1,4 +1,5 @@
 import { createFileRoute, notFound, Outlet } from "@tanstack/react-router";
+import { CreateLocalixCta } from "@/components/CreateLocalixCta";
 
 const RESERVED_SLUGS = new Set([
   "admin", "ai", "auth", "beneficios", "builders", "cliente", "consultor",
@@ -20,5 +21,16 @@ export const Route = createFileRoute("/$slug")({
       Restaurante não encontrado.
     </div>
   ),
-  component: () => <Outlet />,
+  component: SlugLayout,
 });
+
+function SlugLayout() {
+  const { slug } = Route.useParams();
+  return (
+    <>
+      <Outlet />
+      {slug === "demo" && <CreateLocalixCta />}
+    </>
+  );
+}
+
