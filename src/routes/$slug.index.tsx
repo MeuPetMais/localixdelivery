@@ -57,7 +57,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled")
+        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled, opening_hours")
         .eq("slug", slug)
         .maybeSingle();
       if (error) {
@@ -344,6 +344,28 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
+  const isOpenNow = (() => {
+    const h = restaurant?.opening_hours as Record<string, { enabled: boolean; open: string; close: string; open2?: string | null; close2?: string | null }> | null | undefined;
+    if (!h) return true;
+    const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const now = new Date();
+    const day = h[map[now.getDay()]];
+    if (!day) return true;
+    if (!day.enabled) return false;
+    const curr = now.getHours() * 60 + now.getMinutes();
+    const within = (o?: string | null, c?: string | null) => {
+      if (!o || !c) return false;
+      const [oh, om] = o.split(":").map(Number);
+      const [ch, cm] = c.split(":").map(Number);
+      if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
+      const a = oh * 60 + om;
+      const b = ch * 60 + cm;
+      return b > a ? curr >= a && curr <= b : curr >= a || curr <= b;
+    };
+    return within(day.open, day.close) || within(day.open2, day.close2);
+  })();
+  const effectiveOpen = !!restaurant.is_open && isOpenNow;
+
 
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
@@ -374,8 +396,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           <div style={{ paddingLeft: "112px", minHeight: "80px" }}>
             <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
             <div className="flex flex-wrap items-center gap-2" style={{ marginTop: "8px" }}>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${restaurant.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
-                {restaurant.is_open ? "● Aberto" : "● Fechado"}
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${effectiveOpen ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+                {effectiveOpen ? "● Aberto" : "● Fechado"}
               </span>
               <span className="inline-flex items-center gap-1 text-sm">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
@@ -526,7 +548,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                       <Button
                         size="sm"
                         className="mt-2 w-full rounded-xl"
-                        disabled={!restaurant.is_open}
+                        disabled={!effectiveOpen}
                         onClick={() => { add({ id: it.id, name: it.name, price: Number(it.promo_price) }); toast.success(`${it.name} adicionado`); }}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
@@ -653,7 +675,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                           <Button
                             size="icon"
                             className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
-                            disabled={!restaurant.is_open}
+                            disabled={!effectiveOpen}
                             onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
                           >
                             <Plus className="h-4 w-4" />

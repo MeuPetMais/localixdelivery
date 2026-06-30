@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Loader2,
   Camera,
@@ -888,26 +889,33 @@ function SettingsPage() {
               return (
                 <div
                   key={d.id}
-                  className="rounded-xl border bg-card/50 p-3 space-y-2"
+                  className={`rounded-xl border p-3 space-y-2 transition-colors ${h.enabled ? "bg-card/50" : "bg-muted/30 border-dashed"}`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={h.enabled}
-                        onChange={(e) =>
-                          setHours({ ...hours, [d.id]: { ...h, enabled: e.target.checked } })
-                        }
-                        className="h-4 w-4 accent-primary"
-                      />
+                    <div className="flex items-center gap-2">
                       <span className="font-medium w-20">{d.label}</span>
-                    </label>
-                    <Badge variant={h.enabled ? "default" : "secondary"}>
-                      {h.enabled ? "Aberto" : "Fechado"}
-                    </Badge>
+                      <Badge
+                        variant={h.enabled ? "default" : "secondary"}
+                        className={h.enabled ? "bg-success/15 text-success border-success/30" : "bg-destructive/10 text-destructive border-destructive/30"}
+                      >
+                        {h.enabled ? "🟢 Aberto" : "🔴 Fechado"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground hidden sm:inline">
+                        {h.enabled ? "Aberto" : "Fechado"}
+                      </span>
+                      <Switch
+                        checked={h.enabled}
+                        onCheckedChange={(checked) =>
+                          setHours({ ...hours, [d.id]: { ...h, enabled: checked } })
+                        }
+                        aria-label={`${d.label} ${h.enabled ? "aberto" : "fechado"}`}
+                      />
+                    </div>
                   </div>
 
-                  {h.enabled && (
+                  {h.enabled ? (
                     <>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground w-16">1º turno</span>
@@ -977,6 +985,10 @@ function SettingsPage() {
                         </Button>
                       )}
                     </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground pl-1">
+                      Fechado neste dia. Ative para configurar os horários.
+                    </p>
                   )}
                 </div>
               );
