@@ -52,13 +52,27 @@ export function BuilderConfigurator({
       const have = cur[o.id] ?? 0;
       const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
       if (g.max_select === 1) {
-        return { ...prev, [g.id]: { [o.id]: have ? 0 : 1 } };
+        if (have) {
+          if (g.is_required && g.min_select >= 1) {
+            toast.error(`É necessário manter pelo menos ${g.min_select} opção selecionada.`);
+            return prev;
+          }
+          return { ...prev, [g.id]: {} };
+        }
+        return { ...prev, [g.id]: { [o.id]: 1 } };
       }
       if (have > 0) {
+        if (g.is_required && totalNow <= g.min_select) {
+          toast.error(`É necessário manter pelo menos ${g.min_select} opção selecionada.`);
+          return prev;
+        }
         const next = have - 1;
         if (next <= 0) delete cur[o.id]; else cur[o.id] = next;
       } else {
-        if (totalNow >= g.max_select) { toast.error(`Máx ${g.max_select} nesta etapa`); return prev; }
+        if (totalNow >= g.max_select) {
+          toast.error(`Você pode escolher no máximo ${g.max_select} ${g.max_select === 1 ? "opção" : "opções"}.`);
+          return prev;
+        }
         cur[o.id] = 1;
       }
       return { ...prev, [g.id]: cur };
@@ -172,7 +186,7 @@ export function BuilderConfigurator({
                       <button
                         type="button"
                         key={o.id}
-                        onClick={() => currentGroup.max_select === 1 ? toggle(currentGroup, o) : (selected ? null : inc(currentGroup, o))}
+                        onClick={() => toggle(currentGroup, o)}
                         className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                       >
                         <div className="flex items-center gap-3">
