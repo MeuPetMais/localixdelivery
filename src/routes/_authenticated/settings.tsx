@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { getProfileCompletion } from "@/lib/profile-completion";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Perfil do Estabelecimento — Localix" }] }),
