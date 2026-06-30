@@ -1377,7 +1377,8 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      reset_demo_environment: { Args: never; Returns: Json }
+      seed_demo_marketplace: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "partner" | "customer"
