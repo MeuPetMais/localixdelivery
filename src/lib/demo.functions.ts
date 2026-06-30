@@ -30,7 +30,7 @@ export const createDemoOrder = createServerFn({ method: "POST" })
       .from("menu_items")
       .select("id, name, price")
       .eq("restaurant_id", restaurant.id)
-      .eq("active", true)
+      .eq("is_active", true)
       .limit(20);
 
     const pool = (products ?? []).filter((p) => Number(p.price) > 0);
