@@ -12,12 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles, ImagePlus, Camera, X } from "lucide-react";
+import { Plus, Trash2, Copy, Pencil, GripVertical, Loader2, Sparkles, ImagePlus, Camera, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { brl } from "@/lib/format";
 import { uploadProductImage, deleteProductImage } from "@/lib/image-upload";
 import { Progress } from "@/components/ui/progress";
 import { useRef } from "react";
+import { BuilderConfigurator } from "@/components/BuilderConfigurator";
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
@@ -246,6 +247,7 @@ function BuildersPage() {
 function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenChange: (v: boolean) => void; builder: any | null }) {
   const [form, setForm] = useState<any>(null);
   const [groups, setGroups] = useState<any[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!builder) return;
@@ -255,12 +257,36 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
 
   if (!builder || !form) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
 
+  function validate(): string | null {
+    if (!form.name?.trim()) return "Informe um nome para o modelo.";
+    if (Number(form.base_price) < 0) return "O Preço Inicial não pode ser negativo.";
+    if (groups.length === 0) return "Adicione ao menos uma etapa antes de salvar.";
+    for (const g of groups) {
+      const min = Number(g.min_select) || 0;
+      const max = Number(g.max_select) || 0;
+      if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
+      if (min > max) return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
+      if (g.is_required && (g.builder_options?.length ?? 0) === 0)
+        return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+    }
+    return null;
+  }
+
   async function saveMeta() {
+    const err = validate();
+    if (err) return toast.error(err);
     const { error } = await supabase.from("builders").update({
       name: form.name, emoji: form.emoji, description: form.description, image_url: form.image_url || null, base_price: Number(form.base_price) || 0,
     }).eq("id", builder.id);
     if (error) return toast.error(error.message);
     toast.success("Salvo");
+  }
+
+  function openPreview() {
+    const err = validate();
+    if (err) return toast.error(err);
+    setPreviewOpen(true);
   }
 
   async function addGroup() {
@@ -467,8 +493,42 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           </div>
         </div>
 
-        <DialogFooter><Button onClick={() => onOpenChange(false)}>Concluir</Button></DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={openPreview} className="sm:mr-auto">
+            <Eye className="mr-2 h-4 w-4" /> Visualizar como cliente
+          </Button>
+          <Button onClick={() => onOpenChange(false)}>Concluir</Button>
+        </DialogFooter>
       </DialogContent>
+
+      <BuilderConfigurator
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        builder={{
+          id: builder.id,
+          name: form.name,
+          emoji: form.emoji,
+          description: form.description,
+          image_url: form.image_url,
+          base_price: Number(form.base_price) || 0,
+          builder_groups: groups.map((g: any, i: number) => ({
+            id: g.id,
+            name: g.name,
+            min_select: Number(g.min_select) || 0,
+            max_select: Number(g.max_select) || 1,
+            is_required: !!g.is_required,
+            position: g.position ?? i,
+            builder_options: (g.builder_options ?? []).map((o: any, j: number) => ({
+              id: o.id,
+              name: o.name,
+              price_delta: Number(o.price_delta) || 0,
+              max_qty: Number(o.max_qty) || 1,
+              position: o.position ?? j,
+            })),
+          })),
+        }}
+        onAdd={() => toast.success("Preview: item adicionado (somente visualização)")}
+      />
     </Dialog>
   );
 }
