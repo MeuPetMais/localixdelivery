@@ -72,3 +72,22 @@ export const createDemoOrder = createServerFn({ method: "POST" })
     if (iErr) throw new Error(iErr.message);
     return inserted;
   });
+
+export const resetDemoEnvironment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: r, error: rErr } = await context.supabase
+      .from("restaurants")
+      .select("id, slug")
+      .eq("owner_id", context.userId)
+      .eq("slug", DEMO_SLUG)
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!r) throw new Error("Apenas a conta demo pode restaurar o ambiente.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("reset_demo_environment");
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
