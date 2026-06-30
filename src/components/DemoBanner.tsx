@@ -57,10 +57,13 @@ export function DemoBanner() {
           <Button asChild variant="outline" size="sm">
             <a href="/" target="_blank" rel="noreferrer">Conhecer o sistema</a>
           </Button>
-          <Button asChild size="sm">
-            <a href="/auth" target="_blank" rel="noreferrer">Criar minha conta gratuita</a>
+          <Button asChild size="sm" className="bg-gradient-warm">
+            <a href="/auth?mode=signup" target="_blank" rel="noreferrer">
+              Quero criar meu Localix gratuitamente
+            </a>
           </Button>
         </div>
+
       </div>
     </div>
   );
