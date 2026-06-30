@@ -112,7 +112,8 @@ function Dashboard() {
   }
 
   const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
-  const k = dash?.kpis;
+  const isDemo = restaurant.slug === "demo";
+  const k = isDemo ? getDemoKpisOverride(dash?.kpis) : dash?.kpis;
 
   return (
     <div className="max-w-full space-y-6">
