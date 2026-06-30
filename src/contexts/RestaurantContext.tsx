@@ -58,6 +58,23 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
     .eq("owner_id", userId)
     .maybeSingle();
 
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log("[RestaurantContext] fetchMyRestaurant", {
+      authUserId: userId,
+      queryData: data,
+      restaurantId: (data as any)?.id ?? null,
+      queryError: error
+        ? {
+            code: (error as any).code,
+            message: (error as any).message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+          }
+        : null,
+    });
+  }
+
   if (error) {
     const kind = classifyError(error as any);
     if (import.meta.env.DEV) {
