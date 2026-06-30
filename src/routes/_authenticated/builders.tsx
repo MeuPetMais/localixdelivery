@@ -431,39 +431,56 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                         <Button size="sm" variant="outline" onClick={() => deleteGroup(g.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                       </div>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-[auto_100px_100px]">
-                      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
-                        <Switch
-                          checked={!!g.is_required}
-                          onCheckedChange={(v) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: v, min_select: v && Number(x.min_select) < 1 ? 1 : x.min_select } : x))}
-                        />
-                        <div>
-                          <p className="text-xs font-bold">Obrigatório</p>
-                          <p className="text-[10px] text-muted-foreground">{g.is_required ? "Cliente deve escolher" : "Etapa opcional"}</p>
+                    <div className="grid gap-3 sm:grid-cols-[1fr_110px_110px]">
+                      <div className="rounded-lg border bg-muted/30 p-2">
+                        <p className="mb-1 text-xs font-bold">O cliente é obrigado a escolher?</p>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: false } : x))}
+                            className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${!g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}
+                          >Não</button>
+                          <button
+                            type="button"
+                            onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: true, min_select: Number(x.min_select) < 1 ? 1 : x.min_select } : x))}
+                            className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}
+                          >Sim</button>
                         </div>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {g.is_required ? "O cliente deve escolher nesta etapa." : "O cliente pode ignorar esta etapa."}
+                        </p>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Mínimo</Label>
+                        <Label className="text-xs">{g.is_required ? "Escolha mínima" : "Mínimo"}</Label>
                         <Input type="number" min={0} value={g.min_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, min_select: e.target.value } : x))} />
+                        <p className="text-[10px] text-muted-foreground">Quantidade mínima que o cliente deve selecionar.</p>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Máximo</Label>
+                        <Label className="text-xs">{g.is_required ? "Escolha máxima" : "Máximo"}</Label>
                         <Input type="number" min={1} value={g.max_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, max_select: e.target.value } : x))} />
+                        <p className="text-[10px] text-muted-foreground">Quantidade máxima permitida.</p>
                       </div>
                     </div>
+                    <details className="rounded-lg border bg-muted/20 px-3 py-2 text-xs">
+                      <summary className="cursor-pointer font-bold">💡 Como funciona esta etapa?</summary>
+                      <div className="mt-2 space-y-1 text-muted-foreground">
+                        <p>O cliente {g.is_required ? "deverá" : "poderá"} escolher {Number(g.min_select) > 0 ? `de ${g.min_select} a ${g.max_select || 1}` : `até ${g.max_select || 1}`} {(Number(g.max_select) || 1) > 1 ? "opções" : "opção"} abaixo.</p>
+                        <p>Cada opção poderá: <strong>✔ não alterar o preço</strong> ou <strong>✔ acrescentar um valor ao preço inicial do produto</strong>.</p>
+                      </div>
+                    </details>
                   </div>
                 </div>
                 <div className="mt-3 space-y-2 pl-6">
-                  <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_90px_auto]">
+                  <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_140px_90px_auto]">
                     <span>Nome</span>
-                    <span>Preço adicional</span>
+                    <span>Acrescenta ao preço (+R$)</span>
                     <span>Qtd. máx</span>
                     <span></span>
                   </div>
                   {g.builder_options.map((o: any, oi: number) => {
                     const delta = Number(o.price_delta) || 0;
                     return (
-                      <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_120px_90px_auto]">
+                      <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_140px_90px_auto]">
                         <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
                         <div className="relative">
                           <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
@@ -487,6 +504,25 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                     );
                   })}
                   <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
+
+                  {/* Stage simulator */}
+                  {g.builder_options.length > 0 && (
+                    <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
+                      <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
+                      <div className="space-y-0.5">
+                        {g.builder_options.slice(0, 5).map((o: any) => {
+                          const base = Number(form.base_price) || 0;
+                          const delta = Number(o.price_delta) || 0;
+                          return (
+                            <div key={o.id} className="flex justify-between">
+                              <span>✔ {o.name || "(sem nome)"} {delta > 0 && <span className="text-muted-foreground">(+{brl(delta)})</span>}</span>
+                              <span className="font-bold">Preço Final: {brl(base + delta)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  )}
                 </div>
               </Card>
             ))}
