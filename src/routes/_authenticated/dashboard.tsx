@@ -313,6 +313,8 @@ function Dashboard() {
 
       {isDemo && <DemoExtraMetrics />}
       {isDemo && <DemoDashboardCards publicUrl={publicUrl} restaurantId={restaurant.id} />}
+      {isDemo && <DemoAiCard />}
+
 
 
 
