@@ -202,22 +202,28 @@ function SettingsPage() {
     const setUp = kind === "logo" ? setUploadingLogo : setUploadingCover;
     setUp(true);
     try {
-      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.owner_id);
+      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.id);
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
-      await supabase
+      const { error: updErr } = await supabase
         .from("restaurants")
         .update(kind === "logo" ? { logo_url: url } : { cover_url: url })
         .eq("id", restaurant!.id);
+      if (updErr) {
+        console.error("[upload] update restaurants falhou:", updErr);
+        throw updErr;
+      }
       toast.success(kind === "logo" ? "Logo atualizada" : "Capa atualizada");
       refetch();
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[upload] erro:", e);
+      toast.error(e?.message ?? "Erro no upload");
     } finally {
       setUp(false);
     }
   }
+
 
   async function removeImage(kind: "logo" | "cover") {
     const field = kind === "logo" ? "logo_url" : "cover_url";
