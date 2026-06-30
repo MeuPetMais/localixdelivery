@@ -54,6 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
+import { DemoDashboardCards, DemoExtraMetrics, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -111,7 +112,8 @@ function Dashboard() {
   }
 
   const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
-  const k = dash?.kpis;
+  const isDemo = restaurant.slug === "demo";
+  const k = isDemo ? getDemoKpisOverride(dash?.kpis) : dash?.kpis;
 
   return (
     <div className="max-w-full space-y-6">
@@ -308,6 +310,11 @@ function Dashboard() {
           accent="from-violet-500/10 to-transparent"
         />
       </div>
+
+      {isDemo && <DemoExtraMetrics />}
+      {isDemo && <DemoDashboardCards publicUrl={publicUrl} restaurantId={restaurant.id} />}
+
+
 
       {/* Row 2: Revenue chart + Status donut */}
       <div className="grid gap-4 lg:grid-cols-10">
