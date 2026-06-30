@@ -344,9 +344,18 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
         ));
       }
 
-      toast.success(item ? "Item atualizado" : "Item criado");
+      toast.success(item ? "✅ Produto atualizado com sucesso" : "✅ Produto salvo com sucesso");
       setOpen(false);
-      onSaved();
+      if (!item) {
+        setForm({
+          name: "", description: "", category_id: categories[0]?.id ?? "",
+          price: "", promo_price: "", prep_time_minutes: "",
+          available_delivery: true, available_pickup: true,
+          is_featured: false, is_bestseller: false, is_active: true,
+        });
+        setImages([]);
+      }
+      await onSaved();
     } catch (err: any) {
       toast.error(err?.message ?? "Erro ao salvar");
     } finally {
