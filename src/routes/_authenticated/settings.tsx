@@ -69,19 +69,29 @@ const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
   return acc;
 }, {} as Hours);
 
-async function uploadAsset(file: File, folder: "logos" | "covers", userId: string) {
+async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId: string) {
   const ext = file.name.split(".").pop() || "jpg";
-  const path = `${folder}/${userId}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
+  // IMPORTANT: storage RLS expects first folder = restaurant.id
+  const path = `${restaurantId}/${folder}/${Date.now()}.${ext}`;
+  console.log("[upload] arquivo selecionado:", { name: file.name, size: file.size, type: file.type, path });
+  const { data, error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
     upsert: true,
     contentType: file.type,
   });
+  console.log("[upload] resultado:", {
+    data,
+    error,
+    code: (error as any)?.statusCode ?? (error as any)?.code,
+    message: error?.message,
+  });
   if (error) throw error;
-  const { data } = await supabase.storage
+  const { data: signed, error: sErr } = await supabase.storage
     .from("restaurant-assets")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-  return data?.signedUrl ?? null;
+  if (sErr) throw sErr;
+  return signed?.signedUrl ?? null;
 }
+
 
 function SettingsPage() {
   const restaurant = useRestaurant();
