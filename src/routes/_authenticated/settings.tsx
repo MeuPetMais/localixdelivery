@@ -69,19 +69,29 @@ const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
   return acc;
 }, {} as Hours);
 
-async function uploadAsset(file: File, folder: "logos" | "covers", userId: string) {
+async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId: string) {
   const ext = file.name.split(".").pop() || "jpg";
-  const path = `${folder}/${userId}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
+  // IMPORTANT: storage RLS expects first folder = restaurant.id
+  const path = `${restaurantId}/${folder}/${Date.now()}.${ext}`;
+  console.log("[upload] arquivo selecionado:", { name: file.name, size: file.size, type: file.type, path });
+  const { data, error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
     upsert: true,
     contentType: file.type,
   });
+  console.log("[upload] resultado:", {
+    data,
+    error,
+    code: (error as any)?.statusCode ?? (error as any)?.code,
+    message: error?.message,
+  });
   if (error) throw error;
-  const { data } = await supabase.storage
+  const { data: signed, error: sErr } = await supabase.storage
     .from("restaurant-assets")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-  return data?.signedUrl ?? null;
+  if (sErr) throw sErr;
+  return signed?.signedUrl ?? null;
 }
+
 
 function SettingsPage() {
   const restaurant = useRestaurant();
@@ -192,22 +202,28 @@ function SettingsPage() {
     const setUp = kind === "logo" ? setUploadingLogo : setUploadingCover;
     setUp(true);
     try {
-      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.owner_id);
+      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.id);
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
-      await supabase
+      const { error: updErr } = await supabase
         .from("restaurants")
         .update(kind === "logo" ? { logo_url: url } : { cover_url: url })
         .eq("id", restaurant!.id);
+      if (updErr) {
+        console.error("[upload] update restaurants falhou:", updErr);
+        throw updErr;
+      }
       toast.success(kind === "logo" ? "Logo atualizada" : "Capa atualizada");
       refetch();
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[upload] erro:", e);
+      toast.error(e?.message ?? "Erro no upload");
     } finally {
       setUp(false);
     }
   }
+
 
   async function removeImage(kind: "logo" | "cover") {
     const field = kind === "logo" ? "logo_url" : "cover_url";
