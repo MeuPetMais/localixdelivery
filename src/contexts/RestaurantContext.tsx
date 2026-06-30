@@ -194,23 +194,34 @@ export function RestaurantProvider({
     );
   }
 
-  if (status === "permission_error") {
+  if (status === "permission_error" || status === "connection_error") {
+    const errObj = (error as any) ?? {};
+    const errDetails = {
+      code: errObj?.code,
+      message: errObj?.message,
+      details: errObj?.details,
+      hint: errObj?.hint,
+    };
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error("[RestaurantContext] rendering error state", {
+        status,
+        authUserId: userId,
+        queryError: errDetails,
+      });
+    }
+    const isPerm = status === "permission_error";
     return (
       <ErrorState
-        icon={ShieldAlert}
-        title="Erro de permissão"
-        description="Não foi possível acessar os dados do seu estabelecimento por restrições de permissão. Contate o suporte para regularizar o acesso."
-        onRetry={() => refetch()}
-      />
-    );
-  }
-
-  if (status === "connection_error") {
-    return (
-      <ErrorState
-        icon={WifiOff}
-        title="Serviço indisponível"
-        description="Não conseguimos carregar seu estabelecimento agora. Verifique sua conexão e tente novamente em instantes."
+        icon={isPerm ? ShieldAlert : WifiOff}
+        title={isPerm ? "Erro de permissão" : "Serviço indisponível"}
+        description={
+          import.meta.env.DEV && errDetails.message
+            ? `[${errDetails.code ?? "?"}] ${errDetails.message}${errDetails.hint ? ` — ${errDetails.hint}` : ""}`
+            : isPerm
+              ? "Não foi possível acessar os dados do seu estabelecimento por restrições de permissão. Contate o suporte."
+              : "Não conseguimos carregar seu estabelecimento agora. Verifique sua conexão e tente novamente."
+        }
         onRetry={() => refetch()}
       />
     );
