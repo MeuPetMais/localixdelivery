@@ -73,6 +73,21 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
     }
   }
 
+  async function restoreDemo() {
+    setResetting(true);
+    try {
+      await runReset();
+      toast.success("Ambiente demo restaurado com sucesso!");
+      await qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível restaurar.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="p-5">
