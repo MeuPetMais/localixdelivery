@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
+import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -166,6 +167,8 @@ function Dashboard() {
           </Button>
         </div>
       </header>
+
+      <ProfileCompletionBanner restaurant={restaurant} />
 
       <ActivePromosBanner restaurantId={restaurant.id} />
 
