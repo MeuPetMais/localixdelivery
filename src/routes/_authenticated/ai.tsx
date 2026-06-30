@@ -51,6 +51,20 @@ function AiCenterPage() {
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [customBrief, setCustomBrief] = useState("");
 
+  const { prompt } = Route.useSearch();
+  useEffect(() => {
+    if (prompt && prompt !== customBrief) {
+      setCustomBrief(prompt);
+      // Smooth focus into the marketing section
+      setTimeout(() => {
+        document.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt]);
+
+
+
   async function runCampaign(type: CampaignType) {
     if (!restaurantId) return;
     setCampaignLoading(true);
