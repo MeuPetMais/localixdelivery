@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { getProfileCompletion } from "@/lib/profile-completion";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Perfil do Estabelecimento — Localix" }] }),
@@ -338,57 +340,48 @@ function SettingsPage() {
         </p>
       </div>
 
-      {/* AUDITORIA DE COMPLETUDE */}
+      {/* AUDITORIA DE COMPLETUDE — fonte única: getProfileCompletion(restaurant) */}
       {(() => {
-        const checks = [
-          { label: "Logo", ok: !!form.logo_url },
-          { label: "Capa", ok: !!form.cover_url },
-          { label: "Descrição", ok: !!form.description },
-          { label: "WhatsApp", ok: !!form.whatsapp_phone },
-          { label: "Endereço completo", ok: !!(form.address && form.city && form.state) },
-          { label: "Tempo de entrega", ok: !!form.delivery_time },
-          { label: "Pagamentos", ok: Object.values(payments).some(Boolean) },
-          { label: "Horários", ok: Object.values(hours).some((h) => h.enabled) },
-          { label: "Redes sociais", ok: !!(form.instagram || form.facebook || form.website) },
-        ];
-        const done = checks.filter((c) => c.ok).length;
-        const pct = Math.round((done / checks.length) * 100);
+        const { pct, completed, total, checks, isComplete } = getProfileCompletion(restaurant);
         return (
           <Card className="rounded-2xl border-border/60 p-5 shadow-elegant">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold">Perfil {pct}% completo</p>
                 <p className="text-xs text-muted-foreground">
-                  {done} de {checks.length} itens preenchidos
+                  {completed} de {total} itens preenchidos
                 </p>
               </div>
-              <Badge variant={pct === 100 ? "default" : "secondary"}>
-                {pct === 100 ? "Tudo pronto" : "Continue"}
+              <Badge variant={isComplete ? "default" : "secondary"}>
+                {isComplete ? "Tudo pronto" : "Continue"}
               </Badge>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-all"
-                style={{ width: `${pct}%` }}
-              />
+              <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {checks.map((c) => (
                 <span
-                  key={c.label}
+                  key={c.key}
                   className={`rounded-full border px-2.5 py-1 text-xs ${
-                    c.ok
+                    c.done
                       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                       : "border-border text-muted-foreground"
                   }`}
                 >
-                  {c.ok ? "✓" : "○"} {c.label}
+                  {c.done ? "✓" : "○"} {c.label}
                 </span>
               ))}
             </div>
+            {!isComplete && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Salve as alterações para atualizar o progresso. O Dashboard reflete automaticamente.
+              </p>
+            )}
           </Card>
         );
       })()}
+
 
       {/* SEÇÃO 1 — Perfil da Loja */}
       <Card className="overflow-hidden rounded-2xl border-border/60 shadow-elegant">
