@@ -62,9 +62,18 @@ function MenuPage() {
     return <Card className="p-8 text-center">Você precisa criar seu restaurante primeiro no painel.</Card>;
   }
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["categories", restaurant.id] });
-    qc.invalidateQueries({ queryKey: ["items", restaurant.id] });
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["categories", restaurant.id], refetchType: "active" }),
+      qc.invalidateQueries({ queryKey: ["items", restaurant.id], refetchType: "active" }),
+      qc.invalidateQueries({ queryKey: ["categories"] }),
+      qc.invalidateQueries({ queryKey: ["menu-items"] }),
+      qc.invalidateQueries({ queryKey: ["restaurant-menu"] }),
+      qc.invalidateQueries({ queryKey: ["public-menu"] }),
+      qc.invalidateQueries({ queryKey: ["public-restaurant"] }),
+      qc.invalidateQueries({ queryKey: ["restaurant"] }),
+      qc.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
   };
 
   return (
