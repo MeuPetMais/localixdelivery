@@ -87,6 +87,22 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
   }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
 
+  const qc = useQueryClient();
+  useEffect(() => {
+    const restaurantId = data?.restaurant?.id;
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`public-menu:${restaurantId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_item_images", filter: `restaurant_id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [data?.restaurant?.id, slug, qc]);
+
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
