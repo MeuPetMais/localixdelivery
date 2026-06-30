@@ -316,8 +316,72 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
               }}
             />
           </div>
-          <div className="space-y-1.5"><Label>Preço base (R$)</Label><Input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></div>
+          <div className="space-y-1.5">
+            <Label>Preço Inicial (R$)</Label>
+            <Input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} />
+            <p className="text-xs text-muted-foreground">É o valor inicial do produto antes da escolha dos complementos e personalizações.</p>
+          </div>
         </div>
+
+        {/* Explanation card */}
+        <Card className="rounded-xl border-dashed bg-muted/30 p-4 text-sm">
+          <p className="mb-2 font-bold">💡 Como o preço é calculado?</p>
+          <p className="text-muted-foreground">
+            <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente + diferenças de preço entre opções (quando existirem).
+          </p>
+          <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
+            <div className="flex justify-between"><span>Preço Inicial</span><span>R$ 18,90</span></div>
+            <div className="flex justify-between"><span>Cheddar</span><span>+ R$ 4,00</span></div>
+            <div className="flex justify-between"><span>Bacon</span><span>+ R$ 5,00</span></div>
+            <div className="mt-1 flex justify-between border-t pt-1 font-bold"><span>Total</span><span>R$ 27,90</span></div>
+          </div>
+        </Card>
+
+        {/* Live price summary */}
+        {(() => {
+          const base = Number(form.base_price) || 0;
+          let minExtra = 0;
+          let maxExtra = 0;
+          for (const g of groups) {
+            const opts = (g.builder_options ?? []).map((o: any) => Number(o.price_delta) || 0);
+            if (opts.length === 0) continue;
+            const minSel = Number(g.min_select) || 0;
+            const maxSel = Number(g.max_select) || 0;
+            const sortedAsc = [...opts].sort((a, b) => a - b);
+            const sortedDesc = [...opts].sort((a, b) => b - a);
+            // min cost: cheapest minSel options (>=0 contributions only if min>0)
+            for (let i = 0; i < Math.min(minSel, sortedAsc.length); i++) minExtra += sortedAsc[i];
+            // max cost: most expensive maxSel options, considering max_qty
+            let taken = 0;
+            for (const o of (g.builder_options ?? []).slice().sort((a: any, b: any) => Number(b.price_delta) - Number(a.price_delta))) {
+              const q = Math.min(Number(o.max_qty) || 1, maxSel - taken);
+              if (q <= 0) break;
+              maxExtra += q * (Number(o.price_delta) || 0);
+              taken += q;
+              if (taken >= maxSel) break;
+            }
+          }
+          return (
+            <Card className="rounded-xl border bg-primary/5 p-4">
+              <p className="mb-2 text-sm font-bold">📊 Resumo do modelo</p>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Preço Inicial</p>
+                  <p className="font-display text-lg font-extrabold">{brl(base)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Menor possível</p>
+                  <p className="font-display text-lg font-extrabold text-success">{brl(base + minExtra)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Maior possível</p>
+                  <p className="font-display text-lg font-extrabold text-primary">{brl(base + maxExtra)}</p>
+                </div>
+              </div>
+            </Card>
+          );
+        })()}
+
         <div className="flex justify-end"><Button size="sm" onClick={saveMeta}>Salvar dados</Button></div>
 
         <div className="mt-4 border-t pt-4">
@@ -330,28 +394,72 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
               <Card key={g.id} className="rounded-xl p-3">
                 <div className="flex items-start gap-2">
                   <GripVertical className="mt-2 h-4 w-4 text-muted-foreground" />
-                  <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_80px_80px_auto]">
-                    <Input value={g.name} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, name: e.target.value } : x))} placeholder="Nome (ex: Tamanho)" />
-                    <Input type="number" value={g.min_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, min_select: e.target.value } : x))} placeholder="Mín" />
-                    <Input type="number" value={g.max_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, max_select: e.target.value } : x))} placeholder="Máx" />
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" onClick={() => saveGroup(g)}>Salvar</Button>
-                      <Button size="sm" variant="outline" onClick={() => deleteGroup(g.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                  <div className="flex-1 space-y-2">
+                    <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Nome da etapa</Label>
+                        <Input value={g.name} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, name: e.target.value } : x))} placeholder="Ex: Escolha o pão" />
+                      </div>
+                      <div className="flex gap-1 sm:items-end">
+                        <Button size="sm" variant="outline" onClick={() => saveGroup(g)}>Salvar</Button>
+                        <Button size="sm" variant="outline" onClick={() => deleteGroup(g.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-[auto_100px_100px]">
+                      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                        <Switch
+                          checked={!!g.is_required}
+                          onCheckedChange={(v) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: v, min_select: v && Number(x.min_select) < 1 ? 1 : x.min_select } : x))}
+                        />
+                        <div>
+                          <p className="text-xs font-bold">Obrigatório</p>
+                          <p className="text-[10px] text-muted-foreground">{g.is_required ? "Cliente deve escolher" : "Etapa opcional"}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Mínimo</Label>
+                        <Input type="number" min={0} value={g.min_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, min_select: e.target.value } : x))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Máximo</Label>
+                        <Input type="number" min={1} value={g.max_select} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, max_select: e.target.value } : x))} />
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-2 pl-6">
-                  {g.builder_options.map((o: any, oi: number) => (
-                    <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_100px_80px_auto]">
-                      <Input value={o.name} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
-                      <Input type="number" step="0.01" value={o.price_delta} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))} placeholder="+R$" />
-                      <Input type="number" value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" onClick={() => saveOption(o)}>Salvar</Button>
-                        <Button size="sm" variant="outline" onClick={() => deleteOption(g.id, o.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                  <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_90px_auto]">
+                    <span>Nome</span>
+                    <span>Preço adicional</span>
+                    <span>Qtd. máx</span>
+                    <span></span>
+                  </div>
+                  {g.builder_options.map((o: any, oi: number) => {
+                    const delta = Number(o.price_delta) || 0;
+                    return (
+                      <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_120px_90px_auto]">
+                        <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                            {delta >= 0 ? "+ R$" : "R$"}
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            className="pl-12"
+                            value={o.price_delta}
+                            onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))}
+                            placeholder="0,00"
+                          />
+                        </div>
+                        <Input type="number" min={1} value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => saveOption(o)}>Salvar</Button>
+                          <Button size="sm" variant="outline" onClick={() => deleteOption(g.id, o.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
                 </div>
               </Card>
