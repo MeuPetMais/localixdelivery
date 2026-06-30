@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,8 +15,12 @@ import { brl } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   head: () => ({ meta: [{ title: "Central de IA — Localix" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    prompt: typeof search.prompt === "string" ? search.prompt : undefined,
+  }),
   component: AiCenterPage,
 });
+
 
 type CampaignType = "inativos" | "produto_parado" | "relampago" | "vip" | "cashback" | "custom";
 
@@ -46,6 +50,20 @@ function AiCenterPage() {
   const [campaign, setCampaign] = useState<Awaited<ReturnType<typeof fetchCampaign>> | null>(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [customBrief, setCustomBrief] = useState("");
+
+  const { prompt } = Route.useSearch();
+  useEffect(() => {
+    if (prompt && prompt !== customBrief) {
+      setCustomBrief(prompt);
+      // Smooth focus into the marketing section
+      setTimeout(() => {
+        document.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt]);
+
+
 
   async function runCampaign(type: CampaignType) {
     if (!restaurantId) return;

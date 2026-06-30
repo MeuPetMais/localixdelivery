@@ -54,7 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
-import { DemoDashboardCards, DemoExtraMetrics, getDemoKpisOverride } from "@/components/DemoDashboardCards";
+import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -313,6 +313,8 @@ function Dashboard() {
 
       {isDemo && <DemoExtraMetrics />}
       {isDemo && <DemoDashboardCards publicUrl={publicUrl} restaurantId={restaurant.id} />}
+      {isDemo && <DemoAiCard />}
+
 
 
 

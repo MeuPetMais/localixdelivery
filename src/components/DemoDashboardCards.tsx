@@ -1,11 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { QrCode, Copy, ExternalLink, Download, Zap, Loader2 } from "lucide-react";
-import { createDemoOrder } from "@/lib/demo.functions";
+import { QrCode, Copy, ExternalLink, Download, Zap, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { createDemoOrder, resetDemoEnvironment } from "@/lib/demo.functions";
+
 
 // Free QR code endpoint (server-side rendering, no extra deps)
 function qrUrl(data: string, size = 240) {
@@ -32,7 +38,10 @@ function playChime() {
 export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: string; restaurantId: string }) {
   const qc = useQueryClient();
   const runCreate = useServerFn(createDemoOrder);
+  const runReset = useServerFn(resetDemoEnvironment);
   const [creating, setCreating] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
 
   async function downloadPng() {
     try {
@@ -63,6 +72,21 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
       setCreating(false);
     }
   }
+
+  async function restoreDemo() {
+    setResetting(true);
+    try {
+      await runReset();
+      toast.success("Ambiente demo restaurado com sucesso!");
+      await qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível restaurar.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -123,18 +147,86 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
               </p>
             </div>
           </div>
-          <Button onClick={generateOrder} disabled={creating} className="mt-4 w-full sm:w-auto">
-            {creating ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
-            ) : (
-              <><Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo</>
-            )}
-          </Button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={generateOrder} disabled={creating}>
+              {creating ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
+              ) : (
+                <><Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo</>
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" disabled={resetting}>
+                  {resetting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Restaurando…</>
+                  ) : (
+                    <><RotateCcw className="mr-2 h-4 w-4" /> Restaurar Conta Demo</>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Restaurar Ambiente Demo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todos os dados de categorias, produtos, promoções, cupons, clientes, pedidos, avaliações e builders
+                    serão restaurados ao estado inicial de demonstração. Esta operação é idempotente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={restoreDemo}>Restaurar agora</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </Card>
     </div>
   );
 }
+
+const AI_SUGGESTIONS = [
+  "Qual produto vende mais?",
+  "Como aumentar meu ticket médio?",
+  "Criar promoção para sexta-feira",
+  "Criar combo para hambúrguer",
+  "Como fidelizar clientes?",
+];
+
+export function DemoAiCard() {
+  const navigate = useNavigate();
+  return (
+    <Card className="relative overflow-hidden border-primary/20 p-5">
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+      <div className="relative flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-base font-bold">Experimente a IA do Localix</h3>
+          <p className="text-sm text-muted-foreground">
+            Toque numa sugestão para abrir a Central de IA com o prompt preenchido.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {AI_SUGGESTIONS.map((q) => (
+              <Button
+                key={q}
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => navigate({ to: "/ai", search: { prompt: q } as any })}
+              >
+                {q}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 
 const DEMO_KPIS = {
   ordersToday: 32,

@@ -13,12 +13,16 @@ import { slugify } from "@/lib/format";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "signup" ? "signup" : undefined,
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const { mode } = Route.useSearch();
+  const [tab, setTab] = useState<"signin" | "signup">(mode === "signup" ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [storeName, setStoreName] = useState("");
@@ -26,6 +30,7 @@ function AuthPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -106,7 +111,26 @@ function AuthPage() {
             <TabsContent value="signup" className="mt-6 space-y-4">
               <h1 className="font-display text-2xl font-bold">Cadastre seu estabelecimento</h1>
               <p className="text-sm text-muted-foreground">Painel criado automaticamente. Sem cartão de crédito.</p>
+              <ul className="grid grid-cols-1 gap-1.5 rounded-lg border bg-muted/40 p-3 text-xs sm:grid-cols-2">
+                {[
+                  "Cadastro 100% gratuito",
+                  "Sem mensalidade na validação",
+                  "URL própria do estabelecimento",
+                  "Cardápio digital completo",
+                  "Pedidos online via WhatsApp",
+                  "Programa de fidelidade",
+                  "Promoções e cupons",
+                  "Monte do Seu Jeito",
+                  "Central de IA inclusa",
+                  "Marketplace exclusivo de parceiros",
+                ].map((b) => (
+                  <li key={b} className="flex items-center gap-1.5">
+                    <span className="text-success">✓</span> {b}
+                  </li>
+                ))}
+              </ul>
             </TabsContent>
+
 
             <form onSubmit={handleEmail} className="mt-4 space-y-3">
               {tab === "signup" && (
