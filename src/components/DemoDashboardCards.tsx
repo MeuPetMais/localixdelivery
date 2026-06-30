@@ -147,18 +147,86 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
               </p>
             </div>
           </div>
-          <Button onClick={generateOrder} disabled={creating} className="mt-4 w-full sm:w-auto">
-            {creating ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
-            ) : (
-              <><Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo</>
-            )}
-          </Button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={generateOrder} disabled={creating}>
+              {creating ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
+              ) : (
+                <><Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo</>
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" disabled={resetting}>
+                  {resetting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Restaurando…</>
+                  ) : (
+                    <><RotateCcw className="mr-2 h-4 w-4" /> Restaurar Conta Demo</>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Restaurar Ambiente Demo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todos os dados de categorias, produtos, promoções, cupons, clientes, pedidos, avaliações e builders
+                    serão restaurados ao estado inicial de demonstração. Esta operação é idempotente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={restoreDemo}>Restaurar agora</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </Card>
     </div>
   );
 }
+
+const AI_SUGGESTIONS = [
+  "Qual produto vende mais?",
+  "Como aumentar meu ticket médio?",
+  "Criar promoção para sexta-feira",
+  "Criar combo para hambúrguer",
+  "Como fidelizar clientes?",
+];
+
+export function DemoAiCard() {
+  const navigate = useNavigate();
+  return (
+    <Card className="relative overflow-hidden border-primary/20 p-5">
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+      <div className="relative flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-base font-bold">Experimente a IA do Localix</h3>
+          <p className="text-sm text-muted-foreground">
+            Toque numa sugestão para abrir a Central de IA com o prompt preenchido.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {AI_SUGGESTIONS.map((q) => (
+              <Button
+                key={q}
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => navigate({ to: "/ai", search: { prompt: q } as any })}
+              >
+                {q}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 
 const DEMO_KPIS = {
   ordersToday: 32,
