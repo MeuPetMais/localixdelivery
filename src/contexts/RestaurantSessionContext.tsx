@@ -127,8 +127,6 @@ export function RestaurantSessionProvider({ children }: { children: ReactNode })
   // Restaura + valida no primeiro mount do cliente (refresh da página).
   useEffect(() => {
     const snapshot = readSnapshot();
-    // eslint-disable-next-line no-console
-    console.debug("[RSC] restore effect, snapshot:", snapshot);
     if (!snapshot) return;
     setSession(snapshot);
     setStatus("restoring");

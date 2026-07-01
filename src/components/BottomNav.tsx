@@ -47,8 +47,6 @@ export function BottomNav() {
     return seg && !RESERVED_TOP.has(seg) && !seg.includes(".") ? seg : null;
   })();
   const activeSlug = urlSlug ?? session?.restaurantSlug ?? null;
-  // eslint-disable-next-line no-console
-  console.debug("[BottomNav] render", { urlSlug, sessionSlug: session?.restaurantSlug ?? null, activeSlug });
 
   function handleClick(_e: MouseEvent, key: ItemKey, targetPath: string) {
     // Lembra a posição do restaurante antes de sair dele (não interfere na navegação).
