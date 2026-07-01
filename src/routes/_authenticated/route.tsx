@@ -45,10 +45,23 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthLayout() {
+  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
+  // Resolvemos o restaurante aqui no shell (mesma chave de cache do
+  // RestaurantProvider abaixo — não dispara consulta extra) para poder
+  // montar a assinatura Realtime única e exibir o badge no menu.
+  const { restaurant } = useCurrentRestaurant(user.id);
+  return (
+    <OrdersRealtimeProvider restaurantId={restaurant?.id ?? ""}>
+      <AuthShell userId={user.id} userEmail={user.email} />
+    </OrdersRealtimeProvider>
+  );
+}
+
+function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
-  const { isAdmin } = useIsAdmin(user.id);
+  const { isAdmin } = useIsAdmin(userId);
+  const { unseenCount } = useOrdersRealtime();
   const [open, setOpen] = useState(false);
 
   async function handleLogout() {
