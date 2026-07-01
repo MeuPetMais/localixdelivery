@@ -17,7 +17,7 @@ import {
   MessageCircle,
   X,
   Check,
-  ChefHat,
+  
   Bike,
   PackageCheck,
   StickyNote,
