@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
+import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
@@ -54,6 +55,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusEnderecosRoute = MeusEnderecosRouteImport.update({
+  id: '/meus-enderecos',
+  path: '/meus-enderecos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
+  '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByTo {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
+  '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
+  '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
+    | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/$slug/montar'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
+    | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/$slug/montar'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
+    | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
     | '/$slug/montar'
@@ -463,6 +475,7 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
   HomeRoute: typeof HomeRoute
+  MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -484,6 +497,13 @@ declare module '@tanstack/react-router' {
       path: '/meus-pedidos'
       fullPath: '/meus-pedidos'
       preLoaderRoute: typeof MeusPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-enderecos': {
+      id: '/meus-enderecos'
+      path: '/meus-enderecos'
+      fullPath: '/meus-enderecos'
+      preLoaderRoute: typeof MeusEnderecosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -797,6 +817,7 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
   HomeRoute: HomeRoute,
+  MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,

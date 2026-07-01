@@ -23,6 +23,8 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
+import { AddressPickerModal } from "@/components/AddressPickerModal";
+import type { CustomerAddress } from "@/lib/customer-addresses";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -758,13 +760,23 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   onClose: () => void;
   onCreated: (orderId: string) => void;
 }) {
+  const { user } = useCustomerAuth();
+  const qc = useQueryClient();
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
   const [payment, setPayment] = useState("Pix");
   const [notes, setNotes] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"list" | "form">("list");
+
+  // Guest / manual fallback fields
+  const [street, setStreet] = useState("");
+  const [number, setNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
   const effectiveOpen = getRestaurantStatus({
@@ -776,6 +788,55 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [validating, setValidating] = useState(false);
   const checkCoupon = useServerFn(validateCoupon);
+
+  // Load profile prefill (name, phone, last payment)
+  const { data: profile } = useQuery({
+    queryKey: ["customer-profile", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("customer_profiles")
+        .select("full_name, phone, whatsapp, last_payment_method")
+        .eq("id", user!.id)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  // Load saved addresses
+  const { data: addresses = [] } = useQuery({
+    queryKey: ["customer-addresses", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("customer_addresses")
+        .select("*")
+        .eq("customer_id", user!.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: true });
+      return (data ?? []) as any[];
+    },
+  });
+
+  // Prefill name/phone from profile or auth metadata once
+  useEffect(() => {
+    if (!user) return;
+    const meta = (user.user_metadata ?? {}) as Record<string, any>;
+    if (!name) setName(profile?.full_name || meta.full_name || meta.name || "");
+    if (!phone) setPhone(profile?.phone || profile?.whatsapp || "");
+    if (profile?.last_payment_method) setPayment(profile.last_payment_method);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, profile]);
+
+  // Auto-select default address
+  useEffect(() => {
+    if (!selectedAddressId && addresses.length > 0) {
+      const def = addresses.find((a: any) => a.is_default) ?? addresses[0];
+      setSelectedAddressId(def.id);
+    }
+  }, [addresses, selectedAddressId]);
+
+  const selectedAddress = addresses.find((a: any) => a.id === selectedAddressId) ?? null;
 
   const discount = coupon ? +(subtotal * (coupon.discountPercent / 100)).toFixed(2) : 0;
   const total = Math.max(0, subtotal - discount) + fee;
@@ -796,13 +857,32 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     }
   }
 
+  function buildAddressString(): string | null {
+    if (selectedAddress) {
+      const line = [selectedAddress.street, selectedAddress.number].filter(Boolean).join(", ");
+      const parts = [line];
+      if (selectedAddress.complement) parts.push(selectedAddress.complement);
+      if (selectedAddress.neighborhood) parts.push(selectedAddress.neighborhood);
+      if (selectedAddress.city) parts.push(`${selectedAddress.city}${selectedAddress.state ? "/" + selectedAddress.state : ""}`);
+      return parts.filter(Boolean).join(" — ");
+    }
+    if (!street.trim() || !neighborhood.trim()) return null;
+    const line = [street.trim(), number.trim()].filter(Boolean).join(", ");
+    return complement.trim() ? `${line} — ${complement}, ${neighborhood}` : `${line}, ${neighborhood}`;
+  }
+
   async function sendWhatsApp() {
-    if (!name.trim() || !phone.trim() || !address.trim() || !neighborhood.trim()) {
-      toast.error("Preencha nome, telefone, endereço e bairro");
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Preencha nome e telefone");
+      return;
+    }
+    const fullAddress = buildAddressString();
+    if (!fullAddress) {
+      toast.error("Selecione ou informe um endereço de entrega");
       return;
     }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
-    const fullAddress = complement.trim() ? `${address} — ${complement}, ${neighborhood}` : `${address}, ${neighborhood}`;
+
     const lines = [
       `Olá, gostaria de fazer o seguinte pedido:`,
       ``,
@@ -820,6 +900,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       `Forma de pagamento: ${payment}`,
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
+
     try {
       const { url, orderNumber, orderId, demo } = await getOrderLink({
         data: {
@@ -832,11 +913,26 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         },
       });
       if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
-      // Persist WhatsApp URL so the success page can offer a retry button
+
+      // Persist profile prefill for next orders (best-effort)
+      if (user) {
+        try {
+          await (supabase as any)
+            .from("customer_profiles")
+            .upsert({
+              id: user.id,
+              full_name: name,
+              phone,
+              whatsapp: phone,
+              last_payment_method: payment,
+            }, { onConflict: "id" });
+          qc.invalidateQueries({ queryKey: ["customer-profile", user.id] });
+        } catch {}
+      }
+
       if (orderId && !demo && typeof window !== "undefined") {
         try { window.sessionStorage.setItem(`wa-url:${orderId}`, url); } catch {}
       }
-      // Auto-open WhatsApp (may be blocked by browser — success page has fallback)
       if (!demo) window.open(url, "_blank");
       onClose();
       if (orderId) onCreated(orderId);
@@ -844,8 +940,6 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       toast.error(e?.message ?? "Não foi possível enviar o pedido");
     }
   }
-
-
 
   return (
     <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
@@ -868,12 +962,61 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
 
       <div className="mt-5 grid gap-3">
         <div className="space-y-1.5"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
-        <div className="space-y-1.5"><Label>Telefone</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" /></div>
-        <div className="space-y-1.5"><Label>Endereço</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, número" /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
-          <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
-        </div>
+        <div className="space-y-1.5"><Label>Telefone / WhatsApp</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" /></div>
+
+        {/* Endereço */}
+        {user ? (
+          <div className="space-y-2">
+            <Label>Entregar em</Label>
+            {selectedAddress ? (
+              <Card className="border-primary/30 bg-primary/5 p-3">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                    📍
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                      {selectedAddress.label}
+                      {selectedAddress.is_default && (
+                        <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">Principal</span>
+                      )}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {[selectedAddress.street, selectedAddress.number].filter(Boolean).join(", ")}
+                      {selectedAddress.complement ? ` — ${selectedAddress.complement}` : ""}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{selectedAddress.neighborhood}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { setPickerMode("list"); setPickerOpen(true); }}>
+                    Alterar endereço
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { setPickerMode("form"); setPickerOpen(true); }}>
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Novo endereço
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <Button variant="outline" className="w-full" onClick={() => { setPickerMode("form"); setPickerOpen(true); }}>
+                <Plus className="mr-1.5 h-4 w-4" /> Adicionar endereço de entrega
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5"><Label>Endereço</Label><Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Rua" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Número</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="123" /></div>
+              <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
+            <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
+              💡 <Link to="/cliente" className="font-medium text-primary underline">Entre na sua conta</Link> para salvar seus endereços e pedir mais rápido.
+            </p>
+          </>
+        )}
+
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
           <div className="flex flex-wrap gap-2">
@@ -909,6 +1052,16 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
           <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
         </Button>
       </SheetFooter>
+
+      {user && (
+        <AddressPickerModal
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          userId={user.id}
+          initialMode={pickerMode}
+          onSelect={(a: CustomerAddress) => setSelectedAddressId(a.id)}
+        />
+      )}
     </SheetContent>
   );
 }
