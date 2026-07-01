@@ -108,6 +108,8 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {nav.map(({ to, label, icon: Icon }) => {
           const active = pathname === to || pathname.startsWith(`${to}/`);
+          const isOrders = to === "/orders";
+          const showBadge = isOrders && unseenCount > 0;
           return (
             <Link
               key={to}
@@ -117,13 +119,18 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
                 active
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              }`}
+              } ${showBadge ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
             >
               {active && (
                 <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className={`h-4 w-4 shrink-0 ${showBadge ? "text-primary" : ""}`} />
               <span className="truncate">{label}</span>
+              {showBadge && (
+                <Badge className="ml-auto h-5 min-w-5 justify-center bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground animate-pulse">
+                  {unseenCount}
+                </Badge>
+              )}
             </Link>
           );
         })}
