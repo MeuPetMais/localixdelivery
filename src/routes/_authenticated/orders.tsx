@@ -51,7 +51,9 @@ type Order = {
   status: string;
   notes?: string | null;
   created_at: string;
+  updated_at?: string | null;
 };
+
 
 type StatusKey = "novo" | "em_preparo" | "saiu_para_entrega" | "entregue" | "cancelado";
 
