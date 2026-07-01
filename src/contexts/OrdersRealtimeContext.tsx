@@ -13,6 +13,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
+import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
 
 /**
  * OrdersRealtimeProvider
@@ -48,44 +49,22 @@ const OrdersRealtimeContext = createContext<Ctx | null>(null);
 
 const PENDING_STATUSES = new Set(["novo", "aguardando_confirmacao"]);
 
-function playTone(sequence: Array<{ freq: number; dur?: number; delay?: number; type?: OscillatorType; gain?: number }>) {
-  try {
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const now = ctx.currentTime;
-    let end = 0;
-    sequence.forEach(({ freq, dur = 0.35, delay = 0, type = "sine", gain = 0.18 }) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = type;
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0, now + delay);
-      g.gain.linearRampToValueAtTime(gain, now + delay + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
-      o.connect(g).connect(ctx.destination);
-      o.start(now + delay);
-      o.stop(now + delay + dur + 0.05);
-      end = Math.max(end, delay + dur);
-    });
-    setTimeout(() => ctx.close().catch(() => {}), (end + 0.3) * 1000);
-  } catch {
-    /* no-op */
-  }
-}
+const STATUS_TO_SOUND: Record<string, OrderSoundKey> = {
+  novo: "new",
+  aguardando_confirmacao: "new",
+  em_preparo: "preparing",
+  pronto: "out_for_delivery",
+  saiu_para_entrega: "out_for_delivery",
+  entregue: "delivered",
+  cancelado: "canceled",
+};
 
 function playChime() {
-  playTone([
-    { freq: 880, delay: 0 },
-    { freq: 1174, delay: 0.18 },
-  ]);
+  playOrderSound("new");
 }
 
 function playCancelChime() {
-  playTone([
-    { freq: 440, delay: 0, dur: 0.25, type: "square", gain: 0.12 },
-    { freq: 220, delay: 0.22, dur: 0.5, type: "square", gain: 0.12 },
-  ]);
+  playOrderSound("canceled");
 }
 
 
