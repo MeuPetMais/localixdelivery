@@ -300,6 +300,32 @@ function OrdersPage() {
   }, [orders]);
 
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+  const [mobileTab, setMobileTab] = useState<StatusKey>("novo");
+
+  // Atalhos de teclado: A/P/S/F operam sobre o pedido aberto no drawer.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (!detailOrder) return;
+      const map: Record<string, StatusKey> = {
+        a: "em_preparo",
+        p: "em_preparo",
+        s: "saiu_para_entrega",
+        f: "entregue",
+      };
+      const next = map[e.key.toLowerCase()];
+      if (!next) return;
+      e.preventDefault();
+      updateStatus(detailOrder.id, next);
+      setDetailOrder({ ...detailOrder, status: next });
+      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${next.replace(/_/g, " ")}`);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOrder]);
+
 
 
   // Summary (base: today's orders, ignoring active filters).
