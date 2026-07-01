@@ -206,6 +206,7 @@ function ProfileView({ user }: { user: User }) {
           <ProfileLink to="/favoritos" icon={Heart} label="Favoritos" />
           <ProfileLink to="/beneficios" icon={Tag} label="Cupons & Pontos" />
           <ProfileLink to="/meus-pedidos" icon={History} label="Meus Pedidos" />
+          <ProfileLink to="/meus-enderecos" icon={MapPin} label="Meus Endereços" />
           <ProfileLink to={restaurantPath ?? "/cliente"} icon={Zap} label="Pedir agora" />
 
         </div>
