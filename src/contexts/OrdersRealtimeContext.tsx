@@ -171,6 +171,7 @@ export function OrdersRealtimeProvider({
             const normalized: PendingOrder = { ...row, total: Number(row.total) };
             setUnseen((prev) => [...prev, normalized]);
             if (soundEnabled) playChime();
+            vibratePattern([200, 80, 200]);
             toast(
               `🔔 Novo pedido #${row.order_number ?? ""}`,
               {
@@ -186,12 +187,16 @@ export function OrdersRealtimeProvider({
             );
           } else if (evt === "UPDATE") {
             const prevRow = payload.old as PendingOrder | undefined;
+            const statusChanged = prevRow?.status !== row.status;
+            if (statusChanged && soundEnabled) {
+              const key = STATUS_TO_SOUND[row.status];
+              if (key) playOrderSound(key);
+            }
             if (
               row.status === "cancelado" &&
-              prevRow?.status !== "cancelado" &&
-              soundEnabled
+              prevRow?.status !== "cancelado"
             ) {
-              playCancelChime();
+              vibratePattern([300, 100, 300]);
               toast(`❌ Pedido #${row.order_number ?? ""} cancelado`, {
                 description: row.customer_name,
               });
