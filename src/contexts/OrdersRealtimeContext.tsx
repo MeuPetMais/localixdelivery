@@ -14,6 +14,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
+import { printOrder, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
+import {
+  announceNewOrder,
+  announcePendingCount,
+  announceLongWaiting,
+} from "@/lib/voice-announcer";
 
 /**
  * OrdersRealtimeProvider
@@ -172,6 +178,32 @@ export function OrdersRealtimeProvider({
             setUnseen((prev) => [...prev, normalized]);
             if (soundEnabled) playChime();
             vibratePattern([200, 80, 200]);
+            announceNewOrder();
+
+            // Auto-print (opt-in): busca linha completa e envia ao adapter.
+            if (isAutoPrintEnabled()) {
+              supabase
+                .from("orders")
+                .select("order_number, customer_name, customer_phone, address, items, payment_method, total, created_at, restaurants(name)")
+                .eq("id", row.id)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (!data) return;
+                  const printable: PrintableOrder = {
+                    order_number: data.order_number,
+                    customer_name: data.customer_name,
+                    customer_phone: data.customer_phone,
+                    address: data.address,
+                    items: (data.items as any) ?? [],
+                    payment_method: data.payment_method,
+                    total: Number(data.total),
+                    created_at: data.created_at,
+                    restaurant_name: (data.restaurants as any)?.name ?? null,
+                  };
+                  printOrder(printable).catch(() => {});
+                });
+            }
+
             toast(
               `🔔 Novo pedido #${row.order_number ?? ""}`,
               {
@@ -245,6 +277,13 @@ export function OrdersRealtimeProvider({
       if (cancelled) return;
       playChime();
       vibratePattern([200, 80, 200]);
+      // Voz: se há vários pedidos, anuncia a fila; caso contrário, o número
+      // do pedido mais antigo aguardando.
+      if (unseen.length > 1) {
+        announcePendingCount(unseen.length);
+      } else {
+        announceLongWaiting(unseen[0]?.order_number ?? null);
+      }
       step += 1;
       const nextMs = step === 0 ? 30_000 : 60_000;
       timer = window.setTimeout(tick, nextMs);
