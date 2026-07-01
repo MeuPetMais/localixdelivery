@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useCustomerNavigation, clearStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
@@ -47,6 +48,7 @@ function PublicMenu() {
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
   const { rememberRestaurantRoute, prepareLoginRedirect, restoreRestaurantScroll, setPendingCart } = useCustomerNavigation();
+  const { setActiveRestaurant, markUnavailable } = useRestaurantSession();
 
 
   const { data, isLoading, isError, error } = useQuery({
