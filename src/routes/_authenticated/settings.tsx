@@ -39,6 +39,23 @@ import {
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
+import { slugify } from "@/lib/format";
+
+async function findAvailableSlug(base: string, currentId: string): Promise<string> {
+  const safeBase = slugify(base) || "loja";
+  let candidate = safeBase;
+  for (let n = 2; n <= 50; n++) {
+    const { data } = await supabase
+      .from("restaurants")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+    if (!data || data.id === currentId) return candidate;
+    candidate = `${safeBase}-${n}`;
+  }
+  return `${safeBase}-${Date.now()}`;
+}
+
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -180,8 +197,24 @@ function SettingsPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [togglingOpen, setTogglingOpen] = useState(false);
+  const [updatingSlug, setUpdatingSlug] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
+
+  // "Em operação" = já recebeu pelo menos 1 pedido. Enquanto isso, renomear = re-slug automático.
+  const { data: hasOrders = false } = useQuery({
+    queryKey: ["restaurant-has-orders", restaurant?.id],
+    enabled: !!restaurant?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("restaurant_id", restaurant!.id);
+      return (count ?? 0) > 0;
+    },
+    staleTime: 60_000,
+  });
+
 
   useEffect(() => {
     if (!restaurant) return;
@@ -294,6 +327,33 @@ function SettingsPage() {
     toast.success(next ? "Loja aberta" : "Loja fechada");
   }
 
+  async function updateSlug(desired: string) {
+    if (updatingSlug) return;
+    const base = slugify(desired);
+    if (!base) return toast.error("URL inválida");
+    if (base === restaurant.slug) return toast.info("A URL já é essa.");
+    setUpdatingSlug(true);
+    try {
+      const finalSlug = await findAvailableSlug(base, restaurant.id);
+      const { error } = await supabase
+        .from("restaurants")
+        .update({ slug: finalSlug, updated_at: new Date().toISOString() })
+        .eq("id", restaurant.id);
+      if (error) throw error;
+      setForm((f) => ({ ...f, slug: finalSlug }));
+      if (finalSlug !== base) {
+        toast.info(`URL já usada — salvamos como "${finalSlug}".`, { duration: 6000 });
+      } else {
+        toast.success("URL pública atualizada");
+      }
+      await refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível atualizar a URL");
+    } finally {
+      setUpdatingSlug(false);
+    }
+  }
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -304,9 +364,22 @@ function SettingsPage() {
       online_credit: !!(payments.online_card || payments.online_credit),
       online_debit: !!(payments.online_card || payments.online_debit),
     };
+
+    // Auto-sync do slug: só enquanto o estabelecimento ainda não recebeu pedidos.
+    let nextSlug = restaurant.slug;
+    let slugAutoAdjusted = false;
+    if (!hasOrders) {
+      const desired = slugify(form.name);
+      if (desired && desired !== restaurant.slug) {
+        nextSlug = await findAvailableSlug(desired, restaurant.id);
+        slugAutoAdjusted = true;
+      }
+    }
+
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
+        ...(slugAutoAdjusted ? { slug: nextSlug } : {}),
         description: form.description || null,
         whatsapp_phone: form.whatsapp_phone,
         landline_phone: form.landline_phone || null,
@@ -339,9 +412,15 @@ function SettingsPage() {
 
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Perfil atualizado");
+    if (slugAutoAdjusted) {
+      setForm((f) => ({ ...f, slug: nextSlug }));
+      toast.success(`Perfil atualizado. Nova URL: /${nextSlug}`);
+    } else {
+      toast.success("Perfil atualizado");
+    }
     refetch();
   }
+
 
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
@@ -830,9 +909,38 @@ function SettingsPage() {
             <Link2 className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-bold">Link Público</h3>
           </div>
-          <div className="rounded-xl border border-dashed bg-muted/40 p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="slug-input">URL pública</Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-1 items-center rounded-md border bg-muted/40 px-3">
+                <span className="text-sm text-muted-foreground">/</span>
+                <Input
+                  id="slug-input"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
+                  className="border-0 bg-transparent focus-visible:ring-0"
+                  placeholder="minha-loja"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => updateSlug(form.slug)}
+                disabled={updatingSlug || !form.slug || form.slug === restaurant.slug}
+              >
+                {updatingSlug ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Atualizar URL
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {hasOrders
+                ? "Seu estabelecimento já recebeu pedidos — mudar a URL pode quebrar links compartilhados."
+                : "Enquanto não houver pedidos, a URL é atualizada automaticamente ao renomear a loja."}
+            </p>
+          </div>
+          <div className="mt-4 rounded-xl border border-dashed bg-muted/40 p-4">
             <p className="break-all font-mono text-sm">{publicUrl}</p>
           </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               type="button"
