@@ -145,6 +145,18 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
     rememberRestaurantRoute(slug, { route: location.href || location.pathname });
   }, [location.href, location.pathname, rememberRestaurantRoute]);
 
+  // Limpa qualquer slug persistido em login / logout / troca de conta —
+  // evita que a aba Início / redirecionamentos abram um restaurante antigo.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        clearStoredRestaurantSlug();
+        setState(EMPTY_STATE);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   const setCurrentRestaurantSlug = useCallback((slug: string | null) => {
     commit((prev) => ({
       ...prev,
