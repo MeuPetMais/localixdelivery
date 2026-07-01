@@ -201,6 +201,57 @@ export type Database = {
           },
         ]
       }
+      customer_addresses: {
+        Row: {
+          cep: string | null
+          city: string | null
+          complement: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          is_default: boolean
+          label: string
+          neighborhood: string
+          notes: string | null
+          number: string | null
+          state: string | null
+          street: string
+          updated_at: string
+        }
+        Insert: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          neighborhood: string
+          notes?: string | null
+          number?: string | null
+          state?: string | null
+          street: string
+          updated_at?: string
+        }
+        Update: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          neighborhood?: string
+          notes?: string | null
+          number?: string | null
+          state?: string | null
+          street?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           created_at: string
@@ -285,8 +336,11 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_payment_method: string | null
+          phone: string | null
           provider: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -294,8 +348,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_payment_method?: string | null
+          phone?: string | null
           provider?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -303,8 +360,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_payment_method?: string | null
+          phone?: string | null
           provider?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }
