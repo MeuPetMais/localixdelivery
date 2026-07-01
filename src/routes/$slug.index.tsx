@@ -343,18 +343,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       detail = anyErr?.message ?? String(anyErr);
     } else {
       // Genuine zero-results case — purge todos os slugs persistidos.
-      try {
-        // Import dinâmico evita ciclo com o context.
-        const mod = require("@/contexts/CustomerNavigationContext");
-        mod?.clearStoredRestaurantSlug?.();
-      } catch {
-        try {
-          sessionStorage.removeItem("localix:customer-navigation");
-          sessionStorage.removeItem("localix:last-restaurant-slug");
-          localStorage.removeItem("localix:last-restaurant-slug");
-          sessionStorage.removeItem("postLoginRedirect");
-        } catch {}
-      }
+      clearStoredRestaurantSlug();
     }
 
     return (
