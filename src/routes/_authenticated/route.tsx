@@ -6,6 +6,7 @@ import { RestaurantProvider, useCurrentRestaurant } from "@/contexts/RestaurantC
 import { OwnerOnboarding } from "@/components/OwnerOnboarding";
 import { DemoExperience } from "@/components/DemoExperience";
 import { OrdersRealtimeProvider, useOrdersRealtime } from "@/contexts/OrdersRealtimeContext";
+import { PendingOrdersBanner } from "@/components/PendingOrdersBanner";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
@@ -196,6 +197,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
             )}
           >
             <DemoExperience userEmail={userEmail} />
+            <PendingOrdersBanner />
             <Outlet />
           </RestaurantProvider>
         </main>
