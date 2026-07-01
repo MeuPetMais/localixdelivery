@@ -462,6 +462,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       key={o.id}
                       order={o}
                       accent={col.accent}
+                      nowMs={nowMs}
+                      isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
                       onDragStart={(e) => onDragStart(e, o.id)}
                       onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
                       advanceLabel={NEXT[col.key]?.label}
@@ -472,6 +474,7 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       isNew={col.key === "novo"}
                     />
                   ))}
+
                 </div>
               </section>
             );
