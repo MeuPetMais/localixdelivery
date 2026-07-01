@@ -23,6 +23,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { CustomerNavigationProvider } from "@/contexts/CustomerNavigationContext";
+import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
 
 function NotFoundComponent() {
   return (
@@ -132,10 +133,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CustomerNavigationProvider>
-        <Outlet />
-        <CustomerBottomNav />
-      </CustomerNavigationProvider>
+      <RestaurantSessionProvider>
+        <CustomerNavigationProvider>
+          <Outlet />
+          <CustomerBottomNav />
+        </CustomerNavigationProvider>
+      </RestaurantSessionProvider>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
