@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 type Props = {
   orderId: string;
@@ -14,6 +16,8 @@ type Props = {
 };
 
 export function ReviewForm({ orderId, restaurantId, customerName, customerPhone }: Props) {
+  const qc = useQueryClient();
+  const { user, loading: authLoading } = useCustomerAuth();
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
@@ -39,6 +43,7 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
   }, [orderId]);
 
   async function submit() {
+    if (!user) return toast.error("Entre na sua conta para avaliar");
     if (rating < 1) return toast.error("Selecione uma nota");
     if (comment.length > 500) return toast.error("Comentário muito longo (máx 500)");
     setLoading(true);
@@ -47,7 +52,7 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
       .insert({
         order_id: orderId,
         restaurant_id: restaurantId,
-        customer_name: customerName ?? null,
+        customer_name: customerName ?? user.user_metadata?.full_name ?? null,
         customer_phone: customerPhone ?? null,
         rating,
         comment: comment.trim() || null,
@@ -55,12 +60,20 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
       .select()
       .single();
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = error.message?.includes("row-level security")
+        ? "Só é possível avaliar seu próprio pedido após ser entregue."
+        : error.message || "Erro ao enviar avaliação";
+      return toast.error(msg, { description: error.details ?? error.hint ?? undefined });
+    }
     setExisting(data);
     toast.success("Obrigado pela sua avaliação!");
+    // Refresh public/dashboard aggregates
+    qc.invalidateQueries({ queryKey: ["public-reviews", restaurantId] });
+    qc.invalidateQueries({ queryKey: ["owner-reviews"] });
   }
 
-  if (checking) return null;
+  if (checking || authLoading) return null;
 
   if (existing) {
     return (
@@ -84,6 +97,17 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
             <p className="mt-1 text-sm">{existing.owner_reply}</p>
           </div>
         )}
+      </Card>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className="p-4">
+        <div className="flex items-start gap-2 text-sm">
+          <AlertCircle className="mt-0.5 h-4 w-4 text-warning" />
+          <p>Entre na sua conta para avaliar este pedido.</p>
+        </div>
       </Card>
     );
   }
