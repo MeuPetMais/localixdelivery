@@ -69,6 +69,7 @@ type RestaurantBase = {
 
 type HoursData = RestaurantBase & {
   opening_hours: Hours | null;
+  is_open: boolean | null;
 };
 
 type InfoData = RestaurantBase & {
