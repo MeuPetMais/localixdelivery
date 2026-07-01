@@ -48,70 +48,42 @@ const NEXT: Record<string, string | null> = {
 
 function OrdersPage() {
   const restaurant = useRestaurant();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    let active = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    (async () => {
-      const restaurantId = restaurant.id;
-
+  // Sem canal Realtime local: a assinatura global do OrdersRealtimeProvider
+  // invalida esta query no ["orders", restaurantId] a cada evento.
+  const { data: orders, isLoading: loading } = useQuery({
+    enabled: !!restaurant?.id,
+    queryKey: ["orders", restaurant?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .eq("restaurant_id", restaurantId)
+        .eq("restaurant_id", restaurant.id)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (!active) return;
-      if (error) toast.error("Falha ao carregar pedidos");
-      setOrders((data ?? []) as any);
-      setLoading(false);
-
-      channel = supabase
-        .channel(`orders-realtime-${restaurantId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` },
-          (payload) => {
-            setOrders((prev) => {
-              if (payload.eventType === "INSERT") {
-                const n = (payload.new as Order).order_number;
-                toast.success(n ? `Novo pedido #${n} recebido!` : "Novo pedido recebido!");
-                return [payload.new as Order, ...prev];
-              }
-
-              if (payload.eventType === "UPDATE") {
-                return prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o));
-              }
-              if (payload.eventType === "DELETE") {
-                return prev.filter((o) => o.id !== (payload.old as Order).id);
-              }
-              return prev;
-            });
-          },
-        )
-        .subscribe();
-    })();
-
-    return () => {
-      active = false;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [restaurant.id]);
-
+      if (error) {
+        toast.error("Falha ao carregar pedidos");
+        throw error;
+      }
+      return (data ?? []) as Order[];
+    },
+  });
 
   async function updateStatus(id: string, status: string) {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) toast.error("Não foi possível atualizar");
+    else qc.invalidateQueries({ queryKey: ["orders", restaurant.id] });
   }
 
   const grouped = useMemo(() => {
     const g: Record<string, Order[]> = {};
     for (const s of STATUSES) g[s.key] = [];
-    for (const o of orders) (g[o.status] ?? (g[o.status] = [])).push(o);
+    for (const o of orders ?? []) (g[o.status] ?? (g[o.status] = [])).push(o);
     return g;
   }, [orders]);
+
+
 
   if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
