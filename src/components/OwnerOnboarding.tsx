@@ -61,7 +61,7 @@ export function OwnerOnboarding({
     (async () => {
       const { data } = await supabase.auth.getUser();
       const u = data.user;
-      const meta = (u?.user_meta_data ?? u?.user_metadata ?? {}) as Record<string, string>;
+      const meta = (u?.user_metadata ?? {}) as Record<string, string>;
       const draft = loadDraft();
 
       const initialName = draft.name ?? meta.store_name ?? "";
