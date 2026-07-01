@@ -90,8 +90,15 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (data?.restaurant?.slug) {
       restoreRestaurantScroll(data.restaurant.slug);
       rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
+      // Salva o restaurante ativo na sessão (RestaurantSessionContext).
+      setActiveRestaurant({
+        restaurantId: data.restaurant.id,
+        restaurantSlug: data.restaurant.slug,
+        restaurantName: data.restaurant.name ?? "",
+        restaurantLogo: data.restaurant.logo_url ?? null,
+      });
     }
-  }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
+  }, [data?.restaurant?.slug, data?.restaurant?.id, rememberRestaurantRoute, restoreRestaurantScroll, setActiveRestaurant]);
 
   const qc = useQueryClient();
   useEffect(() => {
@@ -344,8 +351,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       message = "Ocorreu um erro ao consultar o estabelecimento.";
       detail = anyErr?.message ?? String(anyErr);
     } else {
-      // Genuine zero-results case — purge todos os slugs persistidos.
-      clearStoredRestaurantSlug();
+      // Restaurante realmente não existe mais no banco.
+      title = "Este estabelecimento não está mais disponível.";
+      message = "";
+      markUnavailable();
     }
 
     return (
