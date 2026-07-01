@@ -620,3 +620,37 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+  tone = "primary",
+  pulse = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone?: "primary" | "emerald" | "blue" | "amber" | "destructive" | "muted";
+  pulse?: boolean;
+}) {
+  const tones: Record<string, string> = {
+    primary: "bg-primary/10 text-primary",
+    emerald: "bg-emerald-500/10 text-emerald-600",
+    blue: "bg-blue-500/10 text-blue-600",
+    amber: "bg-amber-500/10 text-amber-600",
+    destructive: "bg-destructive/15 text-destructive",
+    muted: "bg-muted text-muted-foreground",
+  };
+  return (
+    <Card className={`rounded-2xl border-0 p-3 shadow-sm ${pulse ? "animate-pulse" : ""}`}>
+      <div className="flex items-center gap-2">
+        <span className={`grid h-8 w-8 place-items-center rounded-lg ${tones[tone]}`}>{icon}</span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="font-display text-lg font-extrabold leading-tight">{value}</p>
+        </div>
+      </div>
+    </Card>
+  );
+}
