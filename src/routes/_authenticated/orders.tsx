@@ -208,10 +208,12 @@ function OrdersPage() {
       }
       return (data ?? []) as unknown as Order[];
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   async function updateStatus(id: string, status: StatusKey) {
-    // optimistic
+    // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
     const key = ["orders", restaurant.id];
     const prev = qc.getQueryData<Order[]>(key);
     if (prev) {
@@ -221,8 +223,6 @@ function OrdersPage() {
     if (error) {
       toast.error("Não foi possível atualizar");
       if (prev) qc.setQueryData(key, prev);
-    } else {
-      qc.invalidateQueries({ queryKey: key });
     }
   }
 
