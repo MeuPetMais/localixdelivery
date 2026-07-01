@@ -67,11 +67,12 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
       return toast.error(msg, { description: error.details ?? error.hint ?? undefined });
     }
     setExisting(data);
-    toast.success("Obrigado pela sua avaliação!");
-    // Refresh public/dashboard aggregates
+    toast.success("Obrigado pela sua avaliação! ❤️");
     qc.invalidateQueries({ queryKey: ["public-reviews", restaurantId] });
     qc.invalidateQueries({ queryKey: ["owner-reviews"] });
   }
+
+
 
   if (checking || authLoading) return null;
 
@@ -80,8 +81,9 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
       <Card className="p-5">
         <div className="flex items-center gap-2 text-success">
           <CheckCircle2 className="h-5 w-5" />
-          <h2 className="font-display text-lg font-bold">Avaliação enviada</h2>
+          <h2 className="font-display text-lg font-bold">Obrigado pela sua avaliação! ❤️</h2>
         </div>
+
         <div className="mt-3 flex gap-0.5">
           {[1, 2, 3, 4, 5].map((i) => (
             <Star
@@ -114,9 +116,9 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
 
   return (
     <Card className="p-5">
-      <h2 className="font-display text-lg font-bold">Avalie seu pedido</h2>
+      <h2 className="font-display text-lg font-bold">⭐ Como foi sua experiência?</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Sua opinião ajuda o restaurante a melhorar.
+        Sua opinião ajuda este estabelecimento a melhorar cada vez mais.
       </p>
       <div className="mt-3 flex gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -136,15 +138,19 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
           </button>
         ))}
       </div>
+      <label className="mt-4 block text-sm font-medium">
+        Conte como foi sua experiência (opcional)
+      </label>
       <Textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        placeholder="Conte como foi a experiência (opcional)"
+        placeholder="Ex.: Atendimento rápido, lanche muito saboroso, entrega antes do previsto..."
         maxLength={500}
-        className="mt-3"
-        rows={3}
+        className="mt-1.5"
+        rows={4}
       />
       <p className="mt-1 text-right text-xs text-muted-foreground">{comment.length}/500</p>
+
       <Button onClick={submit} disabled={loading || rating < 1} className="mt-2 w-full">
         {loading ? "Enviando..." : "Enviar avaliação"}
       </Button>

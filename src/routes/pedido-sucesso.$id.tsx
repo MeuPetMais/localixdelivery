@@ -125,6 +125,29 @@ function SuccessPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">{restaurant?.name ?? "Estabelecimento"}</p>
         </div>
 
+        {!user && (
+          <Card className="mt-5 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-5">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                <Gift className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-display text-base font-bold">🎁 Salve seus pedidos e ganhe benefícios!</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Crie sua conta gratuitamente para acompanhar seus pedidos, salvar endereços, receber cupons e participar do programa de fidelidade.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3 w-full sm:w-auto"
+                  onClick={() => navigate({ to: "/entrar", search: { redirect: prepareLoginRedirect(restaurant?.slug) } })}
+                >
+                  Criar conta grátis
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <Card className="mt-5 p-5 text-center shadow-md">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Número do pedido</p>
           <p className="font-display text-4xl font-extrabold text-primary">#{order.order_number}</p>
@@ -132,6 +155,7 @@ function SuccessPage() {
             <Clock className="h-3 w-3" /> Previsão: {etaLabel}
           </div>
         </Card>
+
 
         {/* Status tracker */}
         <Card className="mt-4 p-4">
@@ -215,37 +239,17 @@ function SuccessPage() {
 
         {/* Post-delivery review */}
         {isDelivered && restaurant && (
-          <Card className="mt-4 border-primary/30 bg-primary/5 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold">Como foi sua experiência?</p>
-            </div>
+          <div className="mt-4">
             <ReviewForm restaurantId={restaurant.id} orderId={order.id} />
-          </Card>
+          </div>
         )}
 
-        {!user && (
-          <Card className="mt-4 border-primary/30 bg-primary/5 p-4">
-            <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                <Gift className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">Crie sua conta em 30 segundos</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Acompanhe pedidos, acumule pontos e receba ofertas exclusivas.
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => navigate({ to: "/entrar", search: { redirect: prepareLoginRedirect(restaurant?.slug) } })}>Criar conta</Button>
-                </div>
-              </div>
-            </div>
-          </Card>
+        {user && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            <Link to="/meus-pedidos" className="hover:underline">Ver meus pedidos</Link>
+          </p>
         )}
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          <Link to="/meus-pedidos" className="hover:underline">Ver todos os meus pedidos</Link>
-        </p>
       </main>
     </div>
   );
