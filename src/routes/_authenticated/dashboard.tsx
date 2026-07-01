@@ -139,6 +139,23 @@ function Dashboard() {
   const isDemo = restaurant.slug === "demo";
   const k = isDemo ? getDemoKpisOverride(dash?.kpis) : dash?.kpis;
 
+  const status = getRestaurantStatus({
+    is_open: restaurant.is_open,
+    opening_hours: (restaurant as any).opening_hours,
+  });
+  if (typeof window !== "undefined") {
+    // Temporary diagnostics (dashboard)
+    // eslint-disable-next-line no-console
+    console.log("[status:dashboard]", {
+      manualStatus: status.manualStatus,
+      isOpen: status.isOpen,
+      todaySchedule: (restaurant as any).opening_hours ?? null,
+      computedStatus: status.reason,
+    });
+  }
+  const openLabel = status.isOpen ? "Aberto" : "Fechado";
+  const offSchedule = status.reason === "off_schedule";
+
   return (
     <div className="max-w-full space-y-6">
       {/* Header */}
