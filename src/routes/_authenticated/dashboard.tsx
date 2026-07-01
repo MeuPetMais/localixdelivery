@@ -200,6 +200,8 @@ function Dashboard() {
 
       <ProfileCompletionBanner restaurant={restaurant} />
 
+      <NewOrderCard />
+
       <ActivePromosBanner restaurantId={restaurant.id} />
 
       {/* Loja Online + Marketing cards */}
