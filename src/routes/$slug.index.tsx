@@ -1059,7 +1059,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
           onOpenChange={setPickerOpen}
           userId={user.id}
           initialMode={pickerMode}
-          onSelect={(a) => setSelectedAddressId(a.id)}
+          onSelect={(a: CustomerAddress) => setSelectedAddressId(a.id)}
         />
       )}
     </SheetContent>
