@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/format";
 import {
   Loader2,
@@ -17,13 +18,20 @@ import {
   MessageCircle,
   X,
   Check,
-  
   Bike,
   PackageCheck,
   StickyNote,
   CreditCard,
+  Search,
+  Flame,
+  ShoppingBag,
+  DollarSign,
+  Receipt,
+  Timer as TimerIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Pedidos — Localix" }] }),
