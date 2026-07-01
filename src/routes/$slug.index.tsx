@@ -49,12 +49,12 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-restaurant", slug],
     enabled: !!slug,
-    retry: 3,
+      retry: 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
-    refetchOnWindowFocus: false,
+      refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
@@ -94,6 +94,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (!restaurantId) return;
     const channel = supabase
       .channel(`public-menu:${restaurantId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` },
         () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` },
@@ -251,7 +253,11 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const openBuilder = (builder: Builder) => {
-    if (!data?.restaurant?.is_open) {
+    const builderStatus = getRestaurantStatus({
+      is_open: data?.restaurant?.is_open,
+      opening_hours: data?.restaurant?.opening_hours,
+    });
+    if (!builderStatus.isOpen) {
       toast.error("Restaurante fechado");
       return;
     }
@@ -365,7 +371,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     is_open: restaurant?.is_open,
     opening_hours: restaurant?.opening_hours,
   });
-  const isOpenNow = status.withinSchedule;
   const effectiveOpen = status.isOpen;
   if (typeof window !== "undefined") {
     // eslint-disable-next-line no-console
