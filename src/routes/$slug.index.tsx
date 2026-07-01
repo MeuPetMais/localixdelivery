@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useCustomerNavigation, clearStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
+import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
@@ -47,6 +48,7 @@ function PublicMenu() {
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
   const { rememberRestaurantRoute, prepareLoginRedirect, restoreRestaurantScroll, setPendingCart } = useCustomerNavigation();
+  const { setActiveRestaurant, markUnavailable } = useRestaurantSession();
 
 
   const { data, isLoading, isError, error } = useQuery({
@@ -88,8 +90,20 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (data?.restaurant?.slug) {
       restoreRestaurantScroll(data.restaurant.slug);
       rememberRestaurantRoute(data.restaurant.slug, { route: `/${data.restaurant.slug}` });
+      // Salva o restaurante ativo na sessão (RestaurantSessionContext).
+      setActiveRestaurant({
+        restaurantId: data.restaurant.id,
+        restaurantSlug: data.restaurant.slug,
+        restaurantName: data.restaurant.name ?? "",
+        restaurantLogo: data.restaurant.logo_url ?? null,
+      });
     }
-  }, [data?.restaurant?.slug, rememberRestaurantRoute, restoreRestaurantScroll]);
+  }, [data?.restaurant?.slug, data?.restaurant?.id, rememberRestaurantRoute, restoreRestaurantScroll, setActiveRestaurant]);
+
+  // Restaurante da sessão foi removido do banco → marca como indisponível.
+  useEffect(() => {
+    if (!isLoading && !isError && data && !data.restaurant) markUnavailable();
+  }, [isLoading, isError, data, markUnavailable]);
 
   const qc = useQueryClient();
   useEffect(() => {
@@ -342,39 +356,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       message = "Ocorreu um erro ao consultar o estabelecimento.";
       detail = anyErr?.message ?? String(anyErr);
     } else {
-      // Genuine zero-results case — purge todos os slugs persistidos.
-      clearStoredRestaurantSlug();
+      // Restaurante realmente não existe mais no banco.
+      title = "Este estabelecimento não está mais disponível.";
+      message = "";
     }
+
+    const isGone = !emptySlug && !offline && !isNetworkError && !isSupabaseError;
 
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div className="max-w-md">
           <h1 className="font-display text-3xl font-extrabold">{title}</h1>
-          <p className="mt-2 text-muted-foreground">{message}</p>
+          {message && <p className="mt-2 text-muted-foreground">{message}</p>}
           {detail && (
             <p className="mt-3 break-words rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
               {detail}
             </p>
           )}
-          {slug && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Slug solicitado: <code className="font-mono">{slug}</code>
-            </p>
+          {!isGone && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                Tentar novamente
+              </button>
+            </div>
           )}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-            >
-              Tentar novamente
-            </button>
-            <a
-              href="/home"
-              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
-            >
-              Ver restaurantes
-            </a>
-          </div>
         </div>
       </div>
     );

@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 
 const NAV_STATE_KEY = "localix:customer-navigation";
 const LEGACY_LAST_SLUG_KEY = "localix:last-restaurant-slug";
@@ -145,17 +144,10 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
     rememberRestaurantRoute(slug, { route: location.href || location.pathname });
   }, [location.href, location.pathname, rememberRestaurantRoute]);
 
-  // Limpa qualquer slug persistido em login / logout / troca de conta —
-  // evita que a aba Início / redirecionamentos abram um restaurante antigo.
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        clearStoredRestaurantSlug();
-        setState(EMPTY_STATE);
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  // NOTA: o contexto do restaurante NÃO é limpo em login/logout —
+  // a arquitetura é multiempresa e a sessão do restaurante deve persistir.
+  // A validação de restaurante removido/renomeado é feita pelo
+  // RestaurantSessionContext (revalidação por restaurant_id no banco).
 
   const setCurrentRestaurantSlug = useCallback((slug: string | null) => {
     commit((prev) => ({

@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import { Home, Gift, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
 type ItemKey = "home" | "beneficios" | "favoritos" | "pedidos" | "perfil";
 
@@ -36,14 +37,16 @@ const items: Item[] = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { currentRestaurantSlug, rememberRestaurantRoute } = useCustomerNavigation();
-  // "Início" NUNCA usa slug persistido em storage — só o slug do restaurante
-  // atualmente aberto na URL. Slug antigo/renomeado não deve reaparecer aqui.
+  const { rememberRestaurantRoute } = useCustomerNavigation();
+  const { session } = useRestaurantSession();
+  // "Início" usa o restaurante da sessão atual (RestaurantSessionContext).
+  // Prioridade: slug da URL (restaurante aberto agora) → restaurante salvo
+  // na sessão. Nunca lista pública, nunca slug fixo.
   const urlSlug = (() => {
     const seg = pathname.split("/")[1] ?? "";
     return seg && !RESERVED_TOP.has(seg) && !seg.includes(".") ? seg : null;
   })();
-  const activeSlug = currentRestaurantSlug && urlSlug === currentRestaurantSlug ? currentRestaurantSlug : urlSlug;
+  const activeSlug = urlSlug ?? session?.restaurantSlug ?? null;
 
   function handleClick(_e: MouseEvent, key: ItemKey, targetPath: string) {
     // Lembra a posição do restaurante antes de sair dele (não interfere na navegação).
@@ -52,11 +55,6 @@ export function BottomNav() {
         route: `/${activeSlug}`,
         scrollY: typeof window !== "undefined" ? window.scrollY : 0,
       });
-    }
-    if (key === "home") {
-      // Auditoria temporária — mostra exatamente para onde Início vai.
-      // eslint-disable-next-line no-console
-      console.debug("[BottomNav] Início click", { urlSlug, activeSlug, targetPath });
     }
     // Se já estamos exatamente na rota, só rola pro topo — dá feedback visual em vez de "nada acontecer".
     if (typeof window !== "undefined" && window.location.pathname === targetPath) {
