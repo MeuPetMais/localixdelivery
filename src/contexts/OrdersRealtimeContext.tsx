@@ -277,6 +277,13 @@ export function OrdersRealtimeProvider({
       if (cancelled) return;
       playChime();
       vibratePattern([200, 80, 200]);
+      // Voz: se há vários pedidos, anuncia a fila; caso contrário, o número
+      // do pedido mais antigo aguardando.
+      if (unseen.length > 1) {
+        announcePendingCount(unseen.length);
+      } else {
+        announceLongWaiting(unseen[0]?.order_number ?? null);
+      }
       step += 1;
       const nextMs = step === 0 ? 30_000 : 60_000;
       timer = window.setTimeout(tick, nextMs);
