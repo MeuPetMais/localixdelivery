@@ -193,13 +193,15 @@ function Dashboard() {
           </div>
           <div
             className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium md:flex ${
-              restaurant.is_open
+              status.isOpen
                 ? "border-success/40 bg-success/10 text-success"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
             }`}
+            title={offSchedule ? "Fora do horário de funcionamento" : undefined}
           >
-            <span className={`h-2 w-2 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"} animate-pulse`} />
-            {restaurant.is_open ? "Aberto" : "Fechado"}
+            <span className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
+            {openLabel}
+            {offSchedule && <span className="ml-1 text-[10px] opacity-75">(fora do horário)</span>}
           </div>
           <Button variant="outline" size="sm" onClick={toggleOpen} disabled={togglingOpen}>
             {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
