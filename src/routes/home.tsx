@@ -4,7 +4,8 @@ import { Search, Sparkles, Store, Tag, Heart, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { clearStoredRestaurantSlug, getStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/home")({
   // Não redirecionamos mais para um slug persistido — /home sempre lista
@@ -43,6 +44,22 @@ function CustomerHome() {
       return (data ?? []) as PublicRestaurant[];
     },
   });
+
+  // Auditoria: valida o slug persistido contra a lista pública real.
+  // Se apontar para restaurante inexistente/desativado, purga imediatamente
+  // para que nenhuma navegação futura (Início, pós-login) tente reabri-lo.
+  useEffect(() => {
+    if (!restaurants.length) return;
+    const stored = getStoredRestaurantSlug();
+    if (!stored) return;
+    const exists = restaurants.some((r) => r.slug === stored);
+    if (!exists) {
+      // eslint-disable-next-line no-console
+      console.debug("[home] slug persistido inválido, limpando:", stored);
+      clearStoredRestaurantSlug();
+    }
+  }, [restaurants]);
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();

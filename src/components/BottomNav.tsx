@@ -53,6 +53,11 @@ export function BottomNav() {
         scrollY: typeof window !== "undefined" ? window.scrollY : 0,
       });
     }
+    if (key === "home") {
+      // Auditoria temporária — mostra exatamente para onde Início vai.
+      // eslint-disable-next-line no-console
+      console.debug("[BottomNav] Início click", { urlSlug, activeSlug, targetPath });
+    }
     // Se já estamos exatamente na rota, só rola pro topo — dá feedback visual em vez de "nada acontecer".
     if (typeof window !== "undefined" && window.location.pathname === targetPath) {
       window.scrollTo({ top: 0, behavior: "smooth" });
