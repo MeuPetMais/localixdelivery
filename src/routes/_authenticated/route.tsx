@@ -174,8 +174,10 @@ function AuthLayout() {
               <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
             )}
           >
-            <DemoExperience userEmail={user.email} />
-            <Outlet />
+            <OrdersRealtimeWrapper pathname={pathname}>
+              <DemoExperience userEmail={user.email} />
+              <Outlet />
+            </OrdersRealtimeWrapper>
           </RestaurantProvider>
         </main>
       </div>
