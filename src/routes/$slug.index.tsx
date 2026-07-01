@@ -21,6 +21,7 @@ import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -360,27 +361,21 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
-  const isOpenNow = (() => {
-    const h = restaurant?.opening_hours as Record<string, { enabled: boolean; open: string; close: string; open2?: string | null; close2?: string | null }> | null | undefined;
-    if (!h) return true;
-    const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const now = new Date();
-    const day = h[map[now.getDay()]];
-    if (!day) return true;
-    if (!day.enabled) return false;
-    const curr = now.getHours() * 60 + now.getMinutes();
-    const within = (o?: string | null, c?: string | null) => {
-      if (!o || !c) return false;
-      const [oh, om] = o.split(":").map(Number);
-      const [ch, cm] = c.split(":").map(Number);
-      if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
-      const a = oh * 60 + om;
-      const b = ch * 60 + cm;
-      return b > a ? curr >= a && curr <= b : curr >= a || curr <= b;
-    };
-    return within(day.open, day.close) || within(day.open2, day.close2);
-  })();
-  const effectiveOpen = !!restaurant.is_open && isOpenNow;
+  const status = getRestaurantStatus({
+    is_open: restaurant?.is_open,
+    opening_hours: restaurant?.opening_hours,
+  });
+  const isOpenNow = status.withinSchedule;
+  const effectiveOpen = status.isOpen;
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("[status:public]", {
+      manualStatus: status.manualStatus,
+      isOpen: status.isOpen,
+      todaySchedule: restaurant?.opening_hours ?? null,
+      computedStatus: status.reason,
+    });
+  }
 
 
   return (
@@ -765,6 +760,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
+  const effectiveOpen = getRestaurantStatus({
+    is_open: restaurant?.is_open,
+    opening_hours: restaurant?.opening_hours,
+  }).isOpen;
 
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
@@ -899,7 +898,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!restaurant.is_open || belowMin}>
+        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!effectiveOpen || belowMin}>
           <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
         </Button>
       </SheetFooter>

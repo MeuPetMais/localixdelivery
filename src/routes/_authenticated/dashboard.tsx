@@ -54,6 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import {
@@ -138,6 +139,23 @@ function Dashboard() {
   const isDemo = restaurant.slug === "demo";
   const k = isDemo ? getDemoKpisOverride(dash?.kpis) : dash?.kpis;
 
+  const status = getRestaurantStatus({
+    is_open: restaurant.is_open,
+    opening_hours: (restaurant as any).opening_hours,
+  });
+  if (typeof window !== "undefined") {
+    // Temporary diagnostics (dashboard)
+    // eslint-disable-next-line no-console
+    console.log("[status:dashboard]", {
+      manualStatus: status.manualStatus,
+      isOpen: status.isOpen,
+      todaySchedule: (restaurant as any).opening_hours ?? null,
+      computedStatus: status.reason,
+    });
+  }
+  const openLabel = status.isOpen ? "Aberto" : "Fechado";
+  const offSchedule = status.reason === "off_schedule";
+
   return (
     <div className="max-w-full space-y-6">
       {/* Header */}
@@ -175,13 +193,15 @@ function Dashboard() {
           </div>
           <div
             className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium md:flex ${
-              restaurant.is_open
+              status.isOpen
                 ? "border-success/40 bg-success/10 text-success"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
             }`}
+            title={offSchedule ? "Fora do horário de funcionamento" : undefined}
           >
-            <span className={`h-2 w-2 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"} animate-pulse`} />
-            {restaurant.is_open ? "Aberto" : "Fechado"}
+            <span className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
+            {openLabel}
+            {offSchedule && <span className="ml-1 text-[10px] opacity-75">(fora do horário)</span>}
           </div>
           <Button variant="outline" size="sm" onClick={toggleOpen} disabled={togglingOpen}>
             {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
@@ -207,11 +227,11 @@ function Dashboard() {
                 <h3 className="font-display text-base font-bold">Sua Loja Online</h3>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    restaurant.is_open ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                    status.isOpen ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
                   }`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
-                  {restaurant.is_open ? "Online" : "Offline"}
+                  <span className={`h-1.5 w-1.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"}`} />
+                  {status.isOpen ? "Online" : "Offline"}
                 </span>
               </div>
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{publicUrl}</p>

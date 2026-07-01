@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,6 +70,7 @@ type RestaurantBase = {
 
 type HoursData = RestaurantBase & {
   opening_hours: Hours | null;
+  is_open: boolean | null;
 };
 
 type InfoData = RestaurantBase & {
@@ -108,28 +110,6 @@ function timeAgo(iso: string) {
 }
 
 
-function inShift(curr: number, open: string, close: string) {
-  if (!open || !close) return false;
-  const [oh, om] = open.split(":").map(Number);
-  const [ch, cm] = close.split(":").map(Number);
-  if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
-  const o = oh * 60 + om;
-  const c = ch * 60 + cm;
-  return c > o ? curr >= o && curr <= c : curr >= o || curr <= c;
-}
-
-function isOpenNow(hours: Hours | null | undefined): boolean {
-  if (!hours) return false;
-  const now = new Date();
-  const day = DAYS.find((d) => d.jsDay === now.getDay());
-  if (!day) return false;
-  const h = hours[day.id];
-  if (!h?.enabled) return false;
-  const curr = now.getHours() * 60 + now.getMinutes();
-  if (inShift(curr, h.open, h.close)) return true;
-  if (h.open2 && h.close2 && inShift(curr, h.open2, h.close2)) return true;
-  return false;
-}
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -191,7 +171,7 @@ function SobrePage() {
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, opening_hours")
+        .select("id, name, slug, opening_hours, is_open")
         .eq("slug", slug)
         .maybeSingle();
       if (error) { console.error("[sobre] public-restaurant-hours ERROR:", error); throw error; }
@@ -283,7 +263,17 @@ function SobrePage() {
 
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
-  const openNow = isOpenNow(hours);
+  const status = getRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: hours });
+  const openNow = status.isOpen;
+  if (typeof window !== "undefined" && hoursData) {
+    // eslint-disable-next-line no-console
+    console.log("[status:sobre]", {
+      manualStatus: status.manualStatus,
+      isOpen: status.isOpen,
+      todaySchedule: hours,
+      computedStatus: status.reason,
+    });
+  }
   const addrLine1 = infoData ? [infoData.address, infoData.address_number].filter(isFilled).join(", ") : "";
   const addrLine2 = infoData ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")].filter((v) => isFilled(v) && v !== "").join(" · ") : "";
   const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code].filter((v) => isFilled(v) && v !== "").join(" · ");
