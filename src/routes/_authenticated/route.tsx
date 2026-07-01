@@ -73,6 +73,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   const nav = [
     { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
     { to: "/orders", label: "Pedidos", icon: ClipboardList },
+    { to: "/kitchen", label: "Painel da Cozinha", icon: UtensilsCrossed },
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
     { to: "/promotions", label: "Promoções", icon: Flame },
     { to: "/builders", label: "Monte do Seu Jeito", icon: Sparkles },
