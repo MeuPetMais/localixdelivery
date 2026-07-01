@@ -54,6 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import {
