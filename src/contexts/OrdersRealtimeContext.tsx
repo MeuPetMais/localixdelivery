@@ -48,31 +48,46 @@ const OrdersRealtimeContext = createContext<Ctx | null>(null);
 
 const PENDING_STATUSES = new Set(["novo", "aguardando_confirmacao"]);
 
-function playChime() {
+function playTone(sequence: Array<{ freq: number; dur?: number; delay?: number; type?: OscillatorType; gain?: number }>) {
   try {
-    const AudioCtx =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
-    const tones = [880, 1174];
-    tones.forEach((freq, i) => {
+    let end = 0;
+    sequence.forEach(({ freq, dur = 0.35, delay = 0, type = "sine", gain = 0.18 }) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = "sine";
+      o.type = type;
       o.frequency.value = freq;
-      g.gain.setValueAtTime(0, now + i * 0.18);
-      g.gain.linearRampToValueAtTime(0.18, now + i * 0.18 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.18 + 0.35);
+      g.gain.setValueAtTime(0, now + delay);
+      g.gain.linearRampToValueAtTime(gain, now + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
       o.connect(g).connect(ctx.destination);
-      o.start(now + i * 0.18);
-      o.stop(now + i * 0.18 + 0.4);
+      o.start(now + delay);
+      o.stop(now + delay + dur + 0.05);
+      end = Math.max(end, delay + dur);
     });
-    setTimeout(() => ctx.close().catch(() => {}), 1200);
+    setTimeout(() => ctx.close().catch(() => {}), (end + 0.3) * 1000);
   } catch {
     /* no-op */
   }
 }
+
+function playChime() {
+  playTone([
+    { freq: 880, delay: 0 },
+    { freq: 1174, delay: 0.18 },
+  ]);
+}
+
+function playCancelChime() {
+  playTone([
+    { freq: 440, delay: 0, dur: 0.25, type: "square", gain: 0.12 },
+    { freq: 220, delay: 0.22, dur: 0.5, type: "square", gain: 0.12 },
+  ]);
+}
+
 
 export function OrdersRealtimeProvider({
   restaurantId,
@@ -175,12 +190,24 @@ export function OrdersRealtimeProvider({
               },
             );
           } else if (evt === "UPDATE") {
+            const prevRow = payload.old as PendingOrder | undefined;
+            if (
+              row.status === "cancelado" &&
+              prevRow?.status !== "cancelado" &&
+              soundEnabled
+            ) {
+              playCancelChime();
+              toast(`❌ Pedido #${row.order_number ?? ""} cancelado`, {
+                description: row.customer_name,
+              });
+            }
             setUnseen((prev) =>
               PENDING_STATUSES.has(row.status)
                 ? prev.map((o) => (o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o))
                 : prev.filter((o) => o.id !== row.id),
             );
           } else if (evt === "DELETE") {
+
             setUnseen((prev) => prev.filter((o) => o.id !== row.id));
           }
         },
