@@ -217,3 +217,18 @@ export function getStoredRestaurantSlug() {
   const snapshot = readStoredState();
   return snapshot.currentRestaurantSlug ?? snapshot.lastRestaurantSlug;
 }
+
+/**
+ * Purga completamente qualquer slug de restaurante persistido no cliente.
+ * Usado quando o slug apontou para um restaurante inexistente / renomeado,
+ * evitando que a navegação (menu Início, /home, pós-login) reabra um slug morto.
+ */
+export function clearStoredRestaurantSlug() {
+  if (!isBrowser()) return;
+  try {
+    sessionStorage.removeItem(NAV_STATE_KEY);
+    sessionStorage.removeItem(LEGACY_LAST_SLUG_KEY);
+    sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+    localStorage.removeItem(LEGACY_LAST_SLUG_KEY);
+  } catch {}
+}

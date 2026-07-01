@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { useCustomerNavigation, clearStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
@@ -342,8 +342,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       message = "Ocorreu um erro ao consultar o estabelecimento.";
       detail = anyErr?.message ?? String(anyErr);
     } else {
-      // Genuine zero-results case
-      try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+      // Genuine zero-results case — purge todos os slugs persistidos.
+      clearStoredRestaurantSlug();
     }
 
     return (
@@ -361,12 +361,20 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               Slug solicitado: <code className="font-mono">{slug}</code>
             </p>
           )}
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            Tentar novamente
-          </button>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Tentar novamente
+            </button>
+            <a
+              href="/home"
+              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
+            >
+              Ver restaurantes
+            </a>
+          </div>
         </div>
       </div>
     );

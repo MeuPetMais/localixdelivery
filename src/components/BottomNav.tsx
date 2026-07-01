@@ -36,8 +36,14 @@ const items: Item[] = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { lastRestaurantSlug, currentRestaurantSlug, rememberRestaurantRoute } = useCustomerNavigation();
-  const activeSlug = currentRestaurantSlug ?? lastRestaurantSlug;
+  const { currentRestaurantSlug, rememberRestaurantRoute } = useCustomerNavigation();
+  // "Início" NUNCA usa slug persistido em storage — só o slug do restaurante
+  // atualmente aberto na URL. Slug antigo/renomeado não deve reaparecer aqui.
+  const urlSlug = (() => {
+    const seg = pathname.split("/")[1] ?? "";
+    return seg && !RESERVED_TOP.has(seg) && !seg.includes(".") ? seg : null;
+  })();
+  const activeSlug = currentRestaurantSlug && urlSlug === currentRestaurantSlug ? currentRestaurantSlug : urlSlug;
 
   function handleClick(_e: MouseEvent, key: ItemKey, targetPath: string) {
     // Lembra a posição do restaurante antes de sair dele (não interfere na navegação).
@@ -63,12 +69,12 @@ export function BottomNav() {
         {items.map(({ key, label, icon: Icon, match }) => {
           const active = match(pathname);
           const isHome = key === "home";
-          const homeTarget = activeSlug ? `/${activeSlug}` : "/cliente";
+          const homeTarget = activeSlug ? `/${activeSlug}` : "/home";
           const linkProps =
             isHome && activeSlug
               ? ({ to: "/$slug", params: { slug: activeSlug } } as const)
               : isHome
-                ? ({ to: "/cliente" } as const)
+                ? ({ to: "/home" } as const)
                 : key === "beneficios"
                   ? ({ to: "/beneficios" } as const)
                   : key === "favoritos"
