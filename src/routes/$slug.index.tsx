@@ -342,8 +342,19 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       message = "Ocorreu um erro ao consultar o estabelecimento.";
       detail = anyErr?.message ?? String(anyErr);
     } else {
-      // Genuine zero-results case
-      try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+      // Genuine zero-results case — purge todos os slugs persistidos.
+      try {
+        // Import dinâmico evita ciclo com o context.
+        const mod = require("@/contexts/CustomerNavigationContext");
+        mod?.clearStoredRestaurantSlug?.();
+      } catch {
+        try {
+          sessionStorage.removeItem("localix:customer-navigation");
+          sessionStorage.removeItem("localix:last-restaurant-slug");
+          localStorage.removeItem("localix:last-restaurant-slug");
+          sessionStorage.removeItem("postLoginRedirect");
+        } catch {}
+      }
     }
 
     return (
@@ -361,12 +372,20 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               Slug solicitado: <code className="font-mono">{slug}</code>
             </p>
           )}
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            Tentar novamente
-          </button>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Tentar novamente
+            </button>
+            <a
+              href="/home"
+              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
+            >
+              Ver restaurantes
+            </a>
+          </div>
         </div>
       </div>
     );
