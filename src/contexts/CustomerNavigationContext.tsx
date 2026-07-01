@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV_STATE_KEY = "localix:customer-navigation";
 const LEGACY_LAST_SLUG_KEY = "localix:last-restaurant-slug";
