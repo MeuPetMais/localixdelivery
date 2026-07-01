@@ -440,6 +440,13 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
             Arraste os cards entre as colunas para atualizar o status.
           </p>
         </div>
+        <Badge variant="outline" className="hidden gap-1.5 sm:inline-flex">
+          <span className="text-[10px] text-muted-foreground">Atalhos:</span>
+          <kbd className="rounded bg-muted px-1 text-[10px]">A</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">P</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">S</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">F</kbd>
+        </Badge>
         <Badge variant="outline" className="gap-1.5">
           <CircleDot className="h-3 w-3 text-emerald-500 animate-pulse" /> Ao vivo
         </Badge>
