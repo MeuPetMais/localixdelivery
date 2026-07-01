@@ -54,7 +54,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
-import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import {
@@ -139,7 +139,7 @@ function Dashboard() {
   const isDemo = restaurant.slug === "demo";
   const k = isDemo ? getDemoKpisOverride(dash?.kpis) : dash?.kpis;
 
-  const status = getRestaurantStatus({
+  const status = useRestaurantStatus({
     is_open: restaurant.is_open,
     opening_hours: (restaurant as any).opening_hours,
   });
