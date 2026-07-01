@@ -285,7 +285,17 @@ function SobrePage() {
 
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
-  const openNow = isOpenNow(hours);
+  const status = getRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: hours });
+  const openNow = status.isOpen;
+  if (typeof window !== "undefined" && hoursData) {
+    // eslint-disable-next-line no-console
+    console.log("[status:sobre]", {
+      manualStatus: status.manualStatus,
+      isOpen: status.isOpen,
+      todaySchedule: hours,
+      computedStatus: status.reason,
+    });
+  }
   const addrLine1 = infoData ? [infoData.address, infoData.address_number].filter(isFilled).join(", ") : "";
   const addrLine2 = infoData ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")].filter((v) => isFilled(v) && v !== "").join(" · ") : "";
   const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code].filter((v) => isFilled(v) && v !== "").join(" · ");
