@@ -760,6 +760,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [notes, setNotes] = useState("");
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
+  const effectiveOpen = getRestaurantStatus({
+    is_open: restaurant?.is_open,
+    opening_hours: restaurant?.opening_hours,
+  }).isOpen;
 
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
