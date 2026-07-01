@@ -376,6 +376,51 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
         </Badge>
       </div>
 
+      {/* Resumo */}
+      <div className="mb-4 grid grid-cols-2 gap-2 px-4 sm:grid-cols-3 lg:grid-cols-5 lg:px-8">
+        <SummaryCard icon={<ShoppingBag className="h-4 w-4" />} label="Pedidos Hoje" value={String(summary.count)} tone="primary" />
+        <SummaryCard icon={<DollarSign className="h-4 w-4" />} label="Receita" value={brl(summary.revenue)} tone="emerald" />
+        <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Ticket Médio" value={brl(summary.avgTicket)} tone="blue" />
+        <SummaryCard icon={<TimerIcon className="h-4 w-4" />} label="Tempo Médio" value={`${summary.avgMin} min`} tone="amber" />
+        <SummaryCard icon={<AlertTriangle className="h-4 w-4" />} label="Em atraso" value={String(summary.overdue)} tone={summary.overdue > 0 ? "destructive" : "muted"} pulse={summary.overdue > 0} />
+      </div>
+
+      {/* Busca + Filtros */}
+      <div className="mb-4 space-y-3 px-4 lg:px-8">
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por número, cliente ou telefone…"
+            className="pl-9"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            const isUrgent = f.key === "urgentes";
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  active
+                    ? isUrgent
+                      ? "border-destructive bg-destructive text-destructive-foreground"
+                      : "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {isUrgent && <Flame className="mr-1 inline h-3 w-3" />}
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
       <div className="overflow-x-auto px-4 pb-4 lg:px-8">
         <div className="flex min-w-max gap-4">
           {COLUMNS.map((col) => {
