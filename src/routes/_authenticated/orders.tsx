@@ -66,7 +66,7 @@ function OrdersPage() {
         toast.error("Falha ao carregar pedidos");
         throw error;
       }
-      return (data ?? []) as Order[];
+      return (data ?? []) as unknown as Order[];
     },
   });
 
