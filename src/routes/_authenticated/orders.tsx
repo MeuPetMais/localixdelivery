@@ -192,16 +192,16 @@ function OrdersPage() {
   }, []);
 
 
-  const { data: orders, isLoading: loading } = useQuery({
+  const { data: orders, isLoading: loading, isFetching } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["orders", restaurant?.id],
+    queryKey: ["orders", restaurant?.id, visibleCount],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
         .eq("restaurant_id", restaurant.id)
         .order("created_at", { ascending: false })
-        .limit(300);
+        .limit(visibleCount);
       if (error) {
         toast.error("Falha ao carregar pedidos");
         throw error;
