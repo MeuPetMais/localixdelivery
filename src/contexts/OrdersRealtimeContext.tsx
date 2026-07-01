@@ -234,6 +234,28 @@ export function OrdersRealtimeProvider({
     if (pathname.startsWith("/orders")) markViewed();
   }, [pathname, markViewed]);
 
+  // Alerta repetido enquanto houver pedidos "novos": 30s, 1min, 1min, 1min...
+  // Interrompe automaticamente quando `unseen` esvazia (ao aceitar/cancelar).
+  useEffect(() => {
+    if (unseen.length === 0) return;
+    if (!soundEnabled) return;
+    let cancelled = false;
+    let step = 0;
+    const tick = () => {
+      if (cancelled) return;
+      playChime();
+      vibratePattern([200, 80, 200]);
+      step += 1;
+      const nextMs = step === 0 ? 30_000 : 60_000;
+      timer = window.setTimeout(tick, nextMs);
+    };
+    let timer = window.setTimeout(tick, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [unseen.length, soundEnabled]);
+
   const value = useMemo<Ctx>(
     () => ({
       unseenCount: unseen.length,
