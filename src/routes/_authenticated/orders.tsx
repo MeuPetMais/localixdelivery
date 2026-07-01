@@ -866,6 +866,32 @@ function OrderDetailsDrawer({
 }
 
 
+function ColumnHeader({
+  col,
+  count,
+  total,
+}: {
+  col: (typeof COLUMNS)[number];
+  count: number;
+  total: number;
+}) {
+  return (
+    <header className={`rounded-t-2xl px-4 py-3 ${col.headerCls}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg leading-none">{col.emoji}</span>
+          <h2 className="font-display text-sm font-extrabold tracking-wide">{col.title}</h2>
+        </div>
+        <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-bold">{count}</span>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-xs opacity-90">
+        <span>{count} {count === 1 ? "pedido" : "pedidos"}</span>
+        <span className="font-semibold">{brl(total)}</span>
+      </div>
+    </header>
+  );
+}
+
 function escapeHtml(s: string) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
