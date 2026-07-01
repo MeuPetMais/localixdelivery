@@ -91,12 +91,32 @@ function AuthPage() {
     try {
       if (tab === "signup") {
         console.info("[signup] start: auth.signUp");
+        // Persist onboarding draft so the "Criar seu Localix" screen comes
+        // pre-filled even if email confirmation is required (no session yet).
+        try {
+          localStorage.setItem(
+            "localix.onboarding.draft",
+            JSON.stringify({
+              name: storeName,
+              slug: slugify(storeName),
+              slugTouched: false,
+              whatsapp,
+              ownerName,
+            }),
+          );
+        } catch {}
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { owner_name: ownerName, store_name: storeName },
+            data: {
+              owner_name: ownerName,
+              store_name: storeName,
+              whatsapp,
+              cnpj: cnpj || null,
+            },
           },
         });
         if (error) {
