@@ -264,8 +264,41 @@ function OrdersPage() {
     for (const o of filtered) {
       if (g[o.status as StatusKey]) g[o.status as StatusKey].push(o);
     }
+    // Novos: mais recentes no topo. Em preparo / saiu p/ entrega: mais antigos primeiro (FIFO).
+    // Entregues / cancelados: mais recentes no topo.
+    const asc = (a: Order, b: Order) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    const desc = (a: Order, b: Order) => -asc(a, b);
+    g.novo.sort(desc);
+    g.em_preparo.sort(asc);
+    g.saiu_para_entrega.sort(asc);
+    g.entregue.sort(desc);
+    g.cancelado.sort(desc);
     return g;
   }, [filtered]);
+
+  // Rastreia pedidos vistos para animar apenas os novos que chegarem.
+  const seenIds = useRef<Set<string>>(new Set());
+  const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!orders) return;
+    const incoming = new Set<string>();
+    for (const o of orders) {
+      if (!seenIds.current.has(o.id)) {
+        incoming.add(o.id);
+        seenIds.current.add(o.id);
+      }
+    }
+    if (incoming.size && seenIds.current.size > incoming.size) {
+      // Só marca como "fresh" se não é o primeiro carregamento.
+      setFreshIds(incoming);
+      const t = setTimeout(() => setFreshIds(new Set()), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [orders]);
+
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+
 
   // Summary (base: today's orders, ignoring active filters).
   const summary = useMemo(() => {
