@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -151,6 +152,8 @@ function SobrePage() {
   });
 
   const restaurantId = restaurant?.id;
+  const liveHours = (hoursData?.opening_hours ?? null) as any;
+  const status = useRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: liveHours });
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -280,7 +283,6 @@ function SobrePage() {
 
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
-  const status = getRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: hours });
   const openNow = status.isOpen;
   if (typeof window !== "undefined" && hoursData) {
     // eslint-disable-next-line no-console
