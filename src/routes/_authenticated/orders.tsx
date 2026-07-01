@@ -513,6 +513,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       onPrint={() => printOrder(o)}
                       onWhatsapp={() => whatsappOrder(o)}
                       isNew={col.key === "novo"}
+                      isFresh={freshIds.has(o.id)}
+                      onOpen={() => setDetailOrder(o)}
                     />
                   ))}
 
@@ -522,9 +524,17 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
           })}
         </div>
       </div>
+
+      <OrderDetailsDrawer
+        order={detailOrder}
+        onOpenChange={(open) => !open && setDetailOrder(null)}
+        onPrint={detailOrder ? () => printOrder(detailOrder) : () => {}}
+        onWhatsapp={detailOrder ? () => whatsappOrder(detailOrder) : () => {}}
+      />
     </div>
   );
 }
+
 
 function OrderCard({
   order: o,
