@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { brl, slugify } from "@/lib/format";
-import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useRestaurant, useRestaurantContext } from "@/contexts/RestaurantContext";
 import { toast } from "sonner";
 import {
   ExternalLink,
@@ -78,9 +78,11 @@ function Dashboard() {
   const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const qc = useQueryClient();
   const restaurant = useRestaurant();
+  const { invalidate: invalidateRestaurant } = useRestaurantContext();
 
   const [period, setPeriod] = useState<7 | 30 | 90>(30);
   const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
+  const [togglingOpen, setTogglingOpen] = useState(false);
 
   const fetchDash = useServerFn(getDashboardData);
   const { data: dash } = useQuery({
@@ -107,9 +109,29 @@ function Dashboard() {
   }, [restaurant?.id, qc]);
 
   async function toggleOpen() {
-    const { error } = await supabase.from("restaurants").update({ is_open: !restaurant.is_open }).eq("id", restaurant.id);
-    if (error) return toast.error(error.message);
-    toast.success(restaurant.is_open ? "Loja fechada" : "Loja aberta");
+    if (togglingOpen) return;
+    setTogglingOpen(true);
+    const next = !restaurant.is_open;
+    console.log("[toggleOpen] Status atual:", restaurant.is_open, "→ Novo:", next);
+    const { data, error } = await supabase
+      .from("restaurants")
+      .update({ is_open: next })
+      .eq("id", restaurant.id)
+      .eq("owner_id", user.id)
+      .select("id, is_open")
+      .maybeSingle();
+    setTogglingOpen(false);
+    if (error) {
+      console.error("[toggleOpen] erro:", error);
+      return toast.error(error.message || "Não foi possível atualizar o status.");
+    }
+    if (!data) {
+      console.error("[toggleOpen] nenhuma linha atualizada — verifique RLS/owner");
+      return toast.error("Não foi possível atualizar (permissão negada).");
+    }
+    console.log("[toggleOpen] resultado:", data);
+    await invalidateRestaurant();
+    toast.success(next ? "Loja aberta com sucesso" : "Loja fechada com sucesso");
   }
 
   const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${restaurant.slug}`;
@@ -161,8 +183,8 @@ function Dashboard() {
             <span className={`h-2 w-2 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"} animate-pulse`} />
             {restaurant.is_open ? "Aberto" : "Fechado"}
           </div>
-          <Button variant="outline" size="sm" onClick={toggleOpen}>
-            <Power className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={toggleOpen} disabled={togglingOpen}>
+            {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
             {restaurant.is_open ? "Fechar" : "Abrir"}
           </Button>
         </div>
