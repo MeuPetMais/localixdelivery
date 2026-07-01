@@ -91,12 +91,32 @@ function AuthPage() {
     try {
       if (tab === "signup") {
         console.info("[signup] start: auth.signUp");
+        // Persist onboarding draft so the "Criar seu Localix" screen comes
+        // pre-filled even if email confirmation is required (no session yet).
+        try {
+          localStorage.setItem(
+            "localix.onboarding.draft",
+            JSON.stringify({
+              name: storeName,
+              slug: slugify(storeName),
+              slugTouched: false,
+              whatsapp,
+              ownerName,
+            }),
+          );
+        } catch {}
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { owner_name: ownerName, store_name: storeName },
+            data: {
+              owner_name: ownerName,
+              store_name: storeName,
+              whatsapp,
+              cnpj: cnpj || null,
+            },
           },
         });
         if (error) {
@@ -124,9 +144,10 @@ function AuthPage() {
         console.info("[signup] start: insert restaurants");
         const baseSlug = slugify(storeName) || `loja-${userId.slice(0, 6)}`;
         let finalSlug = baseSlug;
+        let adjusted = false;
         let insertOk = false;
         let lastErr: unknown = null;
-        for (let i = 0; i < 5; i++) {
+        for (let attempt = 2; attempt <= 20; attempt++) {
           const { error: insErr } = await supabase.from("restaurants").insert({
             owner_id: userId,
             name: storeName,
@@ -138,7 +159,8 @@ function AuthPage() {
           if (!insErr) { insertOk = true; break; }
           lastErr = insErr;
           if (insErr.code === "23505") {
-            finalSlug = `${baseSlug}-${Math.floor(Math.random() * 9000 + 1000)}`;
+            finalSlug = `${baseSlug}-${attempt}`;
+            adjusted = true;
             continue;
           }
           break;
@@ -147,7 +169,18 @@ function AuthPage() {
           toast.error(formatSupabaseError("Usuário criado, mas falhou ao criar o estabelecimento", lastErr), { duration: 10000 });
           return;
         }
+        // Save owner profile (best-effort)
+        await supabase
+          .from("owner_profiles")
+          .upsert(
+            { id: userId, full_name: ownerName, phone: whatsapp || null },
+            { onConflict: "id" },
+          );
+        try { localStorage.removeItem("localix.onboarding.draft"); } catch {}
         console.info("[signup] insert restaurants ok", { slug: finalSlug });
+        if (adjusted) {
+          toast.info("Sua URL foi ajustada automaticamente porque já existia outra igual.", { duration: 6000 });
+        }
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
       } else {
