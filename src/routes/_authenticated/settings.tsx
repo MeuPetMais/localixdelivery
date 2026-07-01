@@ -38,7 +38,7 @@ import {
 
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
-import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -345,7 +345,7 @@ function SettingsPage() {
 
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
-  const status = getRestaurantStatus({
+  const status = useRestaurantStatus({
     is_open: form.is_open,
     opening_hours: hours,
   });
