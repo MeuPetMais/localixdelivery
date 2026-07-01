@@ -45,6 +45,22 @@ function CustomerHome() {
     },
   });
 
+  // Auditoria: valida o slug persistido contra a lista pública real.
+  // Se apontar para restaurante inexistente/desativado, purga imediatamente
+  // para que nenhuma navegação futura (Início, pós-login) tente reabri-lo.
+  useEffect(() => {
+    if (!restaurants.length) return;
+    const stored = getStoredRestaurantSlug();
+    if (!stored) return;
+    const exists = restaurants.some((r) => r.slug === stored);
+    if (!exists) {
+      // eslint-disable-next-line no-console
+      console.debug("[home] slug persistido inválido, limpando:", stored);
+      clearStoredRestaurantSlug();
+    }
+  }, [restaurants]);
+
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return restaurants;
