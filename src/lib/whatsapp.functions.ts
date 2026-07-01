@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 
 const itemSchema = z.object({
   id: z.string(),
@@ -42,12 +43,13 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
 
     const { data: rest, error } = await supabaseAdmin
       .from("restaurants")
-      .select("id, whatsapp_phone, is_open, delivery_time")
+      .select("id, whatsapp_phone, is_open, opening_hours, delivery_time")
       .eq("slug", data.slug)
       .maybeSingle();
     if (error) throw new Error("Falha ao localizar restaurante");
     if (!rest) throw new Error("Restaurante não encontrado");
-    if (!rest.is_open) throw new Error("Restaurante fechado no momento");
+    const status = getRestaurantStatus({ is_open: rest.is_open, opening_hours: rest.opening_hours as any });
+    if (!status.isOpen) throw new Error("Restaurante fechado no momento");
     const phone = String(rest.whatsapp_phone ?? "").replace(/\D+/g, "");
     if (!phone) throw new Error("WhatsApp do restaurante não configurado");
     const eta = Number(rest.delivery_time ?? 35) || 35;
