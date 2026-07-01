@@ -21,6 +21,7 @@ import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 
 
 export const Route = createFileRoute("/$slug/")({
