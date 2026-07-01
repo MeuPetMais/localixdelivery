@@ -1,17 +1,15 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Sparkles, Store, Tag, Heart, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
-import { getStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/home")({
-  beforeLoad: () => {
-    const slug = getStoredRestaurantSlug();
-    if (slug) throw redirect({ to: "/$slug", params: { slug }, replace: true });
-  },
+  // Não redirecionamos mais para um slug persistido — /home sempre lista
+  // restaurantes ativos, garantindo que um slug renomeado/desativado nunca
+  // sequestre o menu "Início".
   head: () => ({
     meta: [
       { title: "Localix — Peça do seu restaurante favorito" },
