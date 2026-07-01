@@ -488,6 +488,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
 function OrderCard({
   order: o,
   accent,
+  nowMs,
+  isActiveStatus,
   onDragStart,
   onAdvance,
   advanceLabel,
@@ -499,6 +501,8 @@ function OrderCard({
 }: {
   order: Order;
   accent: string;
+  nowMs: number;
+  isActiveStatus: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onAdvance?: () => void;
   advanceLabel?: string;
@@ -510,11 +514,15 @@ function OrderCard({
 }) {
   const items = Array.isArray(o.items) ? o.items : [];
   const hasPhone = !!normalizePhone(o.customer_phone);
+  const mins = minutesSince(o.created_at, nowMs);
+  const tone = isActiveStatus ? urgencyTone(mins) : null;
   return (
     <Card
       draggable
       onDragStart={onDragStart}
-      className={`cursor-grab space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${isNew ? "animate-pulse-slow ring-1 ring-primary/40" : ""}`}
+      className={`cursor-grab space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${
+        tone ? `ring-1 ${tone.ring} ${tone.pulse}` : ""
+      } ${isNew && !tone?.pulse ? "ring-1 ring-primary/40" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -531,6 +539,16 @@ function OrderCard({
           </p>
         </div>
       </div>
+
+      {tone && (
+        <div className={`flex items-center justify-between rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.chip}`}>
+          <span className="flex items-center gap-1">
+            <TimerIcon className="h-3 w-3" /> {mins} min
+          </span>
+          <span>{tone.label}</span>
+        </div>
+      )}
+
 
       <div className="space-y-1 text-xs text-muted-foreground">
         {o.customer_phone && (
