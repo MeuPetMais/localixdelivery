@@ -22,6 +22,7 @@ import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/li
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -212,6 +213,11 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     return () => { active = false; };
   }, [isAuthenticated, restaurantId]);
 
+  const status = useRestaurantStatus({
+    is_open: data?.restaurant?.is_open,
+    opening_hours: data?.restaurant?.opening_hours,
+  });
+
   async function handleToggleFavorite(kind: "menu_item" | "builder", itemId: string) {
     if (!isAuthenticated) {
       toast.info("Entre na sua conta para favoritar este produto.");
@@ -367,10 +373,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
-  const status = getRestaurantStatus({
-    is_open: restaurant?.is_open,
-    opening_hours: restaurant?.opening_hours,
-  });
   const effectiveOpen = status.isOpen;
   if (typeof window !== "undefined") {
     // eslint-disable-next-line no-console
