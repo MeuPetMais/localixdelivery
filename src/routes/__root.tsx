@@ -137,8 +137,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
-          <Outlet />
-          <CustomerBottomNav />
+          <CustomerNotificationsProvider>
+            <Outlet />
+            <CustomerBottomNav />
+          </CustomerNotificationsProvider>
         </CustomerNavigationProvider>
       </RestaurantSessionProvider>
       <Toaster richColors position="top-right" />
