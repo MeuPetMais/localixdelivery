@@ -2,9 +2,11 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RestaurantProvider } from "@/contexts/RestaurantContext";
+import { RestaurantProvider, useCurrentRestaurant } from "@/contexts/RestaurantContext";
 import { OwnerOnboarding } from "@/components/OwnerOnboarding";
 import { DemoExperience } from "@/components/DemoExperience";
+import { OrdersRealtimeProvider, useOrdersRealtime } from "@/contexts/OrdersRealtimeContext";
+import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -43,10 +45,23 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthLayout() {
+  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
+  // Resolvemos o restaurante aqui no shell (mesma chave de cache do
+  // RestaurantProvider abaixo — não dispara consulta extra) para poder
+  // montar a assinatura Realtime única e exibir o badge no menu.
+  const { restaurant } = useCurrentRestaurant(user.id);
+  return (
+    <OrdersRealtimeProvider restaurantId={restaurant?.id ?? ""}>
+      <AuthShell userId={user.id} userEmail={user.email} />
+    </OrdersRealtimeProvider>
+  );
+}
+
+function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
-  const { isAdmin } = useIsAdmin(user.id);
+  const { isAdmin } = useIsAdmin(userId);
+  const { unseenCount } = useOrdersRealtime();
   const [open, setOpen] = useState(false);
 
   async function handleLogout() {
@@ -93,6 +108,8 @@ function AuthLayout() {
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {nav.map(({ to, label, icon: Icon }) => {
           const active = pathname === to || pathname.startsWith(`${to}/`);
+          const isOrders = to === "/orders";
+          const showBadge = isOrders && unseenCount > 0;
           return (
             <Link
               key={to}
@@ -102,13 +119,18 @@ function AuthLayout() {
                 active
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              }`}
+              } ${showBadge ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
             >
               {active && (
                 <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className={`h-4 w-4 shrink-0 ${showBadge ? "text-primary" : ""}`} />
               <span className="truncate">{label}</span>
+              {showBadge && (
+                <Badge className="ml-auto h-5 min-w-5 justify-center bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground animate-pulse">
+                  {unseenCount}
+                </Badge>
+              )}
             </Link>
           );
         })}
@@ -168,12 +190,12 @@ function AuthLayout() {
 
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           <RestaurantProvider
-            userId={user.id}
+            userId={userId}
             fallbackWhenMissing={(refetch) => (
-              <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
+              <OwnerOnboarding ownerId={userId} onCreated={() => refetch()} />
             )}
           >
-            <DemoExperience userEmail={user.email} />
+            <DemoExperience userEmail={userEmail} />
             <Outlet />
           </RestaurantProvider>
         </main>

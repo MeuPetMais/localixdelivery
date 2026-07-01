@@ -57,6 +57,7 @@ import { getDashboardData } from "@/lib/dashboard.functions";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
+import { NewOrderCard } from "@/components/NewOrderCard";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -93,21 +94,8 @@ function Dashboard() {
     refetchInterval: 60_000,
   });
 
-  // Realtime: refresh dashboard when orders change
-  useEffect(() => {
-    if (!restaurant?.id) return;
-    const ch = supabase
-      .channel(`dashboard-orders-${restaurant.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurant.id}` },
-        () => qc.invalidateQueries({ queryKey: ["dashboard", restaurant.id] }),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [restaurant?.id, qc]);
+  // Realtime é gerenciado globalmente pelo OrdersRealtimeProvider
+  // (uma única assinatura por restaurante). Aqui não abrimos canal extra.
 
   async function toggleOpen() {
     if (togglingOpen) return;
@@ -211,6 +199,8 @@ function Dashboard() {
       </header>
 
       <ProfileCompletionBanner restaurant={restaurant} />
+
+      <NewOrderCard />
 
       <ActivePromosBanner restaurantId={restaurant.id} />
 
