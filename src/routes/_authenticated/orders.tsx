@@ -640,14 +640,14 @@ function OrderCard({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-1.5 pt-1">
+      <div className="grid grid-cols-2 gap-1.5 pt-1" onClick={stop}>
         {onAdvance && (
-          <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={onAdvance}>
+          <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={(e) => { stop(e); onAdvance(); }}>
             {AdvanceIcon ? <AdvanceIcon className="h-3.5 w-3.5" /> : null}
             {isNew ? "Aceitar e iniciar" : advanceLabel}
           </Button>
         )}
-        <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={onPrint}>
+        <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={(e) => { stop(e); onPrint(); }}>
           <Printer className="h-3.5 w-3.5" /> Imprimir
         </Button>
         <Button
@@ -655,7 +655,7 @@ function OrderCard({
           variant="outline"
           className="h-8 gap-1 text-xs"
           disabled={!hasPhone}
-          onClick={onWhatsapp}
+          onClick={(e) => { stop(e); onWhatsapp(); }}
         >
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
         </Button>
@@ -664,7 +664,7 @@ function OrderCard({
             size="sm"
             variant="outline"
             className="col-span-2 h-8 gap-1 border-destructive/30 text-xs text-destructive hover:bg-destructive/5"
-            onClick={onCancel}
+            onClick={(e) => { stop(e); onCancel(); }}
           >
             <X className="h-3.5 w-3.5" /> Cancelar
           </Button>
@@ -673,6 +673,114 @@ function OrderCard({
     </Card>
   );
 }
+
+function OrderDetailsDrawer({
+  order,
+  onOpenChange,
+  onPrint,
+  onWhatsapp,
+}: {
+  order: Order | null;
+  onOpenChange: (open: boolean) => void;
+  onPrint: () => void;
+  onWhatsapp: () => void;
+}) {
+  const items = order && Array.isArray(order.items) ? order.items : [];
+  const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
+  return (
+    <Sheet open={!!order} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+        {order && (
+          <>
+            <SheetHeader className="text-left">
+              <SheetTitle className="font-display text-2xl">
+                Pedido #{order.order_number ?? "—"}
+              </SheetTitle>
+              <SheetDescription>
+                {new Date(order.created_at).toLocaleString("pt-BR")} · {order.status}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-4 space-y-4 text-sm">
+              <section className="rounded-lg border p-3">
+                <h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Cliente</h3>
+                <p className="font-semibold">{order.customer_name}</p>
+                {order.customer_phone && (
+                  <p className="flex items-center gap-1.5 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5" /> {formatPhone(order.customer_phone)}
+                  </p>
+                )}
+                {order.address && (
+                  <p className="mt-1 flex items-start gap-1.5 text-muted-foreground">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{order.address}</span>
+                  </p>
+                )}
+              </section>
+
+              {order.payment_method && (
+                <section className="rounded-lg border p-3">
+                  <h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">Pagamento</h3>
+                  <p className="flex items-center gap-1.5">
+                    <CreditCard className="h-4 w-4" /> {order.payment_method}
+                  </p>
+                </section>
+              )}
+
+              <section className="rounded-lg border p-3">
+                <h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Itens</h3>
+                <ul className="space-y-2">
+                  {items.map((it, i) => (
+                    <li key={i} className="flex justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{it.qty}x {it.name}</p>
+                      </div>
+                      <p className="shrink-0 tabular-nums">{brl(Number(it.price) * Number(it.qty))}</p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 border-t pt-2 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span className="tabular-nums">{brl(subtotal)}</span>
+                  </div>
+                  <div className="mt-1 flex justify-between font-display text-lg font-extrabold">
+                    <span>Total</span>
+                    <span className="tabular-nums text-primary">{brl(Number(order.total))}</span>
+                  </div>
+                </div>
+              </section>
+
+              {order.notes && (
+                <section className="rounded-lg border border-amber-500/30 bg-amber-50 p-3 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                  <h3 className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase">
+                    <StickyNote className="h-3.5 w-3.5" /> Observações
+                  </h3>
+                  <p className="whitespace-pre-wrap">{order.notes}</p>
+                </section>
+              )}
+
+              <section className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
+              </section>
+
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={onPrint}>
+                  <Printer className="h-4 w-4" /> Imprimir
+                </Button>
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={onWhatsapp}>
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 
 function escapeHtml(s: string) {
   return String(s ?? "")
