@@ -14,6 +14,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
+import { printOrder, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
+import {
+  announceNewOrder,
+  announcePendingCount,
+  announceLongWaiting,
+} from "@/lib/voice-announcer";
 
 /**
  * OrdersRealtimeProvider
