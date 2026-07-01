@@ -124,9 +124,14 @@ export function RestaurantSessionProvider({ children }: { children: ReactNode })
     }
   }, []);
 
-  // Restaura + valida no primeiro mount (refresh da página).
+  // Restaura + valida no primeiro mount do cliente (refresh da página).
   useEffect(() => {
-    if (initial.current) void revalidate();
+    const snapshot = readSnapshot();
+    if (!snapshot) return;
+    setSession(snapshot);
+    setStatus("restoring");
+    sessionRef.current = snapshot;
+    void revalidate();
   }, [revalidate]);
 
   // Login, cadastro ou atualização de sessão: NUNCA limpa o contexto —
