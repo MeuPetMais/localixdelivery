@@ -183,8 +183,8 @@ function Dashboard() {
             <span className={`h-2 w-2 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"} animate-pulse`} />
             {restaurant.is_open ? "Aberto" : "Fechado"}
           </div>
-          <Button variant="outline" size="sm" onClick={toggleOpen}>
-            <Power className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={toggleOpen} disabled={togglingOpen}>
+            {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
             {restaurant.is_open ? "Fechar" : "Abrir"}
           </Button>
         </div>
