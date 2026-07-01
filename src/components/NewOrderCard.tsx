@@ -26,11 +26,11 @@ export function NewOrderCard() {
   if (!latestNew) return null;
 
   return (
-    <Card className="relative overflow-hidden border-primary/40 bg-primary/5 p-5 shadow-glow animate-pulse-slow">
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+    <Card className="relative overflow-hidden border-primary/40 bg-primary/5 p-5 shadow-glow">
+      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/20 blur-2xl animate-pulse" />
       <div className="relative flex flex-wrap items-center gap-4">
         <div className="grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-md">
-          <Bell className="h-5 w-5 animate-swing" />
+          <Bell className="h-5 w-5 animate-bounce" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">🛎️ Novo pedido</p>
