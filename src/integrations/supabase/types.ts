@@ -294,6 +294,67 @@ export type Database = {
           },
         ]
       }
+      customer_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          customer_id: string
+          data: Json
+          id: string
+          order_id: string | null
+          read_at: string | null
+          restaurant_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          customer_id: string
+          data?: Json
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          restaurant_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          customer_id?: string
+          data?: Json
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          restaurant_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_points: {
         Row: {
           balance: number
