@@ -110,28 +110,6 @@ function timeAgo(iso: string) {
 }
 
 
-function inShift(curr: number, open: string, close: string) {
-  if (!open || !close) return false;
-  const [oh, om] = open.split(":").map(Number);
-  const [ch, cm] = close.split(":").map(Number);
-  if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
-  const o = oh * 60 + om;
-  const c = ch * 60 + cm;
-  return c > o ? curr >= o && curr <= c : curr >= o || curr <= c;
-}
-
-function isOpenNow(hours: Hours | null | undefined): boolean {
-  if (!hours) return false;
-  const now = new Date();
-  const day = DAYS.find((d) => d.jsDay === now.getDay());
-  if (!day) return false;
-  const h = hours[day.id];
-  if (!h?.enabled) return false;
-  const curr = now.getHours() * 60 + now.getMinutes();
-  if (inShift(curr, h.open, h.close)) return true;
-  if (h.open2 && h.close2 && inShift(curr, h.open2, h.close2)) return true;
-  return false;
-}
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
