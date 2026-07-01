@@ -190,12 +190,24 @@ export function OrdersRealtimeProvider({
               },
             );
           } else if (evt === "UPDATE") {
+            const prevRow = payload.old as PendingOrder | undefined;
+            if (
+              row.status === "cancelado" &&
+              prevRow?.status !== "cancelado" &&
+              soundEnabled
+            ) {
+              playCancelChime();
+              toast(`❌ Pedido #${row.order_number ?? ""} cancelado`, {
+                description: row.customer_name,
+              });
+            }
             setUnseen((prev) =>
               PENDING_STATUSES.has(row.status)
                 ? prev.map((o) => (o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o))
                 : prev.filter((o) => o.id !== row.id),
             );
           } else if (evt === "DELETE") {
+
             setUnseen((prev) => prev.filter((o) => o.id !== row.id));
           }
         },
