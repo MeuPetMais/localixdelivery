@@ -73,11 +73,11 @@ function persistSnapshot(session: RestaurantSession | null) {
 }
 
 export function RestaurantSessionProvider({ children }: { children: ReactNode }) {
-  const initial = useRef<RestaurantSession | null | undefined>(undefined);
-  if (initial.current === undefined) initial.current = readSnapshot();
-
-  const [session, setSession] = useState<RestaurantSession | null>(initial.current);
-  const [status, setStatus] = useState<RestaurantSessionStatus>(initial.current ? "restoring" : "empty");
+  // Começa vazio no SSR e na hidratação (o servidor não tem localStorage);
+  // o snapshot é restaurado num useEffect pós-hidratação para evitar
+  // divergência entre HTML do servidor e do cliente.
+  const [session, setSession] = useState<RestaurantSession | null>(null);
+  const [status, setStatus] = useState<RestaurantSessionStatus>("empty");
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
