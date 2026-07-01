@@ -69,12 +69,12 @@ export function BottomNav() {
         {items.map(({ key, label, icon: Icon, match }) => {
           const active = match(pathname);
           const isHome = key === "home";
-          const homeTarget = activeSlug ? `/${activeSlug}` : "/cliente";
+          const homeTarget = activeSlug ? `/${activeSlug}` : "/home";
           const linkProps =
             isHome && activeSlug
               ? ({ to: "/$slug", params: { slug: activeSlug } } as const)
               : isHome
-                ? ({ to: "/cliente" } as const)
+                ? ({ to: "/home" } as const)
                 : key === "beneficios"
                   ? ({ to: "/beneficios" } as const)
                   : key === "favoritos"
