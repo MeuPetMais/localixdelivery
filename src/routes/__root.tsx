@@ -174,7 +174,12 @@ function CustomerBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
   if (!show) return null;
-  return <BottomNav />;
+  return (
+    <>
+      <NotificationsBell />
+      <BottomNav />
+    </>
+  );
 }
 
 
