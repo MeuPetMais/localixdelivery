@@ -815,7 +815,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       notes ? `\nObs: ${notes}` : "",
     ].filter(Boolean).join("\n");
     try {
-      const { url, orderNumber, orderId } = await getOrderLink({
+      const { url, orderNumber, orderId, demo } = await getOrderLink({
         data: {
           slug: restaurant.slug,
           message: lines,
@@ -826,13 +826,19 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         },
       });
       if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
-      window.open(url, "_blank");
+      // Persist WhatsApp URL so the success page can offer a retry button
+      if (orderId && !demo && typeof window !== "undefined") {
+        try { window.sessionStorage.setItem(`wa-url:${orderId}`, url); } catch {}
+      }
+      // Auto-open WhatsApp (may be blocked by browser — success page has fallback)
+      if (!demo) window.open(url, "_blank");
       onClose();
       if (orderId) onCreated(orderId);
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível enviar o pedido");
     }
   }
+
 
 
   return (
