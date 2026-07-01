@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.tg_order_notify_customer() FROM PUBLIC, anon, authenticated;

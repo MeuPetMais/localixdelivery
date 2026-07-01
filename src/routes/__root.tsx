@@ -24,6 +24,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { CustomerNavigationProvider } from "@/contexts/CustomerNavigationContext";
 import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
+import { CustomerNotificationsProvider } from "@/contexts/CustomerNotificationsContext";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 function NotFoundComponent() {
   return (
@@ -135,8 +137,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
-          <Outlet />
-          <CustomerBottomNav />
+          <CustomerNotificationsProvider>
+            <Outlet />
+            <CustomerBottomNav />
+          </CustomerNotificationsProvider>
         </CustomerNavigationProvider>
       </RestaurantSessionProvider>
       <Toaster richColors position="top-right" />
@@ -170,7 +174,12 @@ function CustomerBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
   if (!show) return null;
-  return <BottomNav />;
+  return (
+    <>
+      <NotificationsBell />
+      <BottomNav />
+    </>
+  );
 }
 
 
