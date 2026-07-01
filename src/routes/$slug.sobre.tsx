@@ -191,7 +191,7 @@ function SobrePage() {
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, opening_hours")
+        .select("id, name, slug, opening_hours, is_open")
         .eq("slug", slug)
         .maybeSingle();
       if (error) { console.error("[sobre] public-restaurant-hours ERROR:", error); throw error; }
