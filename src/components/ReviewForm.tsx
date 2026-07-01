@@ -67,11 +67,12 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
       return toast.error(msg, { description: error.details ?? error.hint ?? undefined });
     }
     setExisting(data);
-    toast.success("Obrigado pela sua avaliação!");
-    // Refresh public/dashboard aggregates
+    toast.success("Obrigado pela sua avaliação! ❤️");
     qc.invalidateQueries({ queryKey: ["public-reviews", restaurantId] });
     qc.invalidateQueries({ queryKey: ["owner-reviews"] });
   }
+
+
 
   if (checking || authLoading) return null;
 
