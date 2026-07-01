@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
@@ -132,11 +132,13 @@ function SobrePage() {
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const getWhatsApp = useServerFn(getPublicRestaurantWhatsApp);
+  const qc = useQueryClient();
 
   const { data: restaurant, isLoading: isRestaurantLoading } = useQuery({
     queryKey: ["public-restaurant-base", slug],
     enabled: !!slug,
     retry: 3,
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
@@ -149,6 +151,20 @@ function SobrePage() {
   });
 
   const restaurantId = restaurant?.id;
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`public-about:${restaurantId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, () => {
+        qc.invalidateQueries({ queryKey: ["public-restaurant-base", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-hours", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-info", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-payments", slug] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [restaurantId, qc, slug]);
 
   const { data: reviews = [], isLoading: isReviewsLoading } = useQuery({
     queryKey: ["public-reviews", restaurantId],
@@ -168,6 +184,7 @@ function SobrePage() {
   const { data: hoursData, isLoading: isHoursLoading } = useQuery({
     queryKey: ["public-restaurant-hours", slug],
     enabled: tab === "horarios" && !!slug,
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
