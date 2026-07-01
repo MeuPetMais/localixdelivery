@@ -549,6 +549,8 @@ function OrderCard({
   onPrint,
   onWhatsapp,
   isNew,
+  isFresh,
+  onOpen,
 }: {
   order: Order;
   accent: string;
@@ -562,19 +564,28 @@ function OrderCard({
   onPrint: () => void;
   onWhatsapp: () => void;
   isNew: boolean;
+  isFresh?: boolean;
+  onOpen: () => void;
 }) {
   const items = Array.isArray(o.items) ? o.items : [];
   const hasPhone = !!normalizePhone(o.customer_phone);
   const mins = minutesSince(o.created_at, nowMs);
   const tone = isActiveStatus ? urgencyTone(mins) : null;
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
   return (
     <Card
       draggable
       onDragStart={onDragStart}
-      className={`cursor-grab space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      className={`cursor-pointer space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${
         tone ? `ring-1 ${tone.ring} ${tone.pulse}` : ""
-      } ${isNew && !tone?.pulse ? "ring-1 ring-primary/40" : ""}`}
+      } ${isNew && !tone?.pulse ? "ring-1 ring-primary/40" : ""} ${
+        isFresh ? "animate-fade-in ring-2 ring-primary" : ""
+      }`}
     >
+
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-display text-lg font-extrabold leading-none">
