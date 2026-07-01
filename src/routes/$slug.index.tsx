@@ -23,6 +23,8 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
+import { AddressPickerModal } from "@/components/AddressPickerModal";
+import type { CustomerAddress } from "@/lib/customer-addresses";
 
 
 export const Route = createFileRoute("/$slug/")({
