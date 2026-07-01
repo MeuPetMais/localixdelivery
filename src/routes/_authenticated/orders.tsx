@@ -214,15 +214,15 @@ function OrdersPage() {
 
   async function updateStatus(id: string, status: StatusKey) {
     // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
-    const key = ["orders", restaurant.id];
-    const prev = qc.getQueryData<Order[]>(key);
-    if (prev) {
-      qc.setQueryData<Order[]>(key, prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    }
+    const keyPrefix = ["orders", restaurant.id];
+    const snapshots = qc.getQueriesData<Order[]>({ queryKey: keyPrefix });
+    qc.setQueriesData<Order[]>({ queryKey: keyPrefix }, (prev) =>
+      Array.isArray(prev) ? prev.map((o) => (o.id === id ? { ...o, status } : o)) : prev,
+    );
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) {
       toast.error("Não foi possível atualizar");
-      if (prev) qc.setQueryData(key, prev);
+      snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
     }
   }
 
