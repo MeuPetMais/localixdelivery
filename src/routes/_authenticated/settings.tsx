@@ -39,6 +39,23 @@ import {
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
+import { slugify } from "@/lib/format";
+
+async function findAvailableSlug(base: string, currentId: string): Promise<string> {
+  const safeBase = slugify(base) || "loja";
+  let candidate = safeBase;
+  for (let n = 2; n <= 50; n++) {
+    const { data } = await supabase
+      .from("restaurants")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+    if (!data || data.id === currentId) return candidate;
+    candidate = `${safeBase}-${n}`;
+  }
+  return `${safeBase}-${Date.now()}`;
+}
+
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
