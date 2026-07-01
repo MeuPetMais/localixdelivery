@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
-import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,8 +151,6 @@ function SobrePage() {
   });
 
   const restaurantId = restaurant?.id;
-  const liveHours = (hoursData?.opening_hours ?? null) as any;
-  const status = useRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: liveHours });
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -198,6 +195,9 @@ function SobrePage() {
       return rest as HoursData | null;
     },
   });
+
+  const liveHours = (hoursData?.opening_hours ?? null) as any;
+  const status = useRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: liveHours });
 
   const { data: infoData, isLoading: isInfoLoading } = useQuery({
     queryKey: ["public-restaurant-info", slug],
