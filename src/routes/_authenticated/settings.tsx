@@ -327,6 +327,33 @@ function SettingsPage() {
     toast.success(next ? "Loja aberta" : "Loja fechada");
   }
 
+  async function updateSlug(desired: string) {
+    if (updatingSlug) return;
+    const base = slugify(desired);
+    if (!base) return toast.error("URL inválida");
+    if (base === restaurant.slug) return toast.info("A URL já é essa.");
+    setUpdatingSlug(true);
+    try {
+      const finalSlug = await findAvailableSlug(base, restaurant.id);
+      const { error } = await supabase
+        .from("restaurants")
+        .update({ slug: finalSlug, updated_at: new Date().toISOString() })
+        .eq("id", restaurant.id);
+      if (error) throw error;
+      setForm((f) => ({ ...f, slug: finalSlug }));
+      if (finalSlug !== base) {
+        toast.info(`URL já usada — salvamos como "${finalSlug}".`, { duration: 6000 });
+      } else {
+        toast.success("URL pública atualizada");
+      }
+      await refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível atualizar a URL");
+    } finally {
+      setUpdatingSlug(false);
+    }
+  }
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -337,9 +364,22 @@ function SettingsPage() {
       online_credit: !!(payments.online_card || payments.online_credit),
       online_debit: !!(payments.online_card || payments.online_debit),
     };
+
+    // Auto-sync do slug: só enquanto o estabelecimento ainda não recebeu pedidos.
+    let nextSlug = restaurant.slug;
+    let slugAutoAdjusted = false;
+    if (!hasOrders) {
+      const desired = slugify(form.name);
+      if (desired && desired !== restaurant.slug) {
+        nextSlug = await findAvailableSlug(desired, restaurant.id);
+        slugAutoAdjusted = true;
+      }
+    }
+
     const { error } = await (supabase.from("restaurants") as any)
       .update({
         name: form.name,
+        ...(slugAutoAdjusted ? { slug: nextSlug } : {}),
         description: form.description || null,
         whatsapp_phone: form.whatsapp_phone,
         landline_phone: form.landline_phone || null,
@@ -372,9 +412,15 @@ function SettingsPage() {
 
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Perfil atualizado");
+    if (slugAutoAdjusted) {
+      setForm((f) => ({ ...f, slug: nextSlug }));
+      toast.success(`Perfil atualizado. Nova URL: /${nextSlug}`);
+    } else {
+      toast.success("Perfil atualizado");
+    }
     refetch();
   }
+
 
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
