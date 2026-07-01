@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicRestaurantWhatsApp } from "@/lib/public-restaurant.functions";
-import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -132,11 +132,13 @@ function SobrePage() {
   const [filter, setFilter] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const getWhatsApp = useServerFn(getPublicRestaurantWhatsApp);
+  const qc = useQueryClient();
 
   const { data: restaurant, isLoading: isRestaurantLoading } = useQuery({
     queryKey: ["public-restaurant-base", slug],
     enabled: !!slug,
     retry: 3,
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
@@ -149,6 +151,20 @@ function SobrePage() {
   });
 
   const restaurantId = restaurant?.id;
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`public-about:${restaurantId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, () => {
+        qc.invalidateQueries({ queryKey: ["public-restaurant-base", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-hours", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-info", slug] });
+        qc.invalidateQueries({ queryKey: ["public-restaurant-payments", slug] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [restaurantId, qc, slug]);
 
   const { data: reviews = [], isLoading: isReviewsLoading } = useQuery({
     queryKey: ["public-reviews", restaurantId],
@@ -168,6 +184,7 @@ function SobrePage() {
   const { data: hoursData, isLoading: isHoursLoading } = useQuery({
     queryKey: ["public-restaurant-hours", slug],
     enabled: tab === "horarios" && !!slug,
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
@@ -178,6 +195,9 @@ function SobrePage() {
       return rest as HoursData | null;
     },
   });
+
+  const liveHours = (hoursData?.opening_hours ?? null) as any;
+  const status = useRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: liveHours });
 
   const { data: infoData, isLoading: isInfoLoading } = useQuery({
     queryKey: ["public-restaurant-info", slug],
@@ -263,7 +283,6 @@ function SobrePage() {
 
   const hours = hoursData?.opening_hours ?? null;
   const hasHours = !!hours && Object.keys(hours).length > 0;
-  const status = getRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: hours });
   const openNow = status.isOpen;
   if (typeof window !== "undefined" && hoursData) {
     // eslint-disable-next-line no-console

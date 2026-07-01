@@ -38,6 +38,7 @@ import {
 
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -178,6 +179,7 @@ function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [togglingOpen, setTogglingOpen] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
 
@@ -273,9 +275,22 @@ function SettingsPage() {
   }
 
   async function toggleOpen() {
+    if (togglingOpen) return;
     const next = !form.is_open;
-    setForm({ ...form, is_open: next });
-    await supabase.from("restaurants").update({ is_open: next }).eq("id", restaurant!.id);
+    setTogglingOpen(true);
+    setForm((current) => ({ ...current, is_open: next }));
+    const { data, error } = await supabase
+      .from("restaurants")
+      .update({ is_open: next, updated_at: new Date().toISOString() })
+      .eq("id", restaurant!.id)
+      .select("id, is_open")
+      .maybeSingle();
+    setTogglingOpen(false);
+    if (error || !data) {
+      setForm((current) => ({ ...current, is_open: !next }));
+      return toast.error(error?.message ?? "Não foi possível atualizar o status.");
+    }
+    await refetch();
     toast.success(next ? "Loja aberta" : "Loja fechada");
   }
 
@@ -330,6 +345,10 @@ function SettingsPage() {
 
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
+  const status = useRestaurantStatus({
+    is_open: form.is_open,
+    opening_hours: hours,
+  });
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
@@ -407,10 +426,10 @@ function SettingsPage() {
                 <h2 className="truncate text-xl font-bold">{form.name || "Sua loja"}</h2>
                 <div className="mt-1 flex items-center gap-2">
                   <span
-                    className={`h-2 w-2 rounded-full ${form.is_open ? "bg-emerald-500" : "bg-rose-500"}`}
+                    className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-emerald-500" : "bg-rose-500"}`}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {form.is_open ? "Aberto agora" : "Fechado"}
+                    {status.isOpen ? "Aberto agora" : status.reason === "manual_closed" ? "Fechado manualmente" : "Fechado pelo horário"}
                   </span>
                 </div>
               </div>
@@ -435,8 +454,10 @@ function SettingsPage() {
                 type="button"
                 variant={form.is_open ? "default" : "secondary"}
                 onClick={toggleOpen}
+                disabled={togglingOpen}
               >
-                <Power className="mr-2 h-4 w-4" /> {form.is_open ? "Aberto" : "Fechado"}
+                {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
+                {form.is_open ? "Fechar manualmente" : "Abrir loja"}
               </Button>
             </div>
           </div>

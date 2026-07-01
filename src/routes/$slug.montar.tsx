@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronRight, Check, Minus, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { brl } from "@/lib/format";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
 import type { Builder } from "@/components/BuilderConfigurator";
 
 type Selection = Record<string, Record<string, number>>;
@@ -27,6 +28,7 @@ function BuildYourOwnPage() {
   const { slug } = Route.useParams();
   const { builder: builderId } = Route.useSearch();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [selectedBuilderId, setSelectedBuilderId] = useState<string | undefined>(builderId);
   const [step, setStep] = useState(0);
   const [sel, setSel] = useState<Selection>({});
@@ -46,7 +48,7 @@ function BuildYourOwnPage() {
     queryFn: async () => {
       const { data: restaurant, error: restaurantError } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, logo_url, is_open, builders_enabled")
+        .select("id, name, slug, logo_url, is_open, opening_hours, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -82,6 +84,17 @@ function BuildYourOwnPage() {
   });
 
   const builders = data?.builders ?? [];
+  useEffect(() => {
+    const restaurantId = data?.restaurant?.id;
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`build-your-own:${restaurantId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` },
+        () => qc.invalidateQueries({ queryKey: ["build-your-own-page", slug] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [data?.restaurant?.id, qc, slug]);
+
   const activeBuilder = useMemo(() => {
     if (!builders.length) return null;
     return builders.find((b) => b.id === selectedBuilderId) ?? builders[0];
@@ -229,6 +242,15 @@ function BuildYourOwnPage() {
 
   if (isError || !data?.restaurant) {
     return <BuildUnavailable slug={slug} title="Monte do seu jeito estará disponível em breve." description="Não conseguimos encontrar a configuração deste restaurante agora." />;
+  }
+
+  const status = getRestaurantStatus({
+    is_open: data.restaurant.is_open,
+    opening_hours: data.restaurant.opening_hours,
+  });
+
+  if (!status.isOpen) {
+    return <BuildUnavailable slug={slug} title="Restaurante fechado no momento." description="Volte ao cardápio para consultar os horários de funcionamento." />;
   }
 
   if (!data.restaurant.builders_enabled || !activeBuilder) {
