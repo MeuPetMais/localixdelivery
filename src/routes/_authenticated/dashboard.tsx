@@ -227,11 +227,11 @@ function Dashboard() {
                 <h3 className="font-display text-base font-bold">Sua Loja Online</h3>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    restaurant.is_open ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                    status.isOpen ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
                   }`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${restaurant.is_open ? "bg-success" : "bg-destructive"}`} />
-                  {restaurant.is_open ? "Online" : "Offline"}
+                  <span className={`h-1.5 w-1.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"}`} />
+                  {status.isOpen ? "Online" : "Offline"}
                 </span>
               </div>
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{publicUrl}</p>
