@@ -76,25 +76,51 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
 
     const total = Math.max(0, subtotal - discount) + data.deliveryFee;
 
+    const orderPayload = {
+      restaurant_id: rest.id,
+      customer_id: customerId,
+      customer_name: data.customer.name,
+      customer_phone: data.customer.phone,
+      address: data.customer.address,
+      payment_method: data.customer.payment,
+      items: data.items,
+      total,
+      status: "novo",
+      coupon_id: couponId,
+      discount,
+      estimated_delivery_time: eta,
+    };
+
+    const missing: string[] = [];
+    if (!orderPayload.restaurant_id) missing.push("restaurant_id");
+    if (!orderPayload.customer_name?.trim()) missing.push("customer_name");
+    if (!orderPayload.customer_phone?.trim()) missing.push("customer_phone");
+    if (!orderPayload.address?.trim()) missing.push("address");
+    if (!orderPayload.payment_method?.trim()) missing.push("payment_method");
+    if (!Array.isArray(orderPayload.items) || orderPayload.items.length === 0) missing.push("items");
+    if (typeof orderPayload.total !== "number" || Number.isNaN(orderPayload.total)) missing.push("total");
+    if (missing.length) throw new Error(`Campos obrigatórios ausentes: ${missing.join(", ")}`);
+
+    console.log("[order] payload", JSON.stringify(orderPayload));
+
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("orders")
-      .insert({
-        restaurant_id: rest.id,
-        customer_id: customerId,
-        customer_name: data.customer.name,
-        customer_phone: data.customer.phone,
-        address: data.customer.address,
-        payment_method: data.customer.payment,
-        items: data.items,
-        total,
-        status: "novo",
-        coupon_id: couponId,
-        discount,
-        estimated_delivery_time: eta,
-      })
+      .insert(orderPayload)
       .select("id, order_number")
       .single();
-    if (insErr) throw new Error("Falha ao registrar pedido");
+
+    console.log("[order] response", { inserted, insErr });
+
+    if (insErr) {
+      console.error("[order] insert error", insErr);
+      const parts = [
+        insErr.message,
+        insErr.code ? `código ${insErr.code}` : "",
+        (insErr as any).details ? `detalhes: ${(insErr as any).details}` : "",
+        (insErr as any).hint ? `hint: ${(insErr as any).hint}` : "",
+      ].filter(Boolean);
+      throw new Error(`Falha ao registrar pedido — ${parts.join(" · ")}`);
+    }
 
     const orderNumber = inserted?.order_number ?? null;
     const orderId = inserted?.id ?? null;
