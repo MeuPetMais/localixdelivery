@@ -490,7 +490,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
       </div>
 
 
-      <div className="overflow-x-auto px-4 pb-4 lg:px-8">
+      {/* Desktop / Tablet: Kanban horizontal */}
+      <div className="hidden overflow-x-auto px-4 pb-4 md:block lg:px-8">
         <div className="flex min-w-max gap-4">
           {COLUMNS.map((col) => {
             const list = grouped[col.key];
@@ -504,22 +505,7 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                 onDrop={(e) => onDropCol(e, col.key)}
                 className={`flex w-[360px] shrink-0 flex-col rounded-2xl border bg-muted/30 transition ${isOver ? col.dropCls : ""}`}
               >
-                <header className={`rounded-t-2xl px-4 py-3 ${col.headerCls}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg leading-none">{col.emoji}</span>
-                      <h2 className="font-display text-sm font-extrabold tracking-wide">{col.title}</h2>
-                    </div>
-                    <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-bold">
-                      {list.length}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs opacity-90">
-                    <span>{list.length} {list.length === 1 ? "pedido" : "pedidos"}</span>
-                    <span className="font-semibold">{brl(total)}</span>
-                  </div>
-                </header>
-
+                <ColumnHeader col={col} count={list.length} total={total} />
                 <div className="flex-1 space-y-3 overflow-y-auto p-3" style={{ maxHeight: "calc(100vh - 240px)" }}>
                   {list.length === 0 && (
                     <p className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
@@ -545,13 +531,76 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       onOpen={() => setDetailOrder(o)}
                     />
                   ))}
-
                 </div>
               </section>
             );
           })}
         </div>
       </div>
+
+      {/* Mobile: abas */}
+      <div className="px-4 pb-4 md:hidden">
+        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as StatusKey)}>
+          <TabsList className="grid w-full grid-cols-4">
+            {COLUMNS.filter((c) => c.key !== "cancelado").map((c) => (
+              <TabsTrigger key={c.key} value={c.key} className="relative text-xs">
+                {c.key === "novo" ? "Novos" : c.key === "em_preparo" ? "Preparo" : c.key === "saiu_para_entrega" ? "Entrega" : "OK"}
+                {grouped[c.key].length > 0 && (
+                  <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary">
+                    {grouped[c.key].length}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {COLUMNS.filter((c) => c.key !== "cancelado").map((col) => {
+            const list = grouped[col.key];
+            return (
+              <TabsContent key={col.key} value={col.key} className="mt-3 space-y-3">
+                {list.length === 0 && (
+                  <p className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                    Nenhum pedido
+                  </p>
+                )}
+                {list.map((o) => (
+                  <OrderCard
+                    key={o.id}
+                    order={o}
+                    accent={col.accent}
+                    nowMs={nowMs}
+                    isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
+                    onDragStart={() => {}}
+                    onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
+                    advanceLabel={NEXT[col.key]?.label}
+                    AdvanceIcon={NEXT[col.key]?.icon}
+                    onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
+                    onPrint={() => printOrder(o)}
+                    onWhatsapp={() => whatsappOrder(o)}
+                    isNew={col.key === "novo"}
+                    isFresh={freshIds.has(o.id)}
+                    onOpen={() => setDetailOrder(o)}
+                  />
+                ))}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </div>
+
+      {/* Scroll infinito / paginação */}
+      {(orders?.length ?? 0) >= visibleCount && (
+        <div className="flex justify-center px-4 pb-6 lg:px-8">
+          <Button
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => setVisibleCount((n) => n + 50)}
+          >
+            {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Carregar mais pedidos
+          </Button>
+        </div>
+      )}
+
 
       <OrderDetailsDrawer
         order={detailOrder}
