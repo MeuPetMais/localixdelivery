@@ -183,6 +183,7 @@ function OrdersPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // Live timer — tick every 30s to refresh elapsed labels and urgency colors.
   useEffect(() => {
