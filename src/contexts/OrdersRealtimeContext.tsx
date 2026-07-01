@@ -178,6 +178,34 @@ export function OrdersRealtimeProvider({
             setUnseen((prev) => [...prev, normalized]);
             if (soundEnabled) playChime();
             vibratePattern([200, 80, 200]);
+            announceNewOrder();
+
+            // Auto-print (opt-in): busca linha completa e envia ao adapter.
+            if (isAutoPrintEnabled()) {
+              supabase
+                .from("orders")
+                .select("order_number, customer_name, customer_phone, address, items, notes, payment_method, delivery_fee, total, created_at, restaurants(name)")
+                .eq("id", row.id)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (!data) return;
+                  const printable: PrintableOrder = {
+                    order_number: data.order_number,
+                    customer_name: data.customer_name,
+                    customer_phone: data.customer_phone,
+                    address: data.address,
+                    items: (data.items as any) ?? [],
+                    notes: data.notes,
+                    payment_method: data.payment_method,
+                    delivery_fee: data.delivery_fee ? Number(data.delivery_fee) : null,
+                    total: Number(data.total),
+                    created_at: data.created_at,
+                    restaurant_name: (data.restaurants as any)?.name ?? null,
+                  };
+                  printOrder(printable).catch(() => {});
+                });
+            }
+
             toast(
               `🔔 Novo pedido #${row.order_number ?? ""}`,
               {
