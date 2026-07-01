@@ -164,9 +164,25 @@ export function OrdersRealtimeProvider({
           const row = (payload.new ?? payload.old) as PendingOrder | undefined;
           if (!row) return;
 
-          // Refresh das telas dependentes
+          // Dashboard depende de agregados — invalida.
           qc.invalidateQueries({ queryKey: ["dashboard", restaurantId] });
-          qc.invalidateQueries({ queryKey: ["orders", restaurantId] });
+
+          // Kanban: patch cirúrgico no cache, sem refetch da lista inteira.
+          const ordersKey = ["orders", restaurantId] as const;
+          qc.setQueriesData<any[]>({ queryKey: ordersKey }, (prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            if (evt === "INSERT") {
+              if (list.some((o) => o.id === row.id)) return list;
+              return [{ ...row, total: Number(row.total) }, ...list];
+            }
+            if (evt === "UPDATE") {
+              return list.map((o) => (o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o));
+            }
+            if (evt === "DELETE") {
+              return list.filter((o) => o.id !== row.id);
+            }
+            return list;
+          });
 
           if (evt === "INSERT") {
             const isPending = PENDING_STATUSES.has(row.status);

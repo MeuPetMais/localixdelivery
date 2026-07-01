@@ -14,6 +14,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { brl } from "@/lib/format";
 
 import {
@@ -182,6 +183,7 @@ function OrdersPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // Live timer — tick every 30s to refresh elapsed labels and urgency colors.
   useEffect(() => {
@@ -190,37 +192,37 @@ function OrdersPage() {
   }, []);
 
 
-  const { data: orders, isLoading: loading } = useQuery({
+  const { data: orders, isLoading: loading, isFetching } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["orders", restaurant?.id],
+    queryKey: ["orders", restaurant?.id, visibleCount],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
         .eq("restaurant_id", restaurant.id)
         .order("created_at", { ascending: false })
-        .limit(300);
+        .limit(visibleCount);
       if (error) {
         toast.error("Falha ao carregar pedidos");
         throw error;
       }
       return (data ?? []) as unknown as Order[];
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   async function updateStatus(id: string, status: StatusKey) {
-    // optimistic
-    const key = ["orders", restaurant.id];
-    const prev = qc.getQueryData<Order[]>(key);
-    if (prev) {
-      qc.setQueryData<Order[]>(key, prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    }
+    // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
+    const keyPrefix = ["orders", restaurant.id];
+    const snapshots = qc.getQueriesData<Order[]>({ queryKey: keyPrefix });
+    qc.setQueriesData<Order[]>({ queryKey: keyPrefix }, (prev) =>
+      Array.isArray(prev) ? prev.map((o) => (o.id === id ? { ...o, status } : o)) : prev,
+    );
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) {
       toast.error("Não foi possível atualizar");
-      if (prev) qc.setQueryData(key, prev);
-    } else {
-      qc.invalidateQueries({ queryKey: key });
+      snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
     }
   }
 
@@ -298,6 +300,32 @@ function OrdersPage() {
   }, [orders]);
 
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
+  const [mobileTab, setMobileTab] = useState<StatusKey>("novo");
+
+  // Atalhos de teclado: A/P/S/F operam sobre o pedido aberto no drawer.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (!detailOrder) return;
+      const map: Record<string, StatusKey> = {
+        a: "em_preparo",
+        p: "em_preparo",
+        s: "saiu_para_entrega",
+        f: "entregue",
+      };
+      const next = map[e.key.toLowerCase()];
+      if (!next) return;
+      e.preventDefault();
+      updateStatus(detailOrder.id, next);
+      setDetailOrder({ ...detailOrder, status: next });
+      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${next.replace(/_/g, " ")}`);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOrder]);
+
 
 
   // Summary (base: today's orders, ignoring active filters).
@@ -412,6 +440,13 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
             Arraste os cards entre as colunas para atualizar o status.
           </p>
         </div>
+        <Badge variant="outline" className="hidden gap-1.5 sm:inline-flex">
+          <span className="text-[10px] text-muted-foreground">Atalhos:</span>
+          <kbd className="rounded bg-muted px-1 text-[10px]">A</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">P</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">S</kbd>
+          <kbd className="rounded bg-muted px-1 text-[10px]">F</kbd>
+        </Badge>
         <Badge variant="outline" className="gap-1.5">
           <CircleDot className="h-3 w-3 text-emerald-500 animate-pulse" /> Ao vivo
         </Badge>
@@ -462,7 +497,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
       </div>
 
 
-      <div className="overflow-x-auto px-4 pb-4 lg:px-8">
+      {/* Desktop / Tablet: Kanban horizontal */}
+      <div className="hidden overflow-x-auto px-4 pb-4 md:block lg:px-8">
         <div className="flex min-w-max gap-4">
           {COLUMNS.map((col) => {
             const list = grouped[col.key];
@@ -476,22 +512,7 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                 onDrop={(e) => onDropCol(e, col.key)}
                 className={`flex w-[360px] shrink-0 flex-col rounded-2xl border bg-muted/30 transition ${isOver ? col.dropCls : ""}`}
               >
-                <header className={`rounded-t-2xl px-4 py-3 ${col.headerCls}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg leading-none">{col.emoji}</span>
-                      <h2 className="font-display text-sm font-extrabold tracking-wide">{col.title}</h2>
-                    </div>
-                    <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-bold">
-                      {list.length}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs opacity-90">
-                    <span>{list.length} {list.length === 1 ? "pedido" : "pedidos"}</span>
-                    <span className="font-semibold">{brl(total)}</span>
-                  </div>
-                </header>
-
+                <ColumnHeader col={col} count={list.length} total={total} />
                 <div className="flex-1 space-y-3 overflow-y-auto p-3" style={{ maxHeight: "calc(100vh - 240px)" }}>
                   {list.length === 0 && (
                     <p className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
@@ -517,13 +538,76 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       onOpen={() => setDetailOrder(o)}
                     />
                   ))}
-
                 </div>
               </section>
             );
           })}
         </div>
       </div>
+
+      {/* Mobile: abas */}
+      <div className="px-4 pb-4 md:hidden">
+        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as StatusKey)}>
+          <TabsList className="grid w-full grid-cols-4">
+            {COLUMNS.filter((c) => c.key !== "cancelado").map((c) => (
+              <TabsTrigger key={c.key} value={c.key} className="relative text-xs">
+                {c.key === "novo" ? "Novos" : c.key === "em_preparo" ? "Preparo" : c.key === "saiu_para_entrega" ? "Entrega" : "OK"}
+                {grouped[c.key].length > 0 && (
+                  <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary">
+                    {grouped[c.key].length}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {COLUMNS.filter((c) => c.key !== "cancelado").map((col) => {
+            const list = grouped[col.key];
+            return (
+              <TabsContent key={col.key} value={col.key} className="mt-3 space-y-3">
+                {list.length === 0 && (
+                  <p className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+                    Nenhum pedido
+                  </p>
+                )}
+                {list.map((o) => (
+                  <OrderCard
+                    key={o.id}
+                    order={o}
+                    accent={col.accent}
+                    nowMs={nowMs}
+                    isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
+                    onDragStart={() => {}}
+                    onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
+                    advanceLabel={NEXT[col.key]?.label}
+                    AdvanceIcon={NEXT[col.key]?.icon}
+                    onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
+                    onPrint={() => printOrder(o)}
+                    onWhatsapp={() => whatsappOrder(o)}
+                    isNew={col.key === "novo"}
+                    isFresh={freshIds.has(o.id)}
+                    onOpen={() => setDetailOrder(o)}
+                  />
+                ))}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </div>
+
+      {/* Scroll infinito / paginação */}
+      {(orders?.length ?? 0) >= visibleCount && (
+        <div className="flex justify-center px-4 pb-6 lg:px-8">
+          <Button
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => setVisibleCount((n) => n + 50)}
+          >
+            {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Carregar mais pedidos
+          </Button>
+        </div>
+      )}
+
 
       <OrderDetailsDrawer
         order={detailOrder}
@@ -781,6 +865,32 @@ function OrderDetailsDrawer({
   );
 }
 
+
+function ColumnHeader({
+  col,
+  count,
+  total,
+}: {
+  col: (typeof COLUMNS)[number];
+  count: number;
+  total: number;
+}) {
+  return (
+    <header className={`rounded-t-2xl px-4 py-3 ${col.headerCls}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg leading-none">{col.emoji}</span>
+          <h2 className="font-display text-sm font-extrabold tracking-wide">{col.title}</h2>
+        </div>
+        <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-bold">{count}</span>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-xs opacity-90">
+        <span>{count} {count === 1 ? "pedido" : "pedidos"}</span>
+        <span className="font-semibold">{brl(total)}</span>
+      </div>
+    </header>
+  );
+}
 
 function escapeHtml(s: string) {
   return String(s ?? "")
