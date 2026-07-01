@@ -184,7 +184,7 @@ export function OrdersRealtimeProvider({
             if (isAutoPrintEnabled()) {
               supabase
                 .from("orders")
-                .select("order_number, customer_name, customer_phone, address, items, notes, payment_method, delivery_fee, total, created_at, restaurants(name)")
+                .select("order_number, customer_name, customer_phone, address, items, payment_method, total, created_at, restaurants(name)")
                 .eq("id", row.id)
                 .maybeSingle()
                 .then(({ data }) => {
@@ -195,9 +195,7 @@ export function OrdersRealtimeProvider({
                     customer_phone: data.customer_phone,
                     address: data.address,
                     items: (data.items as any) ?? [],
-                    notes: data.notes,
                     payment_method: data.payment_method,
-                    delivery_fee: data.delivery_fee ? Number(data.delivery_fee) : null,
                     total: Number(data.total),
                     created_at: data.created_at,
                     restaurant_name: (data.restaurants as any)?.name ?? null,
