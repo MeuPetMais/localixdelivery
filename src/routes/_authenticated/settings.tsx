@@ -909,9 +909,38 @@ function SettingsPage() {
             <Link2 className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-bold">Link Público</h3>
           </div>
-          <div className="rounded-xl border border-dashed bg-muted/40 p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="slug-input">URL pública</Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-1 items-center rounded-md border bg-muted/40 px-3">
+                <span className="text-sm text-muted-foreground">/</span>
+                <Input
+                  id="slug-input"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
+                  className="border-0 bg-transparent focus-visible:ring-0"
+                  placeholder="minha-loja"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => updateSlug(form.slug)}
+                disabled={updatingSlug || !form.slug || form.slug === restaurant.slug}
+              >
+                {updatingSlug ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Atualizar URL
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {hasOrders
+                ? "Seu estabelecimento já recebeu pedidos — mudar a URL pode quebrar links compartilhados."
+                : "Enquanto não houver pedidos, a URL é atualizada automaticamente ao renomear a loja."}
+            </p>
+          </div>
+          <div className="mt-4 rounded-xl border border-dashed bg-muted/40 p-4">
             <p className="break-all font-mono text-sm">{publicUrl}</p>
           </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               type="button"
