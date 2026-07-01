@@ -183,15 +183,13 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
 
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           <RestaurantProvider
-            userId={user.id}
+            userId={userId}
             fallbackWhenMissing={(refetch) => (
-              <OwnerOnboarding ownerId={user.id} onCreated={() => refetch()} />
+              <OwnerOnboarding ownerId={userId} onCreated={() => refetch()} />
             )}
           >
-            <OrdersRealtimeWrapper pathname={pathname}>
-              <DemoExperience userEmail={user.email} />
-              <Outlet />
-            </OrdersRealtimeWrapper>
+            <DemoExperience userEmail={userEmail} />
+            <Outlet />
           </RestaurantProvider>
         </main>
       </div>
