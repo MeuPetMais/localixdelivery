@@ -24,6 +24,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { CustomerNavigationProvider } from "@/contexts/CustomerNavigationContext";
 import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
+import { CustomerNotificationsProvider } from "@/contexts/CustomerNotificationsContext";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 function NotFoundComponent() {
   return (
