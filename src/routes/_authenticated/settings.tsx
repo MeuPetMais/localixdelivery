@@ -197,8 +197,24 @@ function SettingsPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [togglingOpen, setTogglingOpen] = useState(false);
+  const [updatingSlug, setUpdatingSlug] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
+
+  // "Em operação" = já recebeu pelo menos 1 pedido. Enquanto isso, renomear = re-slug automático.
+  const { data: hasOrders = false } = useQuery({
+    queryKey: ["restaurant-has-orders", restaurant?.id],
+    enabled: !!restaurant?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("restaurant_id", restaurant!.id);
+      return (count ?? 0) > 0;
+    },
+    staleTime: 60_000,
+  });
+
 
   useEffect(() => {
     if (!restaurant) return;
