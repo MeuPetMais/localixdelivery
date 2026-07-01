@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/format";
 import {
   Loader2,
@@ -17,13 +18,20 @@ import {
   MessageCircle,
   X,
   Check,
-  
   Bike,
   PackageCheck,
   StickyNote,
   CreditCard,
+  Search,
+  Flame,
+  ShoppingBag,
+  DollarSign,
+  Receipt,
+  Timer as TimerIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Pedidos — Localix" }] }),
@@ -43,7 +51,9 @@ type Order = {
   status: string;
   notes?: string | null;
   created_at: string;
+  updated_at?: string | null;
 };
+
 
 type StatusKey = "novo" | "em_preparo" | "saiu_para_entrega" | "entregue" | "cancelado";
 
@@ -119,11 +129,58 @@ function formatPhone(p?: string | null) {
   return p ?? "";
 }
 
+const ACTIVE_STATUSES: StatusKey[] = ["novo", "em_preparo", "saiu_para_entrega"];
+
+function minutesSince(iso: string, nowMs: number) {
+  return Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 60000));
+}
+
+/** Urgency tone based on wait time (only meaningful for active orders). */
+function urgencyTone(mins: number) {
+  if (mins < 5) return { ring: "ring-emerald-500/40", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", label: "novo", pulse: "" };
+  if (mins < 10) return { ring: "ring-amber-500/50", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-400", label: "aguardando", pulse: "" };
+  if (mins < 15) return { ring: "ring-orange-500/60", chip: "bg-orange-500/20 text-orange-700 dark:text-orange-400", label: "atenção", pulse: "" };
+  return { ring: "ring-2 ring-destructive", chip: "bg-destructive text-destructive-foreground", label: "atrasado", pulse: "animate-pulse" };
+}
+
+type FilterKey =
+  | "all" | "delivery" | "retirada" | "mesa"
+  | "pix" | "cartao" | "dinheiro"
+  | "urgentes" | "hoje" | "ontem";
+
+const FILTERS: Array<{ key: FilterKey; label: string }> = [
+  { key: "all", label: "Todos" },
+  { key: "delivery", label: "Delivery" },
+  { key: "retirada", label: "Retirada" },
+  { key: "mesa", label: "Mesa" },
+  { key: "pix", label: "Pix" },
+  { key: "cartao", label: "Cartão" },
+  { key: "dinheiro", label: "Dinheiro" },
+  { key: "urgentes", label: "Urgentes" },
+  { key: "hoje", label: "Hoje" },
+  { key: "ontem", label: "Ontem" },
+];
+
+function isSameDay(iso: string, ref: Date) {
+  const d = new Date(iso);
+  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+}
+
 function OrdersPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
   const [dragOver, setDragOver] = useState<StatusKey | null>(null);
   const draggingId = useRef<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  // Live timer — tick every 30s to refresh elapsed labels and urgency colors.
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
 
   const { data: orders, isLoading: loading } = useQuery({
     enabled: !!restaurant?.id,
@@ -159,15 +216,73 @@ function OrdersPage() {
     }
   }
 
+  const filtered = useMemo(() => {
+    const list = orders ?? [];
+    const today = new Date();
+    const yest = new Date(); yest.setDate(today.getDate() - 1);
+    const q = search.trim().toLowerCase();
+    const qDigits = q.replace(/\D+/g, "");
+    return list.filter((o) => {
+      // filter chip
+      switch (filter) {
+        case "delivery": if (!o.address) return false; break;
+        case "retirada": if (o.address) return false; break;
+        case "mesa": return false; // sem suporte de mesa no schema atual
+        case "pix": if (!/pix/i.test(o.payment_method ?? "")) return false; break;
+        case "cartao": if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false; break;
+        case "dinheiro": if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false; break;
+        case "urgentes":
+          if (!ACTIVE_STATUSES.includes(o.status as StatusKey)) return false;
+          if (minutesSince(o.created_at, nowMs) < 10) return false;
+          break;
+        case "hoje": if (!isSameDay(o.created_at, today)) return false; break;
+        case "ontem": if (!isSameDay(o.created_at, yest)) return false; break;
+      }
+      // search
+      if (q) {
+        const inNumber = String(o.order_number ?? "").includes(qDigits || q);
+        const inName = o.customer_name?.toLowerCase().includes(q);
+        const inPhone = qDigits && normalizePhone(o.customer_phone).includes(qDigits);
+        if (!inNumber && !inName && !inPhone) return false;
+      }
+      return true;
+    });
+  }, [orders, filter, search, nowMs]);
+
   const grouped = useMemo(() => {
     const g: Record<StatusKey, Order[]> = {
       novo: [], em_preparo: [], saiu_para_entrega: [], entregue: [], cancelado: [],
     };
-    for (const o of orders ?? []) {
+    for (const o of filtered) {
       if (g[o.status as StatusKey]) g[o.status as StatusKey].push(o);
     }
     return g;
-  }, [orders]);
+  }, [filtered]);
+
+  // Summary (base: today's orders, ignoring active filters).
+  const summary = useMemo(() => {
+    const today = new Date();
+    const list = (orders ?? []).filter((o) => isSameDay(o.created_at, today));
+    const revenue = list
+      .filter((o) => o.status !== "cancelado")
+      .reduce((s, o) => s + Number(o.total || 0), 0);
+    const countValid = list.filter((o) => o.status !== "cancelado").length;
+    const avgTicket = countValid > 0 ? revenue / countValid : 0;
+    const finished = list.filter((o) => o.status === "entregue");
+    const avgMin = finished.length
+      ? Math.round(
+          finished.reduce(
+            (s, o) => s + (new Date(o.updated_at ?? o.created_at).getTime() - new Date(o.created_at).getTime()) / 60000,
+            0,
+          ) / finished.length,
+        )
+      : 0;
+    const overdue = (orders ?? []).filter(
+      (o) => ACTIVE_STATUSES.includes(o.status as StatusKey) && minutesSince(o.created_at, nowMs) >= 15,
+    ).length;
+    return { count: list.length, revenue, avgTicket, avgMin, overdue };
+  }, [orders, nowMs]);
+
 
   function onDragStart(e: React.DragEvent, orderId: string) {
     draggingId.current = orderId;
@@ -261,6 +376,51 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
         </Badge>
       </div>
 
+      {/* Resumo */}
+      <div className="mb-4 grid grid-cols-2 gap-2 px-4 sm:grid-cols-3 lg:grid-cols-5 lg:px-8">
+        <SummaryCard icon={<ShoppingBag className="h-4 w-4" />} label="Pedidos Hoje" value={String(summary.count)} tone="primary" />
+        <SummaryCard icon={<DollarSign className="h-4 w-4" />} label="Receita" value={brl(summary.revenue)} tone="emerald" />
+        <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Ticket Médio" value={brl(summary.avgTicket)} tone="blue" />
+        <SummaryCard icon={<TimerIcon className="h-4 w-4" />} label="Tempo Médio" value={`${summary.avgMin} min`} tone="amber" />
+        <SummaryCard icon={<AlertTriangle className="h-4 w-4" />} label="Em atraso" value={String(summary.overdue)} tone={summary.overdue > 0 ? "destructive" : "muted"} pulse={summary.overdue > 0} />
+      </div>
+
+      {/* Busca + Filtros */}
+      <div className="mb-4 space-y-3 px-4 lg:px-8">
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por número, cliente ou telefone…"
+            className="pl-9"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            const isUrgent = f.key === "urgentes";
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  active
+                    ? isUrgent
+                      ? "border-destructive bg-destructive text-destructive-foreground"
+                      : "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {isUrgent && <Flame className="mr-1 inline h-3 w-3" />}
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
       <div className="overflow-x-auto px-4 pb-4 lg:px-8">
         <div className="flex min-w-max gap-4">
           {COLUMNS.map((col) => {
@@ -302,6 +462,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       key={o.id}
                       order={o}
                       accent={col.accent}
+                      nowMs={nowMs}
+                      isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
                       onDragStart={(e) => onDragStart(e, o.id)}
                       onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
                       advanceLabel={NEXT[col.key]?.label}
@@ -312,6 +474,7 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
                       isNew={col.key === "novo"}
                     />
                   ))}
+
                 </div>
               </section>
             );
@@ -325,6 +488,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
 function OrderCard({
   order: o,
   accent,
+  nowMs,
+  isActiveStatus,
   onDragStart,
   onAdvance,
   advanceLabel,
@@ -336,6 +501,8 @@ function OrderCard({
 }: {
   order: Order;
   accent: string;
+  nowMs: number;
+  isActiveStatus: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onAdvance?: () => void;
   advanceLabel?: string;
@@ -347,11 +514,15 @@ function OrderCard({
 }) {
   const items = Array.isArray(o.items) ? o.items : [];
   const hasPhone = !!normalizePhone(o.customer_phone);
+  const mins = minutesSince(o.created_at, nowMs);
+  const tone = isActiveStatus ? urgencyTone(mins) : null;
   return (
     <Card
       draggable
       onDragStart={onDragStart}
-      className={`cursor-grab space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${isNew ? "animate-pulse-slow ring-1 ring-primary/40" : ""}`}
+      className={`cursor-grab space-y-2 rounded-xl p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing ${accent} ${
+        tone ? `ring-1 ${tone.ring} ${tone.pulse}` : ""
+      } ${isNew && !tone?.pulse ? "ring-1 ring-primary/40" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -368,6 +539,16 @@ function OrderCard({
           </p>
         </div>
       </div>
+
+      {tone && (
+        <div className={`flex items-center justify-between rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.chip}`}>
+          <span className="flex items-center gap-1">
+            <TimerIcon className="h-3 w-3" /> {mins} min
+          </span>
+          <span>{tone.label}</span>
+        </div>
+      )}
+
 
       <div className="space-y-1 text-xs text-muted-foreground">
         {o.customer_phone && (
@@ -438,4 +619,38 @@ function escapeHtml(s: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+  tone = "primary",
+  pulse = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone?: "primary" | "emerald" | "blue" | "amber" | "destructive" | "muted";
+  pulse?: boolean;
+}) {
+  const tones: Record<string, string> = {
+    primary: "bg-primary/10 text-primary",
+    emerald: "bg-emerald-500/10 text-emerald-600",
+    blue: "bg-blue-500/10 text-blue-600",
+    amber: "bg-amber-500/10 text-amber-600",
+    destructive: "bg-destructive/15 text-destructive",
+    muted: "bg-muted text-muted-foreground",
+  };
+  return (
+    <Card className={`rounded-2xl border-0 p-3 shadow-sm ${pulse ? "animate-pulse" : ""}`}>
+      <div className="flex items-center gap-2">
+        <span className={`grid h-8 w-8 place-items-center rounded-lg ${tones[tone]}`}>{icon}</span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="font-display text-lg font-extrabold leading-tight">{value}</p>
+        </div>
+      </div>
+    </Card>
+  );
 }
