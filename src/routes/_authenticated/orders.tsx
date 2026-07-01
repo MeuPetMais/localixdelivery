@@ -127,11 +127,58 @@ function formatPhone(p?: string | null) {
   return p ?? "";
 }
 
+const ACTIVE_STATUSES: StatusKey[] = ["novo", "em_preparo", "saiu_para_entrega"];
+
+function minutesSince(iso: string, nowMs: number) {
+  return Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 60000));
+}
+
+/** Urgency tone based on wait time (only meaningful for active orders). */
+function urgencyTone(mins: number) {
+  if (mins < 5) return { ring: "ring-emerald-500/40", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", label: "novo", pulse: "" };
+  if (mins < 10) return { ring: "ring-amber-500/50", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-400", label: "aguardando", pulse: "" };
+  if (mins < 15) return { ring: "ring-orange-500/60", chip: "bg-orange-500/20 text-orange-700 dark:text-orange-400", label: "atenção", pulse: "" };
+  return { ring: "ring-2 ring-destructive", chip: "bg-destructive text-destructive-foreground", label: "atrasado", pulse: "animate-pulse" };
+}
+
+type FilterKey =
+  | "all" | "delivery" | "retirada" | "mesa"
+  | "pix" | "cartao" | "dinheiro"
+  | "urgentes" | "hoje" | "ontem";
+
+const FILTERS: Array<{ key: FilterKey; label: string }> = [
+  { key: "all", label: "Todos" },
+  { key: "delivery", label: "Delivery" },
+  { key: "retirada", label: "Retirada" },
+  { key: "mesa", label: "Mesa" },
+  { key: "pix", label: "Pix" },
+  { key: "cartao", label: "Cartão" },
+  { key: "dinheiro", label: "Dinheiro" },
+  { key: "urgentes", label: "Urgentes" },
+  { key: "hoje", label: "Hoje" },
+  { key: "ontem", label: "Ontem" },
+];
+
+function isSameDay(iso: string, ref: Date) {
+  const d = new Date(iso);
+  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+}
+
 function OrdersPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
   const [dragOver, setDragOver] = useState<StatusKey | null>(null);
   const draggingId = useRef<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  // Live timer — tick every 30s to refresh elapsed labels and urgency colors.
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
 
   const { data: orders, isLoading: loading } = useQuery({
     enabled: !!restaurant?.id,
