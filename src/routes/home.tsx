@@ -4,7 +4,8 @@ import { Search, Sparkles, Store, Tag, Heart, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { clearStoredRestaurantSlug, getStoredRestaurantSlug } from "@/contexts/CustomerNavigationContext";
 
 export const Route = createFileRoute("/home")({
   // Não redirecionamos mais para um slug persistido — /home sempre lista
