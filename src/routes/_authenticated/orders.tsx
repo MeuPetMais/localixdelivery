@@ -214,15 +214,73 @@ function OrdersPage() {
     }
   }
 
+  const filtered = useMemo(() => {
+    const list = orders ?? [];
+    const today = new Date();
+    const yest = new Date(); yest.setDate(today.getDate() - 1);
+    const q = search.trim().toLowerCase();
+    const qDigits = q.replace(/\D+/g, "");
+    return list.filter((o) => {
+      // filter chip
+      switch (filter) {
+        case "delivery": if (!o.address) return false; break;
+        case "retirada": if (o.address) return false; break;
+        case "mesa": return false; // sem suporte de mesa no schema atual
+        case "pix": if (!/pix/i.test(o.payment_method ?? "")) return false; break;
+        case "cartao": if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false; break;
+        case "dinheiro": if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false; break;
+        case "urgentes":
+          if (!ACTIVE_STATUSES.includes(o.status as StatusKey)) return false;
+          if (minutesSince(o.created_at, nowMs) < 10) return false;
+          break;
+        case "hoje": if (!isSameDay(o.created_at, today)) return false; break;
+        case "ontem": if (!isSameDay(o.created_at, yest)) return false; break;
+      }
+      // search
+      if (q) {
+        const inNumber = String(o.order_number ?? "").includes(qDigits || q);
+        const inName = o.customer_name?.toLowerCase().includes(q);
+        const inPhone = qDigits && normalizePhone(o.customer_phone).includes(qDigits);
+        if (!inNumber && !inName && !inPhone) return false;
+      }
+      return true;
+    });
+  }, [orders, filter, search, nowMs]);
+
   const grouped = useMemo(() => {
     const g: Record<StatusKey, Order[]> = {
       novo: [], em_preparo: [], saiu_para_entrega: [], entregue: [], cancelado: [],
     };
-    for (const o of orders ?? []) {
+    for (const o of filtered) {
       if (g[o.status as StatusKey]) g[o.status as StatusKey].push(o);
     }
     return g;
-  }, [orders]);
+  }, [filtered]);
+
+  // Summary (base: today's orders, ignoring active filters).
+  const summary = useMemo(() => {
+    const today = new Date();
+    const list = (orders ?? []).filter((o) => isSameDay(o.created_at, today));
+    const revenue = list
+      .filter((o) => o.status !== "cancelado")
+      .reduce((s, o) => s + Number(o.total || 0), 0);
+    const countValid = list.filter((o) => o.status !== "cancelado").length;
+    const avgTicket = countValid > 0 ? revenue / countValid : 0;
+    const finished = list.filter((o) => o.status === "entregue");
+    const avgMin = finished.length
+      ? Math.round(
+          finished.reduce(
+            (s, o) => s + (new Date(o.updated_at ?? o.created_at).getTime() - new Date(o.created_at).getTime()) / 60000,
+            0,
+          ) / finished.length,
+        )
+      : 0;
+    const overdue = (orders ?? []).filter(
+      (o) => ACTIVE_STATUSES.includes(o.status as StatusKey) && minutesSince(o.created_at, nowMs) >= 15,
+    ).length;
+    return { count: list.length, revenue, avgTicket, avgMin, overdue };
+  }, [orders, nowMs]);
+
 
   function onDragStart(e: React.DragEvent, orderId: string) {
     draggingId.current = orderId;
