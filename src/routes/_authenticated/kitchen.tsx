@@ -53,7 +53,7 @@ function elapsed(iso: string) {
 }
 
 function KitchenPage() {
-  const { restaurant } = useRestaurant();
+  const restaurant = useRestaurant();
   const qc = useQueryClient();
   const [tv, setTv] = useState(false);
   const [, tick] = useState(0);
