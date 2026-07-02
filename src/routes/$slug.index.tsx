@@ -167,6 +167,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [builderUnavailableOpen, setBuilderUnavailableOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [catsSheetOpen, setCatsSheetOpen] = useState(false);
+  const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const q = normalize(query.trim());
+  const matchesQuery = (it: any) => {
+    if (!q) return true;
+    return normalize(String(it.name ?? "")).includes(q) || normalize(String(it.description ?? "")).includes(q);
+  };
 
   useEffect(() => {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
