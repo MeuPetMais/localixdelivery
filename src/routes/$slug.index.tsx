@@ -467,8 +467,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               </span>
               <span className="inline-flex items-center gap-1 text-sm">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                <span className="font-semibold">4.8</span>
+                {reviewStats && reviewStats.count > 0 ? (
+                  <span className="font-semibold">
+                    {reviewStats.avg.toFixed(1).replace(".", ",")}
+                    <span className="ml-1 font-normal text-muted-foreground">
+                      ({reviewStats.count} {reviewStats.count === 1 ? "avaliação" : "avaliações"})
+                    </span>
+                  </span>
+                ) : (
+                  <span className="font-semibold text-muted-foreground">Novo</span>
+                )}
               </span>
+
               {restaurant.category && (
                 <span className="text-xs text-muted-foreground">· {restaurant.category}</span>
               )}
