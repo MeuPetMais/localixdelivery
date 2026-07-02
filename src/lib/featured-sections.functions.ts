@@ -165,7 +165,7 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(toItem);
       const rendered = config.weekly_favorites_enabled && weekly.length > 0;
       if (rendered) {
-        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "🔥", items: weekly });
+        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "❤️", items: weekly });
       }
       pushDiag("weekly_favorites", "Queridinhos da Semana", "🔥", weekly.length, rendered,
         !config.weekly_favorites_enabled ? "Desativada" : weekly.length === 0 ? "Marque produtos como Queridinho" : "OK");
@@ -229,9 +229,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(([id]) => toItem(itemMap.get(id)));
       const rendered = config.customer_favorites_enabled && favs.length > 0;
       if (rendered) {
-        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "❤️", items: favs });
+        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "😍", items: favs });
       }
-      pushDiag("customer_favorites", "Favoritos dos Clientes", "❤️", favs.length, rendered,
+      pushDiag("customer_favorites", "Favoritos dos Clientes", "😍", favs.length, rendered,
         !config.customer_favorites_enabled ? "Desativada" : favs.length === 0 ? "Ninguém favoritou ainda" : "OK");
     }
 

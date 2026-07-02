@@ -1114,7 +1114,10 @@ function FeaturedSections({
     gcTime: 10 * 60_000,
   });
 
-  const sections = data?.sections ?? [];
+  // Dedup: inline "🔥 Promoções do Dia" owns promotions; "🍕 Monte do Seu Jeito" owns builders.
+  const sections = (data?.sections ?? []).filter(
+    (s) => s.key !== "promotions" && s.key !== "half_half_pizza",
+  );
   if (sections.length === 0) return null;
 
   return (
