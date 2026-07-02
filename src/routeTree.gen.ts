@@ -39,6 +39,7 @@ import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedFinanceAiRouteImport } from './routes/_authenticated/finance-ai'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
+import { Route as AuthenticatedFeaturedRouteImport } from './routes/_authenticated/featured'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
@@ -197,6 +198,11 @@ const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFeaturedRoute = AuthenticatedFeaturedRouteImport.update({
+  id: '/featured',
+  path: '/featured',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/featured': typeof AuthenticatedFeaturedRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/finance-ai': typeof AuthenticatedFinanceAiRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -297,6 +304,7 @@ export interface FileRoutesByTo {
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/featured': typeof AuthenticatedFeaturedRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/finance-ai': typeof AuthenticatedFinanceAiRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/featured': typeof AuthenticatedFeaturedRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/finance-ai': typeof AuthenticatedFinanceAiRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/consultor'
     | '/customers'
     | '/dashboard'
+    | '/featured'
     | '/finance'
     | '/finance-ai'
     | '/inventory'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/consultor'
     | '/customers'
     | '/dashboard'
+    | '/featured'
     | '/finance'
     | '/finance-ai'
     | '/inventory'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/_authenticated/consultor'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/featured'
     | '/_authenticated/finance'
     | '/_authenticated/finance-ai'
     | '/_authenticated/inventory'
@@ -707,6 +719,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/featured': {
+      id: '/_authenticated/featured'
+      path: '/featured'
+      fullPath: '/featured'
+      preLoaderRoute: typeof AuthenticatedFeaturedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -773,6 +792,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFeaturedRoute: typeof AuthenticatedFeaturedRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedFinanceAiRoute: typeof AuthenticatedFinanceAiRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
@@ -795,6 +815,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFeaturedRoute: AuthenticatedFeaturedRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedFinanceAiRoute: AuthenticatedFinanceAiRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
