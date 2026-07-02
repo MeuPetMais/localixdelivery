@@ -75,6 +75,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
     { to: "/orders", label: "Pedidos", icon: ClipboardList },
     { to: "/kitchen", label: "Painel da Cozinha", icon: UtensilsCrossed },
     { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
+    { to: "/featured", label: "Categorias em Destaque", icon: Star },
     { to: "/promotions", label: "Promoções", icon: Flame },
     { to: "/builders", label: "Monte do Seu Jeito", icon: Sparkles },
     { to: "/customers", label: "Clientes", icon: Users },
