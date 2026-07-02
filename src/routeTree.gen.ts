@@ -23,6 +23,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
@@ -119,6 +120,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const SlugIndexRoute = SlugIndexRouteImport.update({
   id: '/',
@@ -260,7 +266,7 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -298,10 +304,10 @@ export interface FileRoutesByFullPath {
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -339,13 +345,14 @@ export interface FileRoutesByTo {
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$slug': typeof SlugRouteWithChildren
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -383,6 +390,7 @@ export interface FileRoutesById {
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -427,10 +435,10 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/r/$'
     | '/$slug/'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -468,6 +476,7 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/r/$'
     | '/$slug'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -511,13 +520,14 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/r/$'
     | '/$slug/'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SlugRoute: typeof SlugRouteWithChildren
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
@@ -632,6 +642,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/$slug/': {
       id: '/$slug/'
@@ -890,11 +907,21 @@ const SlugRouteChildren: SlugRouteChildren = {
 
 const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SlugRoute: SlugRouteWithChildren,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
