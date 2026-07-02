@@ -66,6 +66,7 @@ import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
 import { Route as SlugCheckoutRouteImport } from './routes/$slug.checkout'
+import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
@@ -353,6 +354,11 @@ const SlugCheckoutRoute = SlugCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => SlugRoute,
 } as any)
+const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
+  id: '/api/public/mp/webhook',
+  path: '/api/public/mp/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
   id: '/api/public/mp/callback',
   path: '/api/public/mp/callback',
@@ -417,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -474,6 +481,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -535,6 +543,7 @@ export interface FileRoutesById {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -596,6 +605,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/api/public/mp/callback'
+    | '/api/public/mp/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -653,6 +663,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/admin'
     | '/api/public/mp/callback'
+    | '/api/public/mp/webhook'
   id:
     | '__root__'
     | '/'
@@ -713,6 +724,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/api/public/mp/callback'
+    | '/api/public/mp/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -736,6 +748,7 @@ export interface RootRouteChildren {
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
   ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
+  ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1139,6 +1152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugCheckoutRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/api/public/mp/webhook': {
+      id: '/api/public/mp/webhook'
+      path: '/api/public/mp/webhook'
+      fullPath: '/api/public/mp/webhook'
+      preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp/callback': {
       id: '/api/public/mp/callback'
       path: '/api/public/mp/callback'
@@ -1271,7 +1291,18 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
   ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
+  ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

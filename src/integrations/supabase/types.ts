@@ -1315,6 +1315,50 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_event_queue: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          last_error: string | null
+          locked: boolean
+          next_retry: string | null
+          retry_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          last_error?: string | null
+          locked?: boolean
+          next_retry?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          last_error?: string | null
+          locked?: boolean
+          next_retry?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_event_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_logs: {
         Row: {
           created_at: string
@@ -1400,6 +1444,60 @@ export type Database = {
           supports_refund?: boolean
           supports_split?: boolean
           supports_subscription?: boolean
+        }
+        Relationships: []
+      }
+      payment_webhook_events: {
+        Row: {
+          action: string | null
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          event_type: string | null
+          external_reference: string | null
+          id: string
+          payload_json: Json
+          processed: boolean
+          processed_at: string | null
+          processing_attempts: number
+          provider: string
+          resource_id: string | null
+          signature: string | null
+          updated_at: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          payload_json?: Json
+          processed?: boolean
+          processed_at?: string | null
+          processing_attempts?: number
+          provider?: string
+          resource_id?: string | null
+          signature?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          payload_json?: Json
+          processed?: boolean
+          processed_at?: string | null
+          processing_attempts?: number
+          provider?: string
+          resource_id?: string | null
+          signature?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
