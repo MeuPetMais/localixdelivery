@@ -34,6 +34,7 @@ import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminComissoesRouteImport } from './routes/admin.comissoes'
@@ -186,6 +187,11 @@ const AdminPedidosRoute = AdminPedidosRouteImport.update({
 const AdminParceirosRoute = AdminParceirosRouteImport.update({
   id: '/parceiros',
   path: '/parceiros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -546,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
@@ -599,6 +609,7 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
@@ -655,6 +666,7 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
@@ -863,6 +875,13 @@ declare module '@tanstack/react-router' {
       path: '/parceiros'
       fullPath: '/admin/parceiros'
       preLoaderRoute: typeof AdminParceirosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/financeiro': {
@@ -1143,6 +1162,7 @@ interface AdminRouteChildren {
   AdminComissoesRoute: typeof AdminComissoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
@@ -1158,6 +1178,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminComissoesRoute: AdminComissoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminParceirosRoute: AdminParceirosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
