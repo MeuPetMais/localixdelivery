@@ -140,7 +140,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Top 5 products (within selected period)
     const last30 = allOrders.filter((o) => new Date(o.created_at) >= since30);
-    const periodForTop = allOrders.filter((o) => new Date(o.created_at) >= sincePeriod);
+    const periodForTop = allOrders.filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= sincePeriod && t <= toDate;
+    });
     const map = new Map<string, { name: string; qty: number; revenue: number }>();
     for (const o of periodForTop) {
       const its = (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];
