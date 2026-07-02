@@ -134,6 +134,24 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   }, [data?.restaurant?.id, slug, qc]);
 
+  const restaurantId = data?.restaurant?.id;
+  const { data: reviewStats } = useQuery({
+    queryKey: ["public-review-stats", restaurantId],
+    enabled: !!restaurantId,
+    queryFn: async () => {
+      const { data: rows } = await (supabase as any)
+        .from("reviews")
+        .select("rating")
+        .eq("restaurant_id", restaurantId);
+      const list = (rows ?? []) as { rating: number }[];
+      const count = list.length;
+      const avg = count ? list.reduce((s, r) => s + Number(r.rating || 0), 0) / count : 0;
+      return { count, avg };
+    },
+  });
+
+
+
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
