@@ -25,7 +25,7 @@ function AdminLayout() {
   const { isAdmin, isLoading } = useIsAdmin(user.id);
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) navigate({ to: "/auth", replace: true });
+    if (!isLoading && !isAdmin) navigate({ to: "/admin/login", replace: true });
     // Admin never carries impersonation into /admin
     if (isAdmin) clearImpersonation();
   }, [isLoading, isAdmin, navigate]);
@@ -33,7 +33,7 @@ function AdminLayout() {
 
   async function logout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/admin/login", replace: true });
   }
 
   if (isLoading || !isAdmin) {
