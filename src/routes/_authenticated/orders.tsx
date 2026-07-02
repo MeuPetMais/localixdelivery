@@ -40,6 +40,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { printOrder as printOrderSvc, type PrintableOrder } from "@/lib/print-service";
 
 
 export const Route = createFileRoute("/_authenticated/orders")({
