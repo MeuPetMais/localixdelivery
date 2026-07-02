@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/pagamentos")({
 });
 
 function PagamentosPage() {
-  const { restaurant } = useRestaurant();
+  const restaurant = useRestaurant();
   const restaurantId = restaurant?.id ?? null;
   const search = useSearch({ from: Route.id }) as Search;
   const qc = useQueryClient();
