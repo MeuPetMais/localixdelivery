@@ -584,7 +584,7 @@ function Dashboard() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Dashboard Executivo</h2>
-          <span className="text-xs text-muted-foreground">Últimos {period} dias</span>
+          <span className="text-xs text-muted-foreground">{dateRange.label}</span>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Resumo Financeiro */}
