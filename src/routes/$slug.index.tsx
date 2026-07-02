@@ -16,6 +16,7 @@ import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart } from "lucide-react";
+import { getFeaturedSections, type FeaturedItem, type FeaturedSection } from "@/lib/featured-sections.functions";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
