@@ -110,16 +110,21 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   useEffect(() => {
     const restaurantId = data?.restaurant?.id;
     if (!restaurantId) return;
+    const invalidateAll = () => {
+      qc.invalidateQueries({ queryKey: ["public-restaurant", slug] });
+      qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
+    };
+    const invalidateFeatured = () => qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
     const channel = supabase
       .channel(`public-menu:${restaurantId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_item_images", filter: `restaurant_id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["public-restaurant", slug] }))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, invalidateAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_item_images", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "featured_sections", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
+      .on("postgres_changes", { event: "*", schema: "public", table: "builders", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
+      .on("postgres_changes", { event: "*", schema: "public", table: "customer_favorites", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [data?.restaurant?.id, slug, qc]);
