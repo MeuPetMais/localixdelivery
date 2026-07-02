@@ -704,8 +704,11 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           slug={slug}
           categories={categories}
           items={items}
-          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i)).length}
-          builderCount={restaurant.builders_enabled ? (builders?.length ?? 0) : 0}
+          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i) && matchesQuery(i)).length}
+          builderCount={restaurant.builders_enabled && !q ? (builders?.length ?? 0) : 0}
+          query={query}
+          onQueryChange={setQuery}
+          matchesQuery={matchesQuery}
         />
 
         <div className="mt-5 space-y-7">
