@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } 
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-role";
-import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck } from "lucide-react";
+import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin")({
@@ -44,6 +44,7 @@ function AdminLayout() {
     { to: "/admin/parceiros", label: "Gestão de Parceiros", icon: Store },
     { to: "/admin/clientes", label: "Gestão de Clientes", icon: Users },
     { to: "/admin/transacoes", label: "Gestão Financeira", icon: Receipt },
+    { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
   ];
 
   return (
