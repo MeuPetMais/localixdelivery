@@ -213,18 +213,27 @@ function baseCss(paper: PaperSize): string {
     h1, h2, h3, .center { text-align: center; margin: 0; }
     h1 { font-size: 1.25em; font-weight: 900; letter-spacing: 0.02em; }
     h2 { font-size: 1.1em; font-weight: 800; }
-    .big { font-size: 1.6em; font-weight: 900; letter-spacing: 0.05em; }
+    .big { font-size: 1.8em; font-weight: 900; letter-spacing: 0.05em; }
+    .huge { font-size: 2.2em; font-weight: 900; letter-spacing: 0.06em; }
     .sep { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
     .thick { border: 0; border-top: 2px solid #000; margin: 4px 0; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .b { font-weight: 800; }
     .u { text-transform: uppercase; }
     .mt { margin-top: 4px; }
-    .item { margin: 4px 0; }
+    .item { margin: 4px 0; page-break-inside: avoid; }
     .opts { padding-left: 10px; }
     .obs { font-weight: 800; text-transform: uppercase; margin-top: 2px; }
     .total { font-size: 1.15em; font-weight: 900; }
+    .group-title { font-weight: 900; text-transform: uppercase; margin-top: 6px; border-bottom: 1px solid #000; }
+    .builder-title { font-weight: 900; text-transform: uppercase; margin-top: 2px; }
+    .builder-group { margin-top: 2px; }
+    .builder-group .gname { font-weight: 800; text-transform: uppercase; }
+    .qr { text-align: center; margin-top: 6px; }
+    .qr img { image-rendering: pixelated; max-width: 40mm; }
     ul { margin: 2px 0 2px 14px; padding: 0; }
+    /* Quebra automática — impede corte em termina de 58/80mm */
+    body, div, span, li { word-break: break-word; overflow-wrap: anywhere; }
   `;
 }
 
@@ -240,7 +249,7 @@ function headerBlock(o: PrintableOrder): string {
     <h1>${esc(o.restaurant_name || "Localix")}</h1>
     <div class="center">${esc(dt)}</div>
     <hr class="thick"/>
-    <div class="center big">#${o.order_number ?? "—"}</div>
+    <div class="center huge">PEDIDO #${o.order_number ?? "—"}</div>
     <hr class="sep"/>
     <div><span class="b">Cliente:</span> ${esc(o.customer_name || "-")}</div>
     <div><span class="b">Consumo:</span> ${esc(consumo)}</div>
