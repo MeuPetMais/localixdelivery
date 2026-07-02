@@ -68,13 +68,6 @@ type Message = {
   created_at: string;
 };
 
-type Article = {
-  id: string;
-  category: string;
-  title: string;
-  content: string;
-  video_url: string | null;
-};
 
 const STATUS_LABEL: Record<TicketStatus, string> = {
   aberto: "Aberto",
