@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { KnowledgeBase } from "@/components/support/KnowledgeBase";
 import {
   Select,
   SelectContent,
