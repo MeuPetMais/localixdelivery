@@ -712,68 +712,131 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         />
 
         <div className="mt-5 space-y-7">
-          {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
-            if (catItems.length === 0) return null;
+          {(() => {
+            const visibleCats = categories
+              .map((cat) => ({ cat, catItems: items.filter((i) => i.category_id === cat.id && matchesQuery(i)) }))
+              .filter(({ catItems }) => catItems.length > 0);
+            const totalMatches = visibleCats.reduce((n, c) => n + c.catItems.length, 0);
+            if (q && totalMatches === 0) {
+              return (
+                <Card className="flex flex-col items-center gap-3 rounded-2xl p-10 text-center text-muted-foreground">
+                  <Search className="h-8 w-8 opacity-60" />
+                  <div>
+                    <p className="font-semibold text-foreground">Nenhum item encontrado para “{query}”.</p>
+                    <p className="text-sm">Tente outro termo ou limpe a busca.</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setQuery("")}>Limpar busca</Button>
+                </Card>
+              );
+            }
             return (
-              <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20">
-                <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
-                <div className="grid gap-3">
-                  {catItems.map((it: any) => {
-                    const hasPromo = isPromoActiveNow(it);
-                    return (
-                      <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
-                        <button
-                          type="button"
-                          aria-label="Favoritar"
-                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
-                          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
-                        >
-                          <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
-                        </button>
+              <>
+                {visibleCats.map(({ cat, catItems }) => (
+                  <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20 animate-fade-in">
+                    <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
+                    <div className="grid gap-3">
+                      {catItems.map((it: any) => {
+                        const hasPromo = isPromoActiveNow(it);
+                        return (
+                          <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                            <button
+                              type="button"
+                              aria-label="Favoritar"
+                              onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                            >
+                              <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                            </button>
 
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
-                          {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
-                          <div className="mt-auto flex items-baseline gap-2 pt-2">
-                            {hasPromo ? (
-                              <>
-                                <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
-                                <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
-                              </>
-                            ) : (
-                              <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="relative shrink-0">
-                          {it.image_url ? (
-                            <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
-                          ) : (
-                            <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
-                              <ImageIcon className="h-6 w-6" />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
+                              {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                              <div className="mt-auto flex items-baseline gap-2 pt-2">
+                                {hasPromo ? (
+                                  <>
+                                    <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
+                                    <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                                  </>
+                                ) : (
+                                  <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          <Button
-                            size="icon"
-                            className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
-                            disabled={!effectiveOpen}
-                            onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </section>
+                            <div className="relative shrink-0">
+                              {it.image_url ? (
+                                <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
+                              ) : (
+                                <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
+                                  <ImageIcon className="h-6 w-6" />
+                                </div>
+                              )}
+                              <Button
+                                size="icon"
+                                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
+                                disabled={!effectiveOpen}
+                                onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+                {items.length === 0 && (
+                  <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
+                )}
+              </>
             );
-          })}
-          {items.length === 0 && (
-            <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
-          )}
+          })()}
         </div>
+
+        {/* Floating "Categorias" button — quick jump on long menus */}
+        {categories.length > 3 && (
+          <Sheet open={catsSheetOpen} onOpenChange={setCatsSheetOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Ver categorias"
+                className="fixed right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition hover:scale-105 active:scale-95"
+                style={{ bottom: "calc(140px + env(safe-area-inset-bottom))" }}
+              >
+                <LayoutGrid className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="max-h-[80vh] rounded-t-3xl">
+              <SheetHeader>
+                <SheetTitle className="font-display text-xl">Categorias</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 grid grid-cols-2 gap-2 overflow-y-auto pb-4">
+                {categories
+                  .map((c) => ({ c, count: items.filter((i) => i.category_id === c.id && matchesQuery(i)).length }))
+                  .filter(({ count }) => count > 0)
+                  .map(({ c, count }) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setCatsSheetOpen(false);
+                        setTimeout(() => {
+                          const el = document.getElementById(`cat-${c.id}`);
+                          if (!el) return;
+                          const top = el.getBoundingClientRect().top + window.scrollY - 80;
+                          window.scrollTo({ top, behavior: "smooth" });
+                        }, 150);
+                      }}
+                      className="flex items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3 text-left font-semibold transition hover:border-primary/40 hover:bg-primary/5"
+                    >
+                      <span className="truncate">{c.name}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{count}</span>
+                    </button>
+                  ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
