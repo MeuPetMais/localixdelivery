@@ -32,6 +32,12 @@ export type PrintableItem = {
   options?: string[] | null;
   /** Ingredientes removidos pelo cliente */
   removed?: string[] | null;
+  /** Grupos de builder no formato { "Pão": ["Brioche"], "Carne": ["Artesanal 180g"] } */
+  builderGroups?: Record<string, string[]> | null;
+  /** Categoria para agrupamento na impressão (ex.: "Bebidas", "Sobremesas") */
+  category?: string | null;
+  /** Marca item de builder (Monte do Seu Jeito) */
+  isBuilder?: boolean | null;
 };
 
 export type PrintableOrder = {
@@ -55,6 +61,10 @@ export type PrintableOrder = {
   order_type?: OrderType | null;
   priority?: string | null;
   table_number?: string | number | null;
+  /** URL de acompanhamento — vira QR Code no rodapé da comanda */
+  tracking_url?: string | null;
+  /** ID interno do pedido (usado no QR quando não há tracking_url) */
+  order_id?: string | null;
 };
 
 export interface PrinterAdapter {
