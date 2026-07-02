@@ -750,11 +750,13 @@ function OrderDetailsDrawer({
   order,
   onOpenChange,
   onPrint,
+  onPrintKitchen,
   onWhatsapp,
 }: {
   order: Order | null;
   onOpenChange: (open: boolean) => void;
   onPrint: () => void;
+  onPrintKitchen: () => void;
   onWhatsapp: () => void;
 }) {
   const items = order && Array.isArray(order.items) ? order.items : [];
