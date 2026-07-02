@@ -8,7 +8,7 @@ const RESERVED_SLUGS = new Set([
   "customers", "dashboard", "entrar", "esqueci-senha", "favoritos", "featured",
   "finance", "finance-ai", "home", "inventory", "kitchen", "loyalty", "menu",
   "meus-enderecos", "meus-pedidos", "orders", "pedido", "pedido-sucesso",
-  "perfil", "promotions", "r", "redefinir-senha", "reviews", "settings",
+  "perfil", "print-settings", "promotions", "r", "redefinir-senha", "reviews", "settings",
   "suppliers", "units",
 ]);
 
