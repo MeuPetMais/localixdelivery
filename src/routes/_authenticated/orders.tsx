@@ -600,7 +600,8 @@ function OrdersPage() {
       <OrderDetailsDrawer
         order={detailOrder}
         onOpenChange={(open) => !open && setDetailOrder(null)}
-        onPrint={detailOrder ? () => printOrder(detailOrder) : () => {}}
+        onPrint={detailOrder ? () => printOrder(detailOrder, "customer") : () => {}}
+        onPrintKitchen={detailOrder ? () => printOrder(detailOrder, "kitchen") : () => {}}
         onWhatsapp={detailOrder ? () => whatsappOrder(detailOrder) : () => {}}
       />
     </div>
