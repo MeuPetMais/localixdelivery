@@ -29,10 +29,16 @@ import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
+import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
+import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
+import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminComissoesRouteImport } from './routes/admin.comissoes'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
+import { Route as AdminAuditoriaRouteImport } from './routes/admin.auditoria'
+import { Route as AdminAprovacoesRouteImport } from './routes/admin.aprovacoes'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -156,6 +162,21 @@ const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
   path: '/transacoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSuporteRoute = AdminSuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPedidosRoute = AdminPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminParceirosRoute = AdminParceirosRouteImport.update({
   id: '/parceiros',
   path: '/parceiros',
@@ -171,9 +192,24 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminComissoesRoute = AdminComissoesRouteImport.update({
+  id: '/comissoes',
+  path: '/comissoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClientesRoute = AdminClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditoriaRoute = AdminAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAprovacoesRoute = AdminAprovacoesRouteImport.update({
+  id: '/aprovacoes',
+  path: '/aprovacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AuthenticatedUnitsRoute = AuthenticatedUnitsRouteImport.update({
@@ -330,10 +366,16 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/aprovacoes': typeof AdminAprovacoesRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -376,10 +418,16 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/aprovacoes': typeof AdminAprovacoesRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -426,10 +474,16 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
+  '/admin/aprovacoes': typeof AdminAprovacoesRoute
+  '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -476,10 +530,16 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/aprovacoes'
+    | '/admin/auditoria'
     | '/admin/clientes'
+    | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/pedidos'
+    | '/admin/relatorios'
+    | '/admin/suporte'
     | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -522,10 +582,16 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/aprovacoes'
+    | '/admin/auditoria'
     | '/admin/clientes'
+    | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/pedidos'
+    | '/admin/relatorios'
+    | '/admin/suporte'
     | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -571,10 +637,16 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/support'
     | '/_authenticated/units'
+    | '/admin/aprovacoes'
+    | '/admin/auditoria'
     | '/admin/clientes'
+    | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/pedidos'
+    | '/admin/relatorios'
+    | '/admin/suporte'
     | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -745,6 +817,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTransacoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/suporte': {
+      id: '/admin/suporte'
+      path: '/suporte'
+      fullPath: '/admin/suporte'
+      preLoaderRoute: typeof AdminSuporteRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/relatorios': {
+      id: '/admin/relatorios'
+      path: '/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AdminRelatoriosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pedidos': {
+      id: '/admin/pedidos'
+      path: '/pedidos'
+      fullPath: '/admin/pedidos'
+      preLoaderRoute: typeof AdminPedidosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/parceiros': {
       id: '/admin/parceiros'
       path: '/parceiros'
@@ -766,11 +859,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConfiguracoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/comissoes': {
+      id: '/admin/comissoes'
+      path: '/comissoes'
+      fullPath: '/admin/comissoes'
+      preLoaderRoute: typeof AdminComissoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/clientes': {
       id: '/admin/clientes'
       path: '/clientes'
       fullPath: '/admin/clientes'
       preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/auditoria': {
+      id: '/admin/auditoria'
+      path: '/auditoria'
+      fullPath: '/admin/auditoria'
+      preLoaderRoute: typeof AdminAuditoriaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/aprovacoes': {
+      id: '/admin/aprovacoes'
+      path: '/aprovacoes'
+      fullPath: '/admin/aprovacoes'
+      preLoaderRoute: typeof AdminAprovacoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_authenticated/units': {
@@ -1003,19 +1117,31 @@ const SlugRouteChildren: SlugRouteChildren = {
 const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
 interface AdminRouteChildren {
+  AdminAprovacoesRoute: typeof AdminAprovacoesRoute
+  AdminAuditoriaRoute: typeof AdminAuditoriaRoute
   AdminClientesRoute: typeof AdminClientesRoute
+  AdminComissoesRoute: typeof AdminComissoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
+  AdminPedidosRoute: typeof AdminPedidosRoute
+  AdminRelatoriosRoute: typeof AdminRelatoriosRoute
+  AdminSuporteRoute: typeof AdminSuporteRoute
   AdminTransacoesRoute: typeof AdminTransacoesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAprovacoesRoute: AdminAprovacoesRoute,
+  AdminAuditoriaRoute: AdminAuditoriaRoute,
   AdminClientesRoute: AdminClientesRoute,
+  AdminComissoesRoute: AdminComissoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
   AdminParceirosRoute: AdminParceirosRoute,
+  AdminPedidosRoute: AdminPedidosRoute,
+  AdminRelatoriosRoute: AdminRelatoriosRoute,
+  AdminSuporteRoute: AdminSuporteRoute,
   AdminTransacoesRoute: AdminTransacoesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
