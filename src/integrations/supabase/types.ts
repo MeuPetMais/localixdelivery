@@ -1038,41 +1038,59 @@ export type Database = {
       order_payment: {
         Row: {
           created_at: string
+          expiration_date: string | null
           external_reference: string | null
           id: string
+          last_error: string | null
           order_id: string
           payment_id: string | null
           payment_intent: string | null
           payment_method: string
+          payment_url: string | null
           provider: string
+          qr_code: string | null
+          qr_code_base64: string | null
           restaurant_id: string
           status: string
+          transaction_amount: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          expiration_date?: string | null
           external_reference?: string | null
           id?: string
+          last_error?: string | null
           order_id: string
           payment_id?: string | null
           payment_intent?: string | null
           payment_method: string
+          payment_url?: string | null
           provider?: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
           restaurant_id: string
           status?: string
+          transaction_amount?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          expiration_date?: string | null
           external_reference?: string | null
           id?: string
+          last_error?: string | null
           order_id?: string
           payment_id?: string | null
           payment_intent?: string | null
           payment_method?: string
+          payment_url?: string | null
           provider?: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
           restaurant_id?: string
           status?: string
+          transaction_amount?: number | null
           updated_at?: string
         }
         Relationships: [

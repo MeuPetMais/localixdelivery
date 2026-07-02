@@ -1,0 +1,8 @@
+
+ALTER TABLE public.order_payment
+  ADD COLUMN IF NOT EXISTS transaction_amount NUMERIC(12,2),
+  ADD COLUMN IF NOT EXISTS expiration_date TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS qr_code TEXT,
+  ADD COLUMN IF NOT EXISTS qr_code_base64 TEXT,
+  ADD COLUMN IF NOT EXISTS payment_url TEXT,
+  ADD COLUMN IF NOT EXISTS last_error TEXT;
