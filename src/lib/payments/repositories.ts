@@ -18,7 +18,7 @@ export const mpAccountRepo = {
       .eq("restaurant_id", restaurantId)
       .maybeSingle();
     if (error) throw error;
-    return (data as MercadoPagoAccount | null) ?? null;
+    return (data as unknown as MercadoPagoAccount | null) ?? null;
   },
   async upsert(payload: Partial<MercadoPagoAccount> & { restaurant_id: string }) {
     const { data, error } = await supabase
@@ -27,7 +27,7 @@ export const mpAccountRepo = {
       .select()
       .single();
     if (error) throw error;
-    return data as MercadoPagoAccount;
+    return data as unknown as MercadoPagoAccount;
   },
   async disconnect(restaurantId: string) {
     const { error } = await supabase
@@ -52,7 +52,7 @@ export const paymentsRepo = {
       .select()
       .single();
     if (error) throw error;
-    return data as Payment;
+    return data as unknown as Payment;
   },
   async getById(id: string) {
     const { data, error } = await supabase
@@ -61,7 +61,7 @@ export const paymentsRepo = {
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
-    return (data as Payment | null) ?? null;
+    return (data as unknown as Payment | null) ?? null;
   },
   async listByRestaurant(restaurantId: string, limit = 100) {
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export const paymentsRepo = {
       .order("created_at", { ascending: false })
       .limit(limit);
     if (error) throw error;
-    return (data ?? []) as Payment[];
+    return (data ?? []) as unknown as Payment[];
   },
   async updateStatus(id: string, patch: Partial<Payment>) {
     const { data, error } = await supabase
@@ -81,7 +81,7 @@ export const paymentsRepo = {
       .select()
       .single();
     if (error) throw error;
-    return data as Payment;
+    return data as unknown as Payment;
   },
 };
 
@@ -94,7 +94,7 @@ export const platformFeesRepo = {
       .eq("id", true)
       .maybeSingle();
     if (error) throw error;
-    return (data as PlatformFees | null) ?? null;
+    return (data as unknown as PlatformFees | null) ?? null;
   },
   async update(patch: Partial<PlatformFees>) {
     const { data, error } = await supabase
@@ -104,7 +104,7 @@ export const platformFeesRepo = {
       .select()
       .single();
     if (error) throw error;
-    return data as PlatformFees;
+    return data as unknown as PlatformFees;
   },
 };
 
@@ -121,6 +121,6 @@ export const paymentLogsRepo = {
       .eq("payment_id", paymentId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as PaymentLog[];
+    return (data ?? []) as unknown as PaymentLog[];
   },
 };
