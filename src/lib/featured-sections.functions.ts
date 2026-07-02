@@ -165,7 +165,7 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(toItem);
       const rendered = config.weekly_favorites_enabled && weekly.length > 0;
       if (rendered) {
-        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "🔥", items: weekly });
+        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "❤️", items: weekly });
       }
       pushDiag("weekly_favorites", "Queridinhos da Semana", "🔥", weekly.length, rendered,
         !config.weekly_favorites_enabled ? "Desativada" : weekly.length === 0 ? "Marque produtos como Queridinho" : "OK");
