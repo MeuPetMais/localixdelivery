@@ -250,18 +250,89 @@ function NotifyPrefsCard() {
     setPrefs(setNotifyPrefs(patch));
   }
 
-  async function handleToggleNotifications(v: boolean) {
-    update({ notifications: v });
-    if (v && perm === "default") {
-      const p = await ensureNotificationPermission();
-      setPerm(p);
+  async function auditPermission(): Promise<NotificationPermission> {
+    const hasAPI = typeof window !== "undefined" && "Notification" in window;
+    const secure = typeof window !== "undefined" && window.isSecureContext;
+    let swCount = 0;
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        swCount = regs.length;
+      } catch {}
+    }
+    const before = hasAPI ? Notification.permission : "denied";
+    console.log("[notify][audit]", {
+      hasNotificationAPI: hasAPI,
+      isSecureContext: secure,
+      serviceWorkerRegistrations: swCount,
+      permissionBefore: before,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "n/a",
+    });
+
+    if (!hasAPI) {
+      toast.error("Este navegador não suporta notificações.");
+      return "denied";
+    }
+    if (!secure) {
+      toast.error("A página precisa estar em HTTPS para notificações.");
+      return "denied";
+    }
+    if (before === "denied") {
+      toast.error("Notificações bloqueadas", {
+        description: "Toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir.",
+        duration: 8000,
+      });
+      return "denied";
+    }
+    if (before === "granted") return "granted";
+
+    // default → solicitar
+    try {
+      const result = await Notification.requestPermission();
+      console.log("[notify][audit] requestPermission =>", result);
+      if (result === "granted") toast.success("Notificações ativadas!");
+      else if (result === "denied") {
+        toast.error("Permissão negada", {
+          description: "Para reativar: cadeado ao lado do endereço → Permissões → Notificações.",
+          duration: 8000,
+        });
+      } else {
+        toast("Permissão pendente", { description: "Você fechou o aviso sem escolher." });
+      }
+      return result;
+    } catch (err) {
+      console.error("[notify][audit] requestPermission erro:", err);
+      toast.error("Não foi possível solicitar permissão.");
+      return "denied";
     }
   }
 
-  function handleTest() {
+  async function handleToggleNotifications(v: boolean) {
+    if (!v) {
+      update({ notifications: false });
+      return;
+    }
+    const result = await auditPermission();
+    setPerm(result);
+    // só marca ativo se realmente foi concedida
+    update({ notifications: result === "granted" });
+  }
+
+  async function handleTest() {
     playNotificationSound();
     vibrateNotification([250, 100, 250]);
-    toast("Teste de notificação", { description: "Se você ouviu o som, está tudo certo!" });
+    const result = await auditPermission();
+    setPerm(result);
+    if (result === "granted") {
+      update({ notifications: true });
+      try {
+        new Notification("Localix", { body: "Teste de notificação — está tudo certo!" });
+        console.log("[notify][audit] Notification enviada");
+      } catch (err) {
+        console.error("[notify][audit] Notification falhou:", err);
+      }
+    }
+    toast("Teste executado", { description: "Veja o console para o relatório completo." });
   }
 
   return (
@@ -279,13 +350,26 @@ function NotifyPrefsCard() {
         <PrefRow icon={Vibrate} label="Vibração" desc="Vibrar o aparelho (Android)"
           checked={prefs.vibration} onChange={(v) => update({ vibration: v })} />
         <PrefRow icon={Bell} label="Notificações do navegador"
-          desc={perm === "denied" ? "Bloqueadas — libere nas configurações do navegador" : "Avisar quando a aba estiver oculta"}
+          desc={
+            perm === "denied"
+              ? "Bloqueadas — cadeado ao lado do endereço → Permissões → Notificações → Permitir"
+              : perm === "granted"
+                ? "Avisar quando a aba estiver oculta"
+                : "Toque para permitir no navegador"
+          }
           checked={prefs.notifications && perm === "granted"}
-          onChange={handleToggleNotifications} disabled={perm === "denied"} />
+          onChange={handleToggleNotifications} />
       </div>
+      {perm === "denied" && (
+        <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+          As notificações foram bloqueadas por este site. No Chrome Android: toque no cadeado ao lado do endereço →
+          Permissões → Notificações → Permitir. Depois volte aqui e toque em "Testar".
+        </p>
+      )}
     </Card>
   );
 }
+
 
 function PrefRow({ icon: Icon, label, desc, checked, onChange, disabled }: {
   icon: typeof Heart; label: string; desc: string;
