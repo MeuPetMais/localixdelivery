@@ -38,13 +38,13 @@ function AdminLayout() {
     );
   }
 
-  const nav = [
+  const nav: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
     { to: "/admin", label: "Dashboard Geral", icon: LayoutDashboard, exact: true },
     { to: "/admin/financeiro", label: "Financeiro da Plataforma", icon: Wallet },
     { to: "/admin/parceiros", label: "Gestão de Parceiros", icon: Store },
     { to: "/admin/clientes", label: "Gestão de Clientes", icon: Users },
     { to: "/admin/transacoes", label: "Gestão Financeira", icon: Receipt },
-  ] as const;
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">

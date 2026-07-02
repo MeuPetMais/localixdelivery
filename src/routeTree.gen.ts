@@ -19,6 +19,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BeneficiosRouteImport } from './routes/beneficios'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -98,6 +99,11 @@ const BeneficiosRoute = BeneficiosRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugRoute = SlugRouteImport.update({
@@ -254,6 +260,7 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -294,6 +301,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$slug': typeof SlugRouteWithChildren
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$slug'
+    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/$slug'
+    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -505,6 +517,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SlugRoute: typeof SlugRouteWithChildren
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
@@ -590,6 +603,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$slug': {
@@ -874,6 +894,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SlugRoute: SlugRouteWithChildren,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
