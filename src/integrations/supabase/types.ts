@@ -959,6 +959,135 @@ export type Database = {
           },
         ]
       }
+      order_payment: {
+        Row: {
+          created_at: string
+          external_reference: string | null
+          id: string
+          order_id: string
+          payment_id: string | null
+          payment_intent: string | null
+          payment_method: string
+          provider: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          order_id: string
+          payment_id?: string | null
+          payment_intent?: string | null
+          payment_method: string
+          provider?: string
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          external_reference?: string | null
+          id?: string
+          order_id?: string
+          payment_id?: string | null
+          payment_intent?: string | null
+          payment_method?: string
+          provider?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_payment_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payment_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payment_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_pricing_snapshot: {
+        Row: {
+          cashback: number
+          coupon_discount: number
+          created_at: string
+          currency: string
+          customer_total: number
+          delivery_fee: number
+          gateway_fee: number
+          gateway_revenue: number
+          id: string
+          order_id: string
+          platform_fee: number
+          platform_revenue: number
+          provider: string | null
+          restaurant_gross: number
+          restaurant_net: number
+          subtotal: number
+        }
+        Insert: {
+          cashback?: number
+          coupon_discount?: number
+          created_at?: string
+          currency?: string
+          customer_total: number
+          delivery_fee?: number
+          gateway_fee?: number
+          gateway_revenue?: number
+          id?: string
+          order_id: string
+          platform_fee?: number
+          platform_revenue?: number
+          provider?: string | null
+          restaurant_gross?: number
+          restaurant_net?: number
+          subtotal: number
+        }
+        Update: {
+          cashback?: number
+          coupon_discount?: number
+          created_at?: string
+          currency?: string
+          customer_total?: number
+          delivery_fee?: number
+          gateway_fee?: number
+          gateway_revenue?: number
+          id?: string
+          order_id?: string
+          platform_fee?: number
+          platform_revenue?: number
+          provider?: string | null
+          restaurant_gross?: number
+          restaurant_net?: number
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_pricing_snapshot_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address: string | null

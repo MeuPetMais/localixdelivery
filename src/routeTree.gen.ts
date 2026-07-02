@@ -65,6 +65,7 @@ import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
+import { Route as SlugCheckoutRouteImport } from './routes/$slug.checkout'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
@@ -347,6 +348,11 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
   path: '/montar',
   getParentRoute: () => SlugRoute,
 } as any)
+const SlugCheckoutRoute = SlugCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => SlugRoute,
+} as any)
 const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
   id: '/api/public/mp/callback',
   path: '/api/public/mp/callback',
@@ -368,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/$slug/checkout': typeof SlugCheckoutRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -424,6 +431,7 @@ export interface FileRoutesByTo {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/$slug/checkout': typeof SlugCheckoutRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -484,6 +492,7 @@ export interface FileRoutesById {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/$slug/checkout': typeof SlugCheckoutRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -544,6 +553,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
+    | '/$slug/checkout'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -600,6 +610,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
+    | '/$slug/checkout'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -659,6 +670,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/redefinir-senha'
+    | '/$slug/checkout'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/_authenticated/ai'
@@ -1120,6 +1132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugMontarRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/$slug/checkout': {
+      id: '/$slug/checkout'
+      path: '/checkout'
+      fullPath: '/$slug/checkout'
+      preLoaderRoute: typeof SlugCheckoutRouteImport
+      parentRoute: typeof SlugRoute
+    }
     '/api/public/mp/callback': {
       id: '/api/public/mp/callback'
       path: '/api/public/mp/callback'
@@ -1184,12 +1203,14 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface SlugRouteChildren {
+  SlugCheckoutRoute: typeof SlugCheckoutRoute
   SlugMontarRoute: typeof SlugMontarRoute
   SlugSobreRoute: typeof SlugSobreRoute
   SlugIndexRoute: typeof SlugIndexRoute
 }
 
 const SlugRouteChildren: SlugRouteChildren = {
+  SlugCheckoutRoute: SlugCheckoutRoute,
   SlugMontarRoute: SlugMontarRoute,
   SlugSobreRoute: SlugSobreRoute,
   SlugIndexRoute: SlugIndexRoute,
