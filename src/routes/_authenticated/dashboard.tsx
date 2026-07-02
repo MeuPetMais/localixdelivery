@@ -81,7 +81,6 @@ function Dashboard() {
   const restaurant = useRestaurant();
   const { invalidate: invalidateRestaurant } = useRestaurantContext();
 
-  const [period, setPeriod] = useState<7 | 30 | 90>(30);
   const [dateRange, setDateRange] = useState<DateRange>(() => computePreset("30d"));
   const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
   const [togglingOpen, setTogglingOpen] = useState(false);
