@@ -96,15 +96,17 @@ export const getDashboardData = createServerFn({ method: "POST" })
       return d >= since60 && d < since30;
     }).length;
 
-    // Period series (respects selected window)
+    // Period series (respects selected window [fromDate..toDate])
     const series: { date: string; revenue: number; orders: number }[] = [];
-    const stepDays = period <= 7 ? 1 : period <= 30 ? 1 : 3;
-    for (let i = period - 1; i >= 0; i -= stepDays) {
-      const d = new Date(startToday.getTime() - i * DAY);
-      const next = new Date(d.getTime() + stepDays * DAY);
+    const stepDays = periodDays <= 7 ? 1 : periodDays <= 30 ? 1 : 3;
+    const startBucket = new Date(fromDate);
+    startBucket.setHours(0, 0, 0, 0);
+    for (let t = startBucket.getTime(); t <= toDate.getTime(); t += stepDays * DAY) {
+      const d = new Date(t);
+      const next = new Date(t + stepDays * DAY);
       const slice = allOrders.filter((o) => {
-        const t = new Date(o.created_at);
-        return t >= d && t < next;
+        const ot = new Date(o.created_at);
+        return ot >= d && ot < next;
       });
       series.push({
         date: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -112,6 +114,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
         orders: slice.length,
       });
     }
+
 
     // Funnel (live counts on open orders today + recent)
     const recent = (orders ?? []).filter((o) => new Date(o.created_at) >= new Date(now.getTime() - 3 * DAY));
