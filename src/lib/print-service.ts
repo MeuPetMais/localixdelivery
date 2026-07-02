@@ -15,6 +15,7 @@
  */
 
 import { brl } from "@/lib/format";
+import QRCode from "qrcode";
 
 /* ------------------------------- Tipos --------------------------------- */
 
