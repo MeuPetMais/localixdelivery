@@ -11,13 +11,31 @@ export type FeaturedItem = {
   is_available: boolean;
 };
 
+export type FeaturedSectionKey =
+  | "promotions"
+  | "weekly_favorites"
+  | "top_rated"
+  | "new_items"
+  | "customer_favorites"
+  | "half_half_pizza";
+
 export type FeaturedSection = {
-  key: "promotions" | "weekly_favorites" | "top_rated" | "new_items" | "customer_favorites" | "half_half_pizza";
+  key: FeaturedSectionKey;
   title: string;
   subtitle: string;
   emoji: string;
   items: FeaturedItem[];
   builderId?: string;
+};
+
+export type FeaturedDiagnostic = {
+  key: FeaturedSectionKey;
+  label: string;
+  emoji: string;
+  enabled: boolean;
+  count: number;
+  rendered: boolean;
+  note: string;
 };
 
 export type FeaturedConfig = {
