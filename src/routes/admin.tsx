@@ -22,7 +22,7 @@ function AdminLayout() {
   const { isAdmin, isLoading } = useIsAdmin(user.id);
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) navigate({ to: "/dashboard", replace: true });
+    if (!isLoading && !isAdmin) navigate({ to: "/auth", replace: true });
   }, [isLoading, isAdmin, navigate]);
 
   async function logout() {
@@ -39,11 +39,17 @@ function AdminLayout() {
   }
 
   const nav: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
-    { to: "/admin", label: "Dashboard Geral", icon: LayoutDashboard, exact: true },
-    { to: "/admin/financeiro", label: "Financeiro da Plataforma", icon: Wallet },
-    { to: "/admin/parceiros", label: "Gestão de Parceiros", icon: Store },
-    { to: "/admin/clientes", label: "Gestão de Clientes", icon: Users },
+    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { to: "/admin/financeiro", label: "Financeiro", icon: Wallet },
+    { to: "/admin/parceiros", label: "Parceiros", icon: Store },
+    { to: "/admin/clientes", label: "Clientes", icon: Users },
+    { to: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
+    { to: "/admin/comissoes", label: "Comissões", icon: Percent },
+    { to: "/admin/aprovacoes", label: "Aprovação de Parceiros", icon: UserCheck },
     { to: "/admin/transacoes", label: "Gestão Financeira", icon: Receipt },
+    { to: "/admin/relatorios", label: "Relatórios", icon: FileBarChart },
+    { to: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
+    { to: "/admin/suporte", label: "Central de Suporte", icon: LifeBuoy },
     { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
   ];
 
