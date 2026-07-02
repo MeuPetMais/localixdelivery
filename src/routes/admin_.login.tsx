@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/login")({
+export const Route = createFileRoute("/admin_/login")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();

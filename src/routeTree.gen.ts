@@ -29,12 +29,12 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
 import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminComissoesRouteImport } from './routes/admin.comissoes'
@@ -164,6 +164,11 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   path: '/pedido-sucesso/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin_/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
   id: '/transacoes',
   path: '/transacoes',
@@ -187,11 +192,6 @@ const AdminPedidosRoute = AdminPedidosRouteImport.update({
 const AdminParceirosRoute = AdminParceirosRouteImport.update({
   id: '/parceiros',
   path: '/parceiros',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
@@ -385,12 +385,12 @@ export interface FileRoutesByFullPath {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -439,12 +439,12 @@ export interface FileRoutesByTo {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -497,12 +497,12 @@ export interface FileRoutesById {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin_/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -555,12 +555,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
-    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -609,12 +609,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
-    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -666,12 +666,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
-    | '/admin/login'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin_/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -695,6 +695,7 @@ export interface RootRouteChildren {
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
@@ -842,6 +843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/login': {
+      id: '/admin_/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/transacoes': {
       id: '/admin/transacoes'
       path: '/transacoes'
@@ -875,13 +883,6 @@ declare module '@tanstack/react-router' {
       path: '/parceiros'
       fullPath: '/admin/parceiros'
       preLoaderRoute: typeof AdminParceirosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/financeiro': {
@@ -1162,7 +1163,6 @@ interface AdminRouteChildren {
   AdminComissoesRoute: typeof AdminComissoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
@@ -1178,7 +1178,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminComissoesRoute: AdminComissoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
-  AdminLoginRoute: AdminLoginRoute,
   AdminParceirosRoute: AdminParceirosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
@@ -1205,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  AdminLoginRoute: AdminLoginRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
