@@ -1826,7 +1826,15 @@ export type Database = {
       seed_demo_marketplace: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "partner" | "customer"
+      app_role:
+        | "admin"
+        | "partner"
+        | "customer"
+        | "financeiro"
+        | "comercial"
+        | "atendimento"
+        | "marketing"
+        | "analista"
       support_category:
         | "problema_tecnico"
         | "pedido"
@@ -1973,7 +1981,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "partner", "customer"],
+      app_role: [
+        "admin",
+        "partner",
+        "customer",
+        "financeiro",
+        "comercial",
+        "atendimento",
+        "marketing",
+        "analista",
+      ],
       support_category: [
         "problema_tecnico",
         "pedido",

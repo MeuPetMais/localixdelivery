@@ -52,12 +52,15 @@ function classifyError(error: { code?: string; message?: string; status?: number
 }
 
 async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1);
+  // Admin impersonation: view any active restaurant as if it were ours.
+  let impersonateId: string | null = null;
+  try { impersonateId = localStorage.getItem("localix:impersonate_restaurant_id"); } catch {}
+
+  const query = impersonateId
+    ? supabase.from("restaurants").select("*").eq("id", impersonateId).limit(1)
+    : supabase.from("restaurants").select("*").eq("owner_id", userId).order("created_at", { ascending: true }).limit(1);
+
+  const { data, error } = await query;
 
   const restaurant = data?.[0] ?? null;
 
@@ -72,6 +75,7 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
   if (!restaurant) return { kind: "missing" };
   return { kind: "found", restaurant };
 }
+
 
 /**
  * Centralized hook to access the current owner's restaurant resolution.

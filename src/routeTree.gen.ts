@@ -15,6 +15,7 @@ import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
+import { Route as EscolherAmbienteRouteImport } from './routes/escolher-ambiente'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BeneficiosRouteImport } from './routes/beneficios'
@@ -91,6 +92,11 @@ const FavoritosRoute = FavoritosRouteImport.update({
 const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
   id: '/esqueci-senha',
   path: '/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EscolherAmbienteRoute = EscolherAmbienteRouteImport.update({
+  id: '/escolher-ambiente',
+  path: '/escolher-ambiente',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarRoute = EntrarRouteImport.update({
@@ -337,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
   '/entrar': typeof EntrarRoute
+  '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
   '/home': typeof HomeRoute
@@ -501,6 +510,7 @@ export interface FileRouteTypes {
     | '/beneficios'
     | '/cliente'
     | '/entrar'
+    | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/beneficios'
     | '/cliente'
     | '/entrar'
+    | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
@@ -608,6 +619,7 @@ export interface FileRouteTypes {
     | '/beneficios'
     | '/cliente'
     | '/entrar'
+    | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
     | '/home'
@@ -664,6 +676,7 @@ export interface RootRouteChildren {
   BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
   EntrarRoute: typeof EntrarRoute
+  EscolherAmbienteRoute: typeof EscolherAmbienteRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
   HomeRoute: typeof HomeRoute
@@ -717,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/esqueci-senha'
       fullPath: '/esqueci-senha'
       preLoaderRoute: typeof EsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/escolher-ambiente': {
+      id: '/escolher-ambiente'
+      path: '/escolher-ambiente'
+      fullPath: '/escolher-ambiente'
+      preLoaderRoute: typeof EscolherAmbienteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar': {
@@ -1157,6 +1177,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
   EntrarRoute: EntrarRoute,
+  EscolherAmbienteRoute: EscolherAmbienteRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
   HomeRoute: HomeRoute,
