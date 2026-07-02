@@ -1144,6 +1144,42 @@ export type Database = {
           },
         ]
       }
+      payment_providers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          provider_name: string
+          supports_credit: boolean
+          supports_pix: boolean
+          supports_refund: boolean
+          supports_split: boolean
+          supports_subscription: boolean
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          provider_name: string
+          supports_credit?: boolean
+          supports_pix?: boolean
+          supports_refund?: boolean
+          supports_split?: boolean
+          supports_subscription?: boolean
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          provider_name?: string
+          supports_credit?: boolean
+          supports_pix?: boolean
+          supports_refund?: boolean
+          supports_split?: boolean
+          supports_subscription?: boolean
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -1266,13 +1302,19 @@ export type Database = {
           commission_rate: number
           contact_email: string | null
           contact_whatsapp: string | null
+          currency: string
+          default_gateway: string
           delivery_fee_default: number
           domain: string | null
           fixed_fee: number
+          gateway_enabled: Json
           id: boolean
           logo_url: string | null
           min_order: number
+          minimum_order: number
           name: string
+          platform_fee_above_30: number
+          platform_fee_until_30: number
           primary_color: string | null
           tier_fees: Json
           updated_at: string
@@ -1284,13 +1326,19 @@ export type Database = {
           commission_rate?: number
           contact_email?: string | null
           contact_whatsapp?: string | null
+          currency?: string
+          default_gateway?: string
           delivery_fee_default?: number
           domain?: string | null
           fixed_fee?: number
+          gateway_enabled?: Json
           id?: boolean
           logo_url?: string | null
           min_order?: number
+          minimum_order?: number
           name?: string
+          platform_fee_above_30?: number
+          platform_fee_until_30?: number
           primary_color?: string | null
           tier_fees?: Json
           updated_at?: string
@@ -1302,13 +1350,19 @@ export type Database = {
           commission_rate?: number
           contact_email?: string | null
           contact_whatsapp?: string | null
+          currency?: string
+          default_gateway?: string
           delivery_fee_default?: number
           domain?: string | null
           fixed_fee?: number
+          gateway_enabled?: Json
           id?: boolean
           logo_url?: string | null
           min_order?: number
+          minimum_order?: number
           name?: string
+          platform_fee_above_30?: number
+          platform_fee_until_30?: number
           primary_color?: string | null
           tier_fees?: Json
           updated_at?: string
