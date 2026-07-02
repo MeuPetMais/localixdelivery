@@ -15,7 +15,7 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart } from "lucide-react";
+import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, X } from "lucide-react";
 import { getFeaturedSections, type FeaturedItem, type FeaturedSection } from "@/lib/featured-sections.functions";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
@@ -167,6 +167,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [builderUnavailableOpen, setBuilderUnavailableOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [catsSheetOpen, setCatsSheetOpen] = useState(false);
+  const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const q = normalize(query.trim());
+  const matchesQuery = (it: any) => {
+    if (!q) return true;
+    return normalize(String(it.name ?? "")).includes(q) || normalize(String(it.description ?? "")).includes(q);
+  };
 
   useEffect(() => {
     if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
@@ -696,73 +704,139 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           slug={slug}
           categories={categories}
           items={items}
-          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i)).length}
-          builderCount={restaurant.builders_enabled ? (builders?.length ?? 0) : 0}
+          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i) && matchesQuery(i)).length}
+          builderCount={restaurant.builders_enabled && !q ? (builders?.length ?? 0) : 0}
+          query={query}
+          onQueryChange={setQuery}
+          matchesQuery={matchesQuery}
         />
 
         <div className="mt-5 space-y-7">
-          {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
-            if (catItems.length === 0) return null;
+          {(() => {
+            const visibleCats = categories
+              .map((cat) => ({ cat, catItems: items.filter((i) => i.category_id === cat.id && matchesQuery(i)) }))
+              .filter(({ catItems }) => catItems.length > 0);
+            const totalMatches = visibleCats.reduce((n, c) => n + c.catItems.length, 0);
+            if (q && totalMatches === 0) {
+              return (
+                <Card className="flex flex-col items-center gap-3 rounded-2xl p-10 text-center text-muted-foreground">
+                  <Search className="h-8 w-8 opacity-60" />
+                  <div>
+                    <p className="font-semibold text-foreground">Nenhum item encontrado para “{query}”.</p>
+                    <p className="text-sm">Tente outro termo ou limpe a busca.</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setQuery("")}>Limpar busca</Button>
+                </Card>
+              );
+            }
             return (
-              <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20">
-                <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
-                <div className="grid gap-3">
-                  {catItems.map((it: any) => {
-                    const hasPromo = isPromoActiveNow(it);
-                    return (
-                      <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
-                        <button
-                          type="button"
-                          aria-label="Favoritar"
-                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
-                          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
-                        >
-                          <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
-                        </button>
+              <>
+                {visibleCats.map(({ cat, catItems }) => (
+                  <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20 animate-fade-in">
+                    <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
+                    <div className="grid gap-3">
+                      {catItems.map((it: any) => {
+                        const hasPromo = isPromoActiveNow(it);
+                        return (
+                          <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                            <button
+                              type="button"
+                              aria-label="Favoritar"
+                              onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                            >
+                              <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                            </button>
 
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
-                          {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
-                          <div className="mt-auto flex items-baseline gap-2 pt-2">
-                            {hasPromo ? (
-                              <>
-                                <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
-                                <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
-                              </>
-                            ) : (
-                              <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="relative shrink-0">
-                          {it.image_url ? (
-                            <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
-                          ) : (
-                            <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
-                              <ImageIcon className="h-6 w-6" />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
+                              {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                              <div className="mt-auto flex items-baseline gap-2 pt-2">
+                                {hasPromo ? (
+                                  <>
+                                    <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
+                                    <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                                  </>
+                                ) : (
+                                  <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          <Button
-                            size="icon"
-                            className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
-                            disabled={!effectiveOpen}
-                            onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </section>
+                            <div className="relative shrink-0">
+                              {it.image_url ? (
+                                <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
+                              ) : (
+                                <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
+                                  <ImageIcon className="h-6 w-6" />
+                                </div>
+                              )}
+                              <Button
+                                size="icon"
+                                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
+                                disabled={!effectiveOpen}
+                                onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+                {items.length === 0 && (
+                  <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
+                )}
+              </>
             );
-          })}
-          {items.length === 0 && (
-            <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
-          )}
+          })()}
         </div>
+
+        {/* Floating "Categorias" button — quick jump on long menus */}
+        {categories.length > 3 && (
+          <Sheet open={catsSheetOpen} onOpenChange={setCatsSheetOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Ver categorias"
+                className="fixed right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition hover:scale-105 active:scale-95"
+                style={{ bottom: "calc(140px + env(safe-area-inset-bottom))" }}
+              >
+                <LayoutGrid className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="max-h-[80vh] rounded-t-3xl">
+              <SheetHeader>
+                <SheetTitle className="font-display text-xl">Categorias</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 grid grid-cols-2 gap-2 overflow-y-auto pb-4">
+                {categories
+                  .map((c) => ({ c, count: items.filter((i) => i.category_id === c.id && matchesQuery(i)).length }))
+                  .filter(({ count }) => count > 0)
+                  .map(({ c, count }) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setCatsSheetOpen(false);
+                        setTimeout(() => {
+                          const el = document.getElementById(`cat-${c.id}`);
+                          if (!el) return;
+                          const top = el.getBoundingClientRect().top + window.scrollY - 80;
+                          window.scrollTo({ top, behavior: "smooth" });
+                        }, 150);
+                      }}
+                      className="flex items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3 text-left font-semibold transition hover:border-primary/40 hover:bg-primary/5"
+                    >
+                      <span className="truncate">{c.name}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{count}</span>
+                    </button>
+                  ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
@@ -1230,12 +1304,18 @@ function SmartCategoryMenu({
   items,
   promoCount,
   builderCount,
+  query,
+  onQueryChange,
+  matchesQuery,
 }: {
   slug: string;
   categories: any[];
   items: any[];
   promoCount: number;
   builderCount: number;
+  query: string;
+  onQueryChange: (v: string) => void;
+  matchesQuery: (it: any) => boolean;
 }) {
   const fetchFeatured = useServerFn(getFeaturedSections);
   const { data: featData } = useQuery({
@@ -1245,22 +1325,26 @@ function SmartCategoryMenu({
     gcTime: 10 * 60_000,
   });
 
+  const hasQuery = query.trim().length > 0;
+
   const menuItems = useMemo(() => {
     const arr: { id: string; label: string; count: number }[] = [];
-    if (promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
-    if (builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
-    for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
-      if (s.key === "promotions" || s.key === "half_half_pizza") continue;
-      if (!s.items?.length) continue;
-      arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
+    if (!hasQuery && promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
+    if (!hasQuery && builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
+    if (!hasQuery) {
+      for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
+        if (s.key === "promotions" || s.key === "half_half_pizza") continue;
+        if (!s.items?.length) continue;
+        arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
+      }
     }
     for (const c of categories) {
-      const count = items.filter((i) => i.category_id === c.id).length;
+      const count = items.filter((i) => i.category_id === c.id && matchesQuery(i)).length;
       if (count === 0) continue;
       arr.push({ id: `cat-${c.id}`, label: c.name, count });
     }
     return arr;
-  }, [featData, categories, items, promoCount, builderCount]);
+  }, [featData, categories, items, promoCount, builderCount, hasQuery, matchesQuery]);
 
   const [active, setActive] = useState<string | null>(null);
   const activePillRef = useRef<HTMLAnchorElement | null>(null);
@@ -1285,11 +1369,16 @@ function SmartCategoryMenu({
     return () => io.disconnect();
   }, [menuItems]);
 
+  // Auto-highlight first matching category when searching
+  useEffect(() => {
+    if (!hasQuery) return;
+    const first = menuItems.find((m) => m.id.startsWith("cat-"));
+    if (first) setActive(first.id);
+  }, [hasQuery, menuItems]);
+
   useEffect(() => {
     activePillRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [active]);
-
-  if (menuItems.length === 0) return null;
 
   const go = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -1310,25 +1399,47 @@ function SmartCategoryMenu({
       className="sticky top-0 z-30 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur"
       style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
     >
-      <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {menuItems.map((m) => {
-          const isActive = active === m.id;
-          return (
-            <a
-              key={m.id}
-              href={`#${m.id}`}
-              ref={isActive ? activePillRef : undefined}
-              onClick={(e) => go(e, m.id)}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
-            >
-              <span>{m.label}</span>
-              <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
-                {m.count}
-              </span>
-            </a>
-          );
-        })}
+      <div className="relative mb-2">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Buscar no cardápio…"
+          className="h-10 rounded-full border-muted bg-muted/40 pl-9 pr-9 text-sm"
+          inputMode="search"
+        />
+        {query && (
+          <button
+            type="button"
+            aria-label="Limpar"
+            onClick={() => onQueryChange("")}
+            className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {menuItems.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {menuItems.map((m) => {
+            const isActive = active === m.id;
+            return (
+              <a
+                key={m.id}
+                href={`#${m.id}`}
+                ref={isActive ? activePillRef : undefined}
+                onClick={(e) => go(e, m.id)}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+              >
+                <span>{m.label}</span>
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
+                  {m.count}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </nav>
   );
 }
