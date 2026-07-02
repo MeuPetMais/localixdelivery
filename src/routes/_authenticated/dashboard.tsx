@@ -370,19 +370,9 @@ function Dashboard() {
                   </button>
                 ))}
               </div>
-              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
-                {([7, 30, 90] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`rounded-md px-2.5 py-1 font-medium transition ${
-                      period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {p}d
-                  </button>
-                ))}
-              </div>
+              <span className="rounded-md border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+                {dateRange.label}
+              </span>
             </div>
           </div>
           <div className="mt-4 h-64 w-full">
