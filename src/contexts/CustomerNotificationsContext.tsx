@@ -11,6 +11,13 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import {
+  ensureNotificationPermission,
+  installAudioUnlock,
+  playNotificationSound,
+  showBackgroundNotification,
+  vibrateNotification,
+} from "@/lib/customer-notify";
 
 export type CustomerNotification = {
   id: string;
@@ -35,58 +42,23 @@ type Ctx = {
 
 const NotificationsContext = createContext<Ctx | null>(null);
 
-function playPing() {
-  try {
-    const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AC) return;
-    const ctx = new AC();
-    const now = ctx.currentTime;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(880, now);
-    o.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.15, now + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-    o.connect(g).connect(ctx.destination);
-    o.start(now);
-    o.stop(now + 0.45);
-    setTimeout(() => ctx.close().catch(() => {}), 600);
-  } catch {}
-}
-
-function vibrate() {
-  try {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate([80, 40, 80]);
-    }
-  } catch {}
-}
-
-function showBrowserNotification(n: CustomerNotification) {
-  try {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-    if (document.visibilityState === "visible") return; // toast já é exibido
-    new Notification(n.title, { body: n.body ?? undefined, tag: n.id });
-  } catch {}
-}
-
 export function CustomerNotificationsProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useCustomerAuth();
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const seenIds = useRef<Set<string>>(new Set());
 
-  // Solicita permissão de notificação uma vez após login.
+  // Instala unlock de áudio no primeiro gesto (uma vez).
+  useEffect(() => {
+    installAudioUnlock();
+  }, []);
+
+  // Solicita permissão de notificação após login (best-effort).
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission === "default") {
-      // Best-effort — alguns navegadores exigem gesto do usuário.
-      Notification.requestPermission().catch(() => {});
-    }
+    ensureNotificationPermission().then((p) => {
+      console.log("[notify] permissão atual:", p);
+    });
   }, [isAuthenticated]);
 
   // Snapshot inicial.
@@ -99,12 +71,13 @@ export function CustomerNotificationsProvider({ children }: { children: ReactNod
     let active = true;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("customer_notifications")
         .select("*")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
+      if (error) console.warn("[notify] snapshot erro:", error);
       if (!active) return;
       const rows = (data ?? []) as CustomerNotification[];
       rows.forEach((n) => seenIds.current.add(n.id));
@@ -131,24 +104,36 @@ export function CustomerNotificationsProvider({ children }: { children: ReactNod
         },
         (payload) => {
           const n = payload.new as CustomerNotification;
+          console.log("[notify] Realtime recebido:", n.type, n.title);
           if (seenIds.current.has(n.id)) return;
           seenIds.current.add(n.id);
           setNotifications((prev) => [n, ...prev]);
-          playPing();
-          vibrate();
-          showBrowserNotification(n);
-          toast(n.title, {
-            description: n.body ?? undefined,
-            duration: 6000,
-            action: n.order_id
-              ? {
-                  label: "Acompanhar pedido",
-                  onClick: () => {
-                    window.location.assign(`/pedido/${n.order_id}`);
-                  },
-                }
-              : undefined,
-          });
+
+          // Som + vibração sempre (respeitando prefs internos).
+          playNotificationSound();
+          vibrateNotification([250, 100, 250]);
+
+          if (document.visibilityState === "visible") {
+            toast(n.title, {
+              description: n.body ?? undefined,
+              duration: 6000,
+              action: n.order_id
+                ? {
+                    label: "Acompanhar pedido",
+                    onClick: () => {
+                      window.location.assign(`/pedido/${n.order_id}`);
+                    },
+                  }
+                : undefined,
+            });
+          } else {
+            showBackgroundNotification({
+              title: n.title,
+              body: n.body,
+              tag: n.id,
+              url: n.order_id ? `/pedido/${n.order_id}` : "/",
+            });
+          }
         },
       )
       .on(
@@ -164,7 +149,9 @@ export function CustomerNotificationsProvider({ children }: { children: ReactNod
           setNotifications((prev) => prev.map((p) => (p.id === n.id ? n : p)));
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[notify] Realtime canal:", status);
+      });
     return () => {
       supabase.removeChannel(channel);
     };

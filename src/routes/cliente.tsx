@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
@@ -18,10 +19,21 @@ import {
   LogOut,
   ShieldCheck,
   ArrowRight,
+  Volume2,
+  Vibrate,
+  Bell,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import {
+  ensureNotificationPermission,
+  getNotifyPrefs,
+  playNotificationSound,
+  setNotifyPrefs,
+  vibrateNotification,
+  type CustomerNotifyPrefs,
+} from "@/lib/customer-notify";
 
 export const Route = createFileRoute("/cliente")({
   head: () => ({ meta: [{ title: "Minha Conta — Localix" }] }),
@@ -211,11 +223,86 @@ function ProfileView({ user }: { user: User }) {
 
         </div>
 
+        <NotifyPrefsCard />
+
         <Card className="p-4 text-sm text-muted-foreground">
           <p className="font-semibold text-foreground">Sessão segura</p>
           <p className="mt-1">Sua sessão fica ativa por até 30 dias neste dispositivo. Saia a qualquer momento pelo botão acima.</p>
         </Card>
       </main>
+    </div>
+  );
+}
+
+function NotifyPrefsCard() {
+  const [prefs, setPrefs] = useState<CustomerNotifyPrefs>(() => getNotifyPrefs());
+  const [perm, setPerm] = useState<NotificationPermission>(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "denied",
+  );
+
+  useEffect(() => {
+    const onChange = (e: Event) => setPrefs((e as CustomEvent).detail);
+    window.addEventListener("localix:notify-prefs", onChange);
+    return () => window.removeEventListener("localix:notify-prefs", onChange);
+  }, []);
+
+  function update(patch: Partial<CustomerNotifyPrefs>) {
+    setPrefs(setNotifyPrefs(patch));
+  }
+
+  async function handleToggleNotifications(v: boolean) {
+    update({ notifications: v });
+    if (v && perm === "default") {
+      const p = await ensureNotificationPermission();
+      setPerm(p);
+    }
+  }
+
+  function handleTest() {
+    playNotificationSound();
+    vibrateNotification([250, 100, 250]);
+    toast("Teste de notificação", { description: "Se você ouviu o som, está tudo certo!" });
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-foreground">Notificações</p>
+          <p className="text-xs text-muted-foreground">Como você quer ser avisado sobre seus pedidos</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={handleTest}>Testar</Button>
+      </div>
+      <div className="space-y-3">
+        <PrefRow icon={Volume2} label="Sons" desc="Toque ao receber atualizações"
+          checked={prefs.sound} onChange={(v) => update({ sound: v })} />
+        <PrefRow icon={Vibrate} label="Vibração" desc="Vibrar o aparelho (Android)"
+          checked={prefs.vibration} onChange={(v) => update({ vibration: v })} />
+        <PrefRow icon={Bell} label="Notificações do navegador"
+          desc={perm === "denied" ? "Bloqueadas — libere nas configurações do navegador" : "Avisar quando a aba estiver oculta"}
+          checked={prefs.notifications && perm === "granted"}
+          onChange={handleToggleNotifications} disabled={perm === "denied"} />
+      </div>
+    </Card>
+  );
+}
+
+function PrefRow({ icon: Icon, label, desc, checked, onChange, disabled }: {
+  icon: typeof Heart; label: string; desc: string;
+  checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{desc}</p>
+        </div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   );
 }
