@@ -65,12 +65,14 @@ function AuthPage() {
 
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
-        navigate({ to: "/dashboard", replace: true });
+        const dest = await resolvePostLoginRedirect(data.session.user.id);
+        navigate({ to: dest, replace: true });
       }
     });
   }, [navigate]);
+
 
   function formatSupabaseError(prefix: string, err: unknown) {
     const e = err as { code?: string; message?: string; details?: string; hint?: string; status?: number } | null;
@@ -184,13 +186,15 @@ function AuthPage() {
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           toast.error(formatSupabaseError("auth.signInWithPassword", error));
           return;
         }
-        navigate({ to: "/dashboard", replace: true });
+        const dest = signInData.user ? await resolvePostLoginRedirect(signInData.user.id) : "/dashboard";
+        navigate({ to: dest, replace: true });
       }
+
     } catch (err) {
       toast.error(formatSupabaseError("inesperado", err));
     } finally {
