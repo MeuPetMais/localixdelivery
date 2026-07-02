@@ -534,6 +534,82 @@ export type Database = {
           },
         ]
       }
+      financial_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          customer_id: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          order_id: string | null
+          provider: string | null
+          reference_id: string | null
+          reference_type: string | null
+          restaurant_id: string | null
+          status: Database["public"]["Enums"]["ledger_status"]
+          transaction_type: Database["public"]["Enums"]["ledger_transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          provider?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id?: string | null
+          status?: Database["public"]["Enums"]["ledger_status"]
+          transaction_type: Database["public"]["Enums"]["ledger_transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          provider?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id?: string | null
+          status?: Database["public"]["Enums"]["ledger_status"]
+          transaction_type?: Database["public"]["Enums"]["ledger_transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_movements: {
         Row: {
           amount: number
@@ -2338,6 +2414,19 @@ export type Database = {
         | "atendimento"
         | "marketing"
         | "analista"
+      ledger_status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED"
+      ledger_transaction_type:
+        | "ORDER_CREATED"
+        | "PAYMENT_PENDING"
+        | "PAYMENT_APPROVED"
+        | "PAYMENT_FAILED"
+        | "PLATFORM_FEE"
+        | "GATEWAY_FEE"
+        | "RESTAURANT_RECEIVABLE"
+        | "REFUND"
+        | "CHARGEBACK"
+        | "PAYOUT"
+        | "ADJUSTMENT"
       support_category:
         | "problema_tecnico"
         | "pedido"
@@ -2493,6 +2582,20 @@ export const Constants = {
         "atendimento",
         "marketing",
         "analista",
+      ],
+      ledger_status: ["PENDING", "COMPLETED", "FAILED", "CANCELLED"],
+      ledger_transaction_type: [
+        "ORDER_CREATED",
+        "PAYMENT_PENDING",
+        "PAYMENT_APPROVED",
+        "PAYMENT_FAILED",
+        "PLATFORM_FEE",
+        "GATEWAY_FEE",
+        "RESTAURANT_RECEIVABLE",
+        "REFUND",
+        "CHARGEBACK",
+        "PAYOUT",
+        "ADJUSTMENT",
       ],
       support_category: [
         "problema_tecnico",
