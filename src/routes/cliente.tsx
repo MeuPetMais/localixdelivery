@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
@@ -18,10 +19,21 @@ import {
   LogOut,
   ShieldCheck,
   ArrowRight,
+  Volume2,
+  Vibrate,
+  Bell,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import {
+  ensureNotificationPermission,
+  getNotifyPrefs,
+  playNotificationSound,
+  setNotifyPrefs,
+  vibrateNotification,
+  type CustomerNotifyPrefs,
+} from "@/lib/customer-notify";
 
 export const Route = createFileRoute("/cliente")({
   head: () => ({ meta: [{ title: "Minha Conta — Localix" }] }),
