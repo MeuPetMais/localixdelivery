@@ -839,6 +839,75 @@ export type Database = {
           },
         ]
       }
+      mercado_pago_accounts: {
+        Row: {
+          access_token: string | null
+          connected: boolean
+          connected_at: string | null
+          created_at: string
+          disconnected_at: string | null
+          expires_at: string | null
+          id: string
+          live_mode: boolean
+          mp_user_id: string | null
+          public_key: string | null
+          raw: Json | null
+          refresh_token: string | null
+          restaurant_id: string
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected?: boolean
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          live_mode?: boolean
+          mp_user_id?: string | null
+          public_key?: string | null
+          raw?: Json | null
+          refresh_token?: string | null
+          restaurant_id: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          connected?: boolean
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          live_mode?: boolean
+          mp_user_id?: string | null
+          public_key?: string | null
+          raw?: Json | null
+          refresh_token?: string | null
+          restaurant_id?: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mercado_pago_accounts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mercado_pago_accounts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address: string | null
@@ -968,6 +1037,173 @@ export type Database = {
           push_notifications?: boolean
           role_title?: string | null
           theme?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_logs: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          level: string
+          message: string
+          payment_id: string | null
+          restaurant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          level?: string
+          message: string
+          payment_id?: string | null
+          restaurant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          level?: string
+          message?: string
+          payment_id?: string | null
+          restaurant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_logs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_logs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_logs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          external_id: string | null
+          id: string
+          method: string
+          net_amount: number
+          order_id: string | null
+          paid_at: string | null
+          payer_email: string | null
+          platform_fee: number
+          provider: string
+          qr_code: string | null
+          qr_code_base64: string | null
+          raw: Json | null
+          restaurant_id: string
+          status: string
+          ticket_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          external_id?: string | null
+          id?: string
+          method: string
+          net_amount?: number
+          order_id?: string | null
+          paid_at?: string | null
+          payer_email?: string | null
+          platform_fee?: number
+          provider?: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          raw?: Json | null
+          restaurant_id: string
+          status?: string
+          ticket_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          external_id?: string | null
+          id?: string
+          method?: string
+          net_amount?: number
+          order_id?: string | null
+          paid_at?: string | null
+          payer_email?: string | null
+          platform_fee?: number
+          provider?: string
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          raw?: Json | null
+          restaurant_id?: string
+          status?: string
+          ticket_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_fees: {
+        Row: {
+          fee_above_30: number
+          fee_up_to_30: number
+          id: boolean
+          min_order: number
+          monthly_fee: number
+          updated_at: string
+        }
+        Insert: {
+          fee_above_30?: number
+          fee_up_to_30?: number
+          id?: boolean
+          min_order?: number
+          monthly_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          fee_above_30?: number
+          fee_up_to_30?: number
+          id?: boolean
+          min_order?: number
+          monthly_fee?: number
           updated_at?: string
         }
         Relationships: []
@@ -1694,6 +1930,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_type: string | null
+          external_id: string | null
+          id: string
+          payload: Json
+          processed_at: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          external_id?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          source?: string
         }
         Relationships: []
       }
