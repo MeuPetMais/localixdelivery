@@ -1,8 +1,13 @@
-// PaymentService — estrutura vazia (Prompt 1).
-// A integração com o Mercado Pago será feita nos próximos prompts.
-// Aqui apenas expõe a superfície de API que os próximos prompts vão implementar.
+// PaymentService — orquestração isolada do módulo de pagamentos.
+// Regras arquiteturais:
+//  - Toda comunicação com gateways passa por Edge Functions.
+//  - Componentes React nunca falam com o MP diretamente.
+//  - Providers implementam `PaymentProvider`; trocar/adicionar gateway
+//    é uma alteração local, sem tocar no restante do app.
 
 import { paymentsRepo, platformFeesRepo } from "./repositories";
+import { getProvider, paymentProviders } from "./providers";
+import type { PaymentProvider } from "./providers";
 import type { PaymentMethod, PlatformFees } from "./types";
 
 export interface CreatePaymentInput {
@@ -22,7 +27,26 @@ export interface FeeBreakdown {
 }
 
 export const PaymentService = {
-  /** Calcula a taxa aplicável a partir da configuração global. */
+  // ------- Providers -------
+  provider(id: string = "mercado_pago"): PaymentProvider {
+    return getProvider(id);
+  },
+  listProviders(): PaymentProvider[] {
+    return Object.values(paymentProviders);
+  },
+
+  // ------- OAuth (via provider ativo) -------
+  async connect(providerId: string, restaurantId: string, redirectTo?: string) {
+    return this.provider(providerId).startOAuth(restaurantId, redirectTo);
+  },
+  async connectionStatus(providerId: string, restaurantId: string) {
+    return this.provider(providerId).getStatus(restaurantId);
+  },
+  async disconnect(providerId: string, restaurantId: string) {
+    return this.provider(providerId).disconnect(restaurantId);
+  },
+
+  // ------- Taxas da plataforma -------
   async calcFees(subtotal: number): Promise<FeeBreakdown> {
     const cfg = (await platformFeesRepo.get()) ?? ({
       min_order: 20,
@@ -40,17 +64,14 @@ export const PaymentService = {
     };
   },
 
-  /** Placeholder — implementado no Prompt 5. */
+  // ------- Placeholders — Prompt 5+ -------
   async createPayment(_input: CreatePaymentInput): Promise<never> {
     throw new Error("PaymentService.createPayment ainda não implementado (Prompt 5).");
   },
-
-  /** Placeholder — implementado no Prompt 5. */
   async refreshStatus(_paymentId: string): Promise<never> {
     throw new Error("PaymentService.refreshStatus ainda não implementado (Prompt 5).");
   },
 
-  /** Utilitário para consultar pagamentos já existentes. */
   async listByRestaurant(restaurantId: string, limit = 100) {
     return paymentsRepo.listByRestaurant(restaurantId, limit);
   },
