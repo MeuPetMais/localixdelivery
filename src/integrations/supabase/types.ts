@@ -486,6 +486,54 @@ export type Database = {
           },
         ]
       }
+      featured_sections: {
+        Row: {
+          customer_favorites_enabled: boolean
+          half_half_pizza_enabled: boolean
+          new_items_enabled: boolean
+          promotions_enabled: boolean
+          restaurant_id: string
+          top_rated_enabled: boolean
+          updated_at: string
+          weekly_favorites_enabled: boolean
+        }
+        Insert: {
+          customer_favorites_enabled?: boolean
+          half_half_pizza_enabled?: boolean
+          new_items_enabled?: boolean
+          promotions_enabled?: boolean
+          restaurant_id: string
+          top_rated_enabled?: boolean
+          updated_at?: string
+          weekly_favorites_enabled?: boolean
+        }
+        Update: {
+          customer_favorites_enabled?: boolean
+          half_half_pizza_enabled?: boolean
+          new_items_enabled?: boolean
+          promotions_enabled?: boolean
+          restaurant_id?: string
+          top_rated_enabled?: boolean
+          updated_at?: string
+          weekly_favorites_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_sections_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_sections_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_movements: {
         Row: {
           amount: number
@@ -696,6 +744,7 @@ export type Database = {
           is_bestseller: boolean
           is_featured: boolean
           is_paused: boolean
+          is_weekly_favorite: boolean
           name: string
           position: number
           prep_time_minutes: number | null
@@ -723,6 +772,7 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_paused?: boolean
+          is_weekly_favorite?: boolean
           name: string
           position?: number
           prep_time_minutes?: number | null
@@ -750,6 +800,7 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_paused?: boolean
+          is_weekly_favorite?: boolean
           name?: string
           position?: number
           prep_time_minutes?: number | null
