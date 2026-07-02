@@ -1349,6 +1349,7 @@ function SmartCategoryMenu({
 
   const [active, setActive] = useState<string | null>(null);
   const activePillRef = useRef<HTMLAnchorElement | null>(null);
+  const pillsRowRef = useRef<HTMLDivElement | null>(null);
   const clickLockRef = useRef(0);
 
   useEffect(() => {
@@ -1377,8 +1378,20 @@ function SmartCategoryMenu({
     if (first) setActive(first.id);
   }, [hasQuery, menuItems]);
 
+  // Center the active pill by scrolling ONLY the horizontal pill row.
+  // Never use scrollIntoView here: on mobile it also scrolls the page
+  // vertically (all scrollable ancestors), fighting the user's touch
+  // scroll and making the sticky menu "jump".
   useEffect(() => {
-    activePillRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    if (!active) return;
+    const raf = requestAnimationFrame(() => {
+      const row = pillsRowRef.current;
+      const pill = activePillRef.current;
+      if (!row || !pill) return;
+      const left = pill.offsetLeft - row.clientWidth / 2 + pill.offsetWidth / 2;
+      row.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [active]);
 
   const go = (e: React.MouseEvent, id: string) => {
@@ -1388,7 +1401,7 @@ function SmartCategoryMenu({
     const top = el.getBoundingClientRect().top + window.scrollY - 80;
     window.scrollTo({ top, behavior: "smooth" });
     setActive(id);
-    clickLockRef.current = Date.now() + 800;
+    clickLockRef.current = Date.now() + 1000;
     el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
     window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl");
@@ -1421,7 +1434,7 @@ function SmartCategoryMenu({
         )}
       </div>
       {menuItems.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={pillsRowRef} className="flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {menuItems.map((m) => {
             const isActive = active === m.id;
             return (
@@ -1430,7 +1443,7 @@ function SmartCategoryMenu({
                 href={`#${m.id}`}
                 ref={isActive ? activePillRef : undefined}
                 onClick={(e) => go(e, m.id)}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
               >
                 <span>{m.label}</span>
                 <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
