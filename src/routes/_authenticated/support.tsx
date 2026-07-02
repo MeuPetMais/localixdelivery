@@ -282,22 +282,7 @@ function SupportPage() {
         )}
       </Card>
 
-      {/* Base de conhecimento */}
-      <Card className="p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-primary" />
-          <h2 className="font-semibold">Base de conhecimento</h2>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {(articlesQuery.data ?? []).map((a) => (
-            <div key={a.id} className="rounded-lg border p-3">
-              <div className="text-xs uppercase tracking-wide text-primary">{a.category}</div>
-              <div className="mt-0.5 font-medium">{a.title}</div>
-              <p className="mt-1 text-sm text-muted-foreground">{a.content}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <KnowledgeBase />
 
       <NewTicketDialog
         open={openNew}
