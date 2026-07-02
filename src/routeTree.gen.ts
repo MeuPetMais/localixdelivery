@@ -49,6 +49,7 @@ import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
 import { Route as AuthenticatedPrintSettingsRouteImport } from './routes/_authenticated/print-settings'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authenticated/pagamentos'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
@@ -64,6 +65,7 @@ import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
+import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -265,6 +267,11 @@ const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPagamentosRoute = AuthenticatedPagamentosRouteImport.update({
+  id: '/pagamentos',
+  path: '/pagamentos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -340,6 +347,11 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
   path: '/montar',
   getParentRoute: () => SlugRoute,
 } as any)
+const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
+  id: '/api/public/mp/callback',
+  path: '/api/public/mp/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -371,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
@@ -396,6 +409,7 @@ export interface FileRoutesByFullPath {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -425,6 +439,7 @@ export interface FileRoutesByTo {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
@@ -450,6 +465,7 @@ export interface FileRoutesByTo {
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -483,6 +499,7 @@ export interface FileRoutesById {
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/pagamentos': typeof AuthenticatedPagamentosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
@@ -508,6 +525,7 @@ export interface FileRoutesById {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -541,6 +559,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/orders'
+    | '/pagamentos'
     | '/perfil'
     | '/print-settings'
     | '/promotions'
@@ -566,6 +585,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/public/mp/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -595,6 +615,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/orders'
+    | '/pagamentos'
     | '/perfil'
     | '/print-settings'
     | '/promotions'
@@ -620,6 +641,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug'
     | '/admin'
+    | '/api/public/mp/callback'
   id:
     | '__root__'
     | '/'
@@ -652,6 +674,7 @@ export interface FileRouteTypes {
     | '/_authenticated/loyalty'
     | '/_authenticated/menu'
     | '/_authenticated/orders'
+    | '/_authenticated/pagamentos'
     | '/_authenticated/perfil'
     | '/_authenticated/print-settings'
     | '/_authenticated/promotions'
@@ -677,6 +700,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/public/mp/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -699,6 +723,7 @@ export interface RootRouteChildren {
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
+  ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -983,6 +1008,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pagamentos': {
+      id: '/_authenticated/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/pagamentos'
+      preLoaderRoute: typeof AuthenticatedPagamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/orders': {
       id: '/_authenticated/orders'
       path: '/orders'
@@ -1088,6 +1120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugMontarRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/api/public/mp/callback': {
+      id: '/api/public/mp/callback'
+      path: '/api/public/mp/callback'
+      fullPath: '/api/public/mp/callback'
+      preLoaderRoute: typeof ApiPublicMpCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1105,6 +1144,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPagamentosRoute: typeof AuthenticatedPagamentosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPrintSettingsRoute: typeof AuthenticatedPrintSettingsRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
@@ -1129,6 +1169,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPagamentosRoute: AuthenticatedPagamentosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPrintSettingsRoute: AuthenticatedPrintSettingsRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
@@ -1208,17 +1249,8 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
+  ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
