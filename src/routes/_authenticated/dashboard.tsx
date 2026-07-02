@@ -91,8 +91,11 @@ function Dashboard() {
   const fetchDash = useServerFn(getDashboardData);
   const { data: dash } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["dashboard", restaurant?.id, period],
-    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id, period } }),
+    queryKey: ["dashboard", restaurant?.id, dateRange.from, dateRange.to],
+    queryFn: () =>
+      fetchDash({
+        data: { restaurantId: restaurant!.id, from: dateRange.from, to: dateRange.to },
+      }),
     refetchInterval: 60_000,
   });
 
