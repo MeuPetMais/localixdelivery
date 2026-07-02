@@ -31,6 +31,7 @@ import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
@@ -163,6 +164,11 @@ const AdminParceirosRoute = AdminParceirosRouteImport.update({
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminClientesRoute = AdminClientesRouteImport.update({
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
@@ -370,6 +377,7 @@ export interface FileRoutesByTo {
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
@@ -468,6 +477,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/units'
     | '/admin/clientes'
+    | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/admin/transacoes'
@@ -513,6 +523,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/units'
     | '/admin/clientes'
+    | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/admin/transacoes'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/_authenticated/support'
     | '/_authenticated/units'
     | '/admin/clientes'
+    | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/admin/transacoes'
@@ -745,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiro'
       fullPath: '/admin/financeiro'
       preLoaderRoute: typeof AdminFinanceiroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/clientes': {
@@ -985,6 +1004,7 @@ const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
 interface AdminRouteChildren {
   AdminClientesRoute: typeof AdminClientesRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
   AdminTransacoesRoute: typeof AdminTransacoesRoute
@@ -993,6 +1013,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminClientesRoute: AdminClientesRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
   AdminParceirosRoute: AdminParceirosRoute,
   AdminTransacoesRoute: AdminTransacoesRoute,
