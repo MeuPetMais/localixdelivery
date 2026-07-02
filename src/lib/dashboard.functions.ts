@@ -3,7 +3,9 @@ import { z } from "zod";
 
 const schema = z.object({
   restaurantId: z.string().uuid(),
-  period: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional().default(30),
+  period: z.number().int().min(1).max(365).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -24,12 +26,22 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const startToday = new Date(now);
     startToday.setHours(0, 0, 0, 0);
     const startYesterday = new Date(startToday.getTime() - DAY);
-    const period = data.period ?? 30;
     const since30 = new Date(now.getTime() - 30 * DAY);
     const since60 = new Date(now.getTime() - 60 * DAY);
-    const sincePeriod = new Date(startToday.getTime() - (period - 1) * DAY);
-    const lookback = Math.max(60, period) * DAY;
-    const sinceFetch = new Date(now.getTime() - lookback);
+
+    // Janela do filtro selecionado (from/to em YYYY-MM-DD inclusivos, senão fallback para period=30)
+    const fromDate = data.from
+      ? new Date(`${data.from}T00:00:00`)
+      : new Date(startToday.getTime() - ((data.period ?? 30) - 1) * DAY);
+    const toDate = data.to
+      ? new Date(`${data.to}T23:59:59.999`)
+      : now;
+    const periodDays = Math.max(1, Math.round((toDate.getTime() - fromDate.getTime()) / DAY) + 1);
+    const period = periodDays;
+    const sincePeriod = fromDate;
+    const lookback = Math.max(60, periodDays) * DAY;
+    const sinceFetch = new Date(Math.min(fromDate.getTime(), now.getTime() - lookback));
+
 
     const [{ data: orders }, { data: customers }, { data: items }, { data: movements }, { data: coupons }] = await Promise.all([
       supabaseAdmin
