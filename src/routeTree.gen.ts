@@ -29,6 +29,7 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
 import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
@@ -161,6 +162,11 @@ const PedidoIdRoute = PedidoIdRouteImport.update({
 const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   id: '/pedido-sucesso/$id',
   path: '/pedido-sucesso/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin_/login',
+  path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
@@ -384,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -437,6 +444,7 @@ export interface FileRoutesByTo {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -494,6 +502,7 @@ export interface FileRoutesById {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/transacoes': typeof AdminTransacoesRoute
+  '/admin_/login': typeof AdminLoginRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -551,6 +560,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -604,6 +614,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -660,6 +671,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/suporte'
     | '/admin/transacoes'
+    | '/admin_/login'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -683,6 +695,7 @@ export interface RootRouteChildren {
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
@@ -828,6 +841,13 @@ declare module '@tanstack/react-router' {
       path: '/pedido-sucesso/$id'
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/login': {
+      id: '/admin_/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/transacoes': {
@@ -1184,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  AdminLoginRoute: AdminLoginRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
@@ -1191,13 +1212,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
