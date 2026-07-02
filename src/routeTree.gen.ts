@@ -30,6 +30,7 @@ import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
+import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -156,6 +157,11 @@ const AdminParceirosRoute = AdminParceirosRouteImport.update({
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AuthenticatedUnitsRoute = AuthenticatedUnitsRouteImport.update({
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
@@ -355,6 +362,7 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
@@ -402,6 +410,7 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/pedido-sucesso/$id'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/pedido-sucesso/$id'
@@ -538,6 +549,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/support'
     | '/_authenticated/units'
+    | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
     | '/pedido-sucesso/$id'
@@ -714,6 +726,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiro'
       fullPath: '/admin/financeiro'
       preLoaderRoute: typeof AdminFinanceiroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_authenticated/units': {
@@ -946,12 +965,14 @@ const SlugRouteChildren: SlugRouteChildren = {
 const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
 interface AdminRouteChildren {
+  AdminClientesRoute: typeof AdminClientesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminClientesRoute: AdminClientesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
   AdminParceirosRoute: AdminParceirosRoute,
   AdminIndexRoute: AdminIndexRoute,
