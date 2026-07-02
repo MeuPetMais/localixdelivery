@@ -5,10 +5,11 @@ import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
 const RESERVED_SLUGS = new Set([
   "admin", "ai", "auth", "beneficios", "builders", "cliente", "consultor",
-  "customers", "dashboard", "entrar", "esqueci-senha", "favoritos", "finance",
-  "finance-ai", "home", "inventory", "loyalty", "menu", "meus-pedidos",
-  "orders", "pedido", "pedido-sucesso", "promotions", "r", "redefinir-senha",
-  "reviews", "settings", "suppliers", "units",
+  "customers", "dashboard", "entrar", "esqueci-senha", "favoritos", "featured",
+  "finance", "finance-ai", "home", "inventory", "kitchen", "loyalty", "menu",
+  "meus-enderecos", "meus-pedidos", "orders", "pedido", "pedido-sucesso",
+  "perfil", "promotions", "r", "redefinir-senha", "reviews", "settings",
+  "suppliers", "units",
 ]);
 
 export const Route = createFileRoute("/$slug")({
