@@ -1349,6 +1349,7 @@ function SmartCategoryMenu({
 
   const [active, setActive] = useState<string | null>(null);
   const activePillRef = useRef<HTMLAnchorElement | null>(null);
+  const pillsRowRef = useRef<HTMLDivElement | null>(null);
   const clickLockRef = useRef(0);
 
   useEffect(() => {
@@ -1377,8 +1378,20 @@ function SmartCategoryMenu({
     if (first) setActive(first.id);
   }, [hasQuery, menuItems]);
 
+  // Center the active pill by scrolling ONLY the horizontal pill row.
+  // Never use scrollIntoView here: on mobile it also scrolls the page
+  // vertically (all scrollable ancestors), fighting the user's touch
+  // scroll and making the sticky menu "jump".
   useEffect(() => {
-    activePillRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    if (!active) return;
+    const raf = requestAnimationFrame(() => {
+      const row = pillsRowRef.current;
+      const pill = activePillRef.current;
+      if (!row || !pill) return;
+      const left = pill.offsetLeft - row.clientWidth / 2 + pill.offsetWidth / 2;
+      row.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [active]);
 
   const go = (e: React.MouseEvent, id: string) => {
@@ -1388,7 +1401,7 @@ function SmartCategoryMenu({
     const top = el.getBoundingClientRect().top + window.scrollY - 80;
     window.scrollTo({ top, behavior: "smooth" });
     setActive(id);
-    clickLockRef.current = Date.now() + 800;
+    clickLockRef.current = Date.now() + 1000;
     el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
     window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl");
