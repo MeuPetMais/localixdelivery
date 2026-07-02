@@ -29,6 +29,7 @@ import {
   X,
   Flame,
   UserCircle,
+  Printer,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-role";
