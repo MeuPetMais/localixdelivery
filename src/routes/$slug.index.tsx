@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -577,7 +577,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             );
           if (promos.length === 0) return null;
           return (
-            <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <section id="sec-promos" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-display text-xl font-extrabold tracking-tight">🔥 Promoções do Dia</h2>
                 <span className="text-xs font-semibold text-muted-foreground">{promos.length} {promos.length === 1 ? "oferta" : "ofertas"}</span>
@@ -639,7 +639,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
         {/* 🍕 Monte do Seu Jeito */}
         {restaurant.builders_enabled && builders && builders.length > 0 && (
-          <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <section id="sec-monte" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-extrabold tracking-tight">🍕 Monte do Seu Jeito</h2>
               <span className="text-xs font-semibold text-muted-foreground">{builders.length} {builders.length === 1 ? "opção" : "opções"}</span>
@@ -691,26 +691,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         />
 
 
-        {/* category chips */}
-        {categories.length > 0 && (
-          <nav className="sticky top-0 z-20 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur">
-            <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categories.map((c) => {
-                const isActive = activeCat === c.id;
-                return (
-                  <a
-                    key={c.id}
-                    href={`#cat-${c.id}`}
-                    onClick={() => setActiveCat(c.id)}
-                    className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
-                  >
-                    {c.name}
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
-        )}
+        {/* smart sticky category menu */}
+        <SmartCategoryMenu
+          slug={slug}
+          categories={categories}
+          items={items}
+          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i)).length}
+          builderCount={restaurant.builders_enabled ? (builders?.length ?? 0) : 0}
+        />
 
         <div className="mt-5 space-y-7">
           {categories.map((cat) => {
@@ -1177,7 +1165,7 @@ function FeaturedSections({
           );
         }
         return (
-          <section key={section.key}>
+          <section key={section.key} id={`feat-${section.key}`} className="scroll-mt-24">
             <div className="mb-2 flex items-end justify-between gap-2">
               <div>
                 <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">
@@ -1233,6 +1221,115 @@ function FeaturedSections({
         );
       })}
     </div>
+  );
+}
+
+function SmartCategoryMenu({
+  slug,
+  categories,
+  items,
+  promoCount,
+  builderCount,
+}: {
+  slug: string;
+  categories: any[];
+  items: any[];
+  promoCount: number;
+  builderCount: number;
+}) {
+  const fetchFeatured = useServerFn(getFeaturedSections);
+  const { data: featData } = useQuery({
+    queryKey: ["featured-sections", slug],
+    queryFn: () => fetchFeatured({ data: { slug } }),
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+
+  const menuItems = useMemo(() => {
+    const arr: { id: string; label: string; count: number }[] = [];
+    if (promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
+    if (builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
+    for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
+      if (s.key === "promotions" || s.key === "half_half_pizza") continue;
+      if (!s.items?.length) continue;
+      arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
+    }
+    for (const c of categories) {
+      const count = items.filter((i) => i.category_id === c.id).length;
+      if (count === 0) continue;
+      arr.push({ id: `cat-${c.id}`, label: c.name, count });
+    }
+    return arr;
+  }, [featData, categories, items, promoCount, builderCount]);
+
+  const [active, setActive] = useState<string | null>(null);
+  const activePillRef = useRef<HTMLAnchorElement | null>(null);
+  const clickLockRef = useRef(0);
+
+  useEffect(() => {
+    if (menuItems.length === 0) return;
+    const ids = menuItems.map((m) => m.id);
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    if (els.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (Date.now() < clickLockRef.current) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-96px 0px -60% 0px", threshold: 0 },
+    );
+    for (const el of els) io.observe(el);
+    return () => io.disconnect();
+  }, [menuItems]);
+
+  useEffect(() => {
+    activePillRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [active]);
+
+  if (menuItems.length === 0) return null;
+
+  const go = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top, behavior: "smooth" });
+    setActive(id);
+    clickLockRef.current = Date.now() + 800;
+    el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
+    window.setTimeout(() => {
+      el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl");
+    }, 1200);
+  };
+
+  return (
+    <nav
+      className="sticky top-0 z-30 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur"
+      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+    >
+      <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {menuItems.map((m) => {
+          const isActive = active === m.id;
+          return (
+            <a
+              key={m.id}
+              href={`#${m.id}`}
+              ref={isActive ? activePillRef : undefined}
+              onClick={(e) => go(e, m.id)}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+            >
+              <span>{m.label}</span>
+              <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
+                {m.count}
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
