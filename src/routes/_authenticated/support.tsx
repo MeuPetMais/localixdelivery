@@ -151,18 +151,6 @@ function SupportPage() {
     },
   });
 
-  const articlesQuery = useQuery({
-    queryKey: ["support-articles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("support_articles")
-        .select("id, category, title, content, video_url")
-        .eq("published", true)
-        .order("position", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Article[];
-    },
-  });
 
   // Realtime: atualizar lista quando o suporte responder
   useEffect(() => {
