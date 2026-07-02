@@ -57,6 +57,8 @@ import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { NewOrderCard } from "@/components/NewOrderCard";
+import { MerchantNotificationsBell } from "@/components/MerchantNotificationsBell";
+import { DateRangeFilter, computePreset, type DateRange } from "@/components/DateRangeFilter";
 import {
   ResponsiveContainer,
   AreaChart,
