@@ -31,8 +31,6 @@ import {
   Bike,
   CheckCircle2,
   Clock,
-  Bell,
-  ChevronDown,
   Share2,
   Instagram,
   Facebook,
