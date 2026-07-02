@@ -1434,7 +1434,7 @@ function SmartCategoryMenu({
         )}
       </div>
       {menuItems.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={pillsRowRef} className="flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {menuItems.map((m) => {
             const isActive = active === m.id;
             return (
@@ -1443,7 +1443,7 @@ function SmartCategoryMenu({
                 href={`#${m.id}`}
                 ref={isActive ? activePillRef : undefined}
                 onClick={(e) => go(e, m.id)}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
               >
                 <span>{m.label}</span>
                 <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
