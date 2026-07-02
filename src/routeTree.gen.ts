@@ -19,13 +19,19 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as BeneficiosRouteImport } from './routes/beneficios'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
+import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
+import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
+import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -47,7 +53,6 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
 import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticated/builders'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
 
@@ -101,6 +106,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SlugRoute = SlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -114,6 +124,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const SlugIndexRoute = SlugIndexRouteImport.update({
   id: '/',
@@ -134,6 +149,26 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   id: '/pedido-sucesso/$id',
   path: '/pedido-sucesso/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
+  id: '/transacoes',
+  path: '/transacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminParceirosRoute = AdminParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AuthenticatedUnitsRoute = AuthenticatedUnitsRouteImport.update({
   id: '/units',
@@ -241,11 +276,6 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const SlugSobreRoute = SlugSobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
@@ -260,6 +290,7 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -272,7 +303,6 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -294,10 +324,15 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -313,7 +348,6 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -335,16 +369,22 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$slug': typeof SlugRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/beneficios': typeof BeneficiosRoute
   '/cliente': typeof ClienteRoute
@@ -357,7 +397,6 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/builders': typeof AuthenticatedBuildersRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
@@ -379,16 +418,22 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$slug'
+    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -401,7 +446,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/admin'
     | '/ai'
     | '/builders'
     | '/consultor'
@@ -423,10 +467,15 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/clientes'
+    | '/admin/financeiro'
+    | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
     | '/$slug/'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -442,7 +491,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/admin'
     | '/ai'
     | '/builders'
     | '/consultor'
@@ -464,15 +512,21 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/support'
     | '/units'
+    | '/admin/clientes'
+    | '/admin/financeiro'
+    | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
     | '/$slug'
+    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/$slug'
+    | '/admin'
     | '/auth'
     | '/beneficios'
     | '/cliente'
@@ -485,7 +539,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/builders'
     | '/_authenticated/consultor'
@@ -507,16 +560,22 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/_authenticated/support'
     | '/_authenticated/units'
+    | '/admin/clientes'
+    | '/admin/financeiro'
+    | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
     | '/$slug/'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SlugRoute: typeof SlugRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   BeneficiosRoute: typeof BeneficiosRoute
   ClienteRoute: typeof ClienteRoute
@@ -604,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$slug': {
       id: '/$slug'
       path: '/$slug'
@@ -624,6 +690,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/$slug/': {
       id: '/$slug/'
@@ -652,6 +725,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/transacoes': {
+      id: '/admin/transacoes'
+      path: '/transacoes'
+      fullPath: '/admin/transacoes'
+      preLoaderRoute: typeof AdminTransacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/parceiros': {
+      id: '/admin/parceiros'
+      path: '/parceiros'
+      fullPath: '/admin/parceiros'
+      preLoaderRoute: typeof AdminParceirosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/financeiro': {
+      id: '/admin/financeiro'
+      path: '/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AdminFinanceiroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_authenticated/units': {
       id: '/_authenticated/units'
@@ -800,13 +901,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/$slug/sobre': {
       id: '/$slug/sobre'
       path: '/sobre'
@@ -825,7 +919,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBuildersRoute: typeof AuthenticatedBuildersRoute
   AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
@@ -850,7 +943,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBuildersRoute: AuthenticatedBuildersRoute,
   AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
@@ -891,10 +983,29 @@ const SlugRouteChildren: SlugRouteChildren = {
 
 const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
+interface AdminRouteChildren {
+  AdminClientesRoute: typeof AdminClientesRoute
+  AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminParceirosRoute: typeof AdminParceirosRoute
+  AdminTransacoesRoute: typeof AdminTransacoesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminClientesRoute: AdminClientesRoute,
+  AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminParceirosRoute: AdminParceirosRoute,
+  AdminTransacoesRoute: AdminTransacoesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SlugRoute: SlugRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   BeneficiosRoute: BeneficiosRoute,
   ClienteRoute: ClienteRoute,
