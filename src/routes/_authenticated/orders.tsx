@@ -40,6 +40,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { printOrder as printOrderSvc, type PrintableOrder } from "@/lib/print-service";
 
 
 export const Route = createFileRoute("/_authenticated/orders")({
@@ -374,44 +375,31 @@ function OrdersPage() {
     updateStatus(id, col);
   }
 
-  function printOrder(o: Order) {
+  function printOrder(o: Order, template: "kitchen" | "customer" = "customer") {
     const items = Array.isArray(o.items) ? o.items : [];
-    const itemsHtml = items
-      .map(
-        (it) =>
-          `<tr><td>${it.qty}x</td><td>${escapeHtml(it.name)}</td><td style="text-align:right">${brl(Number(it.price) * it.qty)}</td></tr>`,
-      )
-      .join("");
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Pedido #${o.order_number ?? ""}</title>
-<style>
-  @media print { @page { margin: 8mm; } }
-  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-width: 320px; margin: 0 auto; padding: 8px; color:#000; }
-  h1 { font-size: 18px; margin: 0 0 4px; text-align:center; }
-  .muted { color:#333; font-size: 12px; }
-  hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
-  table { width:100%; border-collapse: collapse; font-size: 12px; }
-  td { padding: 2px 0; vertical-align: top; }
-  .total { font-size: 16px; font-weight: 700; text-align:right; }
-</style></head><body>
-<h1>${escapeHtml(restaurant.name ?? "Pedido")}</h1>
-<div class="muted" style="text-align:center">Pedido #${o.order_number ?? "-"}</div>
-<hr/>
-<div><b>Cliente:</b> ${escapeHtml(o.customer_name)}</div>
-${o.customer_phone ? `<div><b>Telefone:</b> ${escapeHtml(formatPhone(o.customer_phone))}</div>` : ""}
-${o.address ? `<div><b>Endereço:</b> ${escapeHtml(o.address)}</div>` : ""}
-${o.payment_method ? `<div><b>Pagamento:</b> ${escapeHtml(o.payment_method)}</div>` : ""}
-<div><b>Horário:</b> ${new Date(o.created_at).toLocaleString("pt-BR")}</div>
-<hr/>
-<table>${itemsHtml}</table>
-<hr/>
-${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
-<div class="total">TOTAL: ${brl(Number(o.total))}</div>
-<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),300);}</script>
-</body></html>`;
-    const w = window.open("", "_blank", "width=380,height=640");
-    if (!w) { toast.error("Habilite pop-ups para imprimir"); return; }
-    w.document.write(html);
-    w.document.close();
+    const printable: PrintableOrder = {
+      order_number: o.order_number,
+      customer_name: o.customer_name,
+      customer_phone: o.customer_phone,
+      address: o.address,
+      items: items.map((it: any) => ({
+        name: String(it.name ?? ""),
+        qty: Number(it.qty ?? 1),
+        price: Number(it.price ?? 0),
+        notes: it.notes ?? null,
+        options: Array.isArray(it.options) ? it.options : null,
+        removed: Array.isArray(it.removed) ? it.removed : null,
+      })),
+      notes: o.notes ?? null,
+      payment_method: o.payment_method,
+      total: Number(o.total),
+      created_at: o.created_at,
+      restaurant_name: restaurant.name ?? null,
+      order_type: o.address ? "delivery" : "pickup",
+    };
+    printOrderSvc(printable, { template }).catch(() => {
+      toast.error("Não foi possível imprimir");
+    });
   }
 
   function whatsappOrder(o: Order) {
@@ -612,7 +600,8 @@ ${o.notes ? `<div><b>Obs:</b> ${escapeHtml(o.notes)}</div><hr/>` : ""}
       <OrderDetailsDrawer
         order={detailOrder}
         onOpenChange={(open) => !open && setDetailOrder(null)}
-        onPrint={detailOrder ? () => printOrder(detailOrder) : () => {}}
+        onPrint={detailOrder ? () => printOrder(detailOrder, "customer") : () => {}}
+        onPrintKitchen={detailOrder ? () => printOrder(detailOrder, "kitchen") : () => {}}
         onWhatsapp={detailOrder ? () => whatsappOrder(detailOrder) : () => {}}
       />
     </div>
@@ -762,11 +751,13 @@ function OrderDetailsDrawer({
   order,
   onOpenChange,
   onPrint,
+  onPrintKitchen,
   onWhatsapp,
 }: {
   order: Order | null;
   onOpenChange: (open: boolean) => void;
   onPrint: () => void;
+  onPrintKitchen: () => void;
   onWhatsapp: () => void;
 }) {
   const items = order && Array.isArray(order.items) ? order.items : [];
@@ -849,11 +840,14 @@ function OrderDetailsDrawer({
                 Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
               </section>
 
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={onPrint}>
-                  <Printer className="h-4 w-4" /> Imprimir
+              <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3">
+                <Button variant="outline" className="gap-1.5" onClick={onPrintKitchen}>
+                  <Printer className="h-4 w-4" /> Cozinha
                 </Button>
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={onWhatsapp}>
+                <Button variant="outline" className="gap-1.5" onClick={onPrint}>
+                  <Printer className="h-4 w-4" /> Cupom
+                </Button>
+                <Button variant="outline" className="col-span-2 gap-1.5 sm:col-span-1" onClick={onWhatsapp}>
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </Button>
               </div>
@@ -892,14 +886,6 @@ function ColumnHeader({
   );
 }
 
-function escapeHtml(s: string) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function SummaryCard({
   icon,

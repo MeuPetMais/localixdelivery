@@ -31,6 +31,7 @@ import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
+import { Route as AuthenticatedPrintSettingsRouteImport } from './routes/_authenticated/print-settings'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
@@ -158,6 +159,12 @@ const AuthenticatedPromotionsRoute = AuthenticatedPromotionsRouteImport.update({
   path: '/promotions',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPrintSettingsRoute =
+  AuthenticatedPrintSettingsRouteImport.update({
+    id: '/print-settings',
+    path: '/print-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -274,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -313,6 +321,7 @@ export interface FileRoutesByTo {
   '/menu': typeof AuthenticatedMenuRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -355,6 +364,7 @@ export interface FileRoutesById {
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/print-settings': typeof AuthenticatedPrintSettingsRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/menu'
     | '/orders'
     | '/perfil'
+    | '/print-settings'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/menu'
     | '/orders'
     | '/perfil'
+    | '/print-settings'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -477,6 +489,7 @@ export interface FileRouteTypes {
     | '/_authenticated/menu'
     | '/_authenticated/orders'
     | '/_authenticated/perfil'
+    | '/_authenticated/print-settings'
     | '/_authenticated/promotions'
     | '/_authenticated/reviews'
     | '/_authenticated/settings'
@@ -663,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPromotionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/print-settings': {
+      id: '/_authenticated/print-settings'
+      path: '/print-settings'
+      fullPath: '/print-settings'
+      preLoaderRoute: typeof AuthenticatedPrintSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfil': {
       id: '/_authenticated/perfil'
       path: '/perfil'
@@ -801,6 +821,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedPrintSettingsRoute: typeof AuthenticatedPrintSettingsRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -824,6 +845,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedPrintSettingsRoute: AuthenticatedPrintSettingsRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

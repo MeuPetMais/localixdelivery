@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
-import { printOrder, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
+import { printAutoCopies, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
 import {
   announceNewOrder,
   announcePendingCount,
@@ -200,7 +200,7 @@ export function OrdersRealtimeProvider({
                     created_at: data.created_at,
                     restaurant_name: (data.restaurants as any)?.name ?? null,
                   };
-                  printOrder(printable).catch(() => {});
+                  printAutoCopies(printable).catch(() => {});
                 });
             }
 
