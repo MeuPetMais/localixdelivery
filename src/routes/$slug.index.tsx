@@ -1304,12 +1304,18 @@ function SmartCategoryMenu({
   items,
   promoCount,
   builderCount,
+  query,
+  onQueryChange,
+  matchesQuery,
 }: {
   slug: string;
   categories: any[];
   items: any[];
   promoCount: number;
   builderCount: number;
+  query: string;
+  onQueryChange: (v: string) => void;
+  matchesQuery: (it: any) => boolean;
 }) {
   const fetchFeatured = useServerFn(getFeaturedSections);
   const { data: featData } = useQuery({
@@ -1319,22 +1325,26 @@ function SmartCategoryMenu({
     gcTime: 10 * 60_000,
   });
 
+  const hasQuery = query.trim().length > 0;
+
   const menuItems = useMemo(() => {
     const arr: { id: string; label: string; count: number }[] = [];
-    if (promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
-    if (builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
-    for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
-      if (s.key === "promotions" || s.key === "half_half_pizza") continue;
-      if (!s.items?.length) continue;
-      arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
+    if (!hasQuery && promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
+    if (!hasQuery && builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
+    if (!hasQuery) {
+      for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
+        if (s.key === "promotions" || s.key === "half_half_pizza") continue;
+        if (!s.items?.length) continue;
+        arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
+      }
     }
     for (const c of categories) {
-      const count = items.filter((i) => i.category_id === c.id).length;
+      const count = items.filter((i) => i.category_id === c.id && matchesQuery(i)).length;
       if (count === 0) continue;
       arr.push({ id: `cat-${c.id}`, label: c.name, count });
     }
     return arr;
-  }, [featData, categories, items, promoCount, builderCount]);
+  }, [featData, categories, items, promoCount, builderCount, hasQuery, matchesQuery]);
 
   const [active, setActive] = useState<string | null>(null);
   const activePillRef = useRef<HTMLAnchorElement | null>(null);
@@ -1359,11 +1369,16 @@ function SmartCategoryMenu({
     return () => io.disconnect();
   }, [menuItems]);
 
+  // Auto-highlight first matching category when searching
+  useEffect(() => {
+    if (!hasQuery) return;
+    const first = menuItems.find((m) => m.id.startsWith("cat-"));
+    if (first) setActive(first.id);
+  }, [hasQuery, menuItems]);
+
   useEffect(() => {
     activePillRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [active]);
-
-  if (menuItems.length === 0) return null;
 
   const go = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -1384,25 +1399,47 @@ function SmartCategoryMenu({
       className="sticky top-0 z-30 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur"
       style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
     >
-      <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {menuItems.map((m) => {
-          const isActive = active === m.id;
-          return (
-            <a
-              key={m.id}
-              href={`#${m.id}`}
-              ref={isActive ? activePillRef : undefined}
-              onClick={(e) => go(e, m.id)}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
-            >
-              <span>{m.label}</span>
-              <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
-                {m.count}
-              </span>
-            </a>
-          );
-        })}
+      <div className="relative mb-2">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Buscar no cardápio…"
+          className="h-10 rounded-full border-muted bg-muted/40 pl-9 pr-9 text-sm"
+          inputMode="search"
+        />
+        {query && (
+          <button
+            type="button"
+            aria-label="Limpar"
+            onClick={() => onQueryChange("")}
+            className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {menuItems.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {menuItems.map((m) => {
+            const isActive = active === m.id;
+            return (
+              <a
+                key={m.id}
+                href={`#${m.id}`}
+                ref={isActive ? activePillRef : undefined}
+                onClick={(e) => go(e, m.id)}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-300 ${isActive ? "scale-[1.03] border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
+              >
+                <span>{m.label}</span>
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
+                  {m.count}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </nav>
   );
 }
