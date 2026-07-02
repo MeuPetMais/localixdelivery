@@ -118,9 +118,21 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
     const items = (allItems ?? []) as any[];
     const itemMap = new Map<string, any>(items.map((i) => [i.id, i]));
     const sections: FeaturedSection[] = [];
+    const diagnostics: FeaturedDiagnostic[] = [];
+
+    const pushDiag = (
+      key: FeaturedSectionKey,
+      label: string,
+      emoji: string,
+      count: number,
+      rendered: boolean,
+      note: string,
+    ) => {
+      diagnostics.push({ key, label, emoji, enabled: !!(config as any)[`${key}_enabled`], count, rendered, note });
+    };
 
     // Promotions — active promo price
-    if (config.promotions_enabled) {
+    {
       const now = Date.now();
       const promoted = items
         .filter((i) => {
@@ -136,37 +148,31 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .sort((a, b) => b.discount - a.discount)
         .slice(0, 20)
         .map(({ item }) => toItem(item));
-      if (promoted.length > 0) {
-        sections.push({
-          key: "promotions",
-          title: "Promoções",
-          subtitle: "Ofertas ativas agora",
-          emoji: "⭐",
-          items: promoted,
-        });
+      const rendered = config.promotions_enabled && promoted.length > 0;
+      if (rendered) {
+        sections.push({ key: "promotions", title: "Promoções", subtitle: "Ofertas ativas agora", emoji: "⭐", items: promoted });
       }
+      pushDiag("promotions", "Promoções", "⭐", promoted.length, rendered,
+        !config.promotions_enabled ? "Desativada" : promoted.length === 0 ? "Nenhuma promoção ativa" : "OK");
     }
 
     // Weekly favorites — marked manually
-    if (config.weekly_favorites_enabled) {
+    {
       const weekly = items
         .filter((i) => i.is_weekly_favorite)
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .slice(0, 10)
         .map(toItem);
-      if (weekly.length > 0) {
-        sections.push({
-          key: "weekly_favorites",
-          title: "Queridinhos da Semana",
-          subtitle: "Selecionados pelo restaurante",
-          emoji: "🔥",
-          items: weekly,
-        });
+      const rendered = config.weekly_favorites_enabled && weekly.length > 0;
+      if (rendered) {
+        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "🔥", items: weekly });
       }
+      pushDiag("weekly_favorites", "Queridinhos da Semana", "🔥", weekly.length, rendered,
+        !config.weekly_favorites_enabled ? "Desativada" : weekly.length === 0 ? "Marque produtos como Queridinho" : "OK");
     }
 
     // Top rated — aggregate from order-level reviews
-    if (config.top_rated_enabled) {
+    {
       const stats = new Map<string, { sum: number; count: number }>();
       for (const r of (reviewRows ?? []) as any[]) {
         const orderItems = ((r as any).orders?.items ?? []) as any[];
@@ -186,38 +192,32 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .sort((a, b) => b.avg - a.avg || b.count - a.count)
         .slice(0, 15)
         .map(({ id }) => toItem(itemMap.get(id)));
-      if (ranked.length > 0) {
-        sections.push({
-          key: "top_rated",
-          title: "Mais Bem Avaliados",
-          subtitle: "Aprovados pelos clientes",
-          emoji: "🏆",
-          items: ranked,
-        });
+      const rendered = config.top_rated_enabled && ranked.length > 0;
+      if (rendered) {
+        sections.push({ key: "top_rated", title: "Mais Bem Avaliados", subtitle: "Aprovados pelos clientes", emoji: "🏆", items: ranked });
       }
+      pushDiag("top_rated", "Mais Bem Avaliados", "🏆", ranked.length, rendered,
+        !config.top_rated_enabled ? "Desativada" : ranked.length === 0 ? "Nenhum produto com 5+ avaliações" : "OK");
     }
 
     // New items — last 30 days
-    if (config.new_items_enabled) {
+    {
       const cutoff = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
       const news = items
         .filter((i) => new Date(i.created_at).getTime() >= cutoff)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 15)
         .map(toItem);
-      if (news.length > 0) {
-        sections.push({
-          key: "new_items",
-          title: "Novidades",
-          subtitle: `Adicionados nos últimos ${NEW_DAYS} dias`,
-          emoji: "🆕",
-          items: news,
-        });
+      const rendered = config.new_items_enabled && news.length > 0;
+      if (rendered) {
+        sections.push({ key: "new_items", title: "Novidades", subtitle: `Adicionados nos últimos ${NEW_DAYS} dias`, emoji: "🆕", items: news });
       }
+      pushDiag("new_items", "Novidades", "🆕", news.length, rendered,
+        !config.new_items_enabled ? "Desativada" : news.length === 0 ? "Nenhum produto nos últimos 30 dias" : "OK");
     }
 
     // Customer favorites — most saved
-    if (config.customer_favorites_enabled) {
+    {
       const counts = new Map<string, number>();
       for (const f of (favRows ?? []) as any[]) {
         counts.set(f.item_id, (counts.get(f.item_id) ?? 0) + 1);
@@ -227,21 +227,22 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .sort((a, b) => b[1] - a[1])
         .slice(0, 15)
         .map(([id]) => toItem(itemMap.get(id)));
-      if (favs.length > 0) {
-        sections.push({
-          key: "customer_favorites",
-          title: "Favoritos dos Clientes",
-          subtitle: "Os mais salvos",
-          emoji: "❤️",
-          items: favs,
-        });
+      const rendered = config.customer_favorites_enabled && favs.length > 0;
+      if (rendered) {
+        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "❤️", items: favs });
       }
+      pushDiag("customer_favorites", "Favoritos dos Clientes", "❤️", favs.length, rendered,
+        !config.customer_favorites_enabled ? "Desativada" : favs.length === 0 ? "Ninguém favoritou ainda" : "OK");
     }
 
-    // Half-half pizza — only if pizzeria and has matching builder
-    if (config.half_half_pizza_enabled && isPizzeria) {
-      const builder = (builders ?? []).find((b: any) => /meio\s*(a|\/)?\s*meio|meio-a-meio|1\/2/i.test(String(b.name ?? "")));
-      if (builder) {
+    // Half-half pizza — needs matching builder (pizzeria hint no longer blocks)
+    {
+      const allBuilders = (builders ?? []) as any[];
+      const builder =
+        allBuilders.find((b) => /meio\s*(a|\/)?\s*meio|meio-a-meio|1\/2/i.test(String(b.name ?? ""))) ??
+        (isPizzeria ? allBuilders[0] : undefined);
+      const rendered = config.half_half_pizza_enabled && !!builder;
+      if (rendered && builder) {
         sections.push({
           key: "half_half_pizza",
           title: "Monte sua Pizza Meio a Meio",
@@ -251,7 +252,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
           builderId: builder.id,
         });
       }
+      pushDiag("half_half_pizza", "Pizza Meio a Meio", "🍕", builder ? 1 : 0, rendered,
+        !config.half_half_pizza_enabled ? "Desativada" : !builder ? "Builder inexistente" : "Builder encontrado");
     }
 
-    return { config, sections };
+    return { config, sections, diagnostics };
   });
