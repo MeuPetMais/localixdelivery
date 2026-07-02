@@ -30,7 +30,9 @@ import {
   Flame,
   UserCircle,
   Printer,
+  LifeBuoy,
 } from "lucide-react";
+import { HelpFab } from "@/components/HelpFab";
 
 import { useIsAdmin } from "@/hooks/use-role";
 
@@ -93,6 +95,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
     { to: "/settings", label: "Perfil do Estabelecimento", icon: Settings },
     { to: "/print-settings", label: "Impressão", icon: Printer },
     { to: "/perfil", label: "Meu Perfil", icon: UserCircle },
+    { to: "/support", label: "Central de Suporte", icon: LifeBuoy },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ] as const;
 
@@ -205,6 +208,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
             <Outlet />
           </RestaurantProvider>
         </main>
+        <HelpFab />
       </div>
     </div>
   );
