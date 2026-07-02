@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-role";
 import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck, Settings, ShoppingBag, Percent, UserCheck, FileBarChart, ScrollText, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
+import { clearImpersonation } from "@/lib/admin-mode";
+
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -23,7 +26,10 @@ function AdminLayout() {
 
   useEffect(() => {
     if (!isLoading && !isAdmin) navigate({ to: "/auth", replace: true });
+    // Admin never carries impersonation into /admin
+    if (isAdmin) clearImpersonation();
   }, [isLoading, isAdmin, navigate]);
+
 
   async function logout() {
     await supabase.auth.signOut();
@@ -78,8 +84,8 @@ function AdminLayout() {
         </div>
       </aside>
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900/80 backdrop-blur lg:hidden">
-          <div className="flex h-14 items-center gap-2 overflow-x-auto px-3">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/80 px-3 backdrop-blur">
+          <div className="flex h-14 flex-1 items-center gap-2 overflow-x-auto lg:hidden">
             {nav.map(({ to, label, icon: Icon }) => {
               const active = pathname === to;
               return (
@@ -89,9 +95,13 @@ function AdminLayout() {
               );
             })}
           </div>
+          <div className="ml-auto flex h-14 items-center gap-2">
+            <EnvSwitcherButton className="text-slate-200" />
+          </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8"><Outlet /></main>
       </div>
+
     </div>
   );
 }

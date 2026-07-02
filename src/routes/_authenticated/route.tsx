@@ -33,6 +33,9 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import { HelpFab } from "@/components/HelpFab";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
+
 
 import { useIsAdmin } from "@/hooks/use-role";
 
@@ -179,6 +182,8 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
       )}
 
       <div className="lg:pl-64">
+        {/* Impersonation banner (only when admin is viewing a partner) */}
+        <ImpersonationBanner />
         {/* Mobile top bar with hamburger */}
         <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur lg:hidden">
           <button
@@ -194,7 +199,15 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
             </span>
             Localix
           </Link>
+          {isAdmin && <div className="ml-auto"><EnvSwitcherButton /></div>}
         </header>
+        {/* Desktop env switcher (admin only) */}
+        {isAdmin && (
+          <div className="hidden justify-end border-b bg-background/70 px-6 py-2 lg:flex">
+            <EnvSwitcherButton />
+          </div>
+        )}
+
 
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           <RestaurantProvider

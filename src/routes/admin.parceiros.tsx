@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminPartners, setPartnerActive, deletePartner } from "@/lib/superadmin.functions";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
-import { Ban, Eye, Pause, Play, Trash2 } from "lucide-react";
+import { Ban, Eye, LogIn, Pause, Play, Trash2 } from "lucide-react";
+import { setImpersonatedRestaurantId, setPreferredEnv } from "@/lib/admin-mode";
+
 
 export const Route = createFileRoute("/admin/parceiros")({
   head: () => ({ meta: [{ title: "Admin — Parceiros" }] }),
@@ -17,7 +19,15 @@ function PartnersPage() {
   const toggle = useServerFn(setPartnerActive);
   const del = useServerFn(deletePartner);
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
+
+  function enterAsPartner(id: string) {
+    setImpersonatedRestaurantId(id);
+    setPreferredEnv("partner");
+    navigate({ to: "/dashboard" });
+  }
+
 
   const { data, isLoading } = useQuery({ queryKey: ["admin-partners"], queryFn: () => list() });
 
@@ -86,10 +96,13 @@ function PartnersPage() {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
                     <a href={`/${r.id}`} title="Visualizar" className="rounded-md p-1.5 text-slate-300 hover:bg-slate-800"><Eye className="h-4 w-4" /></a>
+                    <button title="Entrar como estabelecimento" onClick={() => enterAsPartner(r.id)}
+                      className="rounded-md p-1.5 text-green-300 hover:bg-slate-800"><LogIn className="h-4 w-4" /></button>
                     <button title={r.active ? "Suspender" : "Reativar"} onClick={() => mToggle.mutate({ id: r.id, active: !r.active })}
                       className="rounded-md p-1.5 text-yellow-300 hover:bg-slate-800">
                       {r.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
+
                     <button title="Bloquear" onClick={() => mToggle.mutate({ id: r.id, active: false })}
                       className="rounded-md p-1.5 text-red-300 hover:bg-slate-800"><Ban className="h-4 w-4" /></button>
                     <button title="Excluir" onClick={() => { if (confirm(`Excluir ${r.name}?`)) mDelete.mutate(r.id); }}
