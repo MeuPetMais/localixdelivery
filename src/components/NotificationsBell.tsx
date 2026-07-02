@@ -32,7 +32,7 @@ export function NotificationsBell() {
   return (
     <div
       className="fixed right-3 z-50"
-      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+      style={{ top: "calc(12px + env(safe-area-inset-top))" }}
     >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
