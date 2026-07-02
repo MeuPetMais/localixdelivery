@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { KnowledgeBase } from "@/components/support/KnowledgeBase";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,7 @@ import {
   Plus,
   Loader2,
   Send,
-  BookOpen,
+  
   Search,
   Sparkles,
 } from "lucide-react";
@@ -67,13 +68,6 @@ type Message = {
   created_at: string;
 };
 
-type Article = {
-  id: string;
-  category: string;
-  title: string;
-  content: string;
-  video_url: string | null;
-};
 
 const STATUS_LABEL: Record<TicketStatus, string> = {
   aberto: "Aberto",
@@ -150,18 +144,6 @@ function SupportPage() {
     },
   });
 
-  const articlesQuery = useQuery({
-    queryKey: ["support-articles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("support_articles")
-        .select("id, category, title, content, video_url")
-        .eq("published", true)
-        .order("position", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Article[];
-    },
-  });
 
   // Realtime: atualizar lista quando o suporte responder
   useEffect(() => {
@@ -293,22 +275,7 @@ function SupportPage() {
         )}
       </Card>
 
-      {/* Base de conhecimento */}
-      <Card className="p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-primary" />
-          <h2 className="font-semibold">Base de conhecimento</h2>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {(articlesQuery.data ?? []).map((a) => (
-            <div key={a.id} className="rounded-lg border p-3">
-              <div className="text-xs uppercase tracking-wide text-primary">{a.category}</div>
-              <div className="mt-0.5 font-medium">{a.title}</div>
-              <p className="mt-1 text-sm text-muted-foreground">{a.content}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <KnowledgeBase />
 
       <NewTicketDialog
         open={openNew}
