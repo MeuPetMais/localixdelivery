@@ -15,6 +15,7 @@
  */
 
 import { brl } from "@/lib/format";
+import QRCode from "qrcode";
 
 /* ------------------------------- Tipos --------------------------------- */
 
@@ -31,6 +32,12 @@ export type PrintableItem = {
   options?: string[] | null;
   /** Ingredientes removidos pelo cliente */
   removed?: string[] | null;
+  /** Grupos de builder no formato { "Pão": ["Brioche"], "Carne": ["Artesanal 180g"] } */
+  builderGroups?: Record<string, string[]> | null;
+  /** Categoria para agrupamento na impressão (ex.: "Bebidas", "Sobremesas") */
+  category?: string | null;
+  /** Marca item de builder (Monte do Seu Jeito) */
+  isBuilder?: boolean | null;
 };
 
 export type PrintableOrder = {
@@ -54,6 +61,10 @@ export type PrintableOrder = {
   order_type?: OrderType | null;
   priority?: string | null;
   table_number?: string | number | null;
+  /** URL de acompanhamento — vira QR Code no rodapé da comanda */
+  tracking_url?: string | null;
+  /** ID interno do pedido (usado no QR quando não há tracking_url) */
+  order_id?: string | null;
 };
 
 export interface PrinterAdapter {
@@ -202,18 +213,27 @@ function baseCss(paper: PaperSize): string {
     h1, h2, h3, .center { text-align: center; margin: 0; }
     h1 { font-size: 1.25em; font-weight: 900; letter-spacing: 0.02em; }
     h2 { font-size: 1.1em; font-weight: 800; }
-    .big { font-size: 1.6em; font-weight: 900; letter-spacing: 0.05em; }
+    .big { font-size: 1.8em; font-weight: 900; letter-spacing: 0.05em; }
+    .huge { font-size: 2.2em; font-weight: 900; letter-spacing: 0.06em; }
     .sep { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
     .thick { border: 0; border-top: 2px solid #000; margin: 4px 0; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
     .b { font-weight: 800; }
     .u { text-transform: uppercase; }
     .mt { margin-top: 4px; }
-    .item { margin: 4px 0; }
+    .item { margin: 4px 0; page-break-inside: avoid; }
     .opts { padding-left: 10px; }
     .obs { font-weight: 800; text-transform: uppercase; margin-top: 2px; }
     .total { font-size: 1.15em; font-weight: 900; }
+    .group-title { font-weight: 900; text-transform: uppercase; margin-top: 6px; border-bottom: 1px solid #000; }
+    .builder-title { font-weight: 900; text-transform: uppercase; margin-top: 2px; }
+    .builder-group { margin-top: 2px; }
+    .builder-group .gname { font-weight: 800; text-transform: uppercase; }
+    .qr { text-align: center; margin-top: 6px; }
+    .qr img { image-rendering: pixelated; max-width: 40mm; }
     ul { margin: 2px 0 2px 14px; padding: 0; }
+    /* Quebra automática — impede corte em termina de 58/80mm */
+    body, div, span, li { word-break: break-word; overflow-wrap: anywhere; }
   `;
 }
 
@@ -229,7 +249,7 @@ function headerBlock(o: PrintableOrder): string {
     <h1>${esc(o.restaurant_name || "Localix")}</h1>
     <div class="center">${esc(dt)}</div>
     <hr class="thick"/>
-    <div class="center big">#${o.order_number ?? "—"}</div>
+    <div class="center huge">PEDIDO #${o.order_number ?? "—"}</div>
     <hr class="sep"/>
     <div><span class="b">Cliente:</span> ${esc(o.customer_name || "-")}</div>
     <div><span class="b">Consumo:</span> ${esc(consumo)}</div>
@@ -237,54 +257,123 @@ function headerBlock(o: PrintableOrder): string {
   `;
 }
 
-function itemsBlockKitchen(items: PrintableItem[]): string {
-  return items
-    .map((it) => {
-      const opts = (it.options ?? []).filter(Boolean);
-      const removed = (it.removed ?? []).filter(Boolean);
-      return `
-        <div class="item">
-          <div class="b">${it.qty}x ${esc(it.name)}</div>
-          ${opts.length ? `<ul class="opts">${opts.map((o) => `<li>${esc(o)}</li>`).join("")}</ul>` : ""}
-          ${removed.length ? `<div class="opts b">SEM: ${esc(removed.join(", "))}</div>` : ""}
-          ${it.notes ? `<div class="obs">OBS: ${esc(it.notes)}</div>` : ""}
-        </div>`;
-    })
+/** Categorias de agrupamento na impressão. */
+const GROUP_ORDER = ["Itens", "Bebidas", "Sobremesas", "Outros"] as const;
+type GroupKey = (typeof GROUP_ORDER)[number];
+
+function categorize(it: PrintableItem): GroupKey {
+  const c = (it.category ?? "").toLowerCase();
+  if (/bebid|drink|refri|suco|cerv|água|agua/.test(c)) return "Bebidas";
+  if (/sobrem|dessert|doce|sorvete/.test(c)) return "Sobremesas";
+  if (c) return "Outros";
+  return "Itens";
+}
+
+function groupItems(items: PrintableItem[]): Array<[GroupKey, PrintableItem[]]> {
+  const buckets = new Map<GroupKey, PrintableItem[]>();
+  items.forEach((it) => {
+    const g = categorize(it);
+    if (!buckets.has(g)) buckets.set(g, []);
+    buckets.get(g)!.push(it);
+  });
+  return GROUP_ORDER.filter((g) => buckets.has(g)).map((g) => [g, buckets.get(g)!]);
+}
+
+function renderBuilderGroups(groups?: Record<string, string[]> | null): string {
+  if (!groups) return "";
+  const entries = Object.entries(groups).filter(([, v]) => (v ?? []).length);
+  if (!entries.length) return "";
+  return `<div class="opts">${entries
+    .map(
+      ([g, vals]) =>
+        `<div class="builder-group"><span class="gname">${esc(g)}:</span> ${vals
+          .map((v) => `✓ ${esc(v)}`)
+          .join("  ")}</div>`,
+    )
+    .join("")}</div>`;
+}
+
+function itemLineKitchen(it: PrintableItem): string {
+  const opts = (it.options ?? []).filter(Boolean);
+  const removed = (it.removed ?? []).filter(Boolean);
+  const builder = renderBuilderGroups(it.builderGroups ?? null);
+  const flatOpts =
+    !builder && opts.length
+      ? `<ul class="opts">${opts.map((o) => `<li>✓ ${esc(o)}</li>`).join("")}</ul>`
+      : "";
+  return `
+    <div class="item">
+      <div class="b">${it.qty}x ${esc(it.name)}${it.isBuilder ? " ★" : ""}</div>
+      ${builder}
+      ${flatOpts}
+      ${removed.length ? `<div class="opts b">SEM: ${removed.map((r) => `✗ ${esc(r)}`).join("  ")}</div>` : ""}
+      ${it.notes ? `<div class="obs">OBS: ${esc(it.notes)}</div>` : ""}
+    </div>`;
+}
+
+function itemLineCustomer(it: PrintableItem): string {
+  const line = brl(Number(it.price) * Number(it.qty));
+  const opts = (it.options ?? []).filter(Boolean);
+  const removed = (it.removed ?? []).filter(Boolean);
+  const builder = renderBuilderGroups(it.builderGroups ?? null);
+  return `
+    <div class="item">
+      <div class="row"><span class="b">${it.qty}x ${esc(it.name)}</span><span class="b">${line}</span></div>
+      ${builder}
+      ${!builder && opts.length ? `<div class="opts">${opts.map((o) => `✓ ${esc(o)}`).join("  ")}</div>` : ""}
+      ${removed.length ? `<div class="opts">Sem: ${removed.map((r) => `✗ ${esc(r)}`).join("  ")}</div>` : ""}
+      ${it.notes ? `<div class="opts">Obs: ${esc(it.notes)}</div>` : ""}
+    </div>`;
+}
+
+function groupedBlock(items: PrintableItem[], lineFn: (it: PrintableItem) => string): string {
+  const groups = groupItems(items);
+  return groups
+    .map(
+      ([g, list]) =>
+        `<div class="group-title">${esc(g)}</div>${list.map(lineFn).join("")}`,
+    )
     .join("");
 }
 
-function itemsBlockCustomer(items: PrintableItem[]): string {
-  return items
-    .map((it) => {
-      const line = brl(Number(it.price) * Number(it.qty));
-      const opts = (it.options ?? []).filter(Boolean);
-      const removed = (it.removed ?? []).filter(Boolean);
-      return `
-        <div class="item">
-          <div class="row"><span class="b">${it.qty}x ${esc(it.name)}</span><span class="b">${line}</span></div>
-          ${opts.length ? `<div class="opts">${esc(opts.join(", "))}</div>` : ""}
-          ${removed.length ? `<div class="opts">Sem: ${esc(removed.join(", "))}</div>` : ""}
-          ${it.notes ? `<div class="opts">Obs: ${esc(it.notes)}</div>` : ""}
-        </div>`;
-    })
-    .join("");
+async function qrBlock(o: PrintableOrder): Promise<string> {
+  const payload = o.tracking_url
+    ? o.tracking_url
+    : JSON.stringify({ order: o.order_number, id: o.order_id ?? null });
+  try {
+    const dataUrl = await QRCode.toDataURL(payload, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      scale: 4,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+    return `<div class="qr">
+      <img src="${dataUrl}" alt="QR pedido"/>
+      <div class="b">#${o.order_number ?? ""}</div>
+      ${o.tracking_url ? `<div style="font-size:0.85em">Acompanhe seu pedido</div>` : ""}
+    </div>`;
+  } catch {
+    return "";
+  }
 }
 
-export function renderKitchenReceipt(o: PrintableOrder, paper: PaperSize): string {
+export async function renderKitchenReceipt(o: PrintableOrder, paper: PaperSize): Promise<string> {
+  const qr = await qrBlock(o);
   return `<!doctype html><html><head><meta charset="utf-8"><title>Comanda #${o.order_number ?? ""}</title>
     <style>${baseCss(paper)}</style></head><body>
     <h2 class="u">-- Comanda Cozinha --</h2>
     ${headerBlock(o)}
     <hr class="thick"/>
-    ${itemsBlockKitchen(o.items)}
+    ${groupedBlock(o.items, itemLineKitchen)}
     <hr class="sep"/>
     ${o.notes ? `<div class="obs">OBS GERAL: ${esc(o.notes)}</div><hr class="sep"/>` : ""}
     <div class="center b u">${o.items.reduce((s, i) => s + Number(i.qty), 0)} item(ns)</div>
+    ${qr}
     <div style="height:24px"></div>
   </body></html>`;
 }
 
-export function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize): string {
+export async function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize): Promise<string> {
   const subtotal = o.items.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
   const fee = Number(o.delivery_fee ?? 0);
   const disc = Number(o.coupon_discount ?? 0);
@@ -293,6 +382,7 @@ export function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize): stri
       ? `<div class="row"><span>Troco para</span><span>${brl(Number(o.change_for))}</span></div>
          <div class="row"><span>Troco</span><span>${brl(Math.max(0, Number(o.change_for) - o.total))}</span></div>`
       : "";
+  const qr = await qrBlock(o);
   return `<!doctype html><html><head><meta charset="utf-8"><title>Pedido #${o.order_number ?? ""}</title>
     <style>${baseCss(paper)}</style></head><body>
     <h2 class="u">-- Cupom do Pedido --</h2>
@@ -302,7 +392,7 @@ export function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize): stri
     ${o.address_complement ? `<div><span class="b">Compl:</span> ${esc(o.address_complement)}</div>` : ""}
     ${o.address_neighborhood ? `<div><span class="b">Bairro:</span> ${esc(o.address_neighborhood)}</div>` : ""}
     <hr class="sep"/>
-    ${itemsBlockCustomer(o.items)}
+    ${groupedBlock(o.items, itemLineCustomer)}
     <hr class="sep"/>
     <div class="row"><span>Subtotal</span><span>${brl(subtotal)}</span></div>
     ${fee ? `<div class="row"><span>Taxa de entrega</span><span>${brl(fee)}</span></div>` : ""}
@@ -313,15 +403,16 @@ export function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize): stri
     ${changeLine}
     <hr class="sep"/>
     ${o.notes ? `<div class="b">Obs: ${esc(o.notes)}</div><hr class="sep"/>` : ""}
+    ${qr}
     <div class="center mt">Obrigado pela preferência!</div>
     <div style="height:24px"></div>
   </body></html>`;
 }
 
-export function renderReceiptHtml(
+export async function renderReceiptHtml(
   order: PrintableOrder,
   opts: { template: PrintTemplate; paper?: PaperSize } = { template: "customer" },
-): string {
+): Promise<string> {
   const paper = opts.paper ?? getPaperSize();
   return opts.template === "kitchen"
     ? renderKitchenReceipt(order, paper)
@@ -341,7 +432,7 @@ export async function printOrder(order: PrintableOrder, opts: PrintOptions = {})
   if (!adapter) return;
   const available = await Promise.resolve(adapter.isAvailable());
   if (!available) return;
-  const html = renderReceiptHtml(order, {
+  const html = await renderReceiptHtml(order, {
     template: opts.template ?? "customer",
     paper: opts.paper ?? getPaperSize(),
   });
@@ -358,10 +449,9 @@ export async function printAutoCopies(order: PrintableOrder) {
   const paper = getPaperSize();
   const jobs: PrintTemplate[] = [];
   if (copies.kitchen) jobs.push("kitchen");
-  if (copies.delivery) jobs.push("customer"); // via de entrega usa o mesmo layout de cupom
+  if (copies.delivery) jobs.push("customer");
   if (copies.customer) jobs.push("customer");
   for (const t of jobs) {
-    // deduplica: se cliente+entrega ambos marcados, imprime 2 vias iguais
     // eslint-disable-next-line no-await-in-loop
     await printOrder(order, { template: t, paper });
     // eslint-disable-next-line no-await-in-loop
