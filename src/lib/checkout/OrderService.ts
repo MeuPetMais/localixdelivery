@@ -1,0 +1,178 @@
+// OrderService — cria pedido + snapshot financeiro + registro de pagamento.
+//
+// REGRAS:
+// - Todos os cálculos vêm do PricingEngine. Nunca calcular no frontend.
+// - Não integra Mercado Pago, não cria Payment Intent, não faz Split.
+// - Registro de pagamento sempre começa em PENDING.
+// - Snapshot financeiro é imutável (uma linha por pedido).
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import PricingEngine, { PricingError, type PaymentMethod, type ProviderId } from "@/lib/payments/PricingEngine";
+
+const CHECKOUT_METHODS = [
+  "pix",
+  "credit_card",
+  "cash",
+  "meal_voucher",
+  "google_pay",
+  "apple_pay",
+] as const;
+export type CheckoutMethod = (typeof CHECKOUT_METHODS)[number];
+
+// Métodos suportados pelo PricingEngine (subset do checkout).
+const PRICING_METHOD_MAP: Record<CheckoutMethod, PaymentMethod> = {
+  pix: "pix",
+  credit_card: "credit_card",
+  cash: "cash",
+  meal_voucher: "credit_card",
+  google_pay: "credit_card",
+  apple_pay: "credit_card",
+};
+
+const itemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  price: z.number().nonnegative(),
+  qty: z.number().int().positive(),
+});
+
+const inputSchema = z.object({
+  restaurantSlug: z.string().min(1),
+  customer: z.object({
+    name: z.string().min(1),
+    phone: z.string().min(6),
+    address: z.string().min(3),
+    notes: z.string().optional(),
+  }),
+  items: z.array(itemSchema).min(1, "Carrinho vazio"),
+  paymentMethod: z.enum(CHECKOUT_METHODS),
+  deliveryFee: z.number().nonnegative().optional().default(0),
+  couponCode: z.string().optional(),
+  couponDiscount: z.number().nonnegative().optional().default(0),
+  cashback: z.number().nonnegative().optional().default(0),
+});
+
+export type CheckoutInput = z.infer<typeof inputSchema>;
+
+export const createCheckoutOrder = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => inputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1) Validar restaurante ativo + conectado
+    const { data: rest, error: restErr } = await supabaseAdmin
+      .from("restaurants")
+      .select("id, slug, active, is_open, owner_id")
+      .eq("slug", data.restaurantSlug)
+      .maybeSingle();
+    if (restErr) throw new Error(restErr.message);
+    if (!rest) throw new Error("Restaurante não encontrado");
+    if (!rest.active) throw new Error("Restaurante inativo");
+
+    // 2) Subtotal a partir dos itens (nunca do frontend)
+    const subtotal = data.items.reduce((s, i) => s + i.price * i.qty, 0);
+
+    // 3) Pricing — motor central
+    let pricing;
+    try {
+      pricing = await PricingEngine.calculateOrderPricing({
+        subtotal,
+        deliveryFee: data.deliveryFee,
+        couponDiscount: data.couponDiscount,
+        cashback: data.cashback,
+        paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
+        provider: "mercado_pago" as ProviderId,
+        restaurantId: rest.id,
+      });
+    } catch (e) {
+      if (e instanceof PricingError) throw new Error(e.message);
+      throw e;
+    }
+
+    // 4) Criar pedido em status "aguardando_pagamento"
+    const { data: order, error: ordErr } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        restaurant_id: rest.id,
+        customer_name: data.customer.name,
+        customer_phone: data.customer.phone,
+        address: data.customer.address,
+        payment_method: data.paymentMethod,
+        items: data.items,
+        total: pricing.customerTotal,
+        discount: pricing.couponDiscount,
+        status: "aguardando_pagamento",
+      })
+      .select("id, order_number")
+      .single();
+    if (ordErr) throw new Error(`Falha ao criar pedido: ${ordErr.message}`);
+
+    // 5) Snapshot financeiro (imutável)
+    const { error: snapErr } = await supabaseAdmin.from("order_pricing_snapshot").insert({
+      order_id: order.id,
+      subtotal: pricing.subtotal,
+      delivery_fee: pricing.deliveryFee,
+      platform_fee: pricing.platformFee,
+      gateway_fee: pricing.gatewayFee,
+      coupon_discount: pricing.couponDiscount,
+      cashback: pricing.cashback,
+      restaurant_gross: pricing.restaurantGross,
+      restaurant_net: pricing.restaurantNet,
+      platform_revenue: pricing.platformRevenue,
+      gateway_revenue: pricing.gatewayRevenue,
+      customer_total: pricing.customerTotal,
+      provider: "mercado_pago",
+      currency: pricing.currency,
+    });
+    if (snapErr) throw new Error(`Falha no snapshot: ${snapErr.message}`);
+
+    // 6) Registro de pagamento (PENDING; sem integração ainda)
+    const { error: payErr } = await supabaseAdmin.from("order_payment").insert({
+      order_id: order.id,
+      restaurant_id: rest.id,
+      provider: "mercado_pago",
+      payment_method: data.paymentMethod,
+      status: "PENDING",
+      external_reference: order.id,
+    });
+    if (payErr) throw new Error(`Falha no pagamento: ${payErr.message}`);
+
+    return {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      status: "aguardando_pagamento" as const,
+      pricing,
+    };
+  });
+
+export const previewCheckoutPricing = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        subtotal: z.number().nonnegative(),
+        deliveryFee: z.number().nonnegative().optional().default(0),
+        couponDiscount: z.number().nonnegative().optional().default(0),
+        cashback: z.number().nonnegative().optional().default(0),
+        paymentMethod: z.enum(CHECKOUT_METHODS).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    try {
+      const pricing = await PricingEngine.calculateOrderPricing({
+        subtotal: data.subtotal,
+        deliveryFee: data.deliveryFee,
+        couponDiscount: data.couponDiscount,
+        cashback: data.cashback,
+        paymentMethod: data.paymentMethod
+          ? PRICING_METHOD_MAP[data.paymentMethod]
+          : "pix",
+      });
+      return { ok: true as const, pricing };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro no cálculo";
+      const code = e instanceof PricingError ? e.code : "PRICING_ERROR";
+      return { ok: false as const, code, message: msg };
+    }
+  });
