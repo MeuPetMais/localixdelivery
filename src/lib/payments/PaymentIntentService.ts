@@ -27,58 +27,7 @@ export interface PaymentIntentResult {
   message?: string;
 }
 
-async function invokeIntent(body: Record<string, unknown>): Promise<any> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(String(data.error));
-  return data;
-}
-
-const createSchema = z.object({
-  orderId: z.string().uuid(),
-  paymentMethod: z.enum(["pix", "credit_card", "debit_card"]).default("pix"),
-  payerEmail: z.string().email().optional(),
-});
-
-const orderOnlySchema = z.object({ orderId: z.string().uuid() });
-
-export const createPaymentIntent = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => createSchema.parse(d))
-  .handler(async ({ data }): Promise<PaymentIntentResult> => {
-    const r = await invokeIntent({
-      action: "create",
-      order_id: data.orderId,
-      payment_method: data.paymentMethod,
-      payer_email: data.payerEmail,
-    });
-    return {
-      payment_id: r.payment_id ?? null,
-      status: r.status ?? "PENDING",
-      qr_code: r.qr_code ?? null,
-      qr_code_base64: r.qr_code_base64 ?? null,
-      payment_url: r.payment_url ?? null,
-      expiration_date: r.expiration_date ?? null,
-      pending: !!r.pending,
-      message: r.message,
-    };
-  });
-
-export const getPaymentIntentStatus = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => orderOnlySchema.parse(d))
-  .handler(async ({ data }): Promise<PaymentIntentResult> => {
-    const r = await invokeIntent({ action: "status", order_id: data.orderId });
-    return { payment_id: r.payment_id ?? null, status: r.status ?? "PENDING" };
-  });
-
-export const cancelPaymentIntent = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => orderOnlySchema.parse(d))
-  .handler(async ({ data }): Promise<PaymentIntentResult> => {
-    const r = await invokeIntent({ action: "cancel", order_id: data.orderId });
-    return { payment_id: null, status: r.status ?? "CANCELLED" };
-  });
-
-// Núcleo puro para testes (sem dependência de rede/Supabase).
+// Núcleo puro para testes.
 export function mapMpStatus(s: string | null | undefined): PaymentIntentStatus {
   switch ((s ?? "").toLowerCase()) {
     case "approved":
@@ -92,9 +41,66 @@ export function mapMpStatus(s: string | null | undefined): PaymentIntentStatus {
   }
 }
 
+export type InvokeFn = (body: Record<string, unknown>) => Promise<any>;
+
+// Orquestração pura: pode ser testada sem o runtime do TanStack Start.
+export async function runIntent(
+  invoke: InvokeFn,
+  action: "create" | "status" | "cancel",
+  body: Record<string, unknown>,
+): Promise<PaymentIntentResult> {
+  const r = await invoke({ action, ...body });
+  if (r?.error) throw new Error(String(r.error));
+  const status: PaymentIntentStatus =
+    (r?.status as PaymentIntentStatus) ?? (action === "cancel" ? "CANCELLED" : "PENDING");
+  return {
+    payment_id: r?.payment_id ?? null,
+    status,
+    qr_code: r?.qr_code ?? null,
+    qr_code_base64: r?.qr_code_base64 ?? null,
+    payment_url: r?.payment_url ?? null,
+    expiration_date: r?.expiration_date ?? null,
+    pending: !!r?.pending,
+    message: r?.message,
+  };
+}
+
+async function edgeInvoke(body: Record<string, unknown>) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+const createSchema = z.object({
+  orderId: z.string().uuid(),
+  paymentMethod: z.enum(["pix", "credit_card", "debit_card"]).default("pix"),
+  payerEmail: z.string().email().optional(),
+});
+const orderOnlySchema = z.object({ orderId: z.string().uuid() });
+
+export const createPaymentIntent = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => createSchema.parse(d))
+  .handler(({ data }) =>
+    runIntent(edgeInvoke, "create", {
+      order_id: data.orderId,
+      payment_method: data.paymentMethod,
+      payer_email: data.payerEmail,
+    }),
+  );
+
+export const getPaymentIntentStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => orderOnlySchema.parse(d))
+  .handler(({ data }) => runIntent(edgeInvoke, "status", { order_id: data.orderId }));
+
+export const cancelPaymentIntent = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => orderOnlySchema.parse(d))
+  .handler(({ data }) => runIntent(edgeInvoke, "cancel", { order_id: data.orderId }));
+
 export default {
   create: createPaymentIntent,
   status: getPaymentIntentStatus,
   cancel: cancelPaymentIntent,
   mapMpStatus,
+  runIntent,
 };
