@@ -3,7 +3,9 @@ import { z } from "zod";
 
 const schema = z.object({
   restaurantId: z.string().uuid(),
-  period: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional().default(30),
+  period: z.number().int().min(1).max(365).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -24,12 +26,22 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const startToday = new Date(now);
     startToday.setHours(0, 0, 0, 0);
     const startYesterday = new Date(startToday.getTime() - DAY);
-    const period = data.period ?? 30;
     const since30 = new Date(now.getTime() - 30 * DAY);
     const since60 = new Date(now.getTime() - 60 * DAY);
-    const sincePeriod = new Date(startToday.getTime() - (period - 1) * DAY);
-    const lookback = Math.max(60, period) * DAY;
-    const sinceFetch = new Date(now.getTime() - lookback);
+
+    // Janela do filtro selecionado (from/to em YYYY-MM-DD inclusivos, senão fallback para period=30)
+    const fromDate = data.from
+      ? new Date(`${data.from}T00:00:00`)
+      : new Date(startToday.getTime() - ((data.period ?? 30) - 1) * DAY);
+    const toDate = data.to
+      ? new Date(`${data.to}T23:59:59.999`)
+      : now;
+    const periodDays = Math.max(1, Math.round((toDate.getTime() - fromDate.getTime()) / DAY) + 1);
+    const period = periodDays;
+    const sincePeriod = fromDate;
+    const lookback = Math.max(60, periodDays) * DAY;
+    const sinceFetch = new Date(Math.min(fromDate.getTime(), now.getTime() - lookback));
+
 
     const [{ data: orders }, { data: customers }, { data: items }, { data: movements }, { data: coupons }] = await Promise.all([
       supabaseAdmin
@@ -84,15 +96,17 @@ export const getDashboardData = createServerFn({ method: "POST" })
       return d >= since60 && d < since30;
     }).length;
 
-    // Period series (respects selected window)
+    // Period series (respects selected window [fromDate..toDate])
     const series: { date: string; revenue: number; orders: number }[] = [];
-    const stepDays = period <= 7 ? 1 : period <= 30 ? 1 : 3;
-    for (let i = period - 1; i >= 0; i -= stepDays) {
-      const d = new Date(startToday.getTime() - i * DAY);
-      const next = new Date(d.getTime() + stepDays * DAY);
+    const stepDays = periodDays <= 7 ? 1 : periodDays <= 30 ? 1 : 3;
+    const startBucket = new Date(fromDate);
+    startBucket.setHours(0, 0, 0, 0);
+    for (let t = startBucket.getTime(); t <= toDate.getTime(); t += stepDays * DAY) {
+      const d = new Date(t);
+      const next = new Date(t + stepDays * DAY);
       const slice = allOrders.filter((o) => {
-        const t = new Date(o.created_at);
-        return t >= d && t < next;
+        const ot = new Date(o.created_at);
+        return ot >= d && ot < next;
       });
       series.push({
         date: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -100,6 +114,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
         orders: slice.length,
       });
     }
+
 
     // Funnel (live counts on open orders today + recent)
     const recent = (orders ?? []).filter((o) => new Date(o.created_at) >= new Date(now.getTime() - 3 * DAY));
@@ -111,7 +126,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
     };
 
     // Status breakdown across selected period (includes cancelled)
-    const periodOrders = (orders ?? []).filter((o) => new Date(o.created_at) >= sincePeriod);
+    const periodOrders = (orders ?? []).filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= sincePeriod && t <= toDate;
+    });
     const statusBreakdown = {
       novo: periodOrders.filter((o) => o.status === "novo" || o.status === "pendente").length,
       preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
@@ -122,7 +140,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Top 5 products (within selected period)
     const last30 = allOrders.filter((o) => new Date(o.created_at) >= since30);
-    const periodForTop = allOrders.filter((o) => new Date(o.created_at) >= sincePeriod);
+    const periodForTop = allOrders.filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= sincePeriod && t <= toDate;
+    });
     const map = new Map<string, { name: string; qty: number; revenue: number }>();
     for (const o of periodForTop) {
       const its = (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];

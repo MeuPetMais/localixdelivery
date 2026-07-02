@@ -1,26 +1,30 @@
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Store, CheckCircle2, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 
 export function ProfileCompletionBanner({ restaurant }: { restaurant: any }) {
   const { pct, completed, total, checks, isComplete } = getProfileCompletion(restaurant);
   const missing = total - completed;
 
-  if (isComplete) {
-    return (
-      <Card className="flex items-center gap-3 border-emerald-500/30 bg-emerald-500/5 p-4">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-600">
-          <CheckCircle2 className="h-5 w-5" />
-        </div>
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-          Seu perfil está completo e pronto para receber clientes.
-        </p>
-      </Card>
-    );
-  }
+  // Ao completar 100%: mostrar um toast discreto UMA vez e sumir do dashboard.
+  useEffect(() => {
+    if (!isComplete || typeof window === "undefined") return;
+    const key = `localix:profile-complete:${restaurant?.id ?? "anon"}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
+    toast.success("✅ Perfil concluído com sucesso!", {
+      description: "Sua loja está pronta para receber pedidos.",
+      duration: 5000,
+    });
+  }, [isComplete, restaurant?.id]);
+
+  if (isComplete) return null;
+
 
   return (
     <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-orange-500/10 via-red-500/5 to-transparent p-5 shadow-sm">

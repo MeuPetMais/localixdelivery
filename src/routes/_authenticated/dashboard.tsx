@@ -31,9 +31,6 @@ import {
   Bike,
   CheckCircle2,
   Clock,
-  Bell,
-  CalendarDays,
-  ChevronDown,
   Share2,
   Instagram,
   Facebook,
@@ -58,6 +55,8 @@ import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { NewOrderCard } from "@/components/NewOrderCard";
+import { MerchantNotificationsBell } from "@/components/MerchantNotificationsBell";
+import { DateRangeFilter, computePreset, type DateRange } from "@/components/DateRangeFilter";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -82,15 +81,18 @@ function Dashboard() {
   const restaurant = useRestaurant();
   const { invalidate: invalidateRestaurant } = useRestaurantContext();
 
-  const [period, setPeriod] = useState<7 | 30 | 90>(30);
+  const [dateRange, setDateRange] = useState<DateRange>(() => computePreset("30d"));
   const [metric, setMetric] = useState<"revenue" | "orders">("revenue");
   const [togglingOpen, setTogglingOpen] = useState(false);
 
   const fetchDash = useServerFn(getDashboardData);
   const { data: dash } = useQuery({
     enabled: !!restaurant?.id,
-    queryKey: ["dashboard", restaurant?.id, period],
-    queryFn: () => fetchDash({ data: { restaurantId: restaurant!.id, period } }),
+    queryKey: ["dashboard", restaurant?.id, dateRange.from, dateRange.to],
+    queryFn: () =>
+      fetchDash({
+        data: { restaurantId: restaurant!.id, from: dateRange.from, to: dateRange.to },
+      }),
     refetchInterval: 60_000,
   });
 
@@ -155,22 +157,8 @@ function Dashboard() {
           <p className="text-sm text-muted-foreground">Aqui está o resumo do seu negócio hoje.</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-accent"
-          >
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            Hoje
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
-          <button
-            type="button"
-            aria-label="Notificações"
-            className="relative grid h-9 w-9 place-items-center rounded-lg border bg-background shadow-sm transition hover:bg-accent"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-          </button>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <MerchantNotificationsBell restaurantId={restaurant.id} />
           <div className="flex items-center gap-2 rounded-lg border bg-background py-1 pl-1 pr-3 shadow-sm">
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-warm text-xs font-bold text-primary-foreground">
               {(restaurant.name ?? "L").charAt(0).toUpperCase()}
@@ -359,7 +347,7 @@ function Dashboard() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="font-display text-lg font-bold">
-                {metric === "revenue" ? "Faturamento" : "Pedidos"} — últimos {period} dias
+                {metric === "revenue" ? "Faturamento" : "Pedidos"} — {dateRange.label}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {metric === "revenue" ? "Receita por dia" : "Quantidade de pedidos por dia"}
@@ -379,19 +367,9 @@ function Dashboard() {
                   </button>
                 ))}
               </div>
-              <div className="inline-flex rounded-lg border bg-background p-0.5 text-xs">
-                {([7, 30, 90] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`rounded-md px-2.5 py-1 font-medium transition ${
-                      period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {p}d
-                  </button>
-                ))}
-              </div>
+              <span className="rounded-md border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+                {dateRange.label}
+              </span>
             </div>
           </div>
           <div className="mt-4 h-64 w-full">
@@ -606,7 +584,7 @@ function Dashboard() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Dashboard Executivo</h2>
-          <span className="text-xs text-muted-foreground">Últimos {period} dias</span>
+          <span className="text-xs text-muted-foreground">{dateRange.label}</span>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Resumo Financeiro */}
