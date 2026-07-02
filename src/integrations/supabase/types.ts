@@ -842,6 +842,7 @@ export type Database = {
       orders: {
         Row: {
           address: string | null
+          commission_rate: number | null
           coupon_id: string | null
           created_at: string
           customer_id: string | null
@@ -849,10 +850,12 @@ export type Database = {
           customer_phone: string | null
           discount: number
           estimated_delivery_time: number | null
+          fixed_fee: number | null
           id: string
           items: Json
           order_number: number | null
           payment_method: string | null
+          platform_fee: number | null
           restaurant_id: string
           status: string
           total: number
@@ -860,6 +863,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          commission_rate?: number | null
           coupon_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -867,10 +871,12 @@ export type Database = {
           customer_phone?: string | null
           discount?: number
           estimated_delivery_time?: number | null
+          fixed_fee?: number | null
           id?: string
           items?: Json
           order_number?: number | null
           payment_method?: string | null
+          platform_fee?: number | null
           restaurant_id: string
           status?: string
           total?: number
@@ -878,6 +884,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          commission_rate?: number | null
           coupon_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -885,10 +892,12 @@ export type Database = {
           customer_phone?: string | null
           discount?: number
           estimated_delivery_time?: number | null
+          fixed_fee?: number | null
           id?: string
           items?: Json
           order_number?: number | null
           payment_method?: string | null
+          platform_fee?: number | null
           restaurant_id?: string
           status?: string
           total?: number
@@ -960,6 +969,63 @@ export type Database = {
           role_title?: string | null
           theme?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          banner_url: string | null
+          city_fees: Json
+          commission_rate: number
+          contact_email: string | null
+          contact_whatsapp: string | null
+          delivery_fee_default: number
+          domain: string | null
+          fixed_fee: number
+          id: boolean
+          logo_url: string | null
+          min_order: number
+          name: string
+          primary_color: string | null
+          tier_fees: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          city_fees?: Json
+          commission_rate?: number
+          contact_email?: string | null
+          contact_whatsapp?: string | null
+          delivery_fee_default?: number
+          domain?: string | null
+          fixed_fee?: number
+          id?: boolean
+          logo_url?: string | null
+          min_order?: number
+          name?: string
+          primary_color?: string | null
+          tier_fees?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          city_fees?: Json
+          commission_rate?: number
+          contact_email?: string | null
+          contact_whatsapp?: string | null
+          delivery_fee_default?: number
+          domain?: string | null
+          fixed_fee?: number
+          id?: boolean
+          logo_url?: string | null
+          min_order?: number
+          name?: string
+          primary_color?: string | null
+          tier_fees?: Json
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1749,6 +1815,13 @@ export type Database = {
       }
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       reset_demo_environment: { Args: never; Returns: Json }
       seed_demo_marketplace: { Args: never; Returns: undefined }
     }
