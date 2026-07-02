@@ -28,6 +28,7 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
@@ -148,6 +149,11 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   id: '/pedido-sucesso/$id',
   path: '/pedido-sucesso/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
+  id: '/transacoes',
+  path: '/transacoes',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminParceirosRoute = AdminParceirosRouteImport.update({
   id: '/parceiros',
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/parceiros': typeof AdminParceirosRoute
+  '/admin/transacoes': typeof AdminTransacoesRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -505,6 +515,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -552,6 +563,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/parceiros'
+    | '/admin/transacoes'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -713,6 +725,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/transacoes': {
+      id: '/admin/transacoes'
+      path: '/transacoes'
+      fullPath: '/admin/transacoes'
+      preLoaderRoute: typeof AdminTransacoesRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/parceiros': {
       id: '/admin/parceiros'
@@ -968,6 +987,7 @@ interface AdminRouteChildren {
   AdminClientesRoute: typeof AdminClientesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
+  AdminTransacoesRoute: typeof AdminTransacoesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -975,6 +995,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminClientesRoute: AdminClientesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
   AdminParceirosRoute: AdminParceirosRoute,
+  AdminTransacoesRoute: AdminTransacoesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
