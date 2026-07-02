@@ -64,6 +64,7 @@ import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
+import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -340,6 +341,11 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
   path: '/montar',
   getParentRoute: () => SlugRoute,
 } as any)
+const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
+  id: '/api/public/mp/callback',
+  path: '/api/public/mp/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -396,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -450,6 +457,7 @@ export interface FileRoutesByTo {
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -508,6 +516,7 @@ export interface FileRoutesById {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -566,6 +575,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/public/mp/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug'
     | '/admin'
+    | '/api/public/mp/callback'
   id:
     | '__root__'
     | '/'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/public/mp/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -699,6 +711,7 @@ export interface RootRouteChildren {
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
+  ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1088,6 +1101,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugMontarRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/api/public/mp/callback': {
+      id: '/api/public/mp/callback'
+      path: '/api/public/mp/callback'
+      fullPath: '/api/public/mp/callback'
+      preLoaderRoute: typeof ApiPublicMpCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1208,6 +1228,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
+  ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

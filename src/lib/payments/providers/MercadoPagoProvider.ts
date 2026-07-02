@@ -1,6 +1,7 @@
 // Provider do Mercado Pago.
 // Toda comunicação com o MP acontece dentro de Edge Functions.
-// Este módulo apenas invoca as funções `mp-oauth` via supabase.functions.invoke.
+// Este módulo apenas invoca `mp-oauth` via supabase.functions.invoke —
+// nunca manipula access token, refresh token ou client secret.
 
 import { supabase } from "@/integrations/supabase/client";
 import type {
@@ -9,15 +10,9 @@ import type {
   PaymentProvider,
 } from "./PaymentProvider";
 
-async function invoke<T>(action: string, restaurantId: string, extra: Record<string, unknown> = {}): Promise<T> {
+async function callMpOauth<T = any>(action: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("mp-oauth", {
-    body: { restaurant_id: restaurantId, ...extra },
-    // action vai por query string
-    // (supabase-js concatena o path se prefixado com "?")
-    // fallback: usamos header também
-    headers: { "x-action": action },
-    method: "POST",
-    ...({ query: { action } } as any),
+    body: { action, ...body },
   });
   if (error) throw error;
   return data as T;
@@ -29,23 +24,15 @@ export const MercadoPagoProvider: PaymentProvider = {
   supportsOAuth: true,
 
   async startOAuth(restaurantId, redirectTo) {
-    const { data, error } = await supabase.functions.invoke(
-      `mp-oauth?action=start`,
-      {
-        body: { restaurant_id: restaurantId, redirect_to: redirectTo },
-      },
-    );
-    if (error) throw error;
-    return { authorizeUrl: (data as any).authorize_url } as OAuthStartResult;
+    const data = await callMpOauth<{ authorize_url: string }>("start", {
+      restaurant_id: restaurantId,
+      redirect_to: redirectTo,
+    });
+    return { authorizeUrl: data.authorize_url } satisfies OAuthStartResult;
   },
 
   async getStatus(restaurantId) {
-    const { data, error } = await supabase.functions.invoke(
-      `mp-oauth?action=status`,
-      { body: { restaurant_id: restaurantId } },
-    );
-    if (error) throw error;
-    const d = data as any;
+    const d = await callMpOauth<any>("status", { restaurant_id: restaurantId });
     return {
       provider: "mercado_pago",
       connected: !!d.connected,
@@ -60,10 +47,6 @@ export const MercadoPagoProvider: PaymentProvider = {
   },
 
   async disconnect(restaurantId) {
-    const { error } = await supabase.functions.invoke(
-      `mp-oauth?action=disconnect`,
-      { body: { restaurant_id: restaurantId } },
-    );
-    if (error) throw error;
+    await callMpOauth("disconnect", { restaurant_id: restaurantId });
   },
 };

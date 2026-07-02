@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get("action") ?? "status";
     const body = req.method === "POST" ? await safeJson(req) : {};
+    const action = (body?.action ?? url.searchParams.get("action") ?? "status") as string;
     const restaurantId = (body?.restaurant_id ?? url.searchParams.get("restaurant_id")) as string;
     if (!restaurantId) return json({ error: "restaurant_id obrigatório" }, { status: 400 });
 
