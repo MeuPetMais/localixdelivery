@@ -30,7 +30,7 @@ import {
   Plus,
   Loader2,
   Send,
-  BookOpen,
+  
   Search,
   Sparkles,
 } from "lucide-react";
