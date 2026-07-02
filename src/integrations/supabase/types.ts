@@ -1464,6 +1464,152 @@ export type Database = {
         }
         Relationships: []
       }
+      support_articles: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          position: number
+          published: boolean
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          position?: number
+          published?: boolean
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          position?: number
+          published?: boolean
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          attachments: Json
+          author_id: string
+          author_type: string
+          body: string | null
+          created_at: string
+          id: string
+          read_by_admin: boolean
+          read_by_owner: boolean
+          ticket_id: string
+        }
+        Insert: {
+          attachments?: Json
+          author_id: string
+          author_type?: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          read_by_owner?: boolean
+          ticket_id: string
+        }
+        Update: {
+          attachments?: Json
+          author_id?: string
+          author_type?: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          read_by_admin?: boolean
+          read_by_owner?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["support_category"]
+          created_at: string
+          description: string
+          diagnostics: Json
+          id: string
+          last_message_at: string
+          priority: Database["public"]["Enums"]["support_priority"]
+          restaurant_id: string
+          status: Database["public"]["Enums"]["support_status"]
+          subject: string
+          ticket_number: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          description: string
+          diagnostics?: Json
+          id?: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["support_status"]
+          subject: string
+          ticket_number?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          description?: string
+          diagnostics?: Json
+          id?: string
+          last_message_at?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["support_status"]
+          subject?: string
+          ticket_number?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1608,6 +1754,25 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "partner" | "customer"
+      support_category:
+        | "problema_tecnico"
+        | "pedido"
+        | "pagamentos"
+        | "cardapio"
+        | "builder"
+        | "impressao"
+        | "financeiro"
+        | "fidelidade"
+        | "ia"
+        | "sugestao"
+        | "outro"
+      support_priority: "baixa" | "media" | "alta" | "urgente"
+      support_status:
+        | "aberto"
+        | "em_analise"
+        | "respondido"
+        | "resolvido"
+        | "fechado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1736,6 +1901,27 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "partner", "customer"],
+      support_category: [
+        "problema_tecnico",
+        "pedido",
+        "pagamentos",
+        "cardapio",
+        "builder",
+        "impressao",
+        "financeiro",
+        "fidelidade",
+        "ia",
+        "sugestao",
+        "outro",
+      ],
+      support_priority: ["baixa", "media", "alta", "urgente"],
+      support_status: [
+        "aberto",
+        "em_analise",
+        "respondido",
+        "resolvido",
+        "fechado",
+      ],
     },
   },
 } as const
