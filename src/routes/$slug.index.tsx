@@ -240,7 +240,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   // Favorites state (per restaurant) for the current authenticated customer
   const { isAuthenticated, session } = useCustomerAuth();
-  const restaurantId: string | undefined = data?.restaurant?.id;
+  
 
   const [favItems, setFavItems] = useState<Set<string>>(new Set());
   const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
