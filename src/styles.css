@@ -134,10 +134,18 @@
 
 @layer base {
   * { border-color: var(--color-border); box-sizing: border-box; }
-  html, body, #root {
+  html {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+  }
+  /* overflow-x: hidden on body/#root creates a scroll container and BREAKS
+     position: sticky for every descendant (the sticky category menu).
+     `clip` clips horizontal overflow WITHOUT creating a scroll container. */
+  body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
   html, body {
     background-color: var(--color-background);
@@ -147,7 +155,7 @@
   }
   img, video, canvas, svg, table { max-width: 100%; height: auto; }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; overflow-wrap: break-word; }
-  .main-container { max-width: 100%; overflow-x: hidden; }
+  .main-container { max-width: 100%; overflow-x: clip; }
 }
 
 @utility bg-gradient-warm { background-image: var(--gradient-warm); }
