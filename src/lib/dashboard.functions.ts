@@ -126,7 +126,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
     };
 
     // Status breakdown across selected period (includes cancelled)
-    const periodOrders = (orders ?? []).filter((o) => new Date(o.created_at) >= sincePeriod);
+    const periodOrders = (orders ?? []).filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= sincePeriod && t <= toDate;
+    });
     const statusBreakdown = {
       novo: periodOrders.filter((o) => o.status === "novo" || o.status === "pendente").length,
       preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
