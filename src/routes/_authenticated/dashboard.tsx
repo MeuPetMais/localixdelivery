@@ -32,7 +32,6 @@ import {
   CheckCircle2,
   Clock,
   Bell,
-  CalendarDays,
   ChevronDown,
   Share2,
   Instagram,
