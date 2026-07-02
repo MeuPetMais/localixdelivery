@@ -134,7 +134,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   }, [data?.restaurant?.id, slug, qc]);
 
-  const restaurantId = data?.restaurant?.id;
+  const restaurantId = data?.restaurant?.id as string | undefined;
+
   const { data: reviewStats } = useQuery({
     queryKey: ["public-review-stats", restaurantId],
     enabled: !!restaurantId,
