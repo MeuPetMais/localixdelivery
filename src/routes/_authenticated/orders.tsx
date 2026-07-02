@@ -840,11 +840,14 @@ function OrderDetailsDrawer({
                 Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
               </section>
 
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={onPrint}>
-                  <Printer className="h-4 w-4" /> Imprimir
+              <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3">
+                <Button variant="outline" className="gap-1.5" onClick={onPrintKitchen}>
+                  <Printer className="h-4 w-4" /> Cozinha
                 </Button>
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={onWhatsapp}>
+                <Button variant="outline" className="gap-1.5" onClick={onPrint}>
+                  <Printer className="h-4 w-4" /> Cupom
+                </Button>
+                <Button variant="outline" className="col-span-2 gap-1.5 sm:col-span-1" onClick={onWhatsapp}>
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </Button>
               </div>
