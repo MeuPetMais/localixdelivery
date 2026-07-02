@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/format";
+import { resolvePostLoginRedirect } from "@/lib/admin-mode";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
