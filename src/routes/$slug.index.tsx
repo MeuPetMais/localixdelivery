@@ -1089,3 +1089,108 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     </SheetContent>
   );
 }
+
+function FeaturedSections({
+  slug,
+  effectiveOpen,
+  onAdd,
+  onOpenBuilder,
+}: {
+  slug: string;
+  effectiveOpen: boolean;
+  onAdd: (item: FeaturedItem) => void;
+  onOpenBuilder: (builderId: string) => void;
+}) {
+  const fetchFeatured = useServerFn(getFeaturedSections);
+  const { data } = useQuery({
+    queryKey: ["featured-sections", slug],
+    queryFn: () => fetchFeatured({ data: { slug } }),
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+
+  const sections = data?.sections ?? [];
+  if (sections.length === 0) return null;
+
+  return (
+    <div className="mt-6 space-y-6">
+      {sections.map((section: FeaturedSection) => {
+        if (section.key === "half_half_pizza") {
+          return (
+            <button
+              key={section.key}
+              type="button"
+              onClick={() => section.builderId && onOpenBuilder(section.builderId)}
+              className="flex w-full items-center gap-3 rounded-2xl bg-gradient-warm p-4 text-left text-primary-foreground shadow-elegant transition hover:brightness-105"
+            >
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary-foreground/15 text-2xl">
+                {section.emoji}
+              </div>
+              <div className="flex-1">
+                <p className="font-display text-base font-extrabold">{section.title}</p>
+                <p className="text-xs opacity-90">{section.subtitle}</p>
+              </div>
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          );
+        }
+        return (
+          <section key={section.key}>
+            <div className="mb-2 flex items-end justify-between gap-2">
+              <div>
+                <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">
+                  <span>{section.emoji}</span> {section.title}
+                </h2>
+                <p className="text-xs text-muted-foreground">{section.subtitle}</p>
+              </div>
+            </div>
+            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {section.items.map((it) => {
+                const price = it.promo_price ?? it.price;
+                return (
+                  <Card
+                    key={`${section.key}-${it.id}`}
+                    className="relative w-40 shrink-0 snap-start overflow-hidden rounded-2xl border shadow-sm"
+                  >
+                    <div className="relative h-28 w-full bg-muted">
+                      {it.image_url ? (
+                        <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center text-muted-foreground">
+                          <ImageIcon className="h-6 w-6" />
+                        </div>
+                      )}
+                      {it.promo_price != null && (
+                        <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                          Oferta
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-2 min-h-[2.4em] text-sm font-semibold leading-tight">{it.name}</p>
+                      <div className="mt-2 flex items-baseline gap-1.5">
+                        <span className="font-display text-base font-extrabold text-primary">{brl(price)}</span>
+                        {it.promo_price != null && (
+                          <span className="text-[10px] text-muted-foreground line-through">{brl(it.price)}</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="mt-2 h-8 w-full rounded-full text-xs"
+                        disabled={!effectiveOpen}
+                        onClick={() => onAdd(it)}
+                      >
+                        <Plus className="mr-1 h-3 w-3" /> Adicionar
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
