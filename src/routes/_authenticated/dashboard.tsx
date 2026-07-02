@@ -347,7 +347,7 @@ function Dashboard() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="font-display text-lg font-bold">
-                {metric === "revenue" ? "Faturamento" : "Pedidos"} — últimos {period} dias
+                {metric === "revenue" ? "Faturamento" : "Pedidos"} — {dateRange.label}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {metric === "revenue" ? "Receita por dia" : "Quantidade de pedidos por dia"}
