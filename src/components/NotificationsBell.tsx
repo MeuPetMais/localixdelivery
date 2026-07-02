@@ -32,7 +32,7 @@ export function NotificationsBell() {
   return (
     <div
       className="fixed right-3 z-50"
-      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+      style={{ top: "calc(12px + env(safe-area-inset-top))" }}
     >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -48,7 +48,7 @@ export function NotificationsBell() {
             )}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" side="top" className="w-[92vw] max-w-sm p-0">
+        <PopoverContent align="end" side="bottom" className="w-[92vw] max-w-sm p-0">
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div>
               <h3 className="text-sm font-semibold">Notificações</h3>
