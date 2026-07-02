@@ -229,9 +229,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(([id]) => toItem(itemMap.get(id)));
       const rendered = config.customer_favorites_enabled && favs.length > 0;
       if (rendered) {
-        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "❤️", items: favs });
+        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "😍", items: favs });
       }
-      pushDiag("customer_favorites", "Favoritos dos Clientes", "❤️", favs.length, rendered,
+      pushDiag("customer_favorites", "Favoritos dos Clientes", "😍", favs.length, rendered,
         !config.customer_favorites_enabled ? "Desativada" : favs.length === 0 ? "Ninguém favoritou ainda" : "OK");
     }
 
