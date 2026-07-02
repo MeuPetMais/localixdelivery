@@ -644,6 +644,13 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           </section>
         )}
 
+        <FeaturedSections
+          slug={slug}
+          effectiveOpen={effectiveOpen}
+          onAdd={(it) => { add({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price) }); toast.success(`${it.name} adicionado`); }}
+          onOpenBuilder={(builderId) => navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builderId } as any })}
+        />
+
 
         {/* category chips */}
         {categories.length > 0 && (
