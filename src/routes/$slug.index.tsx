@@ -115,6 +115,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
     };
     const invalidateFeatured = () => qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
+    const invalidateReviews = () => {
+      qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
+      qc.invalidateQueries({ queryKey: ["public-review-stats", restaurantId] });
+    };
     const channel = supabase
       .channel(`public-menu:${restaurantId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, invalidateAll)
@@ -124,10 +128,30 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "featured_sections", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
       .on("postgres_changes", { event: "*", schema: "public", table: "builders", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
       .on("postgres_changes", { event: "*", schema: "public", table: "customer_favorites", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
-      .on("postgres_changes", { event: "*", schema: "public", table: "reviews", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews", filter: `restaurant_id=eq.${restaurantId}` }, invalidateReviews)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
+
   }, [data?.restaurant?.id, slug, qc]);
+
+  const restaurantId = data?.restaurant?.id as string | undefined;
+
+  const { data: reviewStats } = useQuery({
+    queryKey: ["public-review-stats", restaurantId],
+    enabled: !!restaurantId,
+    queryFn: async () => {
+      const { data: rows } = await (supabase as any)
+        .from("reviews")
+        .select("rating")
+        .eq("restaurant_id", restaurantId);
+      const list = (rows ?? []) as { rating: number }[];
+      const count = list.length;
+      const avg = count ? list.reduce((s, r) => s + Number(r.rating || 0), 0) / count : 0;
+      return { count, avg };
+    },
+  });
+
+
 
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -216,7 +240,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   // Favorites state (per restaurant) for the current authenticated customer
   const { isAuthenticated, session } = useCustomerAuth();
-  const restaurantId: string | undefined = data?.restaurant?.id;
+  
 
   const [favItems, setFavItems] = useState<Set<string>>(new Set());
   const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
@@ -443,8 +467,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               </span>
               <span className="inline-flex items-center gap-1 text-sm">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                <span className="font-semibold">4.8</span>
+                {reviewStats && reviewStats.count > 0 ? (
+                  <span className="font-semibold">
+                    {reviewStats.avg.toFixed(1).replace(".", ",")}
+                    <span className="ml-1 font-normal text-muted-foreground">
+                      ({reviewStats.count} {reviewStats.count === 1 ? "avaliação" : "avaliações"})
+                    </span>
+                  </span>
+                ) : (
+                  <span className="font-semibold text-muted-foreground">Novo</span>
+                )}
               </span>
+
               {restaurant.category && (
                 <span className="text-xs text-muted-foreground">· {restaurant.category}</span>
               )}
