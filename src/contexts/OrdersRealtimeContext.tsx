@@ -200,7 +200,7 @@ export function OrdersRealtimeProvider({
                     created_at: data.created_at,
                     restaurant_name: (data.restaurants as any)?.name ?? null,
                   };
-                  printOrder(printable).catch(() => {});
+                  printAutoCopies(printable).catch(() => {});
                 });
             }
 
