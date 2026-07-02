@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -577,7 +577,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             );
           if (promos.length === 0) return null;
           return (
-            <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <section id="sec-promos" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-display text-xl font-extrabold tracking-tight">🔥 Promoções do Dia</h2>
                 <span className="text-xs font-semibold text-muted-foreground">{promos.length} {promos.length === 1 ? "oferta" : "ofertas"}</span>
@@ -639,7 +639,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
         {/* 🍕 Monte do Seu Jeito */}
         {restaurant.builders_enabled && builders && builders.length > 0 && (
-          <section className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <section id="sec-monte" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-extrabold tracking-tight">🍕 Monte do Seu Jeito</h2>
               <span className="text-xs font-semibold text-muted-foreground">{builders.length} {builders.length === 1 ? "opção" : "opções"}</span>
@@ -691,26 +691,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         />
 
 
-        {/* category chips */}
-        {categories.length > 0 && (
-          <nav className="sticky top-0 z-20 -mx-4 mt-5 border-b bg-background/95 px-4 py-3 backdrop-blur">
-            <div className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categories.map((c) => {
-                const isActive = activeCat === c.id;
-                return (
-                  <a
-                    key={c.id}
-                    href={`#cat-${c.id}`}
-                    onClick={() => setActiveCat(c.id)}
-                    className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
-                  >
-                    {c.name}
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
-        )}
+        {/* smart sticky category menu */}
+        <SmartCategoryMenu
+          slug={slug}
+          categories={categories}
+          items={items}
+          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i)).length}
+          builderCount={restaurant.builders_enabled ? (builders?.length ?? 0) : 0}
+        />
 
         <div className="mt-5 space-y-7">
           {categories.map((cat) => {
