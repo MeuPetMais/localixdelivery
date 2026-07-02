@@ -44,6 +44,7 @@ function AdminLayout() {
     { to: "/admin/parceiros", label: "Gestão de Parceiros", icon: Store },
     { to: "/admin/clientes", label: "Gestão de Clientes", icon: Users },
     { to: "/admin/transacoes", label: "Gestão Financeira", icon: Receipt },
+    { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
   ];
 
   return (
