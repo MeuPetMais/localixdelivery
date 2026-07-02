@@ -160,22 +160,8 @@ function Dashboard() {
           <p className="text-sm text-muted-foreground">Aqui está o resumo do seu negócio hoje.</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-accent"
-          >
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            Hoje
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
-          <button
-            type="button"
-            aria-label="Notificações"
-            className="relative grid h-9 w-9 place-items-center rounded-lg border bg-background shadow-sm transition hover:bg-accent"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-          </button>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <MerchantNotificationsBell restaurantId={restaurant.id} />
           <div className="flex items-center gap-2 rounded-lg border bg-background py-1 pl-1 pr-3 shadow-sm">
             <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-warm text-xs font-bold text-primary-foreground">
               {(restaurant.name ?? "L").charAt(0).toUpperCase()}
