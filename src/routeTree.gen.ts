@@ -28,6 +28,7 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
@@ -146,6 +147,11 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   id: '/pedido-sucesso/$id',
   path: '/pedido-sucesso/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminParceirosRoute = AdminParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
   id: '/financeiro',
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByTo {
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -395,6 +403,7 @@ export interface FileRoutesById {
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/parceiros': typeof AdminParceirosRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/units'
     | '/admin/financeiro'
+    | '/admin/parceiros'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -483,6 +493,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/units'
     | '/admin/financeiro'
+    | '/admin/parceiros'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -528,6 +539,7 @@ export interface FileRouteTypes {
     | '/_authenticated/support'
     | '/_authenticated/units'
     | '/admin/financeiro'
+    | '/admin/parceiros'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -689,6 +701,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/parceiros': {
+      id: '/admin/parceiros'
+      path: '/parceiros'
+      fullPath: '/admin/parceiros'
+      preLoaderRoute: typeof AdminParceirosRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/financeiro': {
       id: '/admin/financeiro'
@@ -928,11 +947,13 @@ const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
 interface AdminRouteChildren {
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminParceirosRoute: typeof AdminParceirosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminParceirosRoute: AdminParceirosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
