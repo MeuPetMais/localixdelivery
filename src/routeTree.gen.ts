@@ -47,7 +47,6 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
 import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticated/builders'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
 
@@ -241,11 +240,6 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const SlugSobreRoute = SlugSobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
@@ -272,7 +266,6 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -313,7 +306,6 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
   '/consultor': typeof AuthenticatedConsultorRoute
@@ -357,7 +349,6 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/builders': typeof AuthenticatedBuildersRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
@@ -401,7 +392,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/admin'
     | '/ai'
     | '/builders'
     | '/consultor'
@@ -442,7 +432,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/admin'
     | '/ai'
     | '/builders'
     | '/consultor'
@@ -485,7 +474,6 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
-    | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/builders'
     | '/_authenticated/consultor'
@@ -800,13 +788,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/$slug/sobre': {
       id: '/$slug/sobre'
       path: '/sobre'
@@ -825,7 +806,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBuildersRoute: typeof AuthenticatedBuildersRoute
   AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
@@ -850,7 +830,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBuildersRoute: AuthenticatedBuildersRoute,
   AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
