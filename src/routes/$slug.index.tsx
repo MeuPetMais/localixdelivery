@@ -793,17 +793,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           })()}
         </div>
 
-        {/* Floating "Categorias" button — quick jump on long menus */}
+        {/* Floating "Categorias" button — primary nav aid on long menus */}
         {categories.length > 3 && (
           <Sheet open={catsSheetOpen} onOpenChange={setCatsSheetOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"
-                aria-label="Ver categorias"
-                className="fixed right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition hover:scale-105 active:scale-95"
+                aria-label="Ver categorias do cardápio"
+                className="fixed right-4 z-30 inline-flex items-center gap-2 rounded-full bg-primary pl-4 pr-5 py-3 text-primary-foreground shadow-float transition hover:scale-105 active:scale-95"
                 style={{ bottom: "calc(140px + env(safe-area-inset-bottom))" }}
               >
-                <LayoutGrid className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
+                <span className="text-sm font-bold">Categorias</span>
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="max-h-[80vh] rounded-t-3xl">
