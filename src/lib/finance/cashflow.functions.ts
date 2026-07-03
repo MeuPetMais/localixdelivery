@@ -21,7 +21,7 @@ export interface AccountReceivable {
   expected_date: string | null;
   received_date: string | null;
   status: ReceivableStatus;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +38,7 @@ export interface AccountPayable {
   status: PayableStatus;
   due_date: string | null;
   paid_date: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
