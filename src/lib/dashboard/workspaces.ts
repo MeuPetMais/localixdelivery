@@ -10,18 +10,96 @@ export const WORKSPACES: WorkspaceDefinition[] = [
   { id: "settings", label: "Configurações", requiredRoles: ["ADMIN"] },
 ];
 
+/**
+ * Navegação agrupada por domínio de negócio (usada pelo menu lateral).
+ * Cada seção é um NavigationItem sem `to`, com filhos navegáveis.
+ * RBAC preservado via `requiredRoles`.
+ */
 export const NAVIGATION: NavigationItem[] = [
-  { id: "dashboard", label: "Dashboard", to: "/dashboard", workspace: "operation" },
-  { id: "orders", label: "Pedidos", to: "/orders", workspace: "operation" },
-  { id: "products", label: "Produtos", to: "/menu", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
-  { id: "categories", label: "Categorias", to: "/menu", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
-  { id: "customers", label: "Clientes", to: "/customers", workspace: "customers" },
-  { id: "delivery", label: "Entregas", to: "/orders", workspace: "operation" },
-  { id: "financial", label: "Financeiro", to: "/finance", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { id: "payments", label: "Pagamentos", to: "/pagamentos", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER"] },
-  { id: "reports", label: "Relatórios", to: "/finance", workspace: "analytics", requiredRoles: ["ADMIN", "MANAGER"] },
-  { id: "notifications", label: "Notificações", to: "/dashboard", workspace: "operation" },
-  { id: "marketing", label: "Marketing", to: "/promotions", workspace: "marketing", requiredRoles: ["ADMIN", "MANAGER"] },
-  { id: "settings", label: "Configurações", to: "/settings", workspace: "settings", requiredRoles: ["ADMIN"] },
-  { id: "help", label: "Ajuda", to: "/support", workspace: "operation" },
+  {
+    id: "panel",
+    label: "Painel",
+    workspace: "operation",
+    children: [
+      { id: "dashboard", label: "Dashboard", to: "/dashboard", workspace: "operation" },
+    ],
+  },
+  {
+    id: "operation",
+    label: "Operação",
+    workspace: "operation",
+    children: [
+      { id: "orders", label: "Pedidos", to: "/orders", workspace: "operation" },
+      { id: "kitchen", label: "Painel da Cozinha", to: "/kitchen", workspace: "operation", requiredRoles: ["ADMIN", "MANAGER", "KITCHEN"] },
+      { id: "delivery", label: "Delivery", to: "/orders", workspace: "operation", requiredRoles: ["ADMIN", "MANAGER", "DRIVER", "ATTENDANT"] },
+    ],
+  },
+  {
+    id: "catalog",
+    label: "Cardápio",
+    workspace: "products",
+    requiredRoles: ["ADMIN", "MANAGER"],
+    children: [
+      { id: "menu", label: "Cardápio", to: "/menu", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "categories", label: "Categorias", to: "/menu", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "promotions", label: "Promoções", to: "/promotions", workspace: "marketing", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "featured", label: "Produtos em Destaque", to: "/featured", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "builders", label: "Construtores de Produtos", to: "/builders", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+    ],
+  },
+  {
+    id: "inventory",
+    label: "Estoque",
+    workspace: "products",
+    requiredRoles: ["ADMIN", "MANAGER"],
+    children: [
+      { id: "inventory", label: "Estoque", to: "/inventory", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "suppliers", label: "Fornecedores", to: "/suppliers", workspace: "products", requiredRoles: ["ADMIN", "MANAGER"] },
+    ],
+  },
+  {
+    id: "customers",
+    label: "Clientes",
+    workspace: "customers",
+    children: [
+      { id: "customers", label: "Clientes", to: "/customers", workspace: "customers" },
+      { id: "loyalty", label: "Fidelidade", to: "/loyalty", workspace: "marketing", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "reviews", label: "Avaliações", to: "/reviews", workspace: "customers", requiredRoles: ["ADMIN", "MANAGER", "ATTENDANT"] },
+    ],
+  },
+  {
+    id: "financial",
+    label: "Financeiro",
+    workspace: "financial",
+    requiredRoles: ["ADMIN", "MANAGER", "CASHIER"],
+    children: [
+      { id: "payments", label: "Pagamentos", to: "/pagamentos", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "financial-center", label: "Central Financeira", to: "/financial-center", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER", "CASHIER"] },
+      { id: "finance", label: "Finance", to: "/finance", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER", "CASHIER"] },
+      { id: "finance-ai", label: "Finance AI", to: "/finance-ai", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER"] },
+    ],
+  },
+  {
+    id: "intelligence",
+    label: "Inteligência",
+    workspace: "analytics",
+    requiredRoles: ["ADMIN", "MANAGER"],
+    children: [
+      { id: "analytics", label: "Analytics", to: "/finance", workspace: "analytics", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "consultor", label: "Consultor IA", to: "/consultor", workspace: "analytics", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "ai", label: "Assistente IA", to: "/ai", workspace: "analytics", requiredRoles: ["ADMIN", "MANAGER"] },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Configurações",
+    workspace: "settings",
+    children: [
+      { id: "settings", label: "Configurações", to: "/settings", workspace: "settings", requiredRoles: ["ADMIN"] },
+      { id: "print-settings", label: "Impressão", to: "/print-settings", workspace: "settings", requiredRoles: ["ADMIN", "MANAGER"] },
+      { id: "units", label: "Unidades", to: "/units", workspace: "settings", requiredRoles: ["ADMIN"] },
+      { id: "perfil", label: "Perfil", to: "/perfil", workspace: "settings" },
+      { id: "support", label: "Ajuda", to: "/support", workspace: "operation" },
+    ],
+  },
 ];
