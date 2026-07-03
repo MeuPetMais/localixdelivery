@@ -3079,6 +3079,45 @@ export type Database = {
           },
         ]
       }
+      purchase_requests: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          id: string
+          items: Json
+          notes: string | null
+          reason: string | null
+          requested_by: string | null
+          restaurant_id: string
+          status: Database["public"]["Enums"]["purchase_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -3555,9 +3594,15 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          ingredient_id: string | null
+          last_purchase: string | null
+          lead_time: number | null
+          minimum_quantity: number | null
           name: string
           price: number
+          status: string
           supplier_id: string
+          supplier_sku: string | null
           unit: string
           updated_at: string
         }
@@ -3566,9 +3611,15 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ingredient_id?: string | null
+          last_purchase?: string | null
+          lead_time?: number | null
+          minimum_quantity?: number | null
           name: string
           price: number
+          status?: string
           supplier_id: string
+          supplier_sku?: string | null
           unit?: string
           updated_at?: string
         }
@@ -3577,9 +3628,15 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ingredient_id?: string | null
+          last_purchase?: string | null
+          lead_time?: number | null
+          minimum_quantity?: number | null
           name?: string
           price?: number
+          status?: string
           supplier_id?: string
+          supplier_sku?: string | null
           unit?: string
           updated_at?: string
         }
@@ -3593,6 +3650,48 @@ export type Database = {
           },
         ]
       }
+      supplier_quotes: {
+        Row: {
+          created_at: string
+          delivery_time: number | null
+          id: string
+          ingredient_id: string
+          minimum_quantity: number | null
+          notes: string | null
+          price: number
+          restaurant_id: string
+          supplier_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_time?: number | null
+          id?: string
+          ingredient_id: string
+          minimum_quantity?: number | null
+          notes?: string | null
+          price: number
+          restaurant_id: string
+          supplier_id: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivery_time?: number | null
+          id?: string
+          ingredient_id?: string
+          minimum_quantity?: number | null
+          notes?: string | null
+          price?: number
+          restaurant_id?: string
+          supplier_id?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           active: boolean
@@ -3601,13 +3700,19 @@ export type Database = {
           city: string | null
           contact_name: string | null
           created_at: string
+          delivery_days: string[] | null
           description: string | null
           document: string | null
           email: string | null
           id: string
+          lead_time: number | null
           logo_url: string | null
+          minimum_order_value: number | null
           name: string
+          payment_terms: string | null
           phone: string | null
+          preferred_supplier: boolean
+          rating: number | null
           restaurant_id: string | null
           status: string
           updated_at: string
@@ -3619,13 +3724,19 @@ export type Database = {
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          delivery_days?: string[] | null
           description?: string | null
           document?: string | null
           email?: string | null
           id?: string
+          lead_time?: number | null
           logo_url?: string | null
+          minimum_order_value?: number | null
           name: string
+          payment_terms?: string | null
           phone?: string | null
+          preferred_supplier?: boolean
+          rating?: number | null
           restaurant_id?: string | null
           status?: string
           updated_at?: string
@@ -3637,13 +3748,19 @@ export type Database = {
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          delivery_days?: string[] | null
           description?: string | null
           document?: string | null
           email?: string | null
           id?: string
+          lead_time?: number | null
           logo_url?: string | null
+          minimum_order_value?: number | null
           name?: string
+          payment_terms?: string | null
           phone?: string | null
+          preferred_supplier?: boolean
+          rating?: number | null
           restaurant_id?: string | null
           status?: string
           updated_at?: string
@@ -4388,6 +4505,7 @@ export type Database = {
         | "ORDERED"
         | "RECEIVED"
         | "CANCELLED"
+      purchase_request_status: "OPEN" | "APPROVED" | "REJECTED" | "ORDERED"
       recipe_status: "DRAFT" | "ACTIVE" | "ARCHIVED"
       reconciliation_status:
         | "PENDING"
@@ -4622,6 +4740,7 @@ export const Constants = {
         "RECEIVED",
         "CANCELLED",
       ],
+      purchase_request_status: ["OPEN", "APPROVED", "REJECTED", "ORDERED"],
       recipe_status: ["DRAFT", "ACTIVE", "ARCHIVED"],
       reconciliation_status: [
         "PENDING",
