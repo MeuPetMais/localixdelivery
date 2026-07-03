@@ -150,6 +150,81 @@ export type Database = {
           },
         ]
       }
+      business_rule_execution_log: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          execution_time_ms: number | null
+          id: string
+          metadata: Json
+          order_id: string | null
+          reason: string | null
+          restaurant_id: string | null
+          result: string
+          rule_code: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          restaurant_id?: string | null
+          result: string
+          rule_code: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          restaurant_id?: string | null
+          result?: string
+          rule_code?: string
+        }
+        Relationships: []
+      }
+      business_rules: {
+        Row: {
+          category: string
+          code: string
+          configuration_json: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          code: string
+          configuration_json?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          configuration_json?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           code: string
