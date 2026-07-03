@@ -1447,6 +1447,83 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_reconciliation: {
+        Row: {
+          created_at: string
+          currency: string
+          difference_amount: number | null
+          expected_total: number | null
+          external_reference: string | null
+          gateway_fee: number | null
+          gateway_gross_amount: number | null
+          id: string
+          localix_amount: number | null
+          metadata: Json
+          order_id: string | null
+          payment_id: string | null
+          platform_fee: number | null
+          provider: string
+          received_total: number | null
+          reconciled: boolean
+          reconciled_at: string | null
+          restaurant_amount: number | null
+          status: Database["public"]["Enums"]["reconciliation_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          difference_amount?: number | null
+          expected_total?: number | null
+          external_reference?: string | null
+          gateway_fee?: number | null
+          gateway_gross_amount?: number | null
+          id?: string
+          localix_amount?: number | null
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          platform_fee?: number | null
+          provider?: string
+          received_total?: number | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          restaurant_amount?: number | null
+          status?: Database["public"]["Enums"]["reconciliation_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          difference_amount?: number | null
+          expected_total?: number | null
+          external_reference?: string | null
+          gateway_fee?: number | null
+          gateway_gross_amount?: number | null
+          id?: string
+          localix_amount?: number | null
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          platform_fee?: number | null
+          provider?: string
+          received_total?: number | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          restaurant_amount?: number | null
+          status?: Database["public"]["Enums"]["reconciliation_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reconciliation_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_webhook_events: {
         Row: {
           action: string | null
@@ -2543,6 +2620,12 @@ export type Database = {
         | "CHARGEBACK"
         | "PAYOUT"
         | "ADJUSTMENT"
+      reconciliation_status:
+        | "PENDING"
+        | "MATCHED"
+        | "DIVERGENT"
+        | "FAILED"
+        | "MANUAL_REVIEW"
       support_category:
         | "problema_tecnico"
         | "pedido"
@@ -2712,6 +2795,13 @@ export const Constants = {
         "CHARGEBACK",
         "PAYOUT",
         "ADJUSTMENT",
+      ],
+      reconciliation_status: [
+        "PENDING",
+        "MATCHED",
+        "DIVERGENT",
+        "FAILED",
+        "MANUAL_REVIEW",
       ],
       support_category: [
         "problema_tecnico",
