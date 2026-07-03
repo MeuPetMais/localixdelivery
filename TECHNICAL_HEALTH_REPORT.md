@@ -83,3 +83,10 @@ alertas/incidentes e snapshot consolidado.
 - Persistência durável de logs/audit segue rastreada em
   `TECHNICAL_DEBT.md` (migração para tabela append-only).
 - Próximo: Prompt 23 — Quality Assurance.
+
+## Atualização — Prompt 23 (Release Candidate RC1)
+
+- Suíte completa: **444/444** testes passando (39 suites).
+- Nenhuma regressão introduzida por Observability (Prompt 22).
+- Nota geral: **95/100**. Ver `RELEASE_CANDIDATE_RC1.md`.
+- Próximo: Prompt 24 — Go Live & Production Readiness.

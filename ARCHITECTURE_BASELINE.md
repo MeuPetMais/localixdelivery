@@ -385,3 +385,10 @@ sem alterar regras de negócio, pagamentos, pedidos, ERP ou Analytics.
 - `OperationsDashboard` — snapshot consolidado para o painel operacional.
 
 Documentação: `OBSERVABILITY_GUIDE.md` e `OPERATIONS_RUNBOOK.md`.
+
+## Release Candidate RC1 (Prompt 23)
+
+Validação completa executada sem alterar regras de negócio. Suíte
+inteira (39 arquivos · 444 testes) passa em ~4s. Nenhum ciclo de
+dependência, serviço duplicado ou evento duplicado detectado. Relatório
+consolidado em `RELEASE_CANDIDATE_RC1.md`.
