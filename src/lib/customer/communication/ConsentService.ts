@@ -16,7 +16,7 @@ export const ConsentService = {
     user_agent?: string;
   }) {
     const consent = await CustomerService.recordConsent(input);
-    if (input.consentType === "marketing" || input.consentType === "notifications" || input.consentType === "promotions") {
+    if (input.consentType === "MARKETING" || input.consentType === "NOTIFICATIONS") {
       await CommunicationEventBus.publish({
         type: input.granted ? "CustomerOptedIn" : "CustomerOptedOut",
         customerId: input.customerId,
