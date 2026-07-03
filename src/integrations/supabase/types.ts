@@ -2995,6 +2995,57 @@ export type Database = {
           },
         ]
       }
+      product_insights: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          insight_type: Database["public"]["Enums"]["product_insight_type"]
+          metadata: Json
+          product_id: string | null
+          restaurant_id: string
+          severity: Database["public"]["Enums"]["product_insight_severity"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          insight_type: Database["public"]["Enums"]["product_insight_type"]
+          metadata?: Json
+          product_id?: string | null
+          restaurant_id: string
+          severity?: Database["public"]["Enums"]["product_insight_severity"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          insight_type?: Database["public"]["Enums"]["product_insight_type"]
+          metadata?: Json
+          product_id?: string | null
+          restaurant_id?: string
+          severity?: Database["public"]["Enums"]["product_insight_severity"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_insights_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_insights_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_media: {
         Row: {
           alt_text: string | null
@@ -3408,6 +3459,60 @@ export type Database = {
           },
           {
             foreignKeyName: "product_recipes_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recommendations: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          metadata: Json
+          product_id: string | null
+          recommendation_type: string
+          related_product_id: string | null
+          restaurant_id: string
+          score: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          metadata?: Json
+          product_id?: string | null
+          recommendation_type: string
+          related_product_id?: string | null
+          restaurant_id: string
+          score?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          metadata?: Json
+          product_id?: string | null
+          recommendation_type?: string
+          related_product_id?: string | null
+          restaurant_id?: string
+          score?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recommendations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recommendations_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants_public"
@@ -5517,6 +5622,17 @@ export type Database = {
         | "FAILED"
         | "RETRY"
         | "DEAD_LETTER"
+      product_insight_severity: "info" | "warning" | "critical"
+      product_insight_type:
+        | "BEST_SELLER"
+        | "LOW_SELLER"
+        | "HIGH_MARGIN"
+        | "LOW_MARGIN"
+        | "OUT_OF_STOCK"
+        | "PRICE_REVIEW"
+        | "PROMOTION"
+        | "CROSS_SELL"
+        | "UPSELL"
       product_option_group_type: "SINGLE" | "MULTIPLE" | "QUANTITY" | "BOOLEAN"
       product_price_strategy: "SUM" | "AVERAGE" | "MAX" | "FIXED" | "CUSTOM"
       production_batch_status: "ACTIVE" | "CONSUMED" | "EXPIRED" | "DISCARDED"
@@ -5765,6 +5881,18 @@ export const Constants = {
         "FAILED",
         "RETRY",
         "DEAD_LETTER",
+      ],
+      product_insight_severity: ["info", "warning", "critical"],
+      product_insight_type: [
+        "BEST_SELLER",
+        "LOW_SELLER",
+        "HIGH_MARGIN",
+        "LOW_MARGIN",
+        "OUT_OF_STOCK",
+        "PRICE_REVIEW",
+        "PROMOTION",
+        "CROSS_SELL",
+        "UPSELL",
       ],
       product_option_group_type: ["SINGLE", "MULTIPLE", "QUANTITY", "BOOLEAN"],
       product_price_strategy: ["SUM", "AVERAGE", "MAX", "FIXED", "CUSTOM"],
