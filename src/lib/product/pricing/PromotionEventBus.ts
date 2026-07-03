@@ -14,7 +14,7 @@ export interface PromotionEvent {
   restaurant_id: string;
   promotion_id?: string;
   at: string;
-  payload?: Record<string, unknown>;
+  payload?: Record<string, any>;
 }
 
 type Listener = (e: PromotionEvent) => void | Promise<void>;

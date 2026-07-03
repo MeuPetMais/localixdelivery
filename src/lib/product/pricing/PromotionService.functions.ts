@@ -90,7 +90,7 @@ export const deletePromotion = createServerFn({ method: "POST" })
 
 export const upsertPromotionRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; promotion_id: string; rule_type: string; operator?: string; value: Record<string, unknown> }) => d)
+  .inputValidator((d: { id?: string; promotion_id: string; rule_type: string; operator?: string; value: Record<string, any> }) => d)
   .handler(async ({ data, context }) => {
     const payload = {
       promotion_id: data.promotion_id,
