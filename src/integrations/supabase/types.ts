@@ -718,6 +718,42 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_consents: {
+        Row: {
+          consent_type: string
+          created_at: string
+          customer_id: string
+          granted: boolean
+          id: string
+          ip_address: string | null
+          metadata: Json
+          source: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          consent_type: string
+          created_at?: string
+          customer_id: string
+          granted: boolean
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          source?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          consent_type?: string
+          created_at?: string
+          customer_id?: string
+          granted?: boolean
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          source?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           created_at: string
@@ -856,6 +892,51 @@ export type Database = {
           },
         ]
       }
+      customer_preferences: {
+        Row: {
+          created_at: string
+          customer_id: string
+          dietary_restrictions: string[]
+          email_opt_in: boolean
+          language: string
+          marketing_opt_in: boolean
+          preferred_category: string | null
+          preferred_channel: string | null
+          preferred_payment_method: string | null
+          push_opt_in: boolean
+          updated_at: string
+          whatsapp_opt_in: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          dietary_restrictions?: string[]
+          email_opt_in?: boolean
+          language?: string
+          marketing_opt_in?: boolean
+          preferred_category?: string | null
+          preferred_channel?: string | null
+          preferred_payment_method?: string | null
+          push_opt_in?: boolean
+          updated_at?: string
+          whatsapp_opt_in?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          dietary_restrictions?: string[]
+          email_opt_in?: boolean
+          language?: string
+          marketing_opt_in?: boolean
+          preferred_category?: string | null
+          preferred_channel?: string | null
+          preferred_payment_method?: string | null
+          push_opt_in?: boolean
+          updated_at?: string
+          whatsapp_opt_in?: boolean
+        }
+        Relationships: []
+      }
       customer_profiles: {
         Row: {
           avatar_url: string | null
@@ -892,6 +973,42 @@ export type Database = {
           provider?: string | null
           updated_at?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      customer_timeline: {
+        Row: {
+          created_at: string
+          customer_id: string
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          reference_id: string | null
+          reference_type: string | null
+          restaurant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id?: string | null
         }
         Relationships: []
       }
