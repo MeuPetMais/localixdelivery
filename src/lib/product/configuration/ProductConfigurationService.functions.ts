@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ProductOption, ProductOptionGroup } from "./types";
 
 export const listConfiguration = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { product_id: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -12,8 +13,8 @@ export const listConfiguration = createServerFn({ method: "GET" })
       .eq("product_id", data.product_id)
       .order("display_order");
     if (gErr) throw gErr;
-    const groupIds = (groups ?? []).map((g) => g.id);
-    let options: ProductOption[] = [];
+    const groupIds = ((groups ?? []) as Array<{ id: string }>).map((g) => g.id);
+    let options: unknown[] = [];
     if (groupIds.length) {
       const { data: opts, error: oErr } = await supabase
         .from("product_options")
@@ -21,17 +22,19 @@ export const listConfiguration = createServerFn({ method: "GET" })
         .in("group_id", groupIds)
         .order("display_order");
       if (oErr) throw oErr;
-      options = (opts ?? []) as unknown as ProductOption[];
+      options = opts ?? [];
     }
     return {
       groups: (groups ?? []) as unknown as ProductOptionGroup[],
-      options,
-    };
+      options: options as unknown as ProductOption[],
+    } as { groups: ProductOptionGroup[]; options: ProductOption[] };
   });
 
 export const upsertGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: Partial<ProductOptionGroup> & { product_id: string; name: string }) => d)
+  .inputValidator(
+    (d: Partial<ProductOptionGroup> & { product_id: string; name: string }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("product_option_groups")
@@ -39,12 +42,14 @@ export const upsertGroup = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw error;
-    return row;
+    return { id: (row as { id: string }).id };
   });
 
 export const upsertOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: Partial<ProductOption> & { group_id: string; name: string }) => d)
+  .inputValidator(
+    (d: Partial<ProductOption> & { group_id: string; name: string }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("product_options")
@@ -52,7 +57,7 @@ export const upsertOption = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw error;
-    return row;
+    return { id: (row as { id: string }).id };
   });
 
 export const deleteGroup = createServerFn({ method: "POST" })
