@@ -8,10 +8,11 @@ export type OperationsRealtimeListener = (evt: { orderId: string; state: string;
 
 export const OperationsRealtime = {
   subscribe(listener: OperationsRealtimeListener): () => void {
-    const off = OrderEventBus.subscribeAll((name, payload: any) => {
-      const orderId = payload?.orderId ?? payload?.order_id;
-      const state = payload?.to ?? payload?.state ?? name;
-      const at = payload?.at ?? new Date().toISOString();
+    const off = OrderEventBus.subscribe((name, payload) => {
+      const p = payload as unknown as Record<string, unknown>;
+      const orderId = (p.orderId ?? p.order_id) as string | undefined;
+      const state = (p.to ?? p.state ?? name) as string;
+      const at = (p.at as string | undefined) ?? new Date().toISOString();
       if (orderId) listener({ orderId, state, at });
     });
     return off;
