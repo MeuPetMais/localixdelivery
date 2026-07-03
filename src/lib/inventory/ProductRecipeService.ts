@@ -1,4 +1,5 @@
-import type { Ingredient, RecipeLine } from "./types";
+import type { Ingredient } from "./types";
+import type { RecipeLine } from "./CostEngine";
 import { CostEngine } from "./CostEngine";
 import type { InventoryService } from "./InventoryService";
 
