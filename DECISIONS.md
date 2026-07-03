@@ -25,3 +25,16 @@
 - Prompt 14 (Admin Dashboard) assume a existência dos domínios
   Payments, Orders, Delivery, Inventory, Recipes, Production, Cost,
   Purchasing, Finance, Product, Customer, Restaurant Settings.
+
+## Prompt 14 — Platform Administration Domain
+
+- Domínio implementado como camada de serviços puros; nenhuma migration
+  adicionada para evitar retrabalho quando as tabelas dedicadas
+  (`platform_audit_log`, `platform_incidents`, `platform_notifications`,
+  `platform_moderation_events`) forem projetadas em conjunto com o
+  Prompt 15.
+- RBAC administrativo é aditivo: continua exigindo `has_role('admin')`
+  nas server-functions; os 6 papéis novos são camada extra de
+  autorização in-domain.
+- Catálogo de planos vive em código (fonte-única determinística); overrides
+  poderão ser persistidos em `platform_settings` sem quebrar consumidores.

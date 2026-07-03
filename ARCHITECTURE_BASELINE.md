@@ -296,3 +296,21 @@ Aguardando novos comandos.
 - Eventos: `ProductCreated | Updated | Published | Archived | Discontinued | AvailabilityChanged | LifecycleChanged`.
 - Reuso integral: `menu_items`, `menu_item_images`, `builders*`, `featured_sections`, `ProductImageUploader`, `image-upload.ts`, `favorites.ts`, `public-restaurant.functions.ts`.
 - Sem alterações em Inventory / Recipe / Cost / Pricing / Checkout / OrderOrchestrator / Delivery / BusinessRulesEngine / NotificationCenter / TenantConfigurationService / Restaurant Dashboard.
+
+## Platform Administration Domain (Prompt 14)
+
+Módulo `src/lib/platform/` — painel administrativo global do Localix.
+Uso exclusivo por administradores da plataforma. Zero regressão: nenhum
+domínio existente foi alterado e nenhuma migration foi criada.
+
+- Serviços puros consumindo `restaurants`, `orders`, `user_roles`,
+  `platform_settings`, `platform_fees`, `support_tickets`, `reviews`.
+- RBAC próprio (6 papéis) sobrepondo `has_role('admin')` existente.
+- Catálogo de planos (Free/Starter/Pro/Enterprise) determinístico.
+- Dashboard, tenants, assinaturas, auditoria, suporte, moderação,
+  incidentes e notificações globais como projeções.
+- Persistência de auditoria administrativa: `InMemoryPlatformAudit
+  Repository` (pending Supabase repo — ver TECHNICAL_DEBT.md).
+
+Ver `src/lib/platform/PlatformAdministration.README.md` e
+`src/lib/platform/DOMAIN_MANIFEST.md`.
