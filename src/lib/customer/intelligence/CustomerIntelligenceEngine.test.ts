@@ -1,0 +1,116 @@
+import { describe, it, expect } from "vitest";
+import { CustomerAnalyticsService } from "./CustomerAnalyticsService";
+import { CustomerScoreService } from "./CustomerScoreService";
+import { CustomerSegmentationService } from "./CustomerSegmentationService";
+import { CustomerRecommendationService } from "./CustomerRecommendationService";
+import { CustomerIntelligenceService } from "./CustomerIntelligenceService";
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+
+const ordersActive = [
+  { id: "1", total: 60, created_at: daysAgo(2), items: [{ id: "p1", name: "Pizza", qty: 1, category_id: "c1" }], payment_method: "pix" },
+  { id: "2", total: 80, created_at: daysAgo(10), items: [{ id: "p1", name: "Pizza", qty: 2, category_id: "c1" }], payment_method: "pix" },
+  { id: "3", total: 45, created_at: daysAgo(20), items: [{ id: "p2", name: "Burger", qty: 1, category_id: "c2" }], payment_method: "credit" },
+];
+
+describe("CustomerAnalyticsService", () => {
+  it("computes totals, ticket, favorites", () => {
+    const a = CustomerAnalyticsService.compute("cust", "rest", ordersActive);
+    expect(a.total_orders).toBe(3);
+    expect(a.total_spent).toBe(185);
+    expect(a.avg_ticket).toBeCloseTo(61.67, 1);
+    expect(a.favorite_products[0].product_id).toBe("p1");
+    expect(a.favorite_channel).toBe("pix");
+    expect(a.days_since_last_order).toBeLessThanOrEqual(3);
+  });
+
+  it("handles empty orders", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", []);
+    expect(a.total_orders).toBe(0);
+    expect(a.avg_ticket).toBe(0);
+    expect(a.favorite_channel).toBeNull();
+  });
+});
+
+describe("CustomerScoreService", () => {
+  it("scores active customer high on recency", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", ordersActive);
+    const s = CustomerScoreService.compute(a);
+    expect(s.breakdown.recency).toBeGreaterThan(70);
+    expect(s.health_score).toBeGreaterThan(0);
+    expect(s.health_score).toBeLessThanOrEqual(100);
+  });
+
+  it("scores inactive low", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
+    ]);
+    const s = CustomerScoreService.compute(a);
+    expect(s.breakdown.recency).toBe(0);
+  });
+});
+
+describe("CustomerSegmentationService", () => {
+  it("classifies NEW when single order", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [ordersActive[0]]);
+    const s = CustomerScoreService.compute(a);
+    const seg = CustomerSegmentationService.resolve(a, s);
+    expect(seg.tags).toContain("NEW");
+  });
+
+  it("classifies INACTIVE when >90d", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
+      { id: "2", total: 30, created_at: daysAgo(200), items: [], payment_method: "pix" },
+    ]);
+    const s = CustomerScoreService.compute(a);
+    const seg = CustomerSegmentationService.resolve(a, s);
+    expect(seg.primary).toBe("INACTIVE");
+  });
+
+  it("classifies VIP by spend", () => {
+    const many = Array.from({ length: 10 }, (_, i) => ({
+      id: `o${i}`, total: 120, created_at: daysAgo(i * 3), items: [], payment_method: "pix",
+    }));
+    const a = CustomerAnalyticsService.compute("c", "r", many);
+    const s = CustomerScoreService.compute(a);
+    const seg = CustomerSegmentationService.resolve(a, s);
+    expect(seg.tags).toContain("VIP");
+  });
+});
+
+describe("CustomerRecommendationService", () => {
+  it("recommends REACTIVATE for inactive", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
+    ]);
+    const s = CustomerScoreService.compute(a);
+    const recs = CustomerRecommendationService.recommend(a, s, "INACTIVE");
+    expect(recs[0].action).toBe("REACTIVATE");
+  });
+
+  it("recommends cashback for VIP", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", ordersActive);
+    const s = CustomerScoreService.compute(a);
+    const recs = CustomerRecommendationService.recommend(a, s, "VIP");
+    expect(recs.find((r) => r.action === "OFFER_CASHBACK")).toBeDefined();
+  });
+});
+
+describe("CustomerIntelligenceService.buildInsights", () => {
+  it("flags VIP_INACTIVE", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 800, created_at: daysAgo(45), items: [], payment_method: "pix" },
+    ]);
+    const s = CustomerScoreService.compute(a);
+    const ins = CustomerIntelligenceService.buildInsights("r", "c", a, s, "VIP");
+    expect(ins.find((i) => i.insight_type === "VIP_INACTIVE")).toBeDefined();
+  });
+
+  it("flags NO_PURCHASE", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", []);
+    const s = CustomerScoreService.compute(a);
+    const ins = CustomerIntelligenceService.buildInsights("r", "c", a, s, "NEW");
+    expect(ins[0].insight_type).toBe("NO_PURCHASE");
+  });
+});

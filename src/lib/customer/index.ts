@@ -7,3 +7,4 @@ export { CustomerTimeline } from "./CustomerTimeline";
 export { CustomerValidator } from "./CustomerValidator";
 export { CustomerAudit } from "./CustomerAudit";
 export { CustomerEventBus, type CustomerDomainEvent } from "./CustomerEventBus";
+export * from "./intelligence";

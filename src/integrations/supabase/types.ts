@@ -796,6 +796,48 @@ export type Database = {
           },
         ]
       }
+      customer_insights: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          customer_id: string
+          description: string | null
+          generated_at: string
+          id: string
+          insight_type: string
+          metadata: Json
+          restaurant_id: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          generated_at?: string
+          id?: string
+          insight_type: string
+          metadata?: Json
+          restaurant_id: string
+          severity?: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          generated_at?: string
+          id?: string
+          insight_type?: string
+          metadata?: Json
+          restaurant_id?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       customer_loyalty: {
         Row: {
           cashback_balance: number
@@ -1030,6 +1072,45 @@ export type Database = {
           provider?: string | null
           updated_at?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      customer_segments: {
+        Row: {
+          created_at: string
+          customer_id: string
+          generated_at: string
+          id: string
+          metadata: Json
+          reason: string | null
+          restaurant_id: string
+          score: number
+          segment: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          generated_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          restaurant_id: string
+          score?: number
+          segment: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          generated_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          restaurant_id?: string
+          score?: number
+          segment?: string
+          updated_at?: string
         }
         Relationships: []
       }
