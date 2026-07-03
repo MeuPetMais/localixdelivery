@@ -4,6 +4,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Promotion, PromotionStatus } from "./types";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Json = any;
+
 export const listPromotions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { restaurant_id: string; status?: PromotionStatus }) => d)
