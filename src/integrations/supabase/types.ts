@@ -14,6 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts_payable: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          currency: string
+          description: string
+          due_date: string | null
+          id: string
+          metadata: Json
+          paid_amount: number
+          paid_date: string | null
+          restaurant_id: string
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description: string
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          paid_amount?: number
+          paid_date?: string | null
+          restaurant_id: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          paid_amount?: number
+          paid_date?: string | null
+          restaurant_id?: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_payable_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_payable_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_receivable: {
+        Row: {
+          created_at: string
+          currency: string
+          expected_date: string | null
+          gateway: string | null
+          gross_amount: number
+          id: string
+          metadata: Json
+          net_amount: number
+          order_id: string | null
+          payment_id: string | null
+          received_date: string | null
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          expected_date?: string | null
+          gateway?: string | null
+          gross_amount?: number
+          id?: string
+          metadata?: Json
+          net_amount?: number
+          order_id?: string | null
+          payment_id?: string | null
+          received_date?: string | null
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          expected_date?: string | null
+          gateway?: string | null
+          gross_amount?: number
+          id?: string
+          metadata?: Json
+          net_amount?: number
+          order_id?: string | null
+          payment_id?: string | null
+          received_date?: string | null
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       builder_groups: {
         Row: {
           builder_id: string
