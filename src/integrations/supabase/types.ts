@@ -1182,6 +1182,50 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          created_at: string
+          current_status: string
+          id: string
+          metadata: Json
+          order_id: string
+          performed_by: string | null
+          performed_by_type: string
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_status: string
+          id?: string
+          metadata?: Json
+          order_id: string
+          performed_by?: string | null
+          performed_by_type?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_status?: string
+          id?: string
+          metadata?: Json
+          order_id?: string
+          performed_by?: string | null
+          performed_by_type?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address: string | null
