@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { publish } from "./EventBus";
+import { EventBus } from "./EventBus";
 import {
   planSplit,
   finalizeSplit,
