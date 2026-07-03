@@ -365,3 +365,23 @@ por camada em `SECURITY_GUIDE.md`; auditoria completa em
 - LGPD: consentimento em `customer_consents` + preferências antes de
   qualquer envio de marketing.
 - IA: `AISafetyLayer` + `ContextBuilder.sanitize` + `AIAuditService` (hashes).
+
+## Observability & Operations (Prompt 22)
+
+Camada `src/lib/observability` publicada — puro TypeScript, impacto
+mínimo em performance (buffers circulares, agregação sob demanda),
+sem alterar regras de negócio, pagamentos, pedidos, ERP ou Analytics.
+
+- `LoggingCenter` — logs `info`/`warning`/`error`/`critical` com
+  sanitização automática via `@/lib/security`.
+- `MetricsCenter` — janela de 60s para `request`, `error`,
+  `response_ms`, `edge_function_ms`, `job_executed`, `queue_pending`.
+- `AuditCenter` — canal unificado de auditoria (login, admin, financial,
+  settings, ai, marketing, feature_flag, operations). Complementa (não
+  substitui) audits específicos de cada domínio.
+- `HealthCenter` — registro/report de componentes por `HealthComponentKind`.
+- `AlertCenter` / `IncidentCenter` — estrutura para alertas e incidentes.
+- `DiagnosticsCenter` — módulos, dependências e última sincronização.
+- `OperationsDashboard` — snapshot consolidado para o painel operacional.
+
+Documentação: `OBSERVABILITY_GUIDE.md` e `OPERATIONS_RUNBOOK.md`.
