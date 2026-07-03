@@ -371,6 +371,251 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          menu_id: string | null
+          payload: Json
+          restaurant_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          menu_id?: string | null
+          payload?: Json
+          restaurant_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          menu_id?: string | null
+          payload?: Json
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_events_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_menu_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          menu_id: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          menu_id: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          menu_id?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_menu_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_categories_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_menu_products: {
+        Row: {
+          channel_override: string | null
+          created_at: string
+          display_order: number
+          id: string
+          is_featured: boolean
+          is_visible: boolean
+          menu_id: string
+          product_id: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_override?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_featured?: boolean
+          is_visible?: boolean
+          menu_id: string
+          product_id: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel_override?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_featured?: boolean
+          is_visible?: boolean
+          menu_id?: string
+          product_id?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_menu_products_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_products_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menu_products_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_menus: {
+        Row: {
+          available_days: number[] | null
+          available_end_time: string | null
+          available_start_time: string | null
+          channel: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_default: boolean
+          name: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          available_days?: number[] | null
+          available_end_time?: string | null
+          available_start_time?: string | null
+          channel?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean
+          name: string
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          available_days?: number[] | null
+          available_end_time?: string | null
+          available_start_time?: string | null
+          channel?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_default?: boolean
+          name?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_menus_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_menus_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
