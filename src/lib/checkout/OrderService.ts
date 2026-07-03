@@ -127,16 +127,13 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     });
     if (snapErr) throw new Error(`Falha no snapshot: ${snapErr.message}`);
 
-    // 6) Registro de pagamento (PENDING; sem integração ainda)
-    const { error: payErr } = await supabaseAdmin.from("order_payment").insert({
-      order_id: order.id,
-      restaurant_id: rest.id,
-      provider: "mercado_pago",
-      payment_method: data.paymentMethod,
-      status: "PENDING",
-      external_reference: order.id,
+    // 6) Registro de pagamento (PENDING) — via Payment Domain (nenhum SQL local).
+    const { registerPendingOrderPayment } = await import("@/lib/payments/orderPayment.server");
+    await registerPendingOrderPayment({
+      orderId: order.id,
+      restaurantId: rest.id,
+      paymentMethod: data.paymentMethod,
     });
-    if (payErr) throw new Error(`Falha no pagamento: ${payErr.message}`);
 
     return {
       orderId: order.id,
