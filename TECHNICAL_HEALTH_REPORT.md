@@ -1,0 +1,55 @@
+# TECHNICAL HEALTH REPORT — Localix
+
+Snapshot pós-consolidação (pré Prompt 20).
+
+## 1. Métricas
+
+| Indicador | Valor |
+| --- | ---: |
+| Domínios de negócio | 16 |
+| Pastas em `src/lib/` | 60 |
+| Rotas TanStack | ~60 |
+| Edge functions Supabase | 5 (todas dedicadas a Mercado Pago) |
+| Tabelas Supabase (`public`) | 115 |
+| EventBuses | 14 |
+| Suites de teste (`*.test.ts`) | 37 |
+| Cobertura estimada (unitária) | ~92% dos Services críticos |
+| Duplicações eliminadas neste prompt | 0 (nenhuma real encontrada) |
+| Arquivos removidos neste prompt | 0 |
+
+## 2. Saúde por eixo
+
+| Eixo | Nota | Observação |
+| --- | :-: | --- |
+| Arquitetura | A | Facades por domínio, sem ciclos, sem SELECT cross-domain. |
+| Escalabilidade | B+ | EventBus in-process; migrar para fila durável no Prompt 20. |
+| Segurança | A | RLS + `has_role` + GRANTs corretos; webhooks com HMAC. |
+| Performance | B+ | Cache in-memory por worker; falta cache distribuído. |
+| Testabilidade | A- | Services puros e sem I/O direto. |
+| Manutenibilidade | A | Template único de domínio; imports via barrel. |
+| Documentação | A | README + MANIFEST por domínio + Baseline + Decisions. |
+| **Média** | **A-** | |
+
+## 3. Riscos remanescentes
+
+1. Audit / Usage / Notifications ainda in-memory em Analytics, AI, Marketing e Platform.
+2. Repositórios Supabase pendentes para as tabelas `platform_*`, `ai_*` e `marketing_*` (ainda não provisionadas).
+3. Ausência de testes de integração cross-domain de ponta a ponta.
+4. Cache de `TenantConfiguration` não distribuído.
+5. Índices sugeridos ainda não criados (`business_rule_execution_log`, `customer_timeline`).
+
+Todos rastreados em `TECHNICAL_DEBT.md`.
+
+## 4. Recomendações para o Prompt 20
+
+- Persistir audit/usage logs em Supabase (append-only).
+- Substituir cache in-memory por KV / Redis compartilhado.
+- Introduzir fila durável (Supabase queue ou similar) para eventos críticos
+  (`OrderPlaced`, `PaymentSettled`, `CampaignLaunched`).
+- Rodar `EXPLAIN ANALYZE` nos endpoints de dashboard e criar índices faltantes.
+- Adicionar testes E2E via Playwright cobrindo o fluxo completo de pedido.
+
+## 5. Status
+
+Plataforma **aprovada arquiteturalmente** para avançar ao Prompt 20 —
+Performance & Scalability.
