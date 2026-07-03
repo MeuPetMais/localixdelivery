@@ -2396,6 +2396,178 @@ export type Database = {
         }
         Relationships: []
       }
+      product_recipe_items: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          ingredient_id: string
+          loss_percentage: number
+          optional: boolean
+          quantity: number
+          recipe_id: string
+          substitute_of: string | null
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          ingredient_id: string
+          loss_percentage?: number
+          optional?: boolean
+          quantity: number
+          recipe_id: string
+          substitute_of?: string | null
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          ingredient_id?: string
+          loss_percentage?: number
+          optional?: boolean
+          quantity?: number
+          recipe_id?: string
+          substitute_of?: string | null
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recipe_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipe_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "product_recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipe_items_substitute_of_fkey"
+            columns: ["substitute_of"]
+            isOneToOne: false
+            referencedRelation: "product_recipe_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recipe_versions: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          recipe_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          recipe_id: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          recipe_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recipe_versions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "product_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recipes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          preparation_time: number | null
+          product_id: string | null
+          restaurant_id: string
+          status: Database["public"]["Enums"]["recipe_status"]
+          updated_at: string
+          variation_key: string | null
+          version: number
+          yield_quantity: number
+          yield_unit: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          preparation_time?: number | null
+          product_id?: string | null
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["recipe_status"]
+          updated_at?: string
+          variation_key?: string | null
+          version?: number
+          yield_quantity?: number
+          yield_unit?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          preparation_time?: number | null
+          product_id?: string | null
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["recipe_status"]
+          updated_at?: string
+          variation_key?: string | null
+          version?: number
+          yield_quantity?: number
+          yield_unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipes_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipes_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string
@@ -3782,6 +3954,7 @@ export type Database = {
         | "ORDERED"
         | "RECEIVED"
         | "CANCELLED"
+      recipe_status: "DRAFT" | "ACTIVE" | "ARCHIVED"
       reconciliation_status:
         | "PENDING"
         | "MATCHED"
@@ -4006,6 +4179,7 @@ export const Constants = {
         "RECEIVED",
         "CANCELLED",
       ],
+      recipe_status: ["DRAFT", "ACTIVE", "ARCHIVED"],
       reconciliation_status: [
         "PENDING",
         "MATCHED",
