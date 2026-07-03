@@ -342,3 +342,26 @@ completo de gargalos e ganhos em `PERFORMANCE_REPORT.md`.
 Nenhuma regra de negócio foi alterada nesta etapa. Migração incremental
 dos caches ad-hoc (`TenantConfigurationCache`, cache do `AIOrchestrator`)
 para `platformCache` prevista sem quebra de contrato.
+
+## Security (Prompt 21)
+
+Hardening consolidado sem alteração de regras de negócio ou fluxos de
+pagamento. Camada única de utilitários de segurança em
+`src/lib/security/index.ts` (mascaramento de PII, sanitização para logs,
+envelope padronizado de erros, comparação constant-time). Regras canônicas
+por camada em `SECURITY_GUIDE.md`; auditoria completa em
+`SECURITY_AUDIT_REPORT.md`; checklist de release em `SECURITY_CHECKLIST.md`.
+
+- Autorização: matrizes por domínio (`OperationsPermissions`,
+  `FinancePermissions`, `AnalyticsPermissions`, `PlatformPermissionRegistry`,
+  `OrderPermissions`) declaradas fonte única de verdade.
+- RLS: 115 tabelas auditadas — todas com GRANT explícito, RLS habilitada e
+  políticas escopadas por `auth.uid()` / `has_role()`.
+- Server functions: `requireSupabaseAuth` para chamadas autenticadas;
+  `supabaseAdmin` só via `await import(...)` dentro do handler e após
+  verificação de papel.
+- Webhooks públicos (`/api/public/*`): assinatura verificada com
+  `timingSafeEqualStr`; Zod obrigatório; envelopes via `toSafeError`.
+- LGPD: consentimento em `customer_consents` + preferências antes de
+  qualquer envio de marketing.
+- IA: `AISafetyLayer` + `ContextBuilder.sanitize` + `AIAuditService` (hashes).
