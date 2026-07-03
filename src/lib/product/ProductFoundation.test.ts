@@ -52,7 +52,7 @@ describe("ProductLifecycle", () => {
 describe("ProductValidator", () => {
   it("requires name and price", () => {
     expect(ProductValidator.validate({}).ok).toBe(false);
-    expect(ProductValidator.validate({ name: "X", price: 1 }).ok).toBe(true);
+    expect(ProductValidator.validate({ name: "Xy", price: 1 }).ok).toBe(true);
   });
   it("rejects promo >= price", () => {
     const r = ProductValidator.validate({ name: "X", price: 10, promo_price: 12 });
