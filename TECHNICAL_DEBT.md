@@ -62,3 +62,13 @@
       via `platformConfiguration.killSwitch.assertOperational(...)`.
 - [ ] Migrar overrides existentes de `platform_settings.feature_flags` para
       o novo domínio quando os repositórios Supabase estiverem prontos.
+
+## Go Live v1.0 (Prompt 24)
+
+- [ ] Habilitar HIBP (leaked password protection) no Auth antes de
+      tráfego alto.
+- [ ] Configurar alertas externos consumindo `AlertCenter`
+      (email/Slack/PagerDuty).
+- [ ] Executar drill mensal de restore (ver `DISASTER_RECOVERY_PLAN.md`).
+- [ ] Rate limiting per-IP em `/api/public/*` (endpoints MP).
+- [ ] MFA opt-in para administradores (endereçado em v1.1).
