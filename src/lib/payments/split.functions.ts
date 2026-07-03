@@ -115,13 +115,14 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         .eq("restaurant_id", restaurantId)
         .maybeSingle();
       if (acc) {
+        const a = acc as any;
         const notExpired =
-          !acc.expires_at || new Date(acc.expires_at).getTime() > Date.now();
+          !a.expires_at || new Date(a.expires_at).getTime() > Date.now();
         account = {
-          connected: true,
-          active: Boolean(acc.active),
-          token_valid: Boolean(acc.access_token) && notExpired,
-          restaurant_id: acc.restaurant_id,
+          connected: Boolean(a.connected),
+          active: Boolean(a.connected),
+          token_valid: Boolean(a.access_token) && notExpired,
+          restaurant_id: a.restaurant_id,
         };
       }
     }
