@@ -328,3 +328,17 @@ nenhum domínio existente. Auditoria imutável, versionamento com rollback
 seguro, rollout gradual determinístico (FNV-1a).
 
 Ver `src/lib/platform-config/PlatformConfiguration.README.md`.
+
+## Performance & Scalability (Prompt 20)
+
+Módulo `src/lib/platform-cache/` — abstração única de cache com TTL e
+invalidação por prefixo. Interface `CacheDriver` permite substituir o
+driver in-memory por Redis/KV sem alterar Services. Namespaces canônicos
+em `CacheNamespaces` evitam colisão entre domínios.
+
+Regras de performance detalhadas em `PERFORMANCE_GUIDE.md`. Relatório
+completo de gargalos e ganhos em `PERFORMANCE_REPORT.md`.
+
+Nenhuma regra de negócio foi alterada nesta etapa. Migração incremental
+dos caches ad-hoc (`TenantConfigurationCache`, cache do `AIOrchestrator`)
+para `platformCache` prevista sem quebra de contrato.

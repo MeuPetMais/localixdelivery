@@ -51,5 +51,8 @@ Todos rastreados em `TECHNICAL_DEBT.md`.
 
 ## 5. Status
 
-Plataforma **aprovada arquiteturalmente** para avançar ao Prompt 20 —
-Performance & Scalability.
+Plataforma **aprovada arquiteturalmente** e com trilha de performance
+consolidada (Prompt 20). Cache unificado (`src/lib/platform-cache`) +
+`PERFORMANCE_GUIDE.md` + `PERFORMANCE_REPORT.md` publicados. Nota de
+Performance revisada para **A-** após consolidação da estratégia de cache.
+Próximo: Prompt 21 — Security Hardening.
