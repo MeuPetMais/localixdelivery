@@ -1060,6 +1060,72 @@ export type Database = {
           },
         ]
       }
+      financial_reports: {
+        Row: {
+          created_at: string
+          error: string | null
+          expires_at: string | null
+          file_format: string
+          file_url: string | null
+          filters_json: Json
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          report_type: string
+          restaurant_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          expires_at?: string | null
+          file_format?: string
+          file_url?: string | null
+          filters_json?: Json
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          report_type: string
+          restaurant_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          expires_at?: string | null
+          file_format?: string
+          file_url?: string | null
+          filters_json?: Json
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          report_type?: string
+          restaurant_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_reports_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_reports_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredient_cost_history: {
         Row: {
           average_cost: number | null
@@ -3635,6 +3701,66 @@ export type Database = {
           },
           {
             foreignKeyName: "reviews_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_reports: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          export_format: string
+          filters_json: Json
+          frequency: string
+          id: string
+          last_execution: string | null
+          name: string
+          next_execution: string | null
+          report_type: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          export_format?: string
+          filters_json?: Json
+          frequency: string
+          id?: string
+          last_execution?: string | null
+          name: string
+          next_execution?: string | null
+          report_type: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          export_format?: string
+          filters_json?: Json
+          frequency?: string
+          id?: string
+          last_execution?: string | null
+          name?: string
+          next_execution?: string | null
+          report_type?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_reports_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_reports_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants_public"
