@@ -21,7 +21,6 @@ function makeDeps(order: OrderSnapshot | null): OrchestratorDeps & {
     getOrder: vi.fn(async () => order),
     updateOrderStatus: vi.fn(async (id, s) => {
       updated.push({ id, s });
-      if (order) order.status = s;
     }),
     insertHistory: vi.fn(async (row) => {
       history.push(row);
