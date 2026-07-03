@@ -3725,6 +3725,203 @@ export type Database = {
           },
         ]
       }
+      promotion_rules: {
+        Row: {
+          created_at: string
+          id: string
+          operator: string
+          promotion_id: string
+          rule_type: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          operator?: string
+          promotion_id: string
+          rule_type: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          operator?: string
+          promotion_id?: string
+          rule_type?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_rules_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_targets: {
+        Row: {
+          created_at: string
+          id: string
+          promotion_id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          promotion_id: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          promotion_id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_targets_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_usage: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          discount_amount: number
+          id: string
+          order_id: string | null
+          promotion_id: string
+          restaurant_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          promotion_id: string
+          restaurant_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          promotion_id?: string
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_usage_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_usage_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_usage_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          channel: string | null
+          code: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          discount_type: Database["public"]["Enums"]["promotion_discount_type"]
+          discount_value: number
+          end_date: string | null
+          id: string
+          max_uses: number | null
+          max_uses_per_customer: number | null
+          name: string
+          priority: number
+          restaurant_id: string
+          stackable: boolean
+          start_date: string | null
+          status: Database["public"]["Enums"]["promotion_status"]
+          updated_at: string
+        }
+        Insert: {
+          channel?: string | null
+          code?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          discount_type: Database["public"]["Enums"]["promotion_discount_type"]
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          max_uses?: number | null
+          max_uses_per_customer?: number | null
+          name: string
+          priority?: number
+          restaurant_id: string
+          stackable?: boolean
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+        }
+        Update: {
+          channel?: string | null
+          code?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["promotion_discount_type"]
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          max_uses?: number | null
+          max_uses_per_customer?: number | null
+          name?: string
+          priority?: number
+          restaurant_id?: string
+          stackable?: boolean
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string
@@ -5330,6 +5527,20 @@ export type Database = {
         | "COMPLETED"
         | "CANCELLED"
         | "FAILED"
+      promotion_discount_type:
+        | "FIXED_AMOUNT"
+        | "PERCENTAGE"
+        | "FIXED_PRICE"
+        | "BUY_X_GET_Y"
+        | "FREE_ITEM"
+        | "FREE_DELIVERY"
+      promotion_status:
+        | "DRAFT"
+        | "SCHEDULED"
+        | "ACTIVE"
+        | "PAUSED"
+        | "EXPIRED"
+        | "ARCHIVED"
       purchase_order_status:
         | "DRAFT"
         | "PENDING"
@@ -5565,6 +5776,22 @@ export const Constants = {
         "COMPLETED",
         "CANCELLED",
         "FAILED",
+      ],
+      promotion_discount_type: [
+        "FIXED_AMOUNT",
+        "PERCENTAGE",
+        "FIXED_PRICE",
+        "BUY_X_GET_Y",
+        "FREE_ITEM",
+        "FREE_DELIVERY",
+      ],
+      promotion_status: [
+        "DRAFT",
+        "SCHEDULED",
+        "ACTIVE",
+        "PAUSED",
+        "EXPIRED",
+        "ARCHIVED",
       ],
       purchase_order_status: [
         "DRAFT",
