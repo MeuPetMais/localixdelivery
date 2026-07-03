@@ -155,45 +155,47 @@ export const runOrderReconciliation = createServerFn({ method: "POST" })
       "@/integrations/supabase/client.server"
     );
 
-    const [{ data: snap }, { data: pay }] = await Promise.all([
+    const [snapRes, payRes] = await Promise.all([
       supabaseAdmin
         .from("order_pricing_snapshot")
         .select(
-          "order_id, expected_total, platform_fee, restaurant_amount, localix_amount, currency",
+          "order_id, customer_total, platform_fee, gateway_fee, restaurant_net, platform_revenue, currency",
         )
         .eq("order_id", data.order_id)
         .maybeSingle(),
       supabaseAdmin
         .from("order_payment")
-        .select("payment_id, transaction_amount, provider_response, currency")
+        .select("payment_id, transaction_amount, payment_intent, external_reference")
         .eq("order_id", data.order_id)
         .maybeSingle(),
     ]);
+    const snap = snapRes.data as any;
+    const pay = payRes.data as any;
 
     const snapshot: InternalSnapshot | null = snap
       ? {
           order_id: snap.order_id,
-          expected_total: Number(snap.expected_total ?? 0),
+          expected_total: Number(snap.customer_total ?? 0),
           platform_fee: Number(snap.platform_fee ?? 0),
-          restaurant_amount: Number(snap.restaurant_amount ?? 0),
-          localix_amount: Number(snap.localix_amount ?? 0),
+          restaurant_amount: Number(snap.restaurant_net ?? 0),
+          localix_amount: Number(snap.platform_revenue ?? 0),
           currency: snap.currency ?? "BRL",
         }
       : null;
 
     let gateway: GatewayPayment | null = null;
     if (pay?.payment_id) {
-      const resp = (pay as any).provider_response ?? {};
+      const intent = (pay.payment_intent ?? {}) as any;
       gateway = {
         id: pay.payment_id,
-        external_reference: resp.external_reference ?? data.order_id,
+        external_reference: pay.external_reference ?? intent.external_reference ?? data.order_id,
         transaction_amount: Number(
-          resp.transaction_amount ?? pay.transaction_amount ?? 0,
+          intent.transaction_amount ?? pay.transaction_amount ?? 0,
         ),
-        currency_id: resp.currency_id ?? pay.currency ?? "BRL",
-        fee_details: resp.fee_details ?? null,
-        net_received_amount: resp.net_received_amount ?? null,
-        status: resp.status ?? null,
+        currency_id: intent.currency_id ?? "BRL",
+        fee_details: intent.fee_details ?? null,
+        net_received_amount: intent.net_received_amount ?? null,
+        status: intent.status ?? null,
       };
     }
 
