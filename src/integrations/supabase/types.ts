@@ -1524,6 +1524,82 @@ export type Database = {
           },
         ]
       }
+      payment_split: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          gateway_fee: number
+          id: string
+          metadata: Json
+          order_id: string | null
+          payment_id: string | null
+          platform_amount: number
+          processed_at: string | null
+          provider: string
+          restaurant_amount: number
+          restaurant_id: string | null
+          split_reference: string | null
+          status: Database["public"]["Enums"]["split_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          gateway_fee?: number
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          platform_amount?: number
+          processed_at?: string | null
+          provider?: string
+          restaurant_amount?: number
+          restaurant_id?: string | null
+          split_reference?: string | null
+          status?: Database["public"]["Enums"]["split_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          gateway_fee?: number
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          platform_amount?: number
+          processed_at?: string | null
+          provider?: string
+          restaurant_amount?: number
+          restaurant_id?: string | null
+          split_reference?: string | null
+          status?: Database["public"]["Enums"]["split_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_split_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_split_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_split_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_webhook_events: {
         Row: {
           action: string | null
@@ -2626,6 +2702,12 @@ export type Database = {
         | "DIVERGENT"
         | "FAILED"
         | "MANUAL_REVIEW"
+      split_status:
+        | "PENDING"
+        | "PROCESSING"
+        | "COMPLETED"
+        | "FAILED"
+        | "MANUAL_REVIEW"
       support_category:
         | "problema_tecnico"
         | "pedido"
@@ -2800,6 +2882,13 @@ export const Constants = {
         "PENDING",
         "MATCHED",
         "DIVERGENT",
+        "FAILED",
+        "MANUAL_REVIEW",
+      ],
+      split_status: [
+        "PENDING",
+        "PROCESSING",
+        "COMPLETED",
         "FAILED",
         "MANUAL_REVIEW",
       ],
