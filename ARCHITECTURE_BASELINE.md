@@ -401,3 +401,12 @@ procedimentos operacionais. Ver `LOCALIX_V1_FINAL_REPORT.md`,
 `GO_LIVE_CHECKLIST.md`, `OPERATIONS_MANUAL.md`, `DEPLOYMENT_GUIDE.md`,
 `ROLLBACK_GUIDE.md`, `DISASTER_RECOVERY_PLAN.md`. Roadmap v1.0 encerrado;
 novas demandas seguem para v1.1.
+
+## Payment Domain — Consolidação Final
+
+`PaymentService` (browser) + `orderPayment.server` (server writes) são a
+única porta de entrada do Payment Domain. Nenhum módulo fora de
+`src/lib/payments/**` acessa tabelas de pagamento diretamente. Provider
+Pattern preservado — consumidores externos não conhecem gateways por nome.
+OAuth único vive em `/pagamentos` via `PaymentService.connect`.
+Ver `DOMAIN_MANIFEST_PAYMENT.md` e `PAYMENT_DOMAIN_FINAL_REPORT.md`.
