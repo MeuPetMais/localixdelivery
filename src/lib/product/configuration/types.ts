@@ -1,5 +1,6 @@
 export type OptionGroupType = "SINGLE" | "MULTIPLE" | "QUANTITY" | "BOOLEAN";
 export type PriceStrategy = "SUM" | "AVERAGE" | "MAX" | "FIXED" | "CUSTOM";
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
 export interface ProductOptionGroup {
   id: string;
