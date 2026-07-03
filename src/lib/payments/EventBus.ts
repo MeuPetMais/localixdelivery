@@ -11,7 +11,10 @@ export type PaymentEventName =
   | "PaymentRefunded"
   | "PaymentCancelled"
   | "PaymentExpired"
-  | "PaymentChargeback";
+  | "PaymentChargeback"
+  | "SplitStarted"
+  | "SplitCompleted"
+  | "SplitFailed";
 
 export interface PaymentEventPayload {
   provider: string;
