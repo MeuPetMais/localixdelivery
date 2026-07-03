@@ -15,7 +15,7 @@ export interface ProductOptionGroup {
   display_order: number;
   depends_on_group_id?: string | null;
   depends_on_option_id?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, JsonValue>;
 }
 
 export interface ProductOption {
@@ -30,7 +30,7 @@ export interface ProductOption {
   recipe_reference?: string | null;
   display_order: number;
   active: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, JsonValue>;
 }
 
 export interface SelectedOption {
