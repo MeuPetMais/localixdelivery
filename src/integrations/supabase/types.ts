@@ -2568,6 +2568,261 @@ export type Database = {
           },
         ]
       }
+      production_batches: {
+        Row: {
+          batch_code: string
+          created_at: string
+          expiration_date: string | null
+          id: string
+          manufacturing_date: string
+          production_order_id: string
+          quantity: number
+          status: Database["public"]["Enums"]["production_batch_status"]
+        }
+        Insert: {
+          batch_code: string
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          manufacturing_date?: string
+          production_order_id: string
+          quantity?: number
+          status?: Database["public"]["Enums"]["production_batch_status"]
+        }
+        Update: {
+          batch_code?: string
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          manufacturing_date?: string
+          production_order_id?: string
+          quantity?: number
+          status?: Database["public"]["Enums"]["production_batch_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_consumption: {
+        Row: {
+          consumed_quantity: number
+          created_at: string
+          id: string
+          ingredient_id: string
+          loss_quantity: number
+          planned_quantity: number
+          production_order_id: string
+        }
+        Insert: {
+          consumed_quantity?: number
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          loss_quantity?: number
+          planned_quantity?: number
+          production_order_id: string
+        }
+        Update: {
+          consumed_quantity?: number
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          loss_quantity?: number
+          planned_quantity?: number
+          production_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_consumption_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_consumption_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_losses: {
+        Row: {
+          cost: number
+          created_at: string
+          id: string
+          ingredient_id: string | null
+          production_order_id: string
+          quantity: number
+          reason: string | null
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          id?: string
+          ingredient_id?: string | null
+          production_order_id: string
+          quantity: number
+          reason?: string | null
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          id?: string
+          ingredient_id?: string | null
+          production_order_id?: string
+          quantity?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_losses_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_losses_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_orders: {
+        Row: {
+          actual_finish: string | null
+          actual_start: string | null
+          batch_number: string | null
+          created_at: string
+          created_by: string | null
+          expiration_date: string | null
+          id: string
+          metadata: Json
+          notes: string | null
+          planned_quantity: number
+          planned_start: string | null
+          produced_quantity: number
+          recipe_id: string
+          restaurant_id: string
+          status: Database["public"]["Enums"]["production_order_status"]
+          updated_at: string
+        }
+        Insert: {
+          actual_finish?: string | null
+          actual_start?: string | null
+          batch_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          expiration_date?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          planned_quantity: number
+          planned_start?: string | null
+          produced_quantity?: number
+          recipe_id: string
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["production_order_status"]
+          updated_at?: string
+        }
+        Update: {
+          actual_finish?: string | null
+          actual_start?: string | null
+          batch_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          expiration_date?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          planned_quantity?: number
+          planned_start?: string | null
+          produced_quantity?: number
+          recipe_id?: string
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["production_order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_orders_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "product_recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_output: {
+        Row: {
+          approved_quantity: number
+          created_at: string
+          id: string
+          produced_quantity: number
+          product_id: string | null
+          production_order_id: string
+          rejected_quantity: number
+        }
+        Insert: {
+          approved_quantity?: number
+          created_at?: string
+          id?: string
+          produced_quantity?: number
+          product_id?: string | null
+          production_order_id: string
+          rejected_quantity?: number
+        }
+        Update: {
+          approved_quantity?: number
+          created_at?: string
+          id?: string
+          produced_quantity?: number
+          product_id?: string | null
+          production_order_id?: string
+          rejected_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_output_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_output_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string
@@ -3947,6 +4202,14 @@ export type Database = {
         | "FAILED"
         | "RETRY"
         | "DEAD_LETTER"
+      production_batch_status: "ACTIVE" | "CONSUMED" | "EXPIRED" | "DISCARDED"
+      production_order_status:
+        | "PLANNED"
+        | "IN_PROGRESS"
+        | "PAUSED"
+        | "COMPLETED"
+        | "CANCELLED"
+        | "FAILED"
       purchase_order_status:
         | "DRAFT"
         | "PENDING"
@@ -4170,6 +4433,15 @@ export const Constants = {
         "FAILED",
         "RETRY",
         "DEAD_LETTER",
+      ],
+      production_batch_status: ["ACTIVE", "CONSUMED", "EXPIRED", "DISCARDED"],
+      production_order_status: [
+        "PLANNED",
+        "IN_PROGRESS",
+        "PAUSED",
+        "COMPLETED",
+        "CANCELLED",
+        "FAILED",
       ],
       purchase_order_status: [
         "DRAFT",
