@@ -12,8 +12,8 @@ export function classifyPriority(order: {
 }): OperationsPriority {
   const now = order.now ?? Date.now();
   const ageMin = (now - new Date(order.createdAt).getTime()) / 60000;
-  const eta = order.etaMinutes ?? 0;
-  const overdue = ageMin - eta;
+  const eta = order.etaMinutes;
+  const overdue = eta != null ? ageMin - eta : 0;
 
   if (order.vipCustomer && ageMin > LOW_MIN) return "URGENT";
   if (overdue > 0 || ageMin >= URGENT_MIN) return "URGENT";
