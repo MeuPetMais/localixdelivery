@@ -285,3 +285,14 @@ Nenhuma **dependência cíclica** de módulo detectada.
 
 Baseline registrado. Nenhum arquivo do projeto foi modificado — este relatório é o único artefato gerado.
 Aguardando novos comandos.
+
+---
+
+## Update 2026-07-03 — Product Domain Foundation
+
+- Novo pacote `src/lib/product/` (Lifecycle, Validator, EventBus, AvailabilityService, SearchService, ProductService server fns).
+- Novas tabelas: `product_versions` (imutável, RLS owner), `product_media` (image/video/model_3d, RLS owner + read público), `product_audit` (RLS owner).
+- Trigger `tg_block_product_versions_mutation` garante versões imutáveis.
+- Eventos: `ProductCreated | Updated | Published | Archived | Discontinued | AvailabilityChanged | LifecycleChanged`.
+- Reuso integral: `menu_items`, `menu_item_images`, `builders*`, `featured_sections`, `ProductImageUploader`, `image-upload.ts`, `favorites.ts`, `public-restaurant.functions.ts`.
+- Sem alterações em Inventory / Recipe / Cost / Pricing / Checkout / OrderOrchestrator / Delivery / BusinessRulesEngine / NotificationCenter / TenantConfigurationService / Restaurant Dashboard.

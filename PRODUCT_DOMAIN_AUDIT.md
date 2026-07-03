@@ -154,3 +154,15 @@ Nenhum diretório `src/components/menu/` ou `src/components/product/` existe. Os
 ---
 
 Aguardando novos comandos.
+
+---
+
+## Update 2026-07-03 — Foundation aplicada
+
+Incorporadas ao domínio:
+- `src/lib/product/` (Lifecycle, Validator, EventBus, Availability, Search, ProductService).
+- Tabelas `product_versions`, `product_media`, `product_audit` (RLS owner-scoped, versões imutáveis).
+- `ProductFoundation.test.ts` — 11/11 testes passando (Lifecycle, Validator, Availability, Search, EventBus).
+- `ProductFoundation.README.md`.
+
+Lacunas ainda abertas (Prompt 13.5.2): full-text no banco, tags relacionais, SEO por produto, QR code, combos como entidade, bind explícito com Inventory, widgets de dashboard.
