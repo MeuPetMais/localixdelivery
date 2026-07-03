@@ -114,7 +114,7 @@ describe("Operations Center", () => {
   it("realtime bridges OrderEventBus", async () => {
     const seen: unknown[] = [];
     const off = OperationsRealtime.subscribe((e) => seen.push(e));
-    await OrderEventBus.publish("order.accepted", {
+    await OrderEventBus.publish("RestaurantAccepted", {
       orderId: "o9", restaurantId: "r1", previousState: "CREATED", currentState: "RESTAURANT_ACCEPTED",
       performedByType: "STAFF", performedBy: null, reason: null, metadata: {}, occurredAt: new Date().toISOString(),
     } as never);
