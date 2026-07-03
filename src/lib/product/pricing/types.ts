@@ -1,5 +1,7 @@
 // Dynamic Pricing & Promotion Engine — Types
 // NÃO substitui PricingEngine. Apenas calcula descontos e delega totais finais.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type JsonObject = Record<string, any>;
 
 export type PromotionStatus =
   | "DRAFT"
