@@ -1,0 +1,9 @@
+export * from "./types";
+export { CustomerService } from "./CustomerService";
+export { CustomerAddressService } from "./CustomerAddressService";
+export { CustomerPreferencesService } from "./CustomerPreferencesService";
+export { CustomerFavoritesService } from "./CustomerFavoritesService";
+export { CustomerTimeline } from "./CustomerTimeline";
+export { CustomerValidator } from "./CustomerValidator";
+export { CustomerAudit } from "./CustomerAudit";
+export { CustomerEventBus, type CustomerDomainEvent } from "./CustomerEventBus";
