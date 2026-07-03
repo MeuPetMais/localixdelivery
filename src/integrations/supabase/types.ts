@@ -3059,6 +3059,148 @@ export type Database = {
           },
         ]
       }
+      product_option_groups: {
+        Row: {
+          created_at: string
+          depends_on_group_id: string | null
+          depends_on_option_id: string | null
+          description: string | null
+          display_order: number
+          id: string
+          max_selection: number
+          metadata: Json
+          min_selection: number
+          name: string
+          price_strategy: Database["public"]["Enums"]["product_price_strategy"]
+          product_id: string
+          required: boolean
+          type: Database["public"]["Enums"]["product_option_group_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          depends_on_group_id?: string | null
+          depends_on_option_id?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          max_selection?: number
+          metadata?: Json
+          min_selection?: number
+          name: string
+          price_strategy?: Database["public"]["Enums"]["product_price_strategy"]
+          product_id: string
+          required?: boolean
+          type?: Database["public"]["Enums"]["product_option_group_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          depends_on_group_id?: string | null
+          depends_on_option_id?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          max_selection?: number
+          metadata?: Json
+          min_selection?: number
+          name?: string
+          price_strategy?: Database["public"]["Enums"]["product_price_strategy"]
+          product_id?: string
+          required?: boolean
+          type?: Database["public"]["Enums"]["product_option_group_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_depends_on_group_id_fkey"
+            columns: ["depends_on_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          group_id: string
+          id: string
+          image_url: string | null
+          inventory_reference: string | null
+          max_quantity: number
+          metadata: Json
+          name: string
+          price_adjustment: number
+          recipe_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_id: string
+          id?: string
+          image_url?: string | null
+          inventory_reference?: string | null
+          max_quantity?: number
+          metadata?: Json
+          name: string
+          price_adjustment?: number
+          recipe_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_id?: string
+          id?: string
+          image_url?: string | null
+          inventory_reference?: string | null
+          max_quantity?: number
+          metadata?: Json
+          name?: string
+          price_adjustment?: number
+          recipe_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_options_inventory_reference_fkey"
+            columns: ["inventory_reference"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_options_recipe_reference_fkey"
+            columns: ["recipe_reference"]
+            isOneToOne: false
+            referencedRelation: "product_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_profitability: {
         Row: {
           created_at: string
@@ -5178,6 +5320,8 @@ export type Database = {
         | "FAILED"
         | "RETRY"
         | "DEAD_LETTER"
+      product_option_group_type: "SINGLE" | "MULTIPLE" | "QUANTITY" | "BOOLEAN"
+      product_price_strategy: "SUM" | "AVERAGE" | "MAX" | "FIXED" | "CUSTOM"
       production_batch_status: "ACTIVE" | "CONSUMED" | "EXPIRED" | "DISCARDED"
       production_order_status:
         | "PLANNED"
@@ -5411,6 +5555,8 @@ export const Constants = {
         "RETRY",
         "DEAD_LETTER",
       ],
+      product_option_group_type: ["SINGLE", "MULTIPLE", "QUANTITY", "BOOLEAN"],
+      product_price_strategy: ["SUM", "AVERAGE", "MAX", "FIXED", "CUSTOM"],
       production_batch_status: ["ACTIVE", "CONSUMED", "EXPIRED", "DISCARDED"],
       production_order_status: [
         "PLANNED",
