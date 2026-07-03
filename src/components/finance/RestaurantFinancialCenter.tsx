@@ -3,6 +3,7 @@ import { FinanceDomain, FinanceAudit, type FinanceRole, type FinanceStatus } fro
 import { FinancialWorkspace } from "./FinancialWorkspace";
 import { FinancialStatusBar } from "./FinancialStatus";
 import { FinancialErrorBoundary } from "./FinancialErrorBoundary";
+import { PaymentGatewayCard } from "./PaymentGatewayCard";
 
 const service = FinanceDomain.createDashboardService();
 
@@ -33,6 +34,7 @@ export function RestaurantFinancialCenter({
           Visão consolidada de receitas, custos, split e conciliação.
         </p>
       </div>
+      <PaymentGatewayCard restaurantId={restaurantId} />
       <FinancialStatusBar status={status} />
       <FinancialErrorBoundary>
         <FinancialWorkspace restaurantId={restaurantId} role={role} />
