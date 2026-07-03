@@ -561,6 +561,184 @@ export type Database = {
           },
         ]
       }
+      delivery_orders: {
+        Row: {
+          created_at: string
+          delivery_mode: string
+          driver_id: string | null
+          estimated_delivery: string | null
+          estimated_pickup: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          order_id: string
+          provider: string
+          restaurant_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_mode?: string
+          driver_id?: string | null
+          estimated_delivery?: string | null
+          estimated_pickup?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          order_id: string
+          provider?: string
+          restaurant_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_mode?: string
+          driver_id?: string | null
+          estimated_delivery?: string | null
+          estimated_pickup?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string
+          provider?: string
+          restaurant_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      delivery_timeline: {
+        Row: {
+          actor: string | null
+          created_at: string
+          delivery_id: string
+          event: string
+          from_status: string | null
+          id: string
+          metadata: Json
+          to_status: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          delivery_id: string
+          event: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          to_status?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          delivery_id?: string
+          event?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_timeline_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          captured_at: string
+          driver_id: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          speed: number | null
+        }
+        Insert: {
+          accuracy?: number | null
+          captured_at?: string
+          driver_id: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          speed?: number | null
+        }
+        Update: {
+          accuracy?: number | null
+          captured_at?: string
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          created_at: string
+          current_latitude: number | null
+          current_longitude: number | null
+          id: string
+          license_plate: string | null
+          phone: string | null
+          provider: string
+          rating: number | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          id?: string
+          license_plate?: string | null
+          phone?: string | null
+          provider?: string
+          rating?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          id?: string
+          license_plate?: string | null
+          phone?: string | null
+          provider?: string
+          rating?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
       featured_sections: {
         Row: {
           customer_favorites_enabled: boolean
