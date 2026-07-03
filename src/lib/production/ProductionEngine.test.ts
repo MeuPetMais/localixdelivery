@@ -111,37 +111,31 @@ describe("ProductionValidator", () => {
 });
 
 describe("ProductionService lifecycle", () => {
-  it("plans and reserves ingredients", async () => {
-    const { production, invR } = await setup();
-    const order = await production.plan({ restaurant_id: "r1", recipe_id: (await invR.listIngredients("r1"))[0] && "" || "", planned_quantity: 10 } as any);
-    // Retry with real recipe id
-    void order;
-  });
-
   it("full flow: plan → start → complete updates stock and outputs", async () => {
     const { production, recipe, invR, pR } = await setup();
     const order = await production.plan({ restaurant_id: "r1", recipe_id: recipe.id, planned_quantity: 10 });
-    // Reservations recorded
     const i1 = (await invR.listIngredients("r1")).find((x) => x.id === "i1")!;
-    expect(i1.reserved_stock).toBe(1); // 10 portions / yield 10 = 1 batch of i1
+    expect(i1.reserved_stock).toBe(1);
     await production.start(order.id);
     const completed = await production.complete(order.id, { producedQuantity: 10, batchCode: "L-001" });
     expect(completed.status).toBe("COMPLETED");
     const i1After = (await invR.listIngredients("r1")).find((x) => x.id === "i1")!;
-    expect(i1After.stock).toBe(99); // 100 - 1
+    expect(i1After.stock).toBe(99);
     expect(i1After.reserved_stock).toBe(0);
     expect(pR.outputs).toHaveLength(1);
     expect(pR.batches).toHaveLength(1);
   });
 
-  it("start requires PLANNED or PAUSED, pause requires IN_PROGRESS", async () => {
+  it("start/pause enforce state transitions", async () => {
     const { production, recipe } = await setup();
     const o = await production.plan({ restaurant_id: "r1", recipe_id: recipe.id, planned_quantity: 10 });
     await production.start(o.id);
+    await expect(production.start(o.id)).rejects.toThrow(); // already IN_PROGRESS
     await production.pause(o.id);
-    await production.start(o.id);
-    await expect(production.pause(o.id)).resolves.toBeTruthy();
-    await expect(production.start(o.id)).rejects.toThrow();
+    await expect(production.pause(o.id)).rejects.toThrow(); // not IN_PROGRESS
+    await production.start(o.id); // resume from PAUSED
+    await production.complete(o.id, { producedQuantity: 10 });
+    await expect(production.start(o.id)).rejects.toThrow(); // COMPLETED cannot restart
   });
 
   it("cancel releases reservations", async () => {
