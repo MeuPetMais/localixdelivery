@@ -68,3 +68,18 @@ EventBus in-process, MFA opt-in) já rastreados em `TECHNICAL_DEBT.md`.
 
 - Nota de **Security** revisada para **A**.
 - Próximo: Prompt 22 — Observability.
+
+## Atualização — Prompt 22 (Observability & Operations)
+
+Camada `@/lib/observability` publicada com sete centros
+(Logging, Metrics, Audit, Health, Alert, Incident, Diagnostics) mais
+`OperationsDashboard`. Testes unitários em
+`src/lib/observability/observability.test.ts` cobrem sanitização de logs,
+agregação de métricas, agregação worst-case de saúde, ciclo de vida de
+alertas/incidentes e snapshot consolidado.
+
+- Nenhuma regra de negócio alterada.
+- Impacto de performance desprezível (buffers circulares in-memory).
+- Persistência durável de logs/audit segue rastreada em
+  `TECHNICAL_DEBT.md` (migração para tabela append-only).
+- Próximo: Prompt 23 — Quality Assurance.
