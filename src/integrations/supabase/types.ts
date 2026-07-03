@@ -1059,6 +1059,197 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          execution_time: number | null
+          id: string
+          notification_id: string | null
+          provider: string
+          response: Json | null
+          status: Database["public"]["Enums"]["notification_status"]
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          execution_time?: number | null
+          id?: string
+          notification_id?: string | null
+          provider: string
+          response?: Json | null
+          status: Database["public"]["Enums"]["notification_status"]
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          execution_time?: number | null
+          id?: string
+          notification_id?: string | null
+          provider?: string
+          response?: Json | null
+          status?: Database["public"]["Enums"]["notification_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          marketing_enabled: boolean
+          push_enabled: boolean
+          quiet_hours_end: number | null
+          quiet_hours_start: number | null
+          sms_enabled: boolean
+          updated_at: string
+          user_id: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          marketing_enabled?: boolean
+          push_enabled?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          marketing_enabled?: boolean
+          push_enabled?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: []
+      }
+      notification_templates: {
+        Row: {
+          body: string
+          channel: Database["public"]["Enums"]["notification_channel"]
+          code: string
+          created_at: string
+          enabled: boolean
+          id: string
+          language: string
+          name: string
+          subject: string | null
+          title: string | null
+          updated_at: string
+          variables_json: Json
+        }
+        Insert: {
+          body: string
+          channel: Database["public"]["Enums"]["notification_channel"]
+          code: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          language?: string
+          name: string
+          subject?: string | null
+          title?: string | null
+          updated_at?: string
+          variables_json?: Json
+        }
+        Update: {
+          body?: string
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          code?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          language?: string
+          name?: string
+          subject?: string | null
+          title?: string | null
+          updated_at?: string
+          variables_json?: Json
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          attempts: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at: string
+          error_message: string | null
+          id: string
+          max_attempts: number
+          origin: string | null
+          payload_json: Json
+          priority: Database["public"]["Enums"]["notification_priority"]
+          read_at: string | null
+          recipient_id: string | null
+          recipient_type: Database["public"]["Enums"]["notification_recipient_type"]
+          scheduled_at: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"]
+          template_code: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          origin?: string | null
+          payload_json?: Json
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          recipient_id?: string | null
+          recipient_type?: Database["public"]["Enums"]["notification_recipient_type"]
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+          template_code: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          origin?: string | null
+          payload_json?: Json
+          priority?: Database["public"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          recipient_id?: string | null
+          recipient_type?: Database["public"]["Enums"]["notification_recipient_type"]
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+          template_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oauth_states: {
         Row: {
           code_verifier: string
@@ -2815,6 +3006,27 @@ export type Database = {
         | "CHARGEBACK"
         | "PAYOUT"
         | "ADJUSTMENT"
+      notification_channel:
+        | "IN_APP"
+        | "PUSH"
+        | "EMAIL"
+        | "SMS"
+        | "WHATSAPP"
+        | "WEBSOCKET"
+      notification_priority: "LOW" | "NORMAL" | "HIGH" | "CRITICAL"
+      notification_recipient_type:
+        | "customer"
+        | "restaurant"
+        | "admin"
+        | "courier"
+        | "system"
+      notification_status:
+        | "PENDING"
+        | "PROCESSING"
+        | "SENT"
+        | "FAILED"
+        | "RETRY"
+        | "DEAD_LETTER"
       reconciliation_status:
         | "PENDING"
         | "MATCHED"
@@ -2996,6 +3208,30 @@ export const Constants = {
         "CHARGEBACK",
         "PAYOUT",
         "ADJUSTMENT",
+      ],
+      notification_channel: [
+        "IN_APP",
+        "PUSH",
+        "EMAIL",
+        "SMS",
+        "WHATSAPP",
+        "WEBSOCKET",
+      ],
+      notification_priority: ["LOW", "NORMAL", "HIGH", "CRITICAL"],
+      notification_recipient_type: [
+        "customer",
+        "restaurant",
+        "admin",
+        "courier",
+        "system",
+      ],
+      notification_status: [
+        "PENDING",
+        "PROCESSING",
+        "SENT",
+        "FAILED",
+        "RETRY",
+        "DEAD_LETTER",
       ],
       reconciliation_status: [
         "PENDING",
