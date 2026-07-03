@@ -314,3 +314,17 @@ domínio existente foi alterado e nenhuma migration foi criada.
 
 Ver `src/lib/platform/PlatformAdministration.README.md` e
 `src/lib/platform/DOMAIN_MANIFEST.md`.
+
+## Platform Configuration & Feature Flag System (Prompt 15)
+
+Módulo `src/lib/platform-config/` — fonte-única para configuração global,
+feature flags, remote config, kill switches e recursos por plano. Nenhum
+módulo mantém configuração isolada; consumidores usam
+`platformConfiguration` (facade singleton).
+
+Complementar ao `TenantConfigurationService` (que continua sendo dono das
+configurações por tenant). Camada pura, sem migrations novas, sem tocar
+nenhum domínio existente. Auditoria imutável, versionamento com rollback
+seguro, rollout gradual determinístico (FNV-1a).
+
+Ver `src/lib/platform-config/PlatformConfiguration.README.md`.

@@ -35,3 +35,19 @@
       `platform.admins.write`).
 - [ ] Repositórios Supabase para `EmployeeService` /
       `AdminAuditService` (herdado do Prompt 13.7, ainda pendente).
+
+## Platform Configuration (Prompt 15)
+
+- [ ] Provisionar `platform_feature_flags`, `platform_feature_flag_versions`,
+      `platform_remote_config`, `platform_remote_config_versions`,
+      `platform_kill_switches`, `platform_plan_overrides`,
+      `platform_config_audit_log` e implementar repositórios Supabase.
+- [ ] Painéis administrativos (Feature Flags / Rollouts / Kill Switches /
+      Templates / Histórico) — atualmente só o facade está exposto.
+- [ ] Enforcement automatizado dos permissions
+      (`platform.feature_flags.write`, `platform.config.write`,
+      `platform.plans.write`) nas server-functions de administração.
+- [ ] Consumo do kill switch nos domínios sensíveis (Payment/Delivery/AI)
+      via `platformConfiguration.killSwitch.assertOperational(...)`.
+- [ ] Migrar overrides existentes de `platform_settings.feature_flags` para
+      o novo domínio quando os repositórios Supabase estiverem prontos.
