@@ -170,7 +170,7 @@ export const updatePayableStatus = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const update: Record<string, unknown> = { status: data.status };
+    const update: Record<string, any> = { status: data.status };
     if (data.paidAmount !== undefined) update.paid_amount = data.paidAmount;
     if (data.paidDate !== undefined) update.paid_date = data.paidDate;
     const { data: row, error } = await context.supabase
@@ -193,7 +193,7 @@ export const updateReceivableStatus = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const update: Record<string, unknown> = { status: data.status };
+    const update: Record<string, any> = { status: data.status };
     if (data.receivedDate !== undefined) update.received_date = data.receivedDate;
     const { data: row, error } = await context.supabase
       .from("accounts_receivable")
