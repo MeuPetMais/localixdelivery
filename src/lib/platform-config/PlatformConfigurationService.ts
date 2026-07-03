@@ -124,7 +124,11 @@ export class PlatformConfigurationService {
   }
 
   // --- Remote config ---------------------------------------------------
-  async setConfig<T>(input: Parameters<RemoteConfigService["set"]>[0]): Promise<RemoteConfigEntry<T>> {
+  async setConfig<T>(input: {
+    key: string; value: T; description?: string;
+    scope: RemoteConfigEntry["scope"]; targeting?: RemoteConfigEntry["targeting"];
+    actorId: string; reason?: string;
+  }): Promise<RemoteConfigEntry<T>> {
     const before = this.remoteConfig.get(input.key);
     const entry = this.remoteConfig.set<T>(input);
     await this.audit.record({
