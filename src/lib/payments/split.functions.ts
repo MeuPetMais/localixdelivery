@@ -111,7 +111,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
     if (restaurantId) {
       const { data: acc } = await supabaseAdmin
         .from("mercado_pago_accounts")
-        .select("restaurant_id, active, access_token_encrypted, expires_at")
+        .select("restaurant_id, connected, access_token, expires_at")
         .eq("restaurant_id", restaurantId)
         .maybeSingle();
       if (acc) {
@@ -120,7 +120,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         account = {
           connected: true,
           active: Boolean(acc.active),
-          token_valid: Boolean(acc.access_token_encrypted) && notExpired,
+          token_valid: Boolean(acc.access_token) && notExpired,
           restaurant_id: acc.restaurant_id,
         };
       }
@@ -140,7 +140,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
     let plan = planSplit({ snapshot, account, reconciliation, payment });
 
     if (plan.status === "PROCESSING") {
-      publish({
+      EventBus.publish({
         type: "SplitStarted",
         order_id: plan.order_id!,
         restaurant_id: plan.restaurant_id!,
@@ -155,7 +155,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
     // Terminal (FAILED / MANUAL_REVIEW) — persiste + publica.
     await persistAndPublish(supabaseAdmin, plan);
     if (plan.status === "FAILED") {
-      publish({
+      EventBus.publish({
         type: "SplitFailed",
         order_id: plan.order_id,
         reason: plan.reason ?? "unknown",
@@ -212,14 +212,14 @@ export const completeOrderSplit = createServerFn({ method: "POST" })
     );
 
     if (next.status === "COMPLETED") {
-      publish({
+      EventBus.publish({
         type: "SplitCompleted",
         order_id: next.order_id!,
         restaurant_id: next.restaurant_id!,
         split_reference: data.result.ok ? data.result.split_reference : "",
       });
     } else if (next.status === "FAILED") {
-      publish({
+      EventBus.publish({
         type: "SplitFailed",
         order_id: next.order_id,
         reason: next.reason ?? "unknown",
