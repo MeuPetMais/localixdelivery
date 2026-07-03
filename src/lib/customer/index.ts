@@ -8,3 +8,5 @@ export { CustomerValidator } from "./CustomerValidator";
 export { CustomerAudit } from "./CustomerAudit";
 export { CustomerEventBus, type CustomerDomainEvent } from "./CustomerEventBus";
 export * from "./intelligence";
+export * as Communication from "./communication";
+

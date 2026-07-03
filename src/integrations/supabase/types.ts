@@ -718,6 +718,78 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_communication_history: {
+        Row: {
+          channel: string
+          created_at: string
+          customer_id: string
+          event_type: string
+          id: string
+          metadata_json: Json
+          reference_id: string | null
+          status: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          customer_id: string
+          event_type: string
+          id?: string
+          metadata_json?: Json
+          reference_id?: string | null
+          status?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          customer_id?: string
+          event_type?: string
+          id?: string
+          metadata_json?: Json
+          reference_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      customer_communication_preferences: {
+        Row: {
+          created_at: string
+          customer_id: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          marketing_enabled: boolean
+          push_enabled: boolean
+          sms_enabled: boolean
+          updated_at: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          marketing_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          marketing_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: []
+      }
       customer_consents: {
         Row: {
           consent_type: string
