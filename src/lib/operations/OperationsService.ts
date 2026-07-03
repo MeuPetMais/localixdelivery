@@ -4,7 +4,7 @@
 // arquivo; providers de dados são injetáveis para preservar testes e evitar
 // acoplamento com Supabase.
 
-import type { OrderOrchestrator } from "@/lib/orders/OrderOrchestrator";
+import type { TransitionInput, TransitionResult } from "@/lib/orders/OrderOrchestrator";
 import { canPerform, ACTION_TO_STATE, type OperationsAction } from "./OperationsPermissions";
 import { KitchenSounds } from "./KitchenSounds";
 import type {
@@ -25,8 +25,12 @@ export interface OperationsAuditRecord {
   origin: "OPERATIONS_CENTER";
 }
 
+export interface OperationsOrchestrator {
+  transition: (input: TransitionInput) => Promise<TransitionResult>;
+}
+
 export interface OperationsDeps {
-  orchestrator: Pick<typeof OrderOrchestrator, "transition"> | { transition: typeof OrderOrchestrator.transition };
+  orchestrator: OperationsOrchestrator;
   audit?: (record: OperationsAuditRecord) => Promise<void> | void;
 }
 
@@ -45,13 +49,12 @@ export function createOperationsService(deps: OperationsDeps) {
         throw new Error(`Perfil ${input.role} não pode executar ${input.action}`);
       }
       const next = ACTION_TO_STATE[input.action];
-      const result = await (deps.orchestrator as any).transition({
+      const result = await deps.orchestrator.transition({
         orderId: input.orderId,
         to: next,
         reason: input.reason,
         actor: { type: "STAFF", id: input.actorId },
-        origin: "operations_center",
-      });
+      } as unknown as TransitionInput);
       await deps.audit?.({
         action: input.action, orderId: input.orderId, actorId: input.actorId,
         role: input.role, at: new Date().toISOString(), origin: "OPERATIONS_CENTER",
