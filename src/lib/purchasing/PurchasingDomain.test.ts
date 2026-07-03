@@ -18,7 +18,7 @@ function memRepo(): PurchasingRepository {
     async getSupplier(id) { return suppliers.get(id) ?? null; },
     async upsertSupplier(s) {
       const id = s.id ?? `sup${seq++}`;
-      const rec: Supplier = { active: true, name: s.name ?? "", ...s, id } as Supplier;
+      const rec: Supplier = { active: true, ...s, name: s.name ?? "", id } as Supplier;
       suppliers.set(id, rec);
       return rec;
     },
