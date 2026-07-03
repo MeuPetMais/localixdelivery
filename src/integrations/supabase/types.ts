@@ -914,6 +914,48 @@ export type Database = {
           },
         ]
       }
+      ingredient_cost_history: {
+        Row: {
+          average_cost: number | null
+          created_at: string
+          currency: string
+          effective_from: string
+          effective_until: string | null
+          id: string
+          ingredient_id: string
+          purchase_order_id: string | null
+          restaurant_id: string
+          supplier_id: string | null
+          unit_cost: number
+        }
+        Insert: {
+          average_cost?: number | null
+          created_at?: string
+          currency?: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          ingredient_id: string
+          purchase_order_id?: string | null
+          restaurant_id: string
+          supplier_id?: string | null
+          unit_cost: number
+        }
+        Update: {
+          average_cost?: number | null
+          created_at?: string
+          currency?: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          ingredient_id?: string
+          purchase_order_id?: string | null
+          restaurant_id?: string
+          supplier_id?: string | null
+          unit_cost?: number
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           active: boolean
@@ -1690,6 +1732,54 @@ export type Database = {
           },
         ]
       }
+      order_profitability: {
+        Row: {
+          created_at: string
+          delivery_cost: number
+          estimated_profit: number
+          gateway_fee: number
+          gross_revenue: number
+          id: string
+          margin_percentage: number
+          net_profit: number
+          order_id: string
+          packaging_cost: number
+          platform_fee: number
+          recipe_cost: number
+          restaurant_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_cost?: number
+          estimated_profit?: number
+          gateway_fee?: number
+          gross_revenue?: number
+          id?: string
+          margin_percentage?: number
+          net_profit?: number
+          order_id: string
+          packaging_cost?: number
+          platform_fee?: number
+          recipe_cost?: number
+          restaurant_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_cost?: number
+          estimated_profit?: number
+          gateway_fee?: number
+          gross_revenue?: number
+          id?: string
+          margin_percentage?: number
+          net_profit?: number
+          order_id?: string
+          packaging_cost?: number
+          platform_fee?: number
+          recipe_cost?: number
+          restaurant_id?: string
+        }
+        Relationships: []
+      }
       order_status_history: {
         Row: {
           created_at: string
@@ -2396,6 +2486,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_profitability: {
+        Row: {
+          created_at: string
+          estimated_profit: number
+          gross_margin: number
+          id: string
+          last_calculated_at: string
+          net_margin: number
+          product_id: string
+          recipe_cost: number
+          restaurant_id: string
+          sale_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_profit?: number
+          gross_margin?: number
+          id?: string
+          last_calculated_at?: string
+          net_margin?: number
+          product_id: string
+          recipe_cost?: number
+          restaurant_id: string
+          sale_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estimated_profit?: number
+          gross_margin?: number
+          id?: string
+          last_calculated_at?: string
+          net_margin?: number
+          product_id?: string
+          recipe_cost?: number
+          restaurant_id?: string
+          sale_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_recipe_items: {
         Row: {
           created_at: string
@@ -3047,6 +3179,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recipe_cost_snapshot: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_cost: number
+          labor_cost: number
+          overhead_cost: number
+          packaging_cost: number
+          recipe_id: string
+          recipe_version: number
+          restaurant_id: string
+          total_cost: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_cost?: number
+          labor_cost?: number
+          overhead_cost?: number
+          packaging_cost?: number
+          recipe_id: string
+          recipe_version?: number
+          restaurant_id: string
+          total_cost?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_cost?: number
+          labor_cost?: number
+          overhead_cost?: number
+          packaging_cost?: number
+          recipe_id?: string
+          recipe_version?: number
+          restaurant_id?: string
+          total_cost?: number
+        }
+        Relationships: []
       }
       recipe_items: {
         Row: {
