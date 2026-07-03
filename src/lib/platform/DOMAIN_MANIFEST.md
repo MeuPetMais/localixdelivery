@@ -69,3 +69,14 @@ import {
   ainda não persistidos; os serviços operam sobre projeções em memória.
 - Widgets de UI para os módulos novos (Planos, Assinaturas, Moderação,
   Incidentes, Notificações Globais) permanecem para o Prompt 15.
+
+## Interação com Platform Configuration (Prompt 15)
+
+- `PlatformPermissionRegistry` fornece as permissões `platform.feature_flags.*`,
+  `platform.config.*`, `platform.plans.*` que devem ser validadas antes de
+  invocar mutações no `platformConfiguration` (facade em `src/lib/platform-config/`).
+- `PlanCatalogService` continua sendo a fonte determinística de planos;
+  `PlanFeatureService` (Prompt 15) aplica overrides aditivos por plano.
+- Feature flags globais legadas em `PlatformFeatureFlagService` (Prompt 14)
+  seguem válidas para toggles simples; para flags com rollout, versionamento
+  ou targeting avançado usar o novo domínio.

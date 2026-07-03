@@ -38,3 +38,19 @@
   autorização in-domain.
 - Catálogo de planos vive em código (fonte-única determinística); overrides
   poderão ser persistidos em `platform_settings` sem quebrar consumidores.
+
+## Prompt 15 — Platform Configuration & Feature Flag System
+
+- Configuração global fica **fora** do `TenantConfigurationService` para
+  preservar isolamento por tenant: TenantConfig continua RLS-scoped por
+  restaurante; PlatformConfig é global/plano/ambiente/canal.
+- Rollout gradual usa hash FNV-1a determinístico sobre
+  `${flagKey}:${bucketKey}` para garantir estabilidade entre chamadas e
+  distribuição uniforme.
+- Kill switch é dimensão ortogonal ao status da flag — quando ativo, força
+  desligado independentemente de targeting/default/rollout.
+- Histórico e auditoria são append-only (`Object.freeze`) para impedir
+  reescrita de decisões passadas.
+- Sem migrations neste prompt: os repositórios in-memory são substituíveis
+  por implementações Supabase quando as tabelas dedicadas forem projetadas
+  junto com o Prompt 16.
