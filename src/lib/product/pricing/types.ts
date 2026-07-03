@@ -38,7 +38,7 @@ export interface PromotionRule {
   promotion_id: string;
   rule_type: PromotionRuleType | string;
   operator: string; // eq | in | gte | lte | between
-  value: Record<string, unknown>;
+  value: JsonObject;
   created_at?: string;
 }
 
@@ -66,7 +66,7 @@ export interface Promotion {
   channel?: string | null;
   max_uses?: number | null;
   max_uses_per_customer?: number | null;
-  config?: Record<string, unknown>;
+  config?: JsonObject;
   created_at?: string;
   updated_at?: string;
   rules?: PromotionRule[];
