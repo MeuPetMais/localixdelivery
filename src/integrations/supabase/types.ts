@@ -796,6 +796,63 @@ export type Database = {
           },
         ]
       }
+      customer_loyalty: {
+        Row: {
+          cashback_balance: number
+          created_at: string
+          customer_id: string
+          id: string
+          level: string
+          lifetime_cashback: number
+          lifetime_points: number
+          points_balance: number
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cashback_balance?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          level?: string
+          lifetime_cashback?: number
+          lifetime_points?: number
+          points_balance?: number
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cashback_balance?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          level?: string
+          lifetime_cashback?: number
+          lifetime_points?: number
+          points_balance?: number
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_loyalty_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_loyalty_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_notifications: {
         Row: {
           body: string | null
@@ -1638,6 +1695,177 @@ export type Database = {
           },
           {
             foreignKeyName: "inventory_locations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_levels: {
+        Row: {
+          active: boolean
+          benefits: Json
+          created_at: string
+          display_order: number
+          id: string
+          minimum_points: number
+          name: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          benefits?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          minimum_points?: number
+          name: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          benefits?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          minimum_points?: number
+          name?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_levels_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_levels_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rules: {
+        Row: {
+          active: boolean
+          config: Json
+          created_at: string
+          ends_at: string | null
+          id: string
+          max_order: number | null
+          min_order: number | null
+          name: string
+          priority: number
+          restaurant_id: string
+          rule_type: string
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          max_order?: number | null
+          min_order?: number | null
+          name: string
+          priority?: number
+          restaurant_id: string
+          rule_type: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          max_order?: number | null
+          min_order?: number | null
+          name?: string
+          priority?: number
+          restaurant_id?: string
+          rule_type?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rules_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rules_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_transactions: {
+        Row: {
+          cashback: number
+          created_at: string
+          customer_id: string
+          description: string | null
+          id: string
+          metadata: Json
+          points: number
+          reference_id: string | null
+          reference_type: string | null
+          restaurant_id: string
+          transaction_type: string
+        }
+        Insert: {
+          cashback?: number
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          points?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id: string
+          transaction_type: string
+        }
+        Update: {
+          cashback?: number
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          points?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          restaurant_id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants_public"
