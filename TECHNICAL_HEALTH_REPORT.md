@@ -56,3 +56,15 @@ consolidada (Prompt 20). Cache unificado (`src/lib/platform-cache`) +
 `PERFORMANCE_GUIDE.md` + `PERFORMANCE_REPORT.md` publicados. Nota de
 Performance revisada para **A-** após consolidação da estratégia de cache.
 Próximo: Prompt 21 — Security Hardening.
+
+## Atualização — Prompt 21 (Security Hardening)
+
+Camada `@/lib/security` publicada (sanitização, mascaramento, envelope
+seguro, comparação constant-time). Documentação de segurança consolidada
+em `SECURITY_GUIDE.md`, `SECURITY_AUDIT_REPORT.md` e
+`SECURITY_CHECKLIST.md`. Nenhuma vulnerabilidade crítica encontrada;
+riscos residuais (auditoria/uso em memória, rate limiting per-IP,
+EventBus in-process, MFA opt-in) já rastreados em `TECHNICAL_DEBT.md`.
+
+- Nota de **Security** revisada para **A**.
+- Próximo: Prompt 22 — Observability.
