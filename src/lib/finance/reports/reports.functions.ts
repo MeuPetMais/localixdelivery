@@ -3,6 +3,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import type { ExportFormat, ReportRecord, ReportStatus, ReportType, ScheduleFrequency, ScheduledReportRecord } from "./types";
 
 export const listReports = createServerFn({ method: "POST" })
@@ -23,7 +24,7 @@ export const saveReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: {
     restaurantId: string; type: ReportType; title: string;
-    filters: Record<string, unknown>; format: ExportFormat; status?: ReportStatus;
+    filters: Json; format: ExportFormat; status?: ReportStatus;
     fileUrl?: string | null; expiresAt?: string | null;
   }) => d)
   .handler(async ({ data, context }) => {
@@ -71,7 +72,7 @@ export const upsertSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: {
     id?: string; restaurantId: string; name: string; frequency: ScheduleFrequency;
-    reportType: ReportType; filters: Record<string, unknown>; exportFormat: ExportFormat;
+    reportType: ReportType; filters: Json; exportFormat: ExportFormat;
     enabled?: boolean; nextExecution?: string | null;
   }) => d)
   .handler(async ({ data, context }) => {

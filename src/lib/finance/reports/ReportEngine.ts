@@ -1,14 +1,10 @@
 // ReportEngine — builds ReportResult from Finance Domain services.
-// Never touches the DB directly; consumes CashFlowService,
-// ReceivablesService, PayablesService and FinancialDashboardService
-// (which in turn wrap LedgerService, CostEngine, etc).
-
 import type {
   CashFlowService, ReceivablesService, PayablesService,
 } from "../CashFlowService";
 import type { FinancialDashboardService } from "../FinancialDashboardService";
 import { resolvePeriod } from "../FinanceFilters";
-import type { FinanceFilters } from "../types";
+import type { FinanceFilters, FinancePeriod } from "../types";
 import type { ComparativeResult, ReportResult, ReportType } from "./types";
 
 export interface ReportEnginePorts {
@@ -31,6 +27,14 @@ function pctDelta(cur: number, prev: number): number {
   return ((cur - prev) / Math.abs(prev)) * 100;
 }
 
+function resolveRange(filters?: Partial<FinanceFilters>): { period: FinancePeriod; from: string; to: string } {
+  const period = (filters?.period ?? "month") as FinancePeriod;
+  if (period === "custom" && filters?.from && filters?.to) {
+    return { period, from: filters.from, to: filters.to };
+  }
+  return { period, ...resolvePeriod(period) };
+}
+
 function shiftPreviousPeriod(from: string, to: string): { from: string; to: string } {
   const f = new Date(from).getTime();
   const t = new Date(to).getTime();
@@ -45,46 +49,24 @@ export class ReportEngine {
   constructor(private readonly ports: ReportEnginePorts) {}
 
   async build(input: BuildInput): Promise<ReportResult> {
-    const { period, from, to } = resolvePeriod(input.filters?.period ?? "month", input.filters);
-    const filters = { ...(input.filters ?? {}), period, from, to } as Record<string, unknown>;
+    const { period, from, to } = resolveRange(input.filters);
+    const filters: Record<string, unknown> = { ...(input.filters ?? {}), period, from, to };
 
     switch (input.type) {
-      case "cashflow":       return this.cashflow(input.restaurantId, filters, from, to);
-      case "receivables":    return this.receivables(input.restaurantId, filters, from, to);
-      case "payables":       return this.payables(input.restaurantId, filters, from, to);
-      case "dre":
-      case "profitability":
-      case "executive_ceo":
-      case "executive_finance":
-      case "ledger":
-      case "split":
-      case "reconciliation":
-      case "orders":
-      case "products":
-      case "customers":
-      case "delivery":
-      case "inventory":
-      case "production":
-      case "purchasing":
-      case "top_products":
-      case "top_categories":
-      case "top_customers":
-      case "peak_hours":
-      case "top_gateway":
-      case "executive_operations":
-      case "executive_production":
-      case "executive_purchasing":
-      default:
-        return this.executiveSummary(input.restaurantId, input.type, filters);
+      case "cashflow":    return this.cashflow(input.restaurantId, filters, from, to);
+      case "receivables": return this.receivables(input.restaurantId, filters, from, to);
+      case "payables":    return this.payables(input.restaurantId, filters, from, to);
+      default:            return this.executiveSummary(input.restaurantId, input.type, filters);
     }
   }
 
   async compare(input: BuildInput): Promise<ComparativeResult<number>> {
-    const { from, to } = resolvePeriod(input.filters?.period ?? "month", input.filters);
+    const { from, to } = resolveRange(input.filters);
     const prev = shiftPreviousPeriod(from, to);
+    const baseFilters = (input.filters ?? {}) as Partial<FinanceFilters>;
     const [cur, previous] = await Promise.all([
-      this.ports.dashboard.getExecutiveKPIs({ restaurantId: input.restaurantId, filters: { ...input.filters, from, to } as FinanceFilters }),
-      this.ports.dashboard.getExecutiveKPIs({ restaurantId: input.restaurantId, filters: { ...input.filters, from: prev.from, to: prev.to } as FinanceFilters }),
+      this.ports.dashboard.getExecutiveKPIs({ restaurantId: input.restaurantId, filters: { ...baseFilters, period: "custom", from, to } }),
+      this.ports.dashboard.getExecutiveKPIs({ restaurantId: input.restaurantId, filters: { ...baseFilters, period: "custom", from: prev.from, to: prev.to } }),
     ]);
     return {
       current: cur.netRevenue,
@@ -93,8 +75,6 @@ export class ReportEngine {
       deltaPct: pctDelta(cur.netRevenue, previous.netRevenue),
     };
   }
-
-  // ---------- Builders ----------
 
   private async cashflow(restaurantId: string, filters: Record<string, unknown>, from: string, to: string): Promise<ReportResult> {
     const s = await this.ports.cashflow.getSummary({ restaurantId, from, to });
@@ -110,9 +90,9 @@ export class ReportEngine {
     const s = await this.ports.receivables.getSummary({ restaurantId, from, to });
     return {
       type: "receivables", title: "Recebimentos", generatedAt: nowIso(), filters,
-      columns: ["id", "description", "gross_amount", "net_amount", "expected_date", "status"],
+      columns: ["id", "gateway", "gross_amount", "net_amount", "expected_date", "status"],
       rows: s.items.map(r => ({
-        id: r.id, description: r.description ?? "", gross_amount: r.gross_amount,
+        id: r.id, gateway: r.gateway ?? "", gross_amount: r.gross_amount,
         net_amount: r.net_amount, expected_date: r.expected_date ?? "", status: r.status,
       })),
       totals: { pending: s.pending, received: s.received, overdue: s.overdue, next7: s.next7, next30: s.next30 },
@@ -133,7 +113,10 @@ export class ReportEngine {
   }
 
   private async executiveSummary(restaurantId: string, type: ReportType, filters: Record<string, unknown>): Promise<ReportResult> {
-    const k = await this.ports.dashboard.getExecutiveKPIs({ restaurantId, filters: filters as FinanceFilters });
+    const k = await this.ports.dashboard.getExecutiveKPIs({
+      restaurantId,
+      filters: filters as unknown as FinanceFilters,
+    });
     return {
       type, title: titleFor(type), generatedAt: nowIso(), filters,
       columns: ["metric", "value"],
