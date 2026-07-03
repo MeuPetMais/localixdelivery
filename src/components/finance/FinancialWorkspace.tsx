@@ -17,6 +17,7 @@ import { FinancialNotificationsWidget } from "./widgets/FinancialNotificationsWi
 import { CashFlowWidget } from "./widgets/CashFlowWidget";
 import { ReceivablesWidget } from "./widgets/ReceivablesWidget";
 import { PayablesWidget } from "./widgets/PayablesWidget";
+import { ReportsWidget } from "./widgets/ReportsWidget";
 
 const TAB_LABELS: Record<FinanceTab, string> = {
   summary: "Resumo",
@@ -87,7 +88,13 @@ export function FinancialWorkspace({
           </FinancialErrorBoundary>
         </TabsContent>
 
-        {(["dre", "profitability", "reports"] as FinanceTab[]).map((t) => (
+        <TabsContent value="reports" className="mt-4 space-y-4">
+          <FinancialErrorBoundary>
+            <WidgetGrid><ReportsWidget restaurantId={restaurantId} filters={filters} /></WidgetGrid>
+          </FinancialErrorBoundary>
+        </TabsContent>
+
+        {(["dre", "profitability"] as FinanceTab[]).map((t) => (
           <TabsContent key={t} value={t} className="mt-4">
             <FinancialErrorBoundary>
               <WidgetCard span={4}>
