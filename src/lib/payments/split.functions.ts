@@ -213,19 +213,24 @@ export const completeOrderSplit = createServerFn({ method: "POST" })
       data.result.ok ? data.result.split_reference : undefined,
     );
 
+    const payload = (extra: Record<string, any> = {}) => ({
+      provider: "mercadopago",
+      orderId: next.order_id,
+      restaurantId: next.restaurant_id,
+      paymentId: next.payment_id,
+      amount: next.restaurant_amount + next.platform_amount,
+      currency: "BRL",
+      raw: extra,
+    });
     if (next.status === "COMPLETED") {
-      EventBus.publish({
-        type: "SplitCompleted",
-        order_id: next.order_id!,
-        restaurant_id: next.restaurant_id!,
-        split_reference: data.result.ok ? data.result.split_reference : "",
-      });
+      await EventBus.publish(
+        "SplitCompleted",
+        payload({
+          split_reference: data.result.ok ? data.result.split_reference : "",
+        }),
+      );
     } else if (next.status === "FAILED") {
-      EventBus.publish({
-        type: "SplitFailed",
-        order_id: next.order_id,
-        reason: next.reason ?? "unknown",
-      });
+      await EventBus.publish("SplitFailed", payload({ reason: next.reason }));
     }
     return next;
   });
