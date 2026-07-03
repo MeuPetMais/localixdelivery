@@ -1,5 +1,16 @@
 # Technical Debt
 
+## Consolidação (Prompt 19)
+
+- [ ] Persistir audit logs (Analytics, AI, Marketing, Platform) em Supabase.
+- [ ] Criar índices: `business_rule_execution_log(rule_code, created_at)` e
+      `customer_timeline(customer_id, occurred_at)`.
+- [ ] Substituir cache in-memory de `TenantConfiguration` por KV/Redis.
+- [ ] Adicionar testes de integração cross-domain (Order → Payment →
+      Loyalty → Notifications).
+- [ ] Migrar EventBuses in-process para fila durável nos fluxos críticos
+      (OrderPlaced, PaymentSettled, CampaignLaunched).
+
 ## Restaurant Settings (Prompt 13.7)
 
 - **Legacy config em `restaurants.*`:** vários campos (delivery_fee,
