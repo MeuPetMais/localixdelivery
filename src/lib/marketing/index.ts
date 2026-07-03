@@ -1,0 +1,12 @@
+export * from "./types";
+export { MarketingAutomationPlatform } from "./MarketingAutomationPlatform";
+export { CampaignService } from "./CampaignService";
+export { AudienceBuilder, type AudienceCandidate, type AudienceResolution } from "./AudienceBuilder";
+export { AutomationEngine } from "./AutomationEngine";
+export { CampaignSchedulerService, type ScheduledCampaignJob } from "./CampaignSchedulerService";
+export { CampaignTemplateService } from "./CampaignTemplateService";
+export { CampaignAnalyticsService, type CampaignMetricInput } from "./CampaignAnalyticsService";
+export { JourneyBuilder } from "./JourneyBuilder";
+export { ABTestingEngine } from "./ABTestingEngine";
+export { MarketingAudit, type MarketingAuditEntry } from "./MarketingAudit";
+export { MarketingEventBus } from "./MarketingEventBus";
