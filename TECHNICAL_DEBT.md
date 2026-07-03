@@ -21,3 +21,17 @@
 - Dependência cíclica potencial entre `NotificationCenter` e
   `restaurant-settings` deve ser mantida em uma direção só (Settings
   publica; NotificationCenter consome).
+
+## Platform Administration (Prompt 14)
+
+- [ ] Provisionar `platform_audit_log` + implementar
+      `SupabasePlatformAuditRepository`.
+- [ ] Provisionar `platform_incidents`, `platform_notifications`,
+      `platform_moderation_events` para persistência real.
+- [ ] Widgets de UI para Planos, Assinaturas, Moderação, Incidentes e
+      Notificações Globais (Prompt 15).
+- [ ] Enforcement de MFA para permissões de escrita críticas
+      (`platform.tenants.suspend`, `platform.plans.write`,
+      `platform.admins.write`).
+- [ ] Repositórios Supabase para `EmployeeService` /
+      `AdminAuditService` (herdado do Prompt 13.7, ainda pendente).
