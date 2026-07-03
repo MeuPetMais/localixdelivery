@@ -2979,6 +2979,342 @@ export type Database = {
           },
         ]
       }
+      tenant_branding: {
+        Row: {
+          banner: string | null
+          created_at: string
+          favicon: string | null
+          logo: string | null
+          primary_color: string | null
+          restaurant_id: string
+          secondary_color: string | null
+          social_links_json: Json
+          updated_at: string
+        }
+        Insert: {
+          banner?: string | null
+          created_at?: string
+          favicon?: string | null
+          logo?: string | null
+          primary_color?: string | null
+          restaurant_id: string
+          secondary_color?: string | null
+          social_links_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          banner?: string | null
+          created_at?: string
+          favicon?: string | null
+          logo?: string | null
+          primary_color?: string | null
+          restaurant_id?: string
+          secondary_color?: string | null
+          social_links_json?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_business_settings: {
+        Row: {
+          accept_orders: boolean
+          allow_cancellations: boolean
+          automatic_order_acceptance: boolean
+          business_status: string
+          cancellation_time_limit: number
+          created_at: string
+          holidays_json: Json
+          restaurant_id: string
+          updated_at: string
+          vacation_mode: boolean
+          working_hours_json: Json
+        }
+        Insert: {
+          accept_orders?: boolean
+          allow_cancellations?: boolean
+          automatic_order_acceptance?: boolean
+          business_status?: string
+          cancellation_time_limit?: number
+          created_at?: string
+          holidays_json?: Json
+          restaurant_id: string
+          updated_at?: string
+          vacation_mode?: boolean
+          working_hours_json?: Json
+        }
+        Update: {
+          accept_orders?: boolean
+          allow_cancellations?: boolean
+          automatic_order_acceptance?: boolean
+          business_status?: string
+          cancellation_time_limit?: number
+          created_at?: string
+          holidays_json?: Json
+          restaurant_id?: string
+          updated_at?: string
+          vacation_mode?: boolean
+          working_hours_json?: Json
+        }
+        Relationships: []
+      }
+      tenant_config_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          field: string
+          group_name: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          restaurant_id: string
+          source: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          field: string
+          group_name: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          restaurant_id: string
+          source?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          field?: string
+          group_name?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          restaurant_id?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      tenant_config_versions: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          group_name: string
+          id: string
+          restaurant_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          group_name: string
+          id?: string
+          restaurant_id: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          group_name?: string
+          id?: string
+          restaurant_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: []
+      }
+      tenant_configuration: {
+        Row: {
+          configuration_version: number
+          created_at: string
+          id: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          configuration_version?: number
+          created_at?: string
+          id?: string
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          configuration_version?: number
+          created_at?: string
+          id?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_delivery_settings: {
+        Row: {
+          accept_scheduled_orders: boolean
+          created_at: string
+          delivery_mode: string
+          delivery_radius_km: number
+          driver_assignment_mode: string
+          estimated_delivery_time: number
+          estimated_preparation_time: number
+          maximum_simultaneous_orders: number
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          accept_scheduled_orders?: boolean
+          created_at?: string
+          delivery_mode?: string
+          delivery_radius_km?: number
+          driver_assignment_mode?: string
+          estimated_delivery_time?: number
+          estimated_preparation_time?: number
+          maximum_simultaneous_orders?: number
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          accept_scheduled_orders?: boolean
+          created_at?: string
+          delivery_mode?: string
+          delivery_radius_km?: number
+          driver_assignment_mode?: string
+          estimated_delivery_time?: number
+          estimated_preparation_time?: number
+          maximum_simultaneous_orders?: number
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_features: {
+        Row: {
+          ai_enabled: boolean
+          analytics_enabled: boolean
+          cashback_enabled: boolean
+          coupons_enabled: boolean
+          created_at: string
+          loyalty_enabled: boolean
+          marketing_enabled: boolean
+          restaurant_id: string
+          subscriptions_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          ai_enabled?: boolean
+          analytics_enabled?: boolean
+          cashback_enabled?: boolean
+          coupons_enabled?: boolean
+          created_at?: string
+          loyalty_enabled?: boolean
+          marketing_enabled?: boolean
+          restaurant_id: string
+          subscriptions_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ai_enabled?: boolean
+          analytics_enabled?: boolean
+          cashback_enabled?: boolean
+          coupons_enabled?: boolean
+          created_at?: string
+          loyalty_enabled?: boolean
+          marketing_enabled?: boolean
+          restaurant_id?: string
+          subscriptions_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_notifications: {
+        Row: {
+          created_at: string
+          notify_cancelled_order: boolean
+          notify_delivery: boolean
+          notify_marketing: boolean
+          notify_new_order: boolean
+          notify_payment: boolean
+          preferred_channels_json: Json
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          notify_cancelled_order?: boolean
+          notify_delivery?: boolean
+          notify_marketing?: boolean
+          notify_new_order?: boolean
+          notify_payment?: boolean
+          preferred_channels_json?: Json
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          notify_cancelled_order?: boolean
+          notify_delivery?: boolean
+          notify_marketing?: boolean
+          notify_new_order?: boolean
+          notify_payment?: boolean
+          preferred_channels_json?: Json
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_payment_settings: {
+        Row: {
+          accept_cash: boolean
+          accept_credit: boolean
+          accept_pix: boolean
+          accept_voucher: boolean
+          created_at: string
+          default_gateway: string
+          delivery_fee: number
+          free_delivery_enabled: boolean
+          free_delivery_minimum: number | null
+          maximum_order: number | null
+          minimum_order: number
+          payment_timeout_minutes: number
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          accept_cash?: boolean
+          accept_credit?: boolean
+          accept_pix?: boolean
+          accept_voucher?: boolean
+          created_at?: string
+          default_gateway?: string
+          delivery_fee?: number
+          free_delivery_enabled?: boolean
+          free_delivery_minimum?: number | null
+          maximum_order?: number | null
+          minimum_order?: number
+          payment_timeout_minutes?: number
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          accept_cash?: boolean
+          accept_credit?: boolean
+          accept_pix?: boolean
+          accept_voucher?: boolean
+          created_at?: string
+          default_gateway?: string
+          delivery_fee?: number
+          free_delivery_enabled?: boolean
+          free_delivery_minimum?: number | null
+          maximum_order?: number | null
+          minimum_order?: number
+          payment_timeout_minutes?: number
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
