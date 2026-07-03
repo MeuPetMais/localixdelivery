@@ -54,3 +54,13 @@
 - Sem migrations neste prompt: os repositórios in-memory são substituíveis
   por implementações Supabase quando as tabelas dedicadas forem projetadas
   junto com o Prompt 16.
+
+## Prompt 24 — Go Live & Production Readiness
+
+- Nenhuma mudança de código; somente documentação final.
+- Rollback é atômico (frontend + server functions no mesmo bundle);
+  migrations continuam forward-only e exigem correção via nova migration.
+- Kill switch é o mecanismo preferencial de rollback de features
+  protegidas por flag (evita rollback de release inteiro).
+- Observability e EventBus permanecem in-process em v1.0; persistência
+  durável fica formalmente registrada como pré-requisito de v1.1.
