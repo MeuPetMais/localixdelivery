@@ -172,7 +172,7 @@ describe("CampaignAnalytics", () => {
     expect(m.open_rate).toBe(40);
     expect(m.click_rate).toBe(20);
     expect(m.conversion_rate).toBe(10);
-    expect(m.roi).toBe(4);
+    expect(m.roi).toBe(400);
   });
 
   it("aggregates multiple campaigns", () => {
