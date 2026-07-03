@@ -140,13 +140,18 @@ export const runOrderSplit = createServerFn({ method: "POST" })
 
     let plan = planSplit({ snapshot, account, reconciliation, payment });
 
+    const evtPayload = (extra: Record<string, any> = {}) => ({
+      provider: "mercadopago",
+      orderId: plan.order_id,
+      restaurantId: plan.restaurant_id,
+      paymentId: plan.payment_id,
+      amount: plan.restaurant_amount + plan.platform_amount,
+      currency: "BRL",
+      raw: extra,
+    });
+
     if (plan.status === "PROCESSING") {
-      EventBus.publish({
-        type: "SplitStarted",
-        order_id: plan.order_id!,
-        restaurant_id: plan.restaurant_id!,
-        payment_id: plan.payment_id!,
-      });
+      await EventBus.publish("SplitStarted", evtPayload());
       // Execução real via API MP fica no worker/edge function.
       // Aqui persistimos como PROCESSING para o worker consumir.
       await persistAndPublish(supabaseAdmin, plan);
@@ -156,11 +161,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
     // Terminal (FAILED / MANUAL_REVIEW) — persiste + publica.
     await persistAndPublish(supabaseAdmin, plan);
     if (plan.status === "FAILED") {
-      EventBus.publish({
-        type: "SplitFailed",
-        order_id: plan.order_id,
-        reason: plan.reason ?? "unknown",
-      });
+      await EventBus.publish("SplitFailed", evtPayload({ reason: plan.reason }));
     }
     return plan;
   });
