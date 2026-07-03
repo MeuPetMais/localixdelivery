@@ -1,5 +1,6 @@
 // Reports & Executive Intelligence — shared types.
 import type { FinanceFilters } from "../types";
+import type { Json } from "@/integrations/supabase/types";
 
 export type ReportType =
   // Financial
@@ -43,7 +44,7 @@ export interface ReportRecord {
   restaurant_id: string;
   report_type: ReportType;
   title: string;
-  filters_json: Record<string, unknown>;
+  filters_json: Json;
   generated_by: string | null;
   generated_at: string | null;
   file_format: ExportFormat;
@@ -61,7 +62,7 @@ export interface ScheduledReportRecord {
   name: string;
   frequency: ScheduleFrequency;
   report_type: ReportType;
-  filters_json: Record<string, unknown>;
+  filters_json: Json;
   export_format: ExportFormat;
   enabled: boolean;
   last_execution: string | null;
