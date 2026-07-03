@@ -18,6 +18,7 @@ export const NAVIGATION: NavigationItem[] = [
   { id: "customers", label: "Clientes", to: "/customers", workspace: "customers" },
   { id: "delivery", label: "Entregas", to: "/orders", workspace: "operation" },
   { id: "financial", label: "Financeiro", to: "/finance", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER", "CASHIER"] },
+  { id: "payments", label: "Pagamentos", to: "/pagamentos", workspace: "financial", requiredRoles: ["ADMIN", "MANAGER"] },
   { id: "reports", label: "Relatórios", to: "/finance", workspace: "analytics", requiredRoles: ["ADMIN", "MANAGER"] },
   { id: "notifications", label: "Notificações", to: "/dashboard", workspace: "operation" },
   { id: "marketing", label: "Marketing", to: "/promotions", workspace: "marketing", requiredRoles: ["ADMIN", "MANAGER"] },
