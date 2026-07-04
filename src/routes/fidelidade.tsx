@@ -972,3 +972,256 @@ function FinalCta({ slug }: { slug: string }) {
     </Card>
   );
 }
+
+// -------- Wallet Header --------
+function WalletHeader({
+  name,
+  avatarUrl,
+  restaurantName,
+  level,
+  nextLevel,
+  progress,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  restaurantName: string;
+  level: string | null;
+  nextLevel: { name: string; minimum_points: number; remaining: number } | null;
+  progress: number;
+}) {
+  const initials = name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const pct = Math.round((progress || 0) * 100);
+  return (
+    <Card className="animate-fade-in overflow-hidden border-primary/20">
+      <div className="space-y-3 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-14 w-14 shrink-0 border-2 border-primary/30">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+            <AvatarFallback className="bg-primary/15 text-primary font-semibold">
+              {initials || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-semibold leading-tight">{name}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              em <span className="font-medium text-foreground">{restaurantName}</span>
+            </p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs font-semibold text-amber-600">
+                {level ?? "Sem nível"}
+              </span>
+            </div>
+          </div>
+        </div>
+        {nextLevel ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">{level ?? "—"}</span>
+              <span className="text-muted-foreground">{nextLevel.name}</span>
+            </div>
+            <Progress value={pct} className="h-2.5" />
+            <p className="text-xs text-muted-foreground">
+              Faltam{" "}
+              <b className="tabular-nums text-primary">{nextLevel.remaining} pontos</b>{" "}
+              para <b>{nextLevel.name}</b>.
+            </p>
+          </div>
+        ) : level ? (
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            🎉 Você alcançou o nível máximo.
+          </p>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
+
+// -------- Balance Card (mosaico de KPIs) --------
+function BalanceCard({
+  balance,
+  earned,
+  redeemed,
+  expiring,
+  nextExpiry,
+  historyLoaded,
+}: {
+  balance: number;
+  earned: number;
+  redeemed: number;
+  expiring: number;
+  nextExpiry: { points: number; days: number; expireAt: string } | null;
+  historyLoaded: boolean;
+}) {
+  const animated = useCountUp(balance);
+  return (
+    <Card className="animate-fade-in">
+      <CardContent className="p-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <Star className="h-5 w-5 shrink-0 fill-amber-400 text-amber-400" />
+            <p className="text-3xl font-bold tabular-nums text-primary">{animated}</p>
+            <span className="text-xs text-muted-foreground">pontos disponíveis</span>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <BalanceMini
+            icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-600" />}
+            label="Ganhos"
+            value={historyLoaded ? String(earned) : "…"}
+            tone="emerald"
+          />
+          <BalanceMini
+            icon={<TrendingDown className="h-3.5 w-3.5 text-primary" />}
+            label="Utilizados"
+            value={historyLoaded ? String(redeemed) : "…"}
+            tone="primary"
+          />
+          <BalanceMini
+            icon={<Hourglass className="h-3.5 w-3.5 text-amber-600" />}
+            label="Expirando"
+            value={String(expiring)}
+            tone="amber"
+          />
+        </div>
+        {nextExpiry && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Próxima expiração:{" "}
+            <b className="text-foreground">
+              {nextExpiry.points} pts em {nextExpiry.days}{" "}
+              {nextExpiry.days === 1 ? "dia" : "dias"}
+            </b>
+            {" · "}
+            {new Date(nextExpiry.expireAt).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BalanceMini({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "emerald" | "primary" | "amber";
+}) {
+  const toneCls =
+    tone === "emerald"
+      ? "bg-emerald-500/10 border-emerald-500/20"
+      : tone === "amber"
+        ? "bg-amber-500/10 border-amber-500/20"
+        : "bg-primary/10 border-primary/20";
+  return (
+    <div className={`rounded-lg border p-2 ${toneCls}`}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="mt-0.5 text-lg font-bold tabular-nums leading-tight">{value}</p>
+    </div>
+  );
+}
+
+// -------- Unlocked reward card --------
+function UnlockedRewardCard({
+  name,
+  minimumPoints,
+  slug,
+}: {
+  name: string;
+  minimumPoints: number;
+  slug: string;
+}) {
+  return (
+    <div className="animate-fade-in flex items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-600">
+        {guessRewardIcon(name)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{name}</p>
+        <p className="text-[11px] text-muted-foreground">Desbloqueado · {minimumPoints} pts</p>
+      </div>
+      <Button asChild size="sm" className="shrink-0">
+        <Link to="/$slug" params={{ slug }}>
+          Usar agora
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function UnlockedRewardsSkeleton() {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <Skeleton key={i} className="h-16 w-full" />
+      ))}
+    </div>
+  );
+}
+
+// -------- In-progress benefit row --------
+function InProgressBenefitRow({ b }: { b: InProgressBenefit }) {
+  const pct = Math.round(b.ratio * 100);
+  const emoji =
+    b.trigger_kind === "PRODUCTS"
+      ? "🛍️"
+      : b.trigger_kind === "SPENT"
+        ? "💰"
+        : b.trigger_kind === "ORDERS"
+          ? "📦"
+          : "⭐";
+  const progressLabel =
+    b.unit === "R$"
+      ? `R$ ${b.progress.toFixed(2)} / R$ ${b.target.toFixed(2)}`
+      : `${b.progress} / ${b.target} ${b.unit}`;
+  const remainingLabel =
+    b.remaining <= 0
+      ? "🎉 Desbloqueado! Aplique no próximo pedido."
+      : b.unit === "R$"
+        ? `Faltam R$ ${b.remaining.toFixed(2)}`
+        : `Faltam ${b.remaining} ${b.unit}`;
+  return (
+    <div className="animate-fade-in rounded-lg border border-border/60 p-3">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xl">
+          {emoji}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+            <p className="truncate text-sm font-semibold">{b.name}</p>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {progressLabel}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            Recompensa: <span className="font-medium text-foreground">{b.reward_label}</span>
+          </p>
+          <div className="mt-2 space-y-1">
+            <Progress value={pct} className="h-2" />
+            <p className={`text-xs ${b.unlocked ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}>
+              {remainingLabel}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
