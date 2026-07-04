@@ -1,4 +1,4 @@
-import type { DashboardRole, NavigationItem, WorkspaceDefinition } from "./types";
+import { normalizeRestaurantRole, type DashboardRole, type NavigationItem, type WorkspaceDefinition } from "./types";
 
 export const ROLE_HIERARCHY: Record<DashboardRole, number> = {
   OWNER: 100,
