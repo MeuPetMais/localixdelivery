@@ -155,6 +155,6 @@ export const getMyBenefits = createServerFn({ method: "GET" })
       coupons,
       promotions,
       loyalty,
-      points: { total: pts?.balance ?? 0 },
+      points: { total: pointsTotal },
     };
   });
