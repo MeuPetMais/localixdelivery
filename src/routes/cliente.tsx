@@ -424,14 +424,10 @@ function GoogleIcon() {
 }
 
 function LoyaltyProfileCard() {
-  const session = require("@/contexts/RestaurantSessionContext").useRestaurantSession() as {
-    session: { restaurantSlug: string; restaurantName: string } | null;
-  };
+  const session = useRestaurantSession();
   const slug = session.session?.restaurantSlug ?? "";
-  const summaryFn = require("@tanstack/react-start").useServerFn(
-    require("@/lib/loyalty.functions").getMyLoyaltyForRestaurant,
-  );
-  const { data } = require("@tanstack/react-query").useQuery({
+  const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
+  const { data } = useQuery({
     queryKey: ["loyalty", "summary", slug, "profile"],
     queryFn: () => summaryFn({ data: { slug } }),
     enabled: !!slug,
