@@ -177,6 +177,16 @@ function WalletPage() {
   }
 
 
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "Cliente";
+  const avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined) ||
+    null;
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 pb-32">
       <div className="flex items-center gap-2">
@@ -203,17 +213,75 @@ function WalletPage() {
 
       {s && s.active && (
         <>
-          {/* 1. CARD PRINCIPAL */}
-          <BalanceHero
-            balance={s.balance}
+          {/* 1. CABEÇALHO — avatar, nome, estabelecimento, nível, progresso */}
+          <WalletHeader
+            name={displayName}
+            avatarUrl={avatarUrl}
             restaurantName={s.restaurantName}
             level={s.level}
-            minRedeem={s.settings.min_redeem}
-            availableRewards={availableRewards}
+            nextLevel={s.nextLevel}
+            progress={s.progress}
           />
 
-          {/* 2. BARRA DE PROGRESSO */}
+          {/* 2. CARD SALDO — pontos disponíveis / ganhos / utilizados / expirando */}
+          <BalanceCard
+            balance={s.balance}
+            earned={balanceStats.earned}
+            redeemed={balanceStats.redeemed}
+            expiring={expiringQ.data?.totalExpiring ?? 0}
+            nextExpiry={expiringQ.data?.next ?? null}
+            historyLoaded={!historyQ.isLoading}
+          />
+
+          {/* 3. Próxima recompensa (mantido) */}
           <ProgressCard summary={s} nextReward={nextReward} />
+
+          {/* Alerta de expiração */}
+          {expiringQ.data &&
+            expiringQ.data.totalExpiring > 0 &&
+            expiringQ.data.next && (
+              <Card className="animate-in fade-in slide-in-from-top-2 border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
+                <CardContent className="flex items-start gap-3 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-900 dark:text-amber-200">
+                      {expiringQ.data.next.points} pontos expiram em{" "}
+                      {expiringQ.data.next.days}{" "}
+                      {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
+                    </p>
+                    <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                      Total expirando em até 30 dias:{" "}
+                      {expiringQ.data.totalExpiring} pts.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+          {/* 4. PRÓXIMO PEDIDO */}
+          <NextOrderCard
+            pointsPerReal={s.settings.points_per_real}
+            earnOn={s.settings.earn_on}
+            slug={slug}
+          />
+
+          {/* 5. COMO FUNCIONA */}
+          <HowItWorks
+            pointsPerReal={s.settings.points_per_real}
+            earnOn={s.settings.earn_on}
+            minRedeem={s.settings.min_redeem}
+            validityDays={s.settings.validity_days}
+            maxDiscountPercent={s.settings.max_discount_percent}
+          />
+
+          {/* 6. RECOMPENSAS */}
+          <SectionCard
+            icon={<Trophy className="h-5 w-5 text-amber-500" />}
+            title="Recompensas disponíveis"
+          >
+            {rewardsQ.isLoading ? (
+              <SkeletonRows />
+
 
           {/* Alerta de expiração */}
           {expiringQ.data &&
