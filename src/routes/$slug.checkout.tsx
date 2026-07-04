@@ -18,6 +18,7 @@ import {
 import { applyLoyaltyReserveForOrder } from "@/lib/loyalty.functions";
 import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 import { LoyaltyRedeemBlock } from "@/components/checkout/LoyaltyRedeemBlock";
+import { LoyaltyBenefitsBlock } from "@/components/checkout/LoyaltyBenefitsBlock";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 export const Route = createFileRoute("/$slug/checkout")({
