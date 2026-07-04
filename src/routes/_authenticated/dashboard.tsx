@@ -709,8 +709,8 @@ function Dashboard() {
               </div>
               <div className="min-w-0">
                 <h3 className="truncate font-display text-base font-bold">Fidelidade</h3>
-                <Link to="/loyalty" className="text-xs text-primary hover:underline">
-                  Programa →
+                <Link to="/programa-fidelidade" className="text-xs text-primary hover:underline">
+                  Configurar →
                 </Link>
               </div>
             </div>
