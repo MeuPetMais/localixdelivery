@@ -410,3 +410,12 @@ novas demandas seguem para v1.1.
 Pattern preservado — consumidores externos não conhecem gateways por nome.
 OAuth único vive em `/pagamentos` via `PaymentService.connect`.
 Ver `DOMAIN_MANIFEST_PAYMENT.md` e `PAYMENT_DOMAIN_FINAL_REPORT.md`.
+
+
+## Address Domain
+
+- Fachada única: `AddressService` (`src/lib/address/AddressService.ts`).
+- Provider Pattern (`AddressProvider`) permite trocar Nominatim → Google Places / Mapbox / HERE / TomTom sem alterar Checkout.
+- Checkout consome apenas `search()`, `details()`, `validateDeliveryArea()`.
+- Cache de recentes em `localStorage`; debounce 300ms no componente.
+- Ver `ADDRESS_AUTOCOMPLETE.md`.

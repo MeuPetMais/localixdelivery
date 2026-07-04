@@ -15,6 +15,7 @@ import {
   previewCheckoutPricing,
   type CheckoutMethod,
 } from "@/lib/checkout/OrderService";
+import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 
 export const Route = createFileRoute("/$slug/checkout")({
   ssr: false,
@@ -44,7 +45,7 @@ function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState<SelectedAddress | null>(null);
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<CheckoutMethod>("pix");
   const [deliveryFee] = useState(0);
@@ -101,19 +102,22 @@ function CheckoutPage() {
     };
   }, [subtotal, deliveryFee, couponDiscount, method, preview]);
 
+  const addressComplete = !!address && !!(address.number || address.numberOverride);
   const canSubmit =
     !!pricing &&
     !pricingError &&
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
-    address.trim();
+    addressComplete;
 
   async function confirm() {
     if (!canSubmit) {
       if (!cart.length) toast.error("Seu carrinho está vazio");
       else if (pricingError) toast.error(pricingError);
-      else toast.error("Preencha nome, telefone e endereço");
+      else if (!address) toast.error("Selecione um endereço");
+      else if (!addressComplete) toast.error("Informe o número do endereço");
+      else toast.error("Preencha nome e telefone");
       return;
     }
     setSubmitting(true);
@@ -121,7 +125,7 @@ function CheckoutPage() {
       const res = await create({
         data: {
           restaurantSlug: slug,
-          customer: { name, phone, address, notes },
+          customer: { name, phone, address: formatFullAddress(address!), notes },
           items: cart,
           paymentMethod: method,
           deliveryFee,
@@ -174,8 +178,8 @@ function CheckoutPage() {
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Endereço</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Label>Endereço de entrega</Label>
+            <AddressAutocomplete value={address} onChange={setAddress} restaurantSlug={slug} autoFocus={!address} />
           </div>
           <div className="space-y-1.5">
             <Label>Observações (opcional)</Label>
