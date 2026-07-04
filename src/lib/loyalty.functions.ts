@@ -565,7 +565,7 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
           .from("orders")
           .select("total, items, status")
           .eq("restaurant_id", rest.id)
-          .eq("customer_id", customerId)
+          .eq("customer_id", context.userId)
           .not("status", "eq", "cancelado"),
       ]);
       lifetime = Number(cl?.lifetime_points ?? 0);
