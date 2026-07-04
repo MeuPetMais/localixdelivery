@@ -213,7 +213,7 @@ export function AddressAutocomplete({
                 aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => void select(s)}
-                className={`flex w-full items-start gap-2 rounded-md p-2 text-left text-sm ${i === active ? "bg-muted" : "hover:bg-muted"}`}
+                className={`flex min-h-14 w-full items-start gap-2 rounded-md p-2 text-left text-sm ${i === active ? "bg-muted" : "hover:bg-muted"}`}
               >
                 <MapPin className="mt-0.5 h-4 w-4 text-primary" />
                 <div className="min-w-0">
