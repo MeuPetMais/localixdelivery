@@ -34,6 +34,7 @@ function FidelidadePage() {
   const slug = session.session?.restaurantSlug ?? "";
   const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
   const historyFn = useServerFn(getMyLoyaltyHistory);
+  const expiringFn = useServerFn(getMyExpiringPoints);
   const [filter, setFilter] = useState<Filter>("all");
 
   const summaryQ = useQuery({
