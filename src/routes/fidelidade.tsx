@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sparkles,
   Gift,
@@ -27,6 +28,9 @@ import {
   PartyPopper,
   Utensils,
   Clock,
+  TrendingUp,
+  TrendingDown,
+  Target,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -38,7 +42,9 @@ import {
   getMyExpiringPoints,
   getRestaurantRewards,
   getRestaurantCoupons,
+  getMyInProgressBenefits,
   type LoyaltyTransaction,
+  type InProgressBenefit,
 } from "@/lib/loyalty.functions";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
@@ -47,6 +53,7 @@ export const Route = createFileRoute("/fidelidade")({
   head: () => ({ meta: [{ title: "Minha Carteira — Localix" }] }),
   component: WalletPage,
 });
+
 
 type Filter = "all" | "earn" | "redeem" | "expire" | "bonus";
 
