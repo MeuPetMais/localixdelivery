@@ -102,19 +102,22 @@ function CheckoutPage() {
     };
   }, [subtotal, deliveryFee, couponDiscount, method, preview]);
 
+  const addressComplete = !!address && !!(address.number || address.numberOverride);
   const canSubmit =
     !!pricing &&
     !pricingError &&
     cart.length > 0 &&
     name.trim() &&
     phone.trim() &&
-    address.trim();
+    addressComplete;
 
   async function confirm() {
     if (!canSubmit) {
       if (!cart.length) toast.error("Seu carrinho está vazio");
       else if (pricingError) toast.error(pricingError);
-      else toast.error("Preencha nome, telefone e endereço");
+      else if (!address) toast.error("Selecione um endereço");
+      else if (!addressComplete) toast.error("Informe o número do endereço");
+      else toast.error("Preencha nome e telefone");
       return;
     }
     setSubmitting(true);
@@ -122,7 +125,7 @@ function CheckoutPage() {
       const res = await create({
         data: {
           restaurantSlug: slug,
-          customer: { name, phone, address, notes },
+          customer: { name, phone, address: formatFullAddress(address!), notes },
           items: cart,
           paymentMethod: method,
           deliveryFee,
