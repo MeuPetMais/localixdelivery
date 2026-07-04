@@ -113,6 +113,7 @@ export function AddressAutocomplete({
               <Label>Número *</Label>
               <Input
                 required
+                autoFocus
                 inputMode="numeric"
                 value={value.numberOverride ?? ""}
                 onChange={(e) => onChange({ ...value, numberOverride: e.target.value })}
@@ -152,7 +153,7 @@ export function AddressAutocomplete({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="🔍 Buscar endereço..."
+          placeholder="Digite sua rua, avenida ou CEP"
           aria-autocomplete="list"
           aria-expanded={open}
         />
@@ -213,7 +214,7 @@ export function AddressAutocomplete({
                 aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => void select(s)}
-                className={`flex w-full items-start gap-2 rounded-md p-2 text-left text-sm ${i === active ? "bg-muted" : "hover:bg-muted"}`}
+                className={`flex min-h-14 w-full items-start gap-2 rounded-md p-2 text-left text-sm ${i === active ? "bg-muted" : "hover:bg-muted"}`}
               >
                 <MapPin className="mt-0.5 h-4 w-4 text-primary" />
                 <div className="min-w-0">
