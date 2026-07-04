@@ -78,8 +78,8 @@ export function BottomNav() {
               ? ({ to: "/$slug", params: { slug: activeSlug } } as const)
               : isHome
                 ? ({ to: "/home" } as const)
-                : key === "beneficios"
-                  ? ({ to: "/beneficios" } as const)
+                : key === "carteira"
+                  ? ({ to: "/fidelidade" } as const)
                   : key === "favoritos"
                     ? ({ to: "/favoritos" } as const)
                     : key === "pedidos"
