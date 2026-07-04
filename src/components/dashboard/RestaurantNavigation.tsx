@@ -11,6 +11,8 @@ interface Props {
 }
 
 export function RestaurantNavigation({ role, workspace, collapsed }: Props) {
+  // eslint-disable-next-line no-console
+  console.log("__NAVIGATION_RENDER__");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const sections = useMemo(() => {
