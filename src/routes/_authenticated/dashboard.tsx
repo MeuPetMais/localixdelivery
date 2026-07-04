@@ -49,6 +49,9 @@ import {
   UserPlus,
   PackagePlus,
   PackageCheck,
+  QrCode,
+  BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
