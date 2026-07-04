@@ -210,6 +210,9 @@ function CheckoutPage() {
         </CardContent>
       </Card>
 
+      {/* Benefícios do programa (informativo — reutiliza loyalty_rules) */}
+      <LoyaltyBenefitsBlock slug={slug} authenticated={!!user} />
+
       {/* Fidelidade — antes da forma de pagamento */}
       <LoyaltyRedeemBlock
         slug={slug}
