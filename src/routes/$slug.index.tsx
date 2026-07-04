@@ -723,7 +723,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         <FeaturedSections
           slug={slug}
           effectiveOpen={effectiveOpen}
-          onAdd={(it) => { add({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price) }); toast.success(`${it.name} adicionado`); }}
+          onAdd={(it) => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price), image_url: (it as any).image_url })}
           onOpenBuilder={(builderId) => navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builderId } as any })}
         />
 
