@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sparkles,
   Gift,
@@ -27,6 +28,9 @@ import {
   PartyPopper,
   Utensils,
   Clock,
+  TrendingUp,
+  TrendingDown,
+  Target,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -38,7 +42,9 @@ import {
   getMyExpiringPoints,
   getRestaurantRewards,
   getRestaurantCoupons,
+  getMyInProgressBenefits,
   type LoyaltyTransaction,
+  type InProgressBenefit,
 } from "@/lib/loyalty.functions";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
@@ -47,6 +53,7 @@ export const Route = createFileRoute("/fidelidade")({
   head: () => ({ meta: [{ title: "Minha Carteira — Localix" }] }),
   component: WalletPage,
 });
+
 
 type Filter = "all" | "earn" | "redeem" | "expire" | "bonus";
 
@@ -88,6 +95,7 @@ function WalletPage() {
   const expiringFn = useServerFn(getMyExpiringPoints);
   const rewardsFn = useServerFn(getRestaurantRewards);
   const couponsFn = useServerFn(getRestaurantCoupons);
+  const benefitsFn = useServerFn(getMyInProgressBenefits);
   const [filter, setFilter] = useState<Filter>("all");
 
   const summaryQ = useQuery({
@@ -96,8 +104,8 @@ function WalletPage() {
     enabled: !!user && !!slug,
   });
   const historyQ = useQuery({
-    queryKey: ["loyalty", "history", slug, filter],
-    queryFn: () => historyFn({ data: { slug, filter } }),
+    queryKey: ["loyalty", "history", slug],
+    queryFn: () => historyFn({ data: { slug, filter: "all" } }),
     enabled: !!user && !!slug,
   });
   const expiringQ = useQuery({
@@ -115,10 +123,28 @@ function WalletPage() {
     queryFn: () => couponsFn({ data: { slug } }),
     enabled: !!user && !!slug,
   });
+  const benefitsQ = useQuery({
+    queryKey: ["loyalty", "benefits", slug],
+    queryFn: () => benefitsFn({ data: { slug } }),
+    enabled: !!user && !!slug,
+  });
 
   const s = summaryQ.data;
   const rewards = rewardsQ.data ?? [];
   const coupons = couponsQ.data ?? [];
+  const benefits = benefitsQ.data ?? [];
+  const allTxs = historyQ.data ?? [];
+
+  // KPIs derivados do histórico
+  const balanceStats = useMemo(() => {
+    let earned = 0, redeemed = 0, expired = 0;
+    for (const t of allTxs) {
+      if (t.type === "EARN" || t.type === "BONUS") earned += Math.max(0, t.points);
+      else if (t.type === "REDEEM") redeemed += Math.max(0, -t.points);
+      else if (t.type === "EXPIRE") expired += Math.max(0, -t.points);
+    }
+    return { earned, redeemed, expired };
+  }, [allTxs]);
 
   // Próxima recompensa alcançável (menor minimum_points > balance)
   const nextReward = useMemo(() => {
@@ -131,6 +157,7 @@ function WalletPage() {
     () => rewards.filter((r) => s && r.minimum_points <= s.balance),
     [rewards, s],
   );
+
 
   if (loading || !user) {
     return (
@@ -149,6 +176,16 @@ function WalletPage() {
     );
   }
 
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "Cliente";
+  const avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined) ||
+    null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 pb-32">
@@ -176,16 +213,27 @@ function WalletPage() {
 
       {s && s.active && (
         <>
-          {/* 1. CARD PRINCIPAL */}
-          <BalanceHero
-            balance={s.balance}
+          {/* 1. CABEÇALHO — avatar, nome, estabelecimento, nível, progresso */}
+          <WalletHeader
+            name={displayName}
+            avatarUrl={avatarUrl}
             restaurantName={s.restaurantName}
             level={s.level}
-            minRedeem={s.settings.min_redeem}
-            availableRewards={availableRewards}
+            nextLevel={s.nextLevel}
+            progress={s.progress}
           />
 
-          {/* 2. BARRA DE PROGRESSO */}
+          {/* 2. CARD SALDO — pontos disponíveis / ganhos / utilizados / expirando */}
+          <BalanceCard
+            balance={s.balance}
+            earned={balanceStats.earned}
+            redeemed={balanceStats.redeemed}
+            expiring={expiringQ.data?.totalExpiring ?? 0}
+            nextExpiry={expiringQ.data?.next ?? null}
+            historyLoaded={!historyQ.isLoading}
+          />
+
+          {/* 3. Próxima recompensa (mantido) */}
           <ProgressCard summary={s} nextReward={nextReward} />
 
           {/* Alerta de expiração */}
@@ -210,25 +258,70 @@ function WalletPage() {
               </Card>
             )}
 
-          {/* 3. PRÓXIMO PEDIDO */}
+          {/* 4. PRÓXIMO PEDIDO */}
           <NextOrderCard
             pointsPerReal={s.settings.points_per_real}
             earnOn={s.settings.earn_on}
             slug={slug}
           />
 
-          {/* 4. COMO FUNCIONA */}
+          {/* 5. COMO FUNCIONA */}
           <HowItWorks
             pointsPerReal={s.settings.points_per_real}
             earnOn={s.settings.earn_on}
             minRedeem={s.settings.min_redeem}
             validityDays={s.settings.validity_days}
+            maxDiscountPercent={s.settings.max_discount_percent}
           />
 
-          {/* 5. RECOMPENSAS */}
+          {/* 6. RECOMPENSAS DESBLOQUEADAS */}
           <SectionCard
             icon={<Trophy className="h-5 w-5 text-amber-500" />}
             title="Recompensas disponíveis"
+          >
+            {rewardsQ.isLoading ? (
+              <UnlockedRewardsSkeleton />
+            ) : availableRewards.length === 0 ? (
+              <EmptyState
+                emoji="🎁"
+                title="Nenhuma recompensa disponível ainda."
+                subtitle="Continue acumulando para desbloquear seus primeiros benefícios."
+              />
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {availableRewards.map((r) => (
+                  <UnlockedRewardCard key={r.name} name={r.name} minimumPoints={r.minimum_points} slug={slug} />
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* 7. BENEFÍCIOS EM ANDAMENTO */}
+          <SectionCard
+            icon={<Target className="h-5 w-5 text-primary" />}
+            title="Benefícios em andamento"
+          >
+            {benefitsQ.isLoading ? (
+              <SkeletonRows />
+            ) : benefits.length === 0 ? (
+              <EmptyState
+                emoji="✨"
+                title="Nenhuma campanha ativa."
+                subtitle="Novos benefícios aparecerão aqui."
+              />
+            ) : (
+              <div className="space-y-2">
+                {benefits.map((b) => (
+                  <InProgressBenefitRow key={b.id} b={b} />
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* 8. TODAS AS RECOMPENSAS DO PROGRAMA (níveis) */}
+          <SectionCard
+            icon={<Sparkles className="h-5 w-5 text-amber-500" />}
+            title="Todas as recompensas do programa"
           >
             {rewardsQ.isLoading ? (
               <SkeletonRows />
@@ -236,7 +329,7 @@ function WalletPage() {
               <EmptyState
                 emoji="🎁"
                 title="Ainda não existem recompensas."
-                subtitle="Continue comprando. Novas recompensas aparecerão aqui."
+                subtitle="O restaurante ainda não configurou níveis."
               />
             ) : (
               <div className="space-y-2">
@@ -284,6 +377,8 @@ function WalletPage() {
             )}
           </SectionCard>
 
+
+
           {/* 6. CUPONS */}
           <SectionCard
             icon={<Ticket className="h-5 w-5 text-primary" />}
@@ -330,7 +425,13 @@ function WalletPage() {
               <SkeletonRows />
             ) : (
               (() => {
-                const visible = (historyQ.data ?? []).filter(isCustomerFacing);
+                const filterMap: Record<Filter, string | null> = {
+                  all: null, earn: "EARN", redeem: "REDEEM", expire: "EXPIRE", bonus: "BONUS",
+                };
+                const wanted = filterMap[filter];
+                const visible = allTxs
+                  .filter(isCustomerFacing)
+                  .filter((t) => (wanted ? t.type === wanted : true));
                 if (visible.length === 0) {
                   return (
                     <EmptyState
@@ -579,11 +680,13 @@ function HowItWorks({
   earnOn,
   minRedeem,
   validityDays,
+  maxDiscountPercent,
 }: {
   pointsPerReal: number;
   earnOn: "paid" | "delivered";
   minRedeem: number;
   validityDays: number;
+  maxDiscountPercent: number;
 }) {
   const items = [
     {
@@ -608,6 +711,11 @@ function HowItWorks({
       icon: <Hourglass className="h-5 w-5 text-amber-600" />,
       title: "Validade",
       desc: `${validityDays} dias após ganhar.`,
+    },
+    {
+      icon: <Ticket className="h-5 w-5 text-primary" />,
+      title: "Desconto máximo",
+      desc: `até ${maxDiscountPercent}% do valor do pedido.`,
     },
   ];
   return (
@@ -864,3 +972,256 @@ function FinalCta({ slug }: { slug: string }) {
     </Card>
   );
 }
+
+// -------- Wallet Header --------
+function WalletHeader({
+  name,
+  avatarUrl,
+  restaurantName,
+  level,
+  nextLevel,
+  progress,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  restaurantName: string;
+  level: string | null;
+  nextLevel: { name: string; minimum_points: number; remaining: number } | null;
+  progress: number;
+}) {
+  const initials = name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const pct = Math.round((progress || 0) * 100);
+  return (
+    <Card className="animate-fade-in overflow-hidden border-primary/20">
+      <div className="space-y-3 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-14 w-14 shrink-0 border-2 border-primary/30">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+            <AvatarFallback className="bg-primary/15 text-primary font-semibold">
+              {initials || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-semibold leading-tight">{name}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              em <span className="font-medium text-foreground">{restaurantName}</span>
+            </p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs font-semibold text-amber-600">
+                {level ?? "Sem nível"}
+              </span>
+            </div>
+          </div>
+        </div>
+        {nextLevel ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">{level ?? "—"}</span>
+              <span className="text-muted-foreground">{nextLevel.name}</span>
+            </div>
+            <Progress value={pct} className="h-2.5" />
+            <p className="text-xs text-muted-foreground">
+              Faltam{" "}
+              <b className="tabular-nums text-primary">{nextLevel.remaining} pontos</b>{" "}
+              para <b>{nextLevel.name}</b>.
+            </p>
+          </div>
+        ) : level ? (
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            🎉 Você alcançou o nível máximo.
+          </p>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
+
+// -------- Balance Card (mosaico de KPIs) --------
+function BalanceCard({
+  balance,
+  earned,
+  redeemed,
+  expiring,
+  nextExpiry,
+  historyLoaded,
+}: {
+  balance: number;
+  earned: number;
+  redeemed: number;
+  expiring: number;
+  nextExpiry: { points: number; days: number; expireAt: string } | null;
+  historyLoaded: boolean;
+}) {
+  const animated = useCountUp(balance);
+  return (
+    <Card className="animate-fade-in">
+      <CardContent className="p-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <Star className="h-5 w-5 shrink-0 fill-amber-400 text-amber-400" />
+            <p className="text-3xl font-bold tabular-nums text-primary">{animated}</p>
+            <span className="text-xs text-muted-foreground">pontos disponíveis</span>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <BalanceMini
+            icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-600" />}
+            label="Ganhos"
+            value={historyLoaded ? String(earned) : "…"}
+            tone="emerald"
+          />
+          <BalanceMini
+            icon={<TrendingDown className="h-3.5 w-3.5 text-primary" />}
+            label="Utilizados"
+            value={historyLoaded ? String(redeemed) : "…"}
+            tone="primary"
+          />
+          <BalanceMini
+            icon={<Hourglass className="h-3.5 w-3.5 text-amber-600" />}
+            label="Expirando"
+            value={String(expiring)}
+            tone="amber"
+          />
+        </div>
+        {nextExpiry && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Próxima expiração:{" "}
+            <b className="text-foreground">
+              {nextExpiry.points} pts em {nextExpiry.days}{" "}
+              {nextExpiry.days === 1 ? "dia" : "dias"}
+            </b>
+            {" · "}
+            {new Date(nextExpiry.expireAt).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BalanceMini({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "emerald" | "primary" | "amber";
+}) {
+  const toneCls =
+    tone === "emerald"
+      ? "bg-emerald-500/10 border-emerald-500/20"
+      : tone === "amber"
+        ? "bg-amber-500/10 border-amber-500/20"
+        : "bg-primary/10 border-primary/20";
+  return (
+    <div className={`rounded-lg border p-2 ${toneCls}`}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="mt-0.5 text-lg font-bold tabular-nums leading-tight">{value}</p>
+    </div>
+  );
+}
+
+// -------- Unlocked reward card --------
+function UnlockedRewardCard({
+  name,
+  minimumPoints,
+  slug,
+}: {
+  name: string;
+  minimumPoints: number;
+  slug: string;
+}) {
+  return (
+    <div className="animate-fade-in flex items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-600">
+        {guessRewardIcon(name)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{name}</p>
+        <p className="text-[11px] text-muted-foreground">Desbloqueado · {minimumPoints} pts</p>
+      </div>
+      <Button asChild size="sm" className="shrink-0">
+        <Link to="/$slug" params={{ slug }}>
+          Usar agora
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function UnlockedRewardsSkeleton() {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <Skeleton key={i} className="h-16 w-full" />
+      ))}
+    </div>
+  );
+}
+
+// -------- In-progress benefit row --------
+function InProgressBenefitRow({ b }: { b: InProgressBenefit }) {
+  const pct = Math.round(b.ratio * 100);
+  const emoji =
+    b.trigger_kind === "PRODUCTS"
+      ? "🛍️"
+      : b.trigger_kind === "SPENT"
+        ? "💰"
+        : b.trigger_kind === "ORDERS"
+          ? "📦"
+          : "⭐";
+  const progressLabel =
+    b.unit === "R$"
+      ? `R$ ${b.progress.toFixed(2)} / R$ ${b.target.toFixed(2)}`
+      : `${b.progress} / ${b.target} ${b.unit}`;
+  const remainingLabel =
+    b.remaining <= 0
+      ? "🎉 Desbloqueado! Aplique no próximo pedido."
+      : b.unit === "R$"
+        ? `Faltam R$ ${b.remaining.toFixed(2)}`
+        : `Faltam ${b.remaining} ${b.unit}`;
+  return (
+    <div className="animate-fade-in rounded-lg border border-border/60 p-3">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xl">
+          {emoji}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+            <p className="truncate text-sm font-semibold">{b.name}</p>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {progressLabel}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            Recompensa: <span className="font-medium text-foreground">{b.reward_label}</span>
+          </p>
+          <div className="mt-2 space-y-1">
+            <Progress value={pct} className="h-2" />
+            <p className={`text-xs ${b.unlocked ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}>
+              {remainingLabel}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
