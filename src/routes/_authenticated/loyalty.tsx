@@ -16,7 +16,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Loader2, Plus, Trash2, Ticket, Sparkles, Settings, Gift, Trophy, Users, BarChart3,
   Megaphone, Percent, DollarSign, Timer, AlertTriangle, Activity, Crown,
+  Pencil, Copy, Pause, Play, Truck, Package, ChevronRight, ChevronLeft, Check,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   getRestaurantLoyaltySettings, saveRestaurantLoyaltySettings,
@@ -160,144 +163,486 @@ function SettingsTab({ restaurantId }: { restaurantId: string }) {
   );
 }
 
-// ---------------- 2. Benefícios (cupons + tipos) ----------------
-type Coupon = {
-  id: string; restaurant_id: string; code: string; discount_percent: number;
-  valid_until: string | null; is_active: boolean; uses_count: number;
+// ---------------- 2. Benefícios (campanhas de recompensa) ----------------
+// Persistência: tabela existente `loyalty_rules` (rule_type + config jsonb).
+// Nenhuma regra de domínio é alterada — a UI é apenas um catálogo editável
+// sobre a mesma tabela que a aba Campanhas já consome.
+
+type BenefitType =
+  | "FREE_PRODUCT" | "DISCOUNT" | "FREE_DELIVERY"
+  | "CASHBACK"     | "COUPON"   | "GIFT";
+
+type TriggerKind = "POINTS" | "ORDERS" | "PRODUCTS" | "SPENT";
+
+type BenefitConfig = {
+  ui_kind: BenefitType;
+  trigger: { kind: TriggerKind; qty: number; product_name?: string };
+  reward: {
+    product_name?: string;
+    discount_percent?: number;
+    cashback_amount?: number;
+    coupon_code?: string;
+    gift_note?: string;
+  };
+  starts_at?: string | null;
+  ends_at?: string | null;
 };
 
-const BENEFIT_TYPES = [
-  { key: "DISCOUNT", label: "Desconto", icon: Percent },
-  { key: "FREE_PRODUCT", label: "Produto grátis", icon: Gift },
-  { key: "FREE_DELIVERY", label: "Frete grátis", icon: Ticket },
-  { key: "CASHBACK", label: "Cashback", icon: DollarSign },
-  { key: "COUPON", label: "Cupom", icon: Ticket },
-  { key: "GIFT", label: "Brinde", icon: Sparkles },
+type Benefit = {
+  id: string; restaurant_id: string; name: string; rule_type: string;
+  config: BenefitConfig | any; active: boolean;
+  starts_at: string | null; ends_at: string | null; priority: number;
+};
+
+const BENEFIT_TYPES: Array<{
+  key: BenefitType; label: string; icon: any; hint: string; supported: boolean;
+}> = [
+  { key: "FREE_PRODUCT",  label: "Produto grátis", icon: Gift,       hint: "Junte X e ganhe um",              supported: true },
+  { key: "DISCOUNT",      label: "Desconto",       icon: Percent,    hint: "% em pedidos elegíveis",           supported: true },
+  { key: "FREE_DELIVERY", label: "Frete grátis",   icon: Truck,      hint: "Isentar taxa de entrega",          supported: true },
+  { key: "CASHBACK",      label: "Cashback",       icon: DollarSign, hint: "Valor em R$ para próxima compra",  supported: true },
+  { key: "COUPON",        label: "Cupom",          icon: Ticket,     hint: "Código promocional",               supported: true },
+  { key: "GIFT",          label: "Brinde",         icon: Package,    hint: "Item cortesia sem custo extra",    supported: true },
 ];
 
+const TRIGGER_LABEL: Record<TriggerKind, string> = {
+  POINTS: "Pontos acumulados", ORDERS: "Nº de pedidos",
+  PRODUCTS: "Nº de produtos",  SPENT: "Valor gasto (R$)",
+};
+
+function typeMeta(k: BenefitType) { return BENEFIT_TYPES.find((t) => t.key === k) ?? BENEFIT_TYPES[0]; }
+
+function describeTrigger(c: BenefitConfig): string {
+  const t = c?.trigger; if (!t) return "—";
+  switch (t.kind) {
+    case "POINTS":   return `Acumule ${t.qty} pontos`;
+    case "ORDERS":   return `Complete ${t.qty} pedidos`;
+    case "PRODUCTS": return `Compre ${t.qty} ${t.product_name || "produtos"}`;
+    case "SPENT":    return `Gaste ${brl(Number(t.qty || 0))}`;
+  }
+}
+function describeReward(c: BenefitConfig): string {
+  const r = c?.reward ?? {}; const k = c?.ui_kind;
+  if (k === "FREE_PRODUCT") return `Ganhe 1 ${r.product_name || "produto"}`;
+  if (k === "DISCOUNT")     return `${r.discount_percent ?? 0}% de desconto`;
+  if (k === "FREE_DELIVERY")return `Frete grátis`;
+  if (k === "CASHBACK")     return `${brl(Number(r.cashback_amount || 0))} de cashback`;
+  if (k === "COUPON")       return `Cupom ${r.coupon_code || ""}`.trim();
+  if (k === "GIFT")         return `Brinde: ${r.gift_note || "cortesia"}`;
+  return "—";
+}
+
 function BenefitsTab({ restaurantId }: { restaurantId: string }) {
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [code, setCode] = useState("");
-  const [percent, setPercent] = useState(10);
-  const [validUntil, setValidUntil] = useState("");
+  const qc = useQueryClient();
+  const listQ = useQuery({
+    queryKey: ["loyalty-benefits", restaurantId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("loyalty_rules").select("*")
+        .eq("restaurant_id", restaurantId).order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Benefit[];
+    },
+  });
 
-  async function refresh() {
-    setLoading(true);
-    const { data } = await supabase.from("coupons").select("*")
-      .eq("restaurant_id", restaurantId).order("created_at", { ascending: false });
-    setCoupons((data ?? []) as Coupon[]);
-    setLoading(false);
-  }
-  useEffect(() => { refresh(); }, [restaurantId]);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editing, setEditing]       = useState<Benefit | null>(null);
+  const [seedType, setSeedType]     = useState<BenefitType | null>(null);
 
-  async function createCoupon(e: React.FormEvent) {
-    e.preventDefault();
-    if (!code.trim() || percent < 1 || percent > 100) return toast.error("Preencha código e percentual válido");
-    setCreating(true);
-    const { error } = await supabase.from("coupons").insert({
-      restaurant_id: restaurantId, code: code.trim().toUpperCase(),
-      discount_percent: percent, valid_until: validUntil || null, is_active: true,
-    });
-    setCreating(false);
-    if (error) return toast.error(error.message);
-    setCode(""); setPercent(10); setValidUntil("");
-    toast.success("Cupom criado!");
-    refresh();
-  }
-  async function toggle(c: Coupon) {
-    const { error } = await supabase.from("coupons").update({ is_active: !c.is_active }).eq("id", c.id);
-    if (error) return toast.error(error.message); refresh();
-  }
-  async function remove(id: string) {
-    if (!confirm("Excluir este cupom?")) return;
-    const { error } = await supabase.from("coupons").delete().eq("id", id);
-    if (error) return toast.error(error.message); refresh();
-  }
+  function openNew(t?: BenefitType) { setEditing(null); setSeedType(t ?? null); setWizardOpen(true); }
+  function openEdit(b: Benefit)     { setEditing(b);    setSeedType(null);      setWizardOpen(true); }
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("loyalty_rules").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Benefício excluído"); qc.invalidateQueries({ queryKey: ["loyalty-benefits"] }); },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir"),
+  });
+  const toggle = useMutation({
+    mutationFn: async (b: Benefit) => {
+      const { error } = await supabase.from("loyalty_rules").update({ active: !b.active }).eq("id", b.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["loyalty-benefits"] }),
+    onError: (e: any) => toast.error(e?.message ?? "Falha"),
+  });
+  const duplicate = useMutation({
+    mutationFn: async (b: Benefit) => {
+      const { error } = await supabase.from("loyalty_rules").insert({
+        restaurant_id: restaurantId,
+        name: `${b.name} (cópia)`,
+        rule_type: b.rule_type,
+        config: b.config,
+        active: false,
+        starts_at: b.starts_at,
+        ends_at: b.ends_at,
+        priority: (b.priority ?? 0) + 1,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Duplicado"); qc.invalidateQueries({ queryKey: ["loyalty-benefits"] }); },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao duplicar"),
+  });
+
+  const rows = listQ.data ?? [];
 
   return (
     <div className="space-y-4">
+      {/* Cabeçalho orientado ao negócio */}
       <Card>
         <CardContent className="p-5">
-          <p className="mb-3 text-sm font-semibold">Tipos de benefícios suportados</p>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
-            {BENEFIT_TYPES.map(({ key, label, icon: Icon }) => (
-              <div key={key} className="flex items-center gap-2 rounded-lg border p-3 text-sm">
-                <Icon className="h-4 w-4 text-primary" />
-                <span>{label}</span>
-              </div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-bold">Central de Benefícios</h2>
+              <p className="text-sm text-muted-foreground">
+                Crie campanhas como "junte 10 pizzas e ganhe outra", "gaste R$300 e ganhe frete grátis" ou "500 pontos = 1 produto".
+              </p>
+            </div>
+            <Button onClick={() => openNew()}><Plus className="mr-1.5 h-4 w-4" />Nova campanha</Button>
+          </div>
+
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comece por um tipo</p>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
+            {BENEFIT_TYPES.map(({ key, label, icon: Icon, hint, supported }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={!supported}
+                onClick={() => openNew(key)}
+                title={supported ? `Criar ${label}` : "Disponível em breve."}
+                className="group flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <p className="text-sm font-semibold">{label}</p>
+                <p className="text-xs text-muted-foreground">{hint}</p>
+              </button>
             ))}
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Hoje o resgate acontece via pontos no checkout e via cupons abaixo. Novos tipos serão liberados nos próximos ciclos.
-          </p>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardContent className="p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold">
-              <Plus className="h-4 w-4" /> Novo cupom
-            </h2>
-            <form onSubmit={createCoupon} className="space-y-3">
-              <div className="space-y-1.5"><Label>Código</Label>
-                <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="BEMVINDO10" maxLength={40} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label>Desconto (%)</Label>
-                  <Input type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(Number(e.target.value))} />
-                </div>
-                <div className="space-y-1.5"><Label>Válido até</Label>
-                  <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar cupom"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold">
-              <Ticket className="h-4 w-4" /> Cupons ativos
-            </h2>
-            {loading ? <LoadingCard inline /> : coupons.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Nenhum cupom criado ainda.</p>
-            ) : (
-              <div className="max-h-[380px] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="py-2 pr-2">Código</th><th className="py-2 pr-2">%</th>
-                      <th className="py-2 pr-2">Usos</th><th className="py-2 pr-2">Ativo</th><th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {coupons.map((c) => (
-                      <tr key={c.id} className="border-b last:border-0">
-                        <td className="py-2 pr-2 font-mono font-semibold">{c.code}</td>
-                        <td className="py-2 pr-2">{c.discount_percent}%</td>
-                        <td className="py-2 pr-2">{c.uses_count}</td>
-                        <td className="py-2 pr-2"><Switch checked={c.is_active} onCheckedChange={() => toggle(c)} /></td>
-                        <td className="py-2 text-right">
-                          <Button variant="ghost" size="icon" onClick={() => remove(c.id)} className="h-8 w-8 text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+      {/* Lista */}
+      <Card>
+        <CardContent className="p-0">
+          {listQ.isLoading ? <LoadingCard inline /> : rows.length === 0 ? (
+            <div className="p-8 text-center">
+              <Gift className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+              <p className="text-sm font-medium">Nenhuma campanha cadastrada</p>
+              <p className="mb-3 text-xs text-muted-foreground">Escolha um tipo acima ou clique em "Nova campanha".</p>
+              <Button size="sm" onClick={() => openNew()}><Plus className="mr-1.5 h-4 w-4" />Criar primeira campanha</Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b">
+                    <th className="p-3">Nome</th>
+                    <th className="p-3">Tipo</th>
+                    <th className="p-3">Como desbloquear</th>
+                    <th className="p-3">Recompensa</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((b) => {
+                    const cfg: BenefitConfig = (b.config as any) ?? { ui_kind: "DISCOUNT", trigger: { kind: "POINTS", qty: 0 }, reward: {} };
+                    const meta = typeMeta(cfg.ui_kind);
+                    const Icon = meta.icon;
+                    return (
+                      <tr key={b.id} className="border-b last:border-0 align-top">
+                        <td className="p-3 font-medium">{b.name}</td>
+                        <td className="p-3">
+                          <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs">
+                            <Icon className="h-3.5 w-3.5 text-primary" />{meta.label}
+                          </span>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{describeTrigger(cfg)}</td>
+                        <td className="p-3">{describeReward(cfg)}</td>
+                        <td className="p-3">
+                          <Badge variant={b.active ? "default" : "outline"}>{b.active ? "Ativa" : "Pausada"}</Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Editar" onClick={() => openEdit(b)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Duplicar" onClick={() => duplicate.mutate(b)}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title={b.active ? "Pausar" : "Ativar"} onClick={() => toggle.mutate(b)}>
+                              {b.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" title="Excluir"
+                              onClick={() => { if (confirm(`Excluir "${b.name}"?`)) remove.mutate(b.id); }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <BenefitWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        restaurantId={restaurantId}
+        editing={editing}
+        seedType={seedType}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["loyalty-benefits"] })}
+      />
     </div>
+  );
+}
+
+// ---------------- Wizard de benefício (7 passos) ----------------
+function BenefitWizard({
+  open, onOpenChange, restaurantId, editing, seedType, onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  restaurantId: string;
+  editing: Benefit | null;
+  seedType: BenefitType | null;
+  onSaved: () => void;
+}) {
+  const emptyCfg: BenefitConfig = {
+    ui_kind: seedType ?? "FREE_PRODUCT",
+    trigger: { kind: "PRODUCTS", qty: 10, product_name: "" },
+    reward: {},
+    starts_at: null, ends_at: null,
+  };
+
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+  const [cfg, setCfg] = useState<BenefitConfig>(emptyCfg);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setStep(1); setSaving(false);
+    if (editing) {
+      const c = (editing.config as BenefitConfig) ?? emptyCfg;
+      setName(editing.name);
+      setCfg({
+        ...emptyCfg, ...c,
+        trigger: { ...emptyCfg.trigger, ...(c.trigger ?? {}) },
+        reward: { ...(c.reward ?? {}) },
+        starts_at: editing.starts_at, ends_at: editing.ends_at,
+      });
+    } else {
+      setName("");
+      setCfg({ ...emptyCfg, ui_kind: seedType ?? "FREE_PRODUCT" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing?.id, seedType]);
+
+  const meta = typeMeta(cfg.ui_kind);
+
+  function next() { setStep((s) => Math.min(6, s + 1)); }
+  function back() { setStep((s) => Math.max(1, s - 1)); }
+
+  const canNext = (() => {
+    if (step === 1) return !!cfg.ui_kind;
+    if (step === 2) return name.trim().length >= 2;
+    if (step === 3) return cfg.trigger.qty > 0;
+    if (step === 4) {
+      const r = cfg.reward;
+      if (cfg.ui_kind === "FREE_PRODUCT") return !!r.product_name?.trim();
+      if (cfg.ui_kind === "DISCOUNT")     return !!r.discount_percent && r.discount_percent > 0 && r.discount_percent <= 100;
+      if (cfg.ui_kind === "FREE_DELIVERY")return true;
+      if (cfg.ui_kind === "CASHBACK")     return !!r.cashback_amount && r.cashback_amount > 0;
+      if (cfg.ui_kind === "COUPON")       return !!r.coupon_code?.trim();
+      if (cfg.ui_kind === "GIFT")         return !!r.gift_note?.trim();
+    }
+    return true;
+  })();
+
+  async function save() {
+    setSaving(true);
+    const payload = {
+      restaurant_id: restaurantId,
+      name: name.trim(),
+      rule_type: cfg.ui_kind,
+      config: { ...cfg, starts_at: cfg.starts_at || null, ends_at: cfg.ends_at || null },
+      active: true,
+      starts_at: cfg.starts_at || null,
+      ends_at: cfg.ends_at || null,
+      priority: 10,
+    };
+    const q = editing
+      ? supabase.from("loyalty_rules").update(payload).eq("id", editing.id)
+      : supabase.from("loyalty_rules").insert(payload);
+    const { error } = await q;
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success(editing ? "Benefício atualizado" : "Benefício criado");
+    onSaved(); onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <meta.icon className="h-5 w-5 text-primary" />
+            {editing ? "Editar benefício" : "Nova recompensa"}
+            <Badge variant="outline" className="ml-2">Passo {step} de 6</Badge>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {step === 1 && (
+            <div>
+              <p className="mb-2 text-sm font-semibold">Tipo</p>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                {BENEFIT_TYPES.map(({ key, label, icon: Icon }) => (
+                  <button key={key} type="button" onClick={() => setCfg({ ...cfg, ui_kind: key })}
+                    className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition ${cfg.ui_kind === key ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
+                    <Icon className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">{label}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-1.5">
+              <Label>Nome da campanha</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Junte 10 pizzas e ganhe outra" autoFocus />
+              <p className="text-xs text-muted-foreground">Este nome aparece para você — o cliente verá a descrição do benefício.</p>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Regra para ganhar</Label>
+                <Select value={cfg.trigger.kind} onValueChange={(v) => setCfg({ ...cfg, trigger: { ...cfg.trigger, kind: v as TriggerKind } })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(TRIGGER_LABEL) as TriggerKind[]).map((k) => (
+                      <SelectItem key={k} value={k}>{TRIGGER_LABEL[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>{cfg.trigger.kind === "SPENT" ? "Valor (R$)" : "Quantidade"}</Label>
+                  <Input type="number" min={1} step={cfg.trigger.kind === "SPENT" ? "0.5" : "1"}
+                    value={cfg.trigger.qty}
+                    onChange={(e) => setCfg({ ...cfg, trigger: { ...cfg.trigger, qty: Number(e.target.value) } })} />
+                </div>
+                {cfg.trigger.kind === "PRODUCTS" && (
+                  <div className="space-y-1.5">
+                    <Label>Produto (opcional)</Label>
+                    <Input value={cfg.trigger.product_name ?? ""} placeholder="Ex.: pizza, hambúrguer"
+                      onChange={(e) => setCfg({ ...cfg, trigger: { ...cfg.trigger, product_name: e.target.value } })} />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Prévia: <b>{describeTrigger(cfg)}</b></p>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">Selecionar recompensa</p>
+              {cfg.ui_kind === "FREE_PRODUCT" && (
+                <div className="space-y-1.5">
+                  <Label>Produto grátis</Label>
+                  <Input value={cfg.reward.product_name ?? ""} placeholder="Ex.: 1 pizza média"
+                    onChange={(e) => setCfg({ ...cfg, reward: { ...cfg.reward, product_name: e.target.value } })} />
+                </div>
+              )}
+              {cfg.ui_kind === "DISCOUNT" && (
+                <div className="space-y-1.5">
+                  <Label>Desconto (%)</Label>
+                  <Input type="number" min={1} max={100} value={cfg.reward.discount_percent ?? ""}
+                    onChange={(e) => setCfg({ ...cfg, reward: { ...cfg.reward, discount_percent: Number(e.target.value) } })} />
+                </div>
+              )}
+              {cfg.ui_kind === "FREE_DELIVERY" && (
+                <p className="rounded-md border p-3 text-sm text-muted-foreground">O cliente terá a taxa de entrega isentada no pedido elegível.</p>
+              )}
+              {cfg.ui_kind === "CASHBACK" && (
+                <div className="space-y-1.5">
+                  <Label>Cashback (R$)</Label>
+                  <Input type="number" min={0.5} step="0.5" value={cfg.reward.cashback_amount ?? ""}
+                    onChange={(e) => setCfg({ ...cfg, reward: { ...cfg.reward, cashback_amount: Number(e.target.value) } })} />
+                </div>
+              )}
+              {cfg.ui_kind === "COUPON" && (
+                <div className="space-y-1.5">
+                  <Label>Código do cupom</Label>
+                  <Input value={cfg.reward.coupon_code ?? ""} placeholder="BEMVINDO10"
+                    onChange={(e) => setCfg({ ...cfg, reward: { ...cfg.reward, coupon_code: e.target.value.toUpperCase() } })} />
+                </div>
+              )}
+              {cfg.ui_kind === "GIFT" && (
+                <div className="space-y-1.5">
+                  <Label>Descrição do brinde</Label>
+                  <Input value={cfg.reward.gift_note ?? ""} placeholder="Ex.: refrigerante 350ml"
+                    onChange={(e) => setCfg({ ...cfg, reward: { ...cfg.reward, gift_note: e.target.value } })} />
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Prévia: <b>{describeReward(cfg)}</b></p>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Início (opcional)</Label>
+                <Input type="date" value={cfg.starts_at ?? ""} onChange={(e) => setCfg({ ...cfg, starts_at: e.target.value || null })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Validade (opcional)</Label>
+                <Input type="date" value={cfg.ends_at ?? ""} onChange={(e) => setCfg({ ...cfg, ends_at: e.target.value || null })} />
+              </div>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="space-y-2 rounded-lg border p-4 text-sm">
+              <p className="font-semibold">Resumo</p>
+              <p><span className="text-muted-foreground">Tipo:</span> {meta.label}</p>
+              <p><span className="text-muted-foreground">Nome:</span> {name}</p>
+              <p><span className="text-muted-foreground">Desbloqueio:</span> {describeTrigger(cfg)}</p>
+              <p><span className="text-muted-foreground">Recompensa:</span> {describeReward(cfg)}</p>
+              <p><span className="text-muted-foreground">Vigência:</span> {cfg.starts_at || "hoje"} → {cfg.ends_at || "sem prazo"}</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button variant="ghost" onClick={back} disabled={step === 1}>
+            <ChevronLeft className="mr-1 h-4 w-4" />Voltar
+          </Button>
+          {step < 6 ? (
+            <Button onClick={next} disabled={!canNext}>
+              Avançar<ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+              {editing ? "Salvar alterações" : "Criar benefício"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
