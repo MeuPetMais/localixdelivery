@@ -169,5 +169,6 @@ export function LoyaltyRedeemBlock({
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
