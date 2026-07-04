@@ -337,7 +337,7 @@ function SobrePage() {
 
     <div className="min-h-screen bg-muted/30 pb-12 animate-in fade-in duration-300">
       {/* header */}
-      <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
+      <div className="sticky top-0 z-30 border-b bg-background px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link to="/$slug" params={{ slug }}>
             <Button variant="ghost" size="icon" className="rounded-full">
