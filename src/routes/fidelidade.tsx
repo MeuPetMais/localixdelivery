@@ -425,7 +425,13 @@ function WalletPage() {
               <SkeletonRows />
             ) : (
               (() => {
-                const visible = (historyQ.data ?? []).filter(isCustomerFacing);
+                const filterMap: Record<Filter, string | null> = {
+                  all: null, earn: "EARN", redeem: "REDEEM", expire: "EXPIRE", bonus: "BONUS",
+                };
+                const wanted = filterMap[filter];
+                const visible = allTxs
+                  .filter(isCustomerFacing)
+                  .filter((t) => (wanted ? t.type === wanted : true));
                 if (visible.length === 0) {
                   return (
                     <EmptyState
