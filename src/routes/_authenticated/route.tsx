@@ -62,7 +62,6 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
         role={role}
         branding={{
           logoUrl: restaurant?.logo_url ?? undefined,
-          bannerUrl: restaurant?.banner_url ?? undefined,
         }}
       >
         <RestaurantProvider
