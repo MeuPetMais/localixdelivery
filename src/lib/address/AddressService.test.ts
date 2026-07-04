@@ -1,5 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createAddressService } from "./AddressService";
+
+const store = new Map<string, string>();
+(globalThis as any).window = globalThis;
+(globalThis as any).localStorage = {
+  getItem: (k: string) => store.get(k) ?? null,
+  setItem: (k: string, v: string) => { store.set(k, v); },
+  removeItem: (k: string) => { store.delete(k); },
+  clear: () => store.clear(),
+};
+beforeEach(() => store.clear());
 import type { AddressProvider, AddressSuggestion, AddressDetails } from "./types";
 
 const sample: AddressSuggestion = { id: "1", label: "Av. Paulista, 1578", secondary: "Bela Vista — São Paulo/SP" };
