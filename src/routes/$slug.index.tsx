@@ -27,6 +27,7 @@ import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
 import type { CustomerAddress } from "@/lib/customer-addresses";
+import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 
 
 export const Route = createFileRoute("/$slug/")({
