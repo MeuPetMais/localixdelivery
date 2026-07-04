@@ -49,6 +49,9 @@ import {
   UserPlus,
   PackagePlus,
   PackageCheck,
+  QrCode,
+  BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
@@ -149,39 +152,45 @@ function Dashboard() {
   return (
     <div className="max-w-full space-y-6">
       {/* Header */}
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="truncate font-display text-2xl font-extrabold sm:text-3xl">
             Olá, {restaurant.name} 👋
           </h1>
           <p className="text-sm text-muted-foreground">Aqui está o resumo do seu negócio hoje.</p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <MerchantNotificationsBell restaurantId={restaurant.id} />
-          <div className="flex items-center gap-2 rounded-lg border bg-background py-1 pl-1 pr-3 shadow-sm">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-warm text-xs font-bold text-primary-foreground">
+          <div className="flex items-center gap-2 rounded-xl border bg-background px-2 py-1.5 shadow-sm">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-warm text-xs font-bold text-primary-foreground">
               {(restaurant.name ?? "L").charAt(0).toUpperCase()}
             </span>
-            <span className="hidden max-w-[120px] truncate text-sm font-medium sm:block">
+            <span className="hidden max-w-[140px] truncate text-sm font-medium sm:block">
               {user.email ?? restaurant.name}
             </span>
           </div>
           <div
-            className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium md:flex ${
+            className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
               status.isOpen
                 ? "border-success/40 bg-success/10 text-success"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
             }`}
             title={offSchedule ? "Fora do horário de funcionamento" : undefined}
           >
-            <span className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
+            <span className={`h-2.5 w-2.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
             {openLabel}
-            {offSchedule && <span className="ml-1 text-[10px] opacity-75">(fora do horário)</span>}
+            {offSchedule && <span className="ml-1 hidden text-[10px] opacity-75 md:inline">(fora do horário)</span>}
           </div>
-          <Button variant="outline" size="sm" onClick={toggleOpen} disabled={togglingOpen}>
+          <Button
+            variant={restaurant.is_open ? "outline" : "default"}
+            onClick={toggleOpen}
+            disabled={togglingOpen}
+            className="min-h-11"
+            title={restaurant.is_open ? "Fechar loja manualmente" : "Abrir loja agora"}
+          >
             {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
-            {restaurant.is_open ? "Fechar manualmente" : "Abrir loja"}
+            {restaurant.is_open ? "Fechar loja" : "Abrir loja"}
           </Button>
         </div>
       </header>
@@ -194,112 +203,164 @@ function Dashboard() {
 
       {/* Loja Online + Marketing cards */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="relative overflow-hidden border-primary/20 p-5 shadow-sm">
+        <Card className="relative overflow-hidden border-primary/20 p-6 shadow-sm transition-shadow hover:shadow-md">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
-          <div className="relative flex items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
-              <Store className="h-5 w-5" />
+          <div className="relative space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+                <Store className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-lg font-bold">Sua Loja Online</h3>
+                <p className="text-xs text-muted-foreground">Gerencie o acesso público da sua loja</p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-display text-base font-bold">Sua Loja Online</h3>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    status.isOpen ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                  }`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"}`} />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border bg-muted/40 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Status</p>
+                <div className="mt-1 flex items-center gap-2 text-sm font-semibold">
+                  <span className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
                   {status.isOpen ? "Online" : "Offline"}
-                </span>
+                </div>
               </div>
-              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{publicUrl}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <a href={publicUrl} target="_blank" rel="noreferrer">
-                  <Button size="sm" className="h-8">
-                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Abrir página
-                  </Button>
-                </a>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  onClick={() => {
-                    navigator.clipboard.writeText(publicUrl);
-                    toast.success("Link copiado!");
-                  }}
-                >
-                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar link
+              <div className="min-w-0 rounded-xl border bg-muted/40 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">URL da loja</p>
+                <p className="mt-1 truncate font-mono text-xs">{publicUrl}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+              <a href={publicUrl} target="_blank" rel="noreferrer" className="w-full">
+                <Button className="min-h-11 w-full gap-2 font-semibold shadow-sm transition-transform hover:-translate-y-0.5">
+                  <ExternalLink className="h-4 w-4" /> Abrir Loja
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  onClick={async () => {
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({ title: restaurant.name, url: publicUrl });
-                      } catch {
-                        /* user cancelled */
-                      }
-                    } else {
-                      navigator.clipboard.writeText(publicUrl);
-                      toast.success("Link copiado para compartilhar!");
+              </a>
+              <Button
+                variant="outline"
+                className="min-h-11 w-full gap-2 transition-colors"
+                title="Copiar link da loja"
+                onClick={() => {
+                  navigator.clipboard.writeText(publicUrl);
+                  toast.success("Link copiado!");
+                }}
+              >
+                <Copy className="h-4 w-4" /> Copiar
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-11 w-full gap-2 transition-colors"
+                title="Compartilhar link"
+                onClick={async () => {
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: restaurant.name, url: publicUrl });
+                    } catch {
+                      /* user cancelled */
                     }
-                  }}
-                >
-                  <Share2 className="mr-1.5 h-3.5 w-3.5" /> Compartilhar
-                </Button>
-              </div>
+                  } else {
+                    navigator.clipboard.writeText(publicUrl);
+                    toast.success("Link copiado para compartilhar!");
+                  }
+                }}
+              >
+                <Share2 className="h-4 w-4" /> Compartilhar
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-11 w-full gap-2 transition-colors"
+                title="Abrir QR Code da loja"
+                onClick={() => {
+                  const url = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(publicUrl)}`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <QrCode className="h-4 w-4" /> QR Code
+              </Button>
             </div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden bg-gradient-warm p-5 text-primary-foreground shadow-glow">
+        <Card className="relative overflow-hidden bg-gradient-warm p-6 text-primary-foreground shadow-glow transition-shadow hover:shadow-lg">
           <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-primary-foreground/10 blur-2xl" />
-          <div className="relative">
-            <div className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5" />
-              <h3 className="font-display text-base font-bold">Divulgue e venda mais</h3>
+          <div className="relative space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-foreground/15">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-display text-lg font-bold">Divulgue sua loja</h3>
+                <p className="text-xs opacity-90">Compartilhe sua loja nas redes sociais</p>
+              </div>
             </div>
-            <p className="mt-1 text-sm opacity-90">
-              Compartilhe sua loja nas redes e atraia mais pedidos hoje mesmo.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Peça pelo ${restaurant.name}: ${publicUrl}`)}`}
                 target="_blank"
                 rel="noreferrer"
+                className="w-full"
               >
-                <Button size="sm" variant="secondary" className="h-8">
-                  <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
+                <Button className="min-h-11 w-full gap-2 border-0 bg-[#25D366] text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#25D366]/90">
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
                 </Button>
               </a>
               <a
-                href={`https://www.instagram.com/`}
+                href="https://www.instagram.com/"
                 target="_blank"
                 rel="noreferrer"
+                className="w-full"
                 onClick={() => {
                   navigator.clipboard.writeText(`Peça pelo ${restaurant.name}: ${publicUrl}`);
                   toast.success("Texto copiado! Cole no seu story.");
                 }}
               >
-                <Button size="sm" variant="secondary" className="h-8">
-                  <Instagram className="mr-1.5 h-3.5 w-3.5" /> Instagram
+                <Button className="min-h-11 w-full gap-2 border-0 bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737] text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:opacity-90">
+                  <Instagram className="h-4 w-4" /> Instagram
                 </Button>
               </a>
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`}
                 target="_blank"
                 rel="noreferrer"
+                className="w-full"
               >
-                <Button size="sm" variant="secondary" className="h-8">
-                  <Facebook className="mr-1.5 h-3.5 w-3.5" /> Facebook
+                <Button className="min-h-11 w-full gap-2 border-0 bg-[#1877F2] text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#1877F2]/90">
+                  <Facebook className="h-4 w-4" /> Facebook
                 </Button>
               </a>
+              <Button
+                className="min-h-11 w-full gap-2 border-0 bg-slate-900 text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-slate-800"
+                onClick={() => {
+                  navigator.clipboard.writeText(publicUrl);
+                  toast.success("Link copiado!");
+                }}
+              >
+                <Copy className="h-4 w-4" /> Copiar Link
+              </Button>
             </div>
           </div>
         </Card>
       </div>
+
+      {/* Ações rápidas */}
+      <section>
+        <div className="mb-3">
+          <h2 className="font-display text-lg font-bold">Ações rápidas</h2>
+          <p className="text-xs text-muted-foreground">
+            Acesse rapidamente as funções mais utilizadas do seu negócio.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <QuickActionCard to="/orders" icon={Plus} title="Novo Pedido" desc="Registrar manualmente" tone="from-primary/15 text-primary" />
+          <QuickActionCard to="/menu" icon={ChefHat} title="Novo Produto" desc="Adicionar ao cardápio" tone="from-orange-500/15 text-orange-600" />
+          <QuickActionCard to="/promotions" icon={Ticket} title="Criar Promoção" desc="Cupons e descontos" tone="from-fuchsia-500/15 text-fuchsia-600" />
+          <QuickActionCard to="/finance" icon={Wallet} title="Financeiro" desc="Receitas e pagamentos" tone="from-emerald-500/15 text-emerald-600" />
+          <QuickActionCard to="/finance-ai" icon={BarChart3} title="Relatórios" desc="Análises e insights" tone="from-blue-500/15 text-blue-600" />
+          <QuickActionCard to="/ai" icon={Sparkles} title="Assistente IA" desc="Sugestões inteligentes" tone="from-violet-500/15 text-violet-600" />
+        </div>
+      </section>
+
 
 
       {/* Row 1: KPIs */}
@@ -1093,3 +1154,34 @@ function StatusDonut({ data }: { data?: Record<string, number> | null }) {
   );
 }
 
+
+function QuickActionCard({
+  to,
+  icon: Icon,
+  title,
+  desc,
+  tone = "from-primary/15 text-primary",
+}: {
+  to: string;
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  tone?: string;
+}) {
+  const [gradient, textColor] = tone.split(" ");
+  return (
+    <Link
+      to={to}
+      className="group flex min-h-[110px] flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
+      title={desc}
+    >
+      <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${gradient} to-transparent ${textColor} transition-transform group-hover:scale-110`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="mt-3">
+        <div className="text-sm font-semibold leading-tight">{title}</div>
+        <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{desc}</div>
+      </div>
+    </Link>
+  );
+}
