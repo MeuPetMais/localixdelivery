@@ -24,6 +24,7 @@ export interface PricingInput {
   deliveryFee?: number;
   couponDiscount?: number;
   cashback?: number;
+  loyaltyDiscount?: number;
   paymentMethod?: PaymentMethod;
   provider?: ProviderId;
   restaurantId?: string;
@@ -36,6 +37,7 @@ export interface PricingResult {
   gatewayFee: number;
   couponDiscount: number;
   cashback: number;
+  loyaltyDiscount: number;
   customerTotal: number;
   restaurantGross: number;
   restaurantNet: number;
@@ -185,6 +187,7 @@ export function computePricing(input: PricingInput, settings: PricingSettings): 
   const deliveryFee = Math.max(0, Number(input.deliveryFee) || 0);
   const couponDiscount = Math.max(0, Number(input.couponDiscount) || 0);
   const cashback = Math.max(0, Number(input.cashback) || 0);
+  const loyaltyDiscount = Math.max(0, Number(input.loyaltyDiscount) || 0);
 
   if (subtotal < settings.minimum_order) {
     throw new PricingError(
@@ -203,9 +206,10 @@ export function computePricing(input: PricingInput, settings: PricingSettings): 
     method: input.paymentMethod ?? "pix",
   });
 
-  const customerTotal = round2(subtotal + deliveryFee - couponDiscount - cashback);
+  const totalDiscount = couponDiscount + cashback + loyaltyDiscount;
+  const customerTotal = round2(Math.max(0, subtotal + deliveryFee - totalDiscount));
   const restaurantGross = round2(subtotal);
-  const restaurantNet = round2(subtotal - couponDiscount);
+  const restaurantNet = round2(Math.max(0, subtotal - couponDiscount - loyaltyDiscount));
   const platformRevenue = round2(platformFee);
   const gatewayRevenue = round2(gatewayFee);
   const estimatedProfit = round2(platformRevenue - gatewayRevenue);
@@ -217,6 +221,7 @@ export function computePricing(input: PricingInput, settings: PricingSettings): 
     gatewayFee: round2(gatewayFee),
     couponDiscount: round2(couponDiscount),
     cashback: round2(cashback),
+    loyaltyDiscount: round2(loyaltyDiscount),
     customerTotal,
     restaurantGross,
     restaurantNet,
