@@ -898,11 +898,9 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"list" | "form">("list");
 
-  // Guest / manual fallback fields
-  const [street, setStreet] = useState("");
-  const [number, setNumber] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
+  // Guest / manual fallback — endereço inteligente compartilhado com /$slug/checkout
+  const [smartAddress, setSmartAddress] = useState<SelectedAddress | null>(null);
+
 
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
