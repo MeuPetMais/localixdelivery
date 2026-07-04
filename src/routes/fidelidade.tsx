@@ -49,6 +49,12 @@ function FidelidadePage() {
     enabled: !!user && !!slug,
   });
 
+  const expiringQ = useQuery({
+    queryKey: ["loyalty", "expiring", slug],
+    queryFn: () => expiringFn({ data: { slug } }),
+    enabled: !!user && !!slug,
+  });
+
   if (loading || !user) {
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center">
