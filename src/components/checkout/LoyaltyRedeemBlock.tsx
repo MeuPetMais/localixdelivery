@@ -150,14 +150,6 @@ export function LoyaltyRedeemBlock({
         </div>
 
 
-        <div className="grid grid-cols-3 gap-2">
-          <Button size="sm" variant={points === 0 ? "default" : "outline"}
-            onClick={() => { setTouched(true); setPoints(0); }}>Não usar</Button>
-          <Button size="sm" variant={points > 0 && points < maxPoints ? "default" : "outline"}
-            onClick={() => { setTouched(true); setPoints(Math.max(minRedeem, Math.floor(maxPoints / 2))); }}>Metade</Button>
-          <Button size="sm" variant={points === maxPoints && maxPoints > 0 ? "default" : "outline"}
-            onClick={() => { setTouched(true); setPoints(maxPoints); }}>Máximo</Button>
-        </div>
 
         <div className="space-y-1.5">
           <Slider
