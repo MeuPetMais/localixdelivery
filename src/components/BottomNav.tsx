@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { MouseEvent } from "react";
-import { Home, Gift, Heart, Receipt, User } from "lucide-react";
+import { Home, Wallet, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
