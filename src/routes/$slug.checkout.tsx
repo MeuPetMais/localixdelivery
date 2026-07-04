@@ -18,6 +18,7 @@ import {
 import { applyLoyaltyReserveForOrder } from "@/lib/loyalty.functions";
 import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 import { LoyaltyRedeemBlock } from "@/components/checkout/LoyaltyRedeemBlock";
+import { LoyaltyBenefitsBlock } from "@/components/checkout/LoyaltyBenefitsBlock";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 export const Route = createFileRoute("/$slug/checkout")({
@@ -208,6 +209,9 @@ function CheckoutPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Benefícios do programa (informativo — reutiliza loyalty_rules) */}
+      <LoyaltyBenefitsBlock slug={slug} authenticated={!!user} />
 
       {/* Fidelidade — antes da forma de pagamento */}
       <LoyaltyRedeemBlock
