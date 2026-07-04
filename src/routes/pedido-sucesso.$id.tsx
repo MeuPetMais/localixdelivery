@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
 import {
   CheckCircle2, Clock, CreditCard, Loader2, MapPin, Store, Gift,
-  MessageCircle, Share2, ChefHat, Bike, PackageCheck, Copy, Star,
+  MessageCircle, Share2, ChefHat, Bike, PackageCheck, Copy, Star, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
