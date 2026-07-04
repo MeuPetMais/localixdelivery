@@ -27,6 +27,7 @@ import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
 import type { CustomerAddress } from "@/lib/customer-addresses";
+import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -897,11 +898,9 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"list" | "form">("list");
 
-  // Guest / manual fallback fields
-  const [street, setStreet] = useState("");
-  const [number, setNumber] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
+  // Guest / manual fallback — endereço inteligente compartilhado com /$slug/checkout
+  const [smartAddress, setSmartAddress] = useState<SelectedAddress | null>(null);
+
 
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
@@ -992,9 +991,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       if (selectedAddress.city) parts.push(`${selectedAddress.city}${selectedAddress.state ? "/" + selectedAddress.state : ""}`);
       return parts.filter(Boolean).join(" — ");
     }
-    if (!street.trim() || !neighborhood.trim()) return null;
-    const line = [street.trim(), number.trim()].filter(Boolean).join(", ");
-    return complement.trim() ? `${line} — ${complement}, ${neighborhood}` : `${line}, ${neighborhood}`;
+    if (smartAddress && (smartAddress.number || smartAddress.numberOverride)) {
+      return formatFullAddress(smartAddress);
+    }
+    return null;
   }
 
   async function sendWhatsApp() {
@@ -1130,17 +1130,17 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             )}
           </div>
         ) : (
-          <>
-            <div className="space-y-1.5"><Label>Endereço</Label><Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Rua" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Número</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="123" /></div>
-              <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
-            </div>
-            <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
+          <div className="space-y-2">
+            <Label>Endereço de entrega</Label>
+            <AddressAutocomplete
+              value={smartAddress}
+              onChange={setSmartAddress}
+              restaurantSlug={restaurant.slug}
+            />
             <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
               💡 <Link to="/cliente" className="font-medium text-primary underline">Entre na sua conta</Link> para salvar seus endereços e pedir mais rápido.
             </p>
-          </>
+          </div>
         )}
 
         <div className="space-y-1.5">
