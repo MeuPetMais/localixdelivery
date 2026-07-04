@@ -182,6 +182,41 @@ function SuccessPage() {
           </div>
         </Card>
 
+        {/* Fidelidade: crédito real quando entregue, senão estimativa */}
+        {user && loyaltyActive && isDelivered && creditedForOrder > 0 && (
+          <Card className="mt-4 border-emerald-300/60 bg-emerald-50/60 p-4 dark:bg-emerald-950/20 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="text-sm">
+                <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+                  🎉 Parabéns! +{creditedForOrder} pontos foram creditados.
+                </p>
+                <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                  <Link to="/fidelidade" className="underline">Ver na Minha Carteira</Link>
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+        {user && loyaltyActive && !isDelivered && estimatedEarn > 0 && (
+          <Card className="mt-4 border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <p className="text-sm">
+                Você ganhará <b className="text-primary">+{estimatedEarn} pontos</b>{" "}
+                {earnOn === "delivered"
+                  ? "quando este pedido for entregue."
+                  : "após a confirmação do pagamento."}
+              </p>
+            </div>
+          </Card>
+        )}
+
+
 
         {/* Status tracker */}
         <Card className="mt-4 p-4">
