@@ -116,6 +116,22 @@ function WalletPage() {
     enabled: !!user && !!slug,
   });
 
+  const s = summaryQ.data;
+  const rewards = rewardsQ.data ?? [];
+  const coupons = couponsQ.data ?? [];
+
+  // Próxima recompensa alcançável (menor minimum_points > balance)
+  const nextReward = useMemo(() => {
+    if (!s) return null;
+    const sorted = [...rewards].sort((a, b) => a.minimum_points - b.minimum_points);
+    return sorted.find((r) => r.minimum_points > s.balance) ?? null;
+  }, [rewards, s]);
+
+  const availableRewards = useMemo(
+    () => rewards.filter((r) => s && r.minimum_points <= s.balance),
+    [rewards, s],
+  );
+
   if (loading || !user) {
     return (
       <div className="grid min-h-dvh place-items-center p-6 text-center">
@@ -133,21 +149,6 @@ function WalletPage() {
     );
   }
 
-  const s = summaryQ.data;
-  const rewards = rewardsQ.data ?? [];
-  const coupons = couponsQ.data ?? [];
-
-  // Próxima recompensa alcançável (menor minimum_points > balance)
-  const nextReward = useMemo(() => {
-    if (!s) return null;
-    const sorted = [...rewards].sort((a, b) => a.minimum_points - b.minimum_points);
-    return sorted.find((r) => r.minimum_points > s.balance) ?? null;
-  }, [rewards, s]);
-
-  const availableRewards = useMemo(
-    () => rewards.filter((r) => s && r.minimum_points <= s.balance),
-    [rewards, s],
-  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 pb-32">
