@@ -130,14 +130,25 @@ export function LoyaltyRedeemBlock({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Gift className="h-5 w-5 text-primary" />
-            <p className="font-semibold text-sm">🎁 Usar meus pontos</p>
+            <p className="font-semibold text-sm">⭐ Usar meus pontos</p>
           </div>
           <Badge variant="secondary">{balance} pts</Badge>
         </div>
         <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-0.5">
+          <span>Mínimo p/ resgate:</span><span className="text-right font-medium">{minRedeem} pts</span>
           <span>Máx. neste pedido:</span><span className="text-right font-medium">{maxPoints} pts</span>
-          <span>Valor máximo:</span><span className="text-right font-medium">{brl((maxPoints / (summaryQ.data.settings.points_per_real || 1)))}</span>
+          <span>Valor do desconto máx.:</span><span className="text-right font-medium">{brl((maxPoints / (summaryQ.data.settings.points_per_real || 1)))}</span>
         </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <Button size="sm" variant={points === 0 ? "default" : "outline"}
+            onClick={() => { setTouched(true); setPoints(0); }}>Não usar</Button>
+          <Button size="sm" variant={points === minRedeem ? "default" : "outline"}
+            onClick={() => { setTouched(true); setPoints(minRedeem); }}>Mínimo</Button>
+          <Button size="sm" variant={points === maxPoints && maxPoints > 0 ? "default" : "outline"}
+            onClick={() => { setTouched(true); setPoints(maxPoints); }}>Máximo</Button>
+        </div>
+
 
         <div className="grid grid-cols-3 gap-2">
           <Button size="sm" variant={points === 0 ? "default" : "outline"}
