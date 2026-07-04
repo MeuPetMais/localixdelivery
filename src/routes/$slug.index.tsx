@@ -991,9 +991,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       if (selectedAddress.city) parts.push(`${selectedAddress.city}${selectedAddress.state ? "/" + selectedAddress.state : ""}`);
       return parts.filter(Boolean).join(" — ");
     }
-    if (!street.trim() || !neighborhood.trim()) return null;
-    const line = [street.trim(), number.trim()].filter(Boolean).join(", ");
-    return complement.trim() ? `${line} — ${complement}, ${neighborhood}` : `${line}, ${neighborhood}`;
+    if (smartAddress && (smartAddress.number || smartAddress.numberOverride)) {
+      return formatFullAddress(smartAddress);
+    }
+    return null;
   }
 
   async function sendWhatsApp() {
