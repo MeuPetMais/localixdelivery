@@ -15,6 +15,7 @@ import {
   previewCheckoutPricing,
   type CheckoutMethod,
 } from "@/lib/checkout/OrderService";
+import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
 
 export const Route = createFileRoute("/$slug/checkout")({
   ssr: false,
