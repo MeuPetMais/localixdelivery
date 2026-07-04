@@ -1130,17 +1130,17 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             )}
           </div>
         ) : (
-          <>
-            <div className="space-y-1.5"><Label>Endereço</Label><Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Rua" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Número</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="123" /></div>
-              <div className="space-y-1.5"><Label>Complemento</Label><Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto 12" /></div>
-            </div>
-            <div className="space-y-1.5"><Label>Bairro</Label><Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Centro" /></div>
+          <div className="space-y-2">
+            <Label>Endereço de entrega</Label>
+            <AddressAutocomplete
+              value={smartAddress}
+              onChange={setSmartAddress}
+              restaurantSlug={restaurant.slug}
+            />
             <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
               💡 <Link to="/cliente" className="font-medium text-primary underline">Entre na sua conta</Link> para salvar seus endereços e pedir mais rápido.
             </p>
-          </>
+          </div>
         )}
 
         <div className="space-y-1.5">
