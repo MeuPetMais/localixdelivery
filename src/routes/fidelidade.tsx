@@ -274,60 +274,109 @@ function WalletPage() {
             maxDiscountPercent={s.settings.max_discount_percent}
           />
 
-          {/* 6. RECOMPENSAS */}
+          {/* 6. RECOMPENSAS DESBLOQUEADAS */}
           <SectionCard
             icon={<Trophy className="h-5 w-5 text-amber-500" />}
             title="Recompensas disponíveis"
           >
             {rewardsQ.isLoading ? (
-              <SkeletonRows />
-
-
-          {/* Alerta de expiração */}
-          {expiringQ.data &&
-            expiringQ.data.totalExpiring > 0 &&
-            expiringQ.data.next && (
-              <Card className="animate-in fade-in slide-in-from-top-2 border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
-                <CardContent className="flex items-start gap-3 p-4">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-900 dark:text-amber-200">
-                      {expiringQ.data.next.points} pontos expiram em{" "}
-                      {expiringQ.data.next.days}{" "}
-                      {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
-                    </p>
-                    <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
-                      Total expirando em até 30 dias:{" "}
-                      {expiringQ.data.totalExpiring} pts.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <UnlockedRewardsSkeleton />
+            ) : availableRewards.length === 0 ? (
+              <EmptyState
+                emoji="🎁"
+                title="Nenhuma recompensa disponível ainda."
+                subtitle="Continue acumulando para desbloquear seus primeiros benefícios."
+              />
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {availableRewards.map((r) => (
+                  <UnlockedRewardCard key={r.name} name={r.name} minimumPoints={r.minimum_points} slug={slug} />
+                ))}
+              </div>
             )}
+          </SectionCard>
 
-          {/* 3. PRÓXIMO PEDIDO */}
-          <NextOrderCard
-            pointsPerReal={s.settings.points_per_real}
-            earnOn={s.settings.earn_on}
-            slug={slug}
-          />
-
-          {/* 4. COMO FUNCIONA */}
-          <HowItWorks
-            pointsPerReal={s.settings.points_per_real}
-            earnOn={s.settings.earn_on}
-            minRedeem={s.settings.min_redeem}
-            validityDays={s.settings.validity_days}
-          />
-
-          {/* 5. RECOMPENSAS */}
+          {/* 7. BENEFÍCIOS EM ANDAMENTO */}
           <SectionCard
-            icon={<Trophy className="h-5 w-5 text-amber-500" />}
-            title="Recompensas disponíveis"
+            icon={<Target className="h-5 w-5 text-primary" />}
+            title="Benefícios em andamento"
+          >
+            {benefitsQ.isLoading ? (
+              <SkeletonRows />
+            ) : benefits.length === 0 ? (
+              <EmptyState
+                emoji="✨"
+                title="Nenhuma campanha ativa."
+                subtitle="Novos benefícios aparecerão aqui."
+              />
+            ) : (
+              <div className="space-y-2">
+                {benefits.map((b) => (
+                  <InProgressBenefitRow key={b.id} b={b} />
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* 8. TODAS AS RECOMPENSAS DO PROGRAMA (níveis) */}
+          <SectionCard
+            icon={<Sparkles className="h-5 w-5 text-amber-500" />}
+            title="Todas as recompensas do programa"
           >
             {rewardsQ.isLoading ? (
               <SkeletonRows />
             ) : rewards.length === 0 ? (
+              <EmptyState
+                emoji="🎁"
+                title="Ainda não existem recompensas."
+                subtitle="O restaurante ainda não configurou níveis."
+              />
+            ) : (
+              <div className="space-y-2">
+                {rewards.map((r) => {
+                  const reached = s.balance >= r.minimum_points;
+                  return (
+                    <div
+                      key={r.name}
+                      className={`animate-fade-in rounded-lg border p-3 transition-colors ${
+                        reached
+                          ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20"
+                          : "border-border/60 hover:bg-muted/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+                              reached
+                                ? "bg-emerald-500/15 text-emerald-600"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {guessRewardIcon(r.name)}
+                          </span>
+                          <p className="truncate text-sm font-medium">{r.name}</p>
+                        </div>
+                        <Badge variant={reached ? "default" : "outline"} className="shrink-0">
+                          {r.minimum_points} pts
+                        </Badge>
+                      </div>
+                      {r.benefits.length > 0 && (
+                        <ul className="mt-1.5 space-y-0.5 pl-10 text-xs text-muted-foreground">
+                          {r.benefits.map((b, i) => (
+                            <li key={i} className="list-disc">
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </SectionCard>
+
               <EmptyState
                 emoji="🎁"
                 title="Ainda não existem recompensas."
