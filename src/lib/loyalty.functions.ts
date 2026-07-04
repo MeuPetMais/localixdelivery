@@ -419,3 +419,84 @@ export const getRestaurantLoyaltyAnalytics = createServerFn({ method: "POST" })
       utilizationRate: issued > 0 ? Math.round((redeemed / issued) * 1000) / 1000 : 0,
     };
   });
+
+// ------------- Customer: recompensas por nível -------------
+
+export type RestaurantRewardLevel = {
+  name: string;
+  minimum_points: number;
+  benefits: string[];
+  reached: boolean;
+};
+
+export const getRestaurantRewards = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }): Promise<RestaurantRewardLevel[]> => {
+    const rest = await findRestaurantBySlug(data.slug);
+    if (!rest) return [];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const customerId = await findCustomerIdByAuth(context.userId, rest.id);
+    let lifetime = 0;
+    if (customerId) {
+      const { data: cl } = await supabaseAdmin
+        .from("customer_loyalty").select("lifetime_points")
+        .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle();
+      lifetime = Number(cl?.lifetime_points ?? 0);
+    }
+    const { data: levels } = await supabaseAdmin
+      .from("loyalty_levels")
+      .select("name, minimum_points, benefits, active")
+      .eq("restaurant_id", rest.id)
+      .eq("active", true)
+      .order("minimum_points", { ascending: true });
+    return ((levels ?? []) as any[]).map((l) => {
+      const b = l.benefits;
+      const list: string[] = Array.isArray(b)
+        ? b.map((x) => String(x))
+        : typeof b === "string"
+          ? [b]
+          : b && typeof b === "object"
+            ? Object.values(b as Record<string, unknown>).map((x) => String(x))
+            : [];
+      return {
+        name: String(l.name),
+        minimum_points: Number(l.minimum_points ?? 0),
+        benefits: list,
+        reached: lifetime >= Number(l.minimum_points ?? 0),
+      };
+    });
+  });
+
+// ------------- Customer: cupons ativos do restaurante -------------
+
+export type RestaurantCouponInfo = {
+  id: string;
+  code: string;
+  discount_percent: number;
+  valid_until: string | null;
+};
+
+export const getRestaurantCoupons = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1) }).parse(d))
+  .handler(async ({ data }): Promise<RestaurantCouponInfo[]> => {
+    const rest = await findRestaurantBySlug(data.slug);
+    if (!rest) return [];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: rows } = await supabaseAdmin
+      .from("coupons")
+      .select("id, code, discount_percent, valid_until, is_active")
+      .eq("restaurant_id", rest.id)
+      .eq("is_active", true)
+      .order("valid_until", { ascending: true });
+    return ((rows ?? []) as any[])
+      .filter((c) => !c.valid_until || String(c.valid_until).slice(0, 10) >= today)
+      .map((c) => ({
+        id: c.id,
+        code: c.code,
+        discount_percent: Number(c.discount_percent ?? 0),
+        valid_until: c.valid_until ?? null,
+      }));
+  });
