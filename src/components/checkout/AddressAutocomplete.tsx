@@ -113,6 +113,7 @@ export function AddressAutocomplete({
               <Label>Número *</Label>
               <Input
                 required
+                autoFocus
                 inputMode="numeric"
                 value={value.numberOverride ?? ""}
                 onChange={(e) => onChange({ ...value, numberOverride: e.target.value })}
