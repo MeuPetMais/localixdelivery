@@ -1,12 +1,15 @@
 import type { DashboardRole, NavigationItem, WorkspaceDefinition } from "./types";
 
 export const ROLE_HIERARCHY: Record<DashboardRole, number> = {
-  ADMIN: 100,
+  OWNER: 100,
+  ADMIN: 100, // legacy alias for OWNER
   MANAGER: 80,
-  ATTENDANT: 60,
+  STAFF: 60,
+  ATTENDANT: 60, // legacy alias for STAFF
   CASHIER: 50,
   KITCHEN: 40,
-  DRIVER: 30,
+  DELIVERY: 30,
+  DRIVER: 30, // legacy alias for DELIVERY
 };
 
 export function canAccess(
