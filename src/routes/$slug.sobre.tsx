@@ -579,7 +579,7 @@ function SobrePage() {
 
 
           {/* PAGAMENTOS */}
-          <TabsContent value="pagamentos" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
+          <TabsContent value="pagamentos" className="space-y-4 pt-4">
             {isPaymentsLoading ? (
               <TabSkeleton />
             ) : (
