@@ -1,4 +1,5 @@
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Check, ImageIcon, Plus, ShoppingBag, ArrowLeft, Sparkles, AlertTriangle } from "lucide-react";
