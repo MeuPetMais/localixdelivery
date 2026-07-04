@@ -29,7 +29,7 @@ function isRestaurantPath(p: string) {
 
 const items: Item[] = [
   { key: "home", label: "Início", icon: Home, match: (p) => isRestaurantPath(p) },
-  { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
+  { key: "carteira", label: "Carteira", icon: Wallet, match: (p) => p.startsWith("/fidelidade") || p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
