@@ -662,7 +662,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         size="sm"
                         className="mt-2 w-full rounded-xl"
                         disabled={!effectiveOpen}
-                        onClick={() => { add({ id: it.id, name: it.name, price: Number(it.promo_price) }); toast.success(`${it.name} adicionado`); }}
+                        onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price), image_url: it.image_url })}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                       </Button>
