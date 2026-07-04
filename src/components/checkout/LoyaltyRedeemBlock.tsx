@@ -91,14 +91,17 @@ export function LoyaltyRedeemBlock({
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">Você tem {balance} pontos</p>
-              <p className="text-xs text-muted-foreground">Faltam {minRedeem - balance} pontos para o primeiro resgate.</p>
+              <p className="font-semibold text-sm">⭐ Usar meus pontos</p>
+              <p className="text-xs text-muted-foreground">
+                Você possui <b>{balance} pontos</b>. Faltam <b>{minRedeem - balance} pontos</b> para utilizar seus benefícios.
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
     );
   }
+
 
   const pointsPerReal = summaryQ.data?.settings.points_per_real ?? 0;
   const earnOn = summaryQ.data?.settings.earn_on ?? "delivered";
