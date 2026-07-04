@@ -28,6 +28,7 @@ import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
 import type { CustomerAddress } from "@/lib/customer-addresses";
 import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
+import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
 
 
 export const Route = createFileRoute("/$slug/")({
