@@ -19,7 +19,6 @@ import {
   Ticket,
   Copy,
   Star,
-  ShoppingBag,
   Package,
   Truck,
   Coins,
@@ -27,9 +26,9 @@ import {
   Undo2,
   PartyPopper,
   Utensils,
-  ChevronRight,
   Clock,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { BottomNavSpacer } from "@/components/BottomNav";
