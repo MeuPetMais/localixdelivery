@@ -152,9 +152,10 @@ const RESERVED_TOP = new Set([
   "", "home", "beneficios", "favoritos", "meus-pedidos", "meus-enderecos",
   "cliente", "pedido", "pedido-sucesso", "auth", "entrar", "esqueci-senha",
   "redefinir-senha", "admin", "dashboard", "menu", "orders", "settings", "ai",
-  "consultor", "customers", "finance", "finance-ai", "inventory", "loyalty",
-  "promotions", "reviews", "suppliers", "units", "builders", "r", "featured",
-  "kitchen", "perfil", "print-settings", "support", "escolher-ambiente",
+  "consultor", "customers", "finance", "finance-ai", "financial-center",
+  "inventory", "loyalty", "promotions", "reviews", "suppliers", "units",
+  "builders", "r", "featured", "kitchen", "perfil", "print-settings",
+  "support", "escolher-ambiente", "pagamentos", "analytics", "relatorios",
 ]);
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
@@ -172,7 +173,15 @@ const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
 
 
 function CustomerBottomNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname, isAdminArea } = useRouterState({
+    select: (s) => ({
+      pathname: s.location.pathname,
+      isAdminArea: s.matches.some((m) =>
+        m.routeId?.startsWith("/_authenticated") || m.routeId?.startsWith("/admin"),
+      ),
+    }),
+  });
+  if (isAdminArea) return null;
   const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
   if (!show) return null;
   return (
