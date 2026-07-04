@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
-type ItemKey = "home" | "beneficios" | "favoritos" | "pedidos" | "perfil";
+type ItemKey = "home" | "carteira" | "favoritos" | "pedidos" | "perfil";
 
 type Item = {
   key: ItemKey;
