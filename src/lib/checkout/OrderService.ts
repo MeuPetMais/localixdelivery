@@ -51,6 +51,8 @@ const inputSchema = z.object({
   couponCode: z.string().optional(),
   couponDiscount: z.number().nonnegative().optional().default(0),
   cashback: z.number().nonnegative().optional().default(0),
+  loyaltyDiscount: z.number().nonnegative().optional().default(0),
+  loyaltyPoints: z.number().int().nonnegative().optional().default(0),
 });
 
 export type CheckoutInput = z.infer<typeof inputSchema>;
@@ -81,6 +83,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         deliveryFee: data.deliveryFee,
         couponDiscount: data.couponDiscount,
         cashback: data.cashback,
+        loyaltyDiscount: data.loyaltyDiscount,
         paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
         provider: "mercado_pago" as ProviderId,
         restaurantId: rest.id,
@@ -102,6 +105,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         items: data.items,
         total: pricing.customerTotal,
         discount: pricing.couponDiscount,
+        loyalty_discount: data.loyaltyDiscount || 0,
         status: "aguardando_pagamento",
       })
       .select("id, order_number")
@@ -151,6 +155,7 @@ export const previewCheckoutPricing = createServerFn({ method: "POST" })
         deliveryFee: z.number().nonnegative().optional().default(0),
         couponDiscount: z.number().nonnegative().optional().default(0),
         cashback: z.number().nonnegative().optional().default(0),
+        loyaltyDiscount: z.number().nonnegative().optional().default(0),
         paymentMethod: z.enum(CHECKOUT_METHODS).optional(),
       })
       .parse(d),
@@ -162,6 +167,7 @@ export const previewCheckoutPricing = createServerFn({ method: "POST" })
         deliveryFee: data.deliveryFee,
         couponDiscount: data.couponDiscount,
         cashback: data.cashback,
+        loyaltyDiscount: data.loyaltyDiscount,
         paymentMethod: data.paymentMethod
           ? PRICING_METHOD_MAP[data.paymentMethod]
           : "pix",

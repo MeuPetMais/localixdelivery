@@ -13,6 +13,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as FidelidadeRouteImport } from './routes/fidelidade'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EscolherAmbienteRouteImport } from './routes/escolher-ambiente'
@@ -47,6 +48,7 @@ import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
+import { Route as AuthenticatedProgramaFidelidadeRouteImport } from './routes/_authenticated/programa-fidelidade'
 import { Route as AuthenticatedPrintSettingsRouteImport } from './routes/_authenticated/print-settings'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authenticated/pagamentos'
@@ -88,6 +90,11 @@ const MeusEnderecosRoute = MeusEnderecosRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FidelidadeRoute = FidelidadeRouteImport.update({
+  id: '/fidelidade',
+  path: '/fidelidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritosRoute = FavoritosRouteImport.update({
@@ -259,6 +266,12 @@ const AuthenticatedPromotionsRoute = AuthenticatedPromotionsRouteImport.update({
   path: '/promotions',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgramaFidelidadeRoute =
+  AuthenticatedProgramaFidelidadeRouteImport.update({
+    id: '/programa-fidelidade',
+    path: '/programa-fidelidade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPrintSettingsRoute =
   AuthenticatedPrintSettingsRouteImport.update({
     id: '/print-settings',
@@ -383,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
@@ -407,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/print-settings': typeof AuthenticatedPrintSettingsRoute
+  '/programa-fidelidade': typeof AuthenticatedProgramaFidelidadeRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -442,6 +457,7 @@ export interface FileRoutesByTo {
   '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
@@ -466,6 +482,7 @@ export interface FileRoutesByTo {
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/print-settings': typeof AuthenticatedPrintSettingsRoute
+  '/programa-fidelidade': typeof AuthenticatedProgramaFidelidadeRoute
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -505,6 +522,7 @@ export interface FileRoutesById {
   '/escolher-ambiente': typeof EscolherAmbienteRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/favoritos': typeof FavoritosRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
@@ -529,6 +547,7 @@ export interface FileRoutesById {
   '/_authenticated/pagamentos': typeof AuthenticatedPagamentosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/print-settings': typeof AuthenticatedPrintSettingsRoute
+  '/_authenticated/programa-fidelidade': typeof AuthenticatedProgramaFidelidadeRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -568,6 +587,7 @@ export interface FileRouteTypes {
     | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/fidelidade'
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
@@ -592,6 +612,7 @@ export interface FileRouteTypes {
     | '/pagamentos'
     | '/perfil'
     | '/print-settings'
+    | '/programa-fidelidade'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -627,6 +648,7 @@ export interface FileRouteTypes {
     | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/fidelidade'
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
@@ -651,6 +673,7 @@ export interface FileRouteTypes {
     | '/pagamentos'
     | '/perfil'
     | '/print-settings'
+    | '/programa-fidelidade'
     | '/promotions'
     | '/reviews'
     | '/settings'
@@ -689,6 +712,7 @@ export interface FileRouteTypes {
     | '/escolher-ambiente'
     | '/esqueci-senha'
     | '/favoritos'
+    | '/fidelidade'
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
@@ -713,6 +737,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pagamentos'
     | '/_authenticated/perfil'
     | '/_authenticated/print-settings'
+    | '/_authenticated/programa-fidelidade'
     | '/_authenticated/promotions'
     | '/_authenticated/reviews'
     | '/_authenticated/settings'
@@ -752,6 +777,7 @@ export interface RootRouteChildren {
   EscolherAmbienteRoute: typeof EscolherAmbienteRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   FavoritosRoute: typeof FavoritosRoute
+  FidelidadeRoute: typeof FidelidadeRoute
   HomeRoute: typeof HomeRoute
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
@@ -792,6 +818,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fidelidade': {
+      id: '/fidelidade'
+      path: '/fidelidade'
+      fullPath: '/fidelidade'
+      preLoaderRoute: typeof FidelidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/favoritos': {
@@ -1032,6 +1065,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPromotionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/programa-fidelidade': {
+      id: '/_authenticated/programa-fidelidade'
+      path: '/programa-fidelidade'
+      fullPath: '/programa-fidelidade'
+      preLoaderRoute: typeof AuthenticatedProgramaFidelidadeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/print-settings': {
       id: '/_authenticated/print-settings'
       path: '/print-settings'
@@ -1207,6 +1247,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPagamentosRoute: typeof AuthenticatedPagamentosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPrintSettingsRoute: typeof AuthenticatedPrintSettingsRoute
+  AuthenticatedProgramaFidelidadeRoute: typeof AuthenticatedProgramaFidelidadeRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1233,6 +1274,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPagamentosRoute: AuthenticatedPagamentosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPrintSettingsRoute: AuthenticatedPrintSettingsRoute,
+  AuthenticatedProgramaFidelidadeRoute: AuthenticatedProgramaFidelidadeRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -1304,6 +1346,7 @@ const rootRouteChildren: RootRouteChildren = {
   EscolherAmbienteRoute: EscolherAmbienteRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   FavoritosRoute: FavoritosRoute,
+  FidelidadeRoute: FidelidadeRoute,
   HomeRoute: HomeRoute,
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
