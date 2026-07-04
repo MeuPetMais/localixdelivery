@@ -803,7 +803,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                                 size="icon"
                                 className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
                                 disabled={!effectiveOpen}
-                                onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
+                                onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price), image_url: it.image_url })}
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
