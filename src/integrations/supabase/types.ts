@@ -1820,6 +1820,54 @@ export type Database = {
           },
         ]
       }
+      loyalty_events: {
+        Row: {
+          created_at: string
+          customer_id: string
+          dedupe_key: string
+          delivered_at: string | null
+          event_type: string
+          id: string
+          payload: Json
+          restaurant_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          dedupe_key: string
+          delivered_at?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          restaurant_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          dedupe_key?: string
+          delivered_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_levels: {
         Row: {
           active: boolean
@@ -6094,6 +6142,7 @@ export type Database = {
         Args: { _order_id: string }
         Returns: undefined
       }
+      loyalty_scan_expiring: { Args: never; Returns: number }
       reset_demo_environment: { Args: never; Returns: Json }
       seed_demo_marketplace: { Args: never; Returns: undefined }
     }

@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Sparkles, Gift, TrendingUp, Users, Percent, DollarSign } from "lucide-react";
+import { Loader2, Sparkles, Gift, TrendingUp, Users, Percent, DollarSign, AlertTriangle, Timer, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import {
   getRestaurantLoyaltySettings,
   saveRestaurantLoyaltySettings,
   getRestaurantLoyaltyStats,
+  getRestaurantLoyaltyAnalytics,
   type LoyaltySettings,
 } from "@/lib/loyalty.functions";
 
@@ -32,6 +33,7 @@ function ProgramaFidelidadePage() {
   const settingsFn = useServerFn(getRestaurantLoyaltySettings);
   const saveFn = useServerFn(saveRestaurantLoyaltySettings);
   const statsFn = useServerFn(getRestaurantLoyaltyStats);
+  const analyticsFn = useServerFn(getRestaurantLoyaltyAnalytics);
 
   const settingsQ = useQuery({
     queryKey: ["loyalty-settings", restaurant?.id],
@@ -42,6 +44,12 @@ function ProgramaFidelidadePage() {
   const statsQ = useQuery({
     queryKey: ["loyalty-stats", restaurant?.id],
     queryFn: () => statsFn({ data: { restaurantId: restaurant!.id } }),
+    enabled: !!restaurant?.id,
+  });
+
+  const analyticsQ = useQuery({
+    queryKey: ["loyalty-analytics", restaurant?.id],
+    queryFn: () => analyticsFn({ data: { restaurantId: restaurant!.id } }),
     enabled: !!restaurant?.id,
   });
 
@@ -69,13 +77,22 @@ function ProgramaFidelidadePage() {
         <h1 className="font-display text-2xl">Programa de Fidelidade</h1>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — pontos */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <KPI icon={<Users className="h-4 w-4" />} label="Clientes fidelizados" value={String(statsQ.data?.participatingCustomers ?? "—")} />
         <KPI icon={<Sparkles className="h-4 w-4" />} label="Pontos emitidos" value={String(statsQ.data?.pointsIssued ?? "—")} />
         <KPI icon={<Gift className="h-4 w-4" />} label="Pontos resgatados" value={String(statsQ.data?.pointsRedeemed ?? "—")} />
+        <KPI icon={<Timer className="h-4 w-4" />} label="Pontos expirados" value={String(statsQ.data?.pointsExpired ?? "—")} />
         <KPI icon={<DollarSign className="h-4 w-4" />} label="Descontos concedidos" value={statsQ.data ? brl(statsQ.data.discountsGiven) : "—"} />
-        <KPI icon={<TrendingUp className="h-4 w-4" />} label="Ticket com fidelidade" value={statsQ.data ? brl(statsQ.data.avgTicketWithLoyalty) : "—"} />
+      </div>
+
+      {/* Analytics — engajamento */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <KPI icon={<Activity className="h-4 w-4" />} label="Clientes ativos" value={String(analyticsQ.data?.activeCustomers ?? "—")} />
+        <KPI icon={<Users className="h-4 w-4" />} label="Sem resgate" value={String(analyticsQ.data?.neverRedeemed ?? "—")} />
+        <KPI icon={<AlertTriangle className="h-4 w-4" />} label="Com pontos expirando" value={String(analyticsQ.data?.expiringSoonCustomers ?? "—")} />
+        <KPI icon={<Percent className="h-4 w-4" />} label="Taxa de utilização" value={analyticsQ.data ? `${(analyticsQ.data.utilizationRate * 100).toFixed(1)}%` : "—"} />
+        <KPI icon={<Percent className="h-4 w-4" />} label="Taxa de expiração" value={analyticsQ.data ? `${(analyticsQ.data.expirationRate * 100).toFixed(1)}%` : "—"} />
       </div>
 
       {/* Configuração */}

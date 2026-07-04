@@ -419,3 +419,13 @@ Ver `DOMAIN_MANIFEST_PAYMENT.md` e `PAYMENT_DOMAIN_FINAL_REPORT.md`.
 - Checkout consome apenas `search()`, `details()`, `validateDeliveryArea()`.
 - Cache de recentes em `localStorage`; debounce 300ms no componente.
 - Ver `ADDRESS_AUTOCOMPLETE.md`.
+
+## Loyalty Lifecycle (2026-07-04)
+- Cron `loyalty-daily-lifecycle` (pg_cron, 03:00 UTC) executa
+  `loyalty_expire_points()` + `loyalty_scan_expiring()`.
+- Nova tabela `loyalty_events` armazena eventos `PointsExpiring`
+  (janelas 30/7/1) para o NotificationCenter futuro.
+- Server fns `getMyExpiringPoints` e `getRestaurantLoyaltyAnalytics`.
+- UI: alerta de expiração em `/fidelidade` e KPIs de engajamento em
+  `/programa-fidelidade`.
+- Detalhes: `docs/LOYALTY_LIFECYCLE.md`.

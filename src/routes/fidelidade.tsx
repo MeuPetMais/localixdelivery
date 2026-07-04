@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Gift, TrendingUp, ArrowLeft, Loader2, Trophy } from "lucide-react";
+import { Sparkles, Gift, TrendingUp, ArrowLeft, Loader2, Trophy, AlertTriangle } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { BottomNavSpacer } from "@/components/BottomNav";
 import {
   getMyLoyaltyForRestaurant,
   getMyLoyaltyHistory,
+  getMyExpiringPoints,
   type LoyaltyTransaction,
 } from "@/lib/loyalty.functions";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
@@ -33,6 +34,7 @@ function FidelidadePage() {
   const slug = session.session?.restaurantSlug ?? "";
   const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
   const historyFn = useServerFn(getMyLoyaltyHistory);
+  const expiringFn = useServerFn(getMyExpiringPoints);
   const [filter, setFilter] = useState<Filter>("all");
 
   const summaryQ = useQuery({
@@ -44,6 +46,12 @@ function FidelidadePage() {
   const historyQ = useQuery({
     queryKey: ["loyalty", "history", slug, filter],
     queryFn: () => historyFn({ data: { slug, filter } }),
+    enabled: !!user && !!slug,
+  });
+
+  const expiringQ = useQuery({
+    queryKey: ["loyalty", "expiring", slug],
+    queryFn: () => expiringFn({ data: { slug } }),
     enabled: !!user && !!slug,
   });
 
@@ -112,6 +120,22 @@ function FidelidadePage() {
               </div>
             </div>
           </Card>
+
+          {expiringQ.data && expiringQ.data.totalExpiring > 0 && expiringQ.data.next && (
+            <Card className="border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/20 animate-in fade-in slide-in-from-top-2">
+              <CardContent className="flex items-start gap-3 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-900 dark:text-amber-200">
+                    {expiringQ.data.next.points} pontos expiram em {expiringQ.data.next.days} {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
+                  </p>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                    Total expirando em até 30 dias: {expiringQ.data.totalExpiring} pts. Use antes que vençam.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Histórico */}
           <Card>
