@@ -28,6 +28,7 @@ import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
 import type { CustomerAddress } from "@/lib/customer-addresses";
 import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
+import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
 
 
 export const Route = createFileRoute("/$slug/")({
@@ -312,6 +313,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
+
+  const [addedSheet, setAddedSheet] = useState<AddedItem | null>(null);
+  const addAndPrompt = (raw: { id: string; name: string; price: number; image_url?: string | null }) => {
+    add({ id: raw.id, name: raw.name, price: raw.price });
+    setAddedSheet({ id: raw.id, name: raw.name, price: raw.price, qty: 1, image_url: raw.image_url ?? null });
+  };
+  const suggestions = useMemo(() => {
+    const items = (data?.items ?? []) as any[];
+    const inCart = new Set(cart.map((c) => c.id));
+    const lastId = addedSheet?.id;
+    const available = items.filter((i) => i.is_available !== false && !inCart.has(i.id) && i.id !== lastId);
+    const min = Number(data?.restaurant?.min_order ?? 0);
+    const missing = Math.max(0, min - subtotal);
+    const priceOf = (i: any) => Number(isPromoActiveNow(i) ? i.promo_price : i.price);
+    const catName = (i: any) => {
+      const cat = (data?.categories ?? []).find((c: any) => c.id === i.category_id);
+      return (cat?.name ?? "").toLowerCase();
+    };
+    const scored = available.map((i) => {
+      const p = priceOf(i);
+      const isComplement = /bebida|sobremesa|acompanh|adicional|complement/i.test(catName(i)) ? -5 : 0;
+      const distance = missing > 0 ? Math.abs(p - missing) : Math.abs(p - 15);
+      return { item: i, score: distance + isComplement };
+    }).sort((a, b) => a.score - b.score);
+    return scored.slice(0, 6).map((s) => s.item);
+  }, [data?.items, data?.categories, data?.restaurant?.min_order, cart, subtotal, addedSheet?.id]);
+
 
   const openBuilder = (builder: Builder) => {
     const builderStatus = getRestaurantStatus({
@@ -634,7 +662,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         size="sm"
                         className="mt-2 w-full rounded-xl"
                         disabled={!effectiveOpen}
-                        onClick={() => { add({ id: it.id, name: it.name, price: Number(it.promo_price) }); toast.success(`${it.name} adicionado`); }}
+                        onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price), image_url: it.image_url })}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                       </Button>
@@ -695,7 +723,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         <FeaturedSections
           slug={slug}
           effectiveOpen={effectiveOpen}
-          onAdd={(it) => { add({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price) }); toast.success(`${it.name} adicionado`); }}
+          onAdd={(it) => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price), image_url: (it as any).image_url })}
           onOpenBuilder={(builderId) => navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builderId } as any })}
         />
 
@@ -775,7 +803,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                                 size="icon"
                                 className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
                                 disabled={!effectiveOpen}
-                                onClick={() => { add({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price) }); toast.success(`${it.name} adicionado`); }}
+                                onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price), image_url: it.image_url })}
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -877,6 +905,21 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           </div>
         </div>
       )}
+      <AddedToCartSheet
+        open={!!addedSheet}
+        onOpenChange={(o) => { if (!o) setAddedSheet(null); }}
+        lastAdded={addedSheet}
+        subtotal={subtotal}
+        minOrder={Number(restaurant.min_order ?? 0)}
+        suggestions={suggestions}
+        onAddSuggestion={(it: any) => {
+          const price = Number(isPromoActiveNow(it) ? it.promo_price : it.price);
+          add({ id: it.id, name: it.name, price });
+          setAddedSheet({ id: it.id, name: it.name, price, qty: 1, image_url: it.image_url ?? null });
+        }}
+        onContinue={() => setAddedSheet(null)}
+        onGoToCart={() => { setAddedSheet(null); setOpenSheet(true); }}
+      />
     </div>
   );
 }
