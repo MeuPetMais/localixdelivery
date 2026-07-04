@@ -1,43 +1,18 @@
-import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import { RestaurantProvider, useCurrentRestaurant } from "@/contexts/RestaurantContext";
 import { OwnerOnboarding } from "@/components/OwnerOnboarding";
 import { DemoExperience } from "@/components/DemoExperience";
-import { OrdersRealtimeProvider, useOrdersRealtime } from "@/contexts/OrdersRealtimeContext";
+import { OrdersRealtimeProvider } from "@/contexts/OrdersRealtimeContext";
 import { PendingOrdersBanner } from "@/components/PendingOrdersBanner";
-import { Badge } from "@/components/ui/badge";
-import {
-  LayoutDashboard,
-  UtensilsCrossed,
-  Settings,
-  LogOut,
-  ShieldCheck,
-  ClipboardList,
-  Users,
-  Sparkles,
-  Brain,
-  Wallet,
-  Package,
-  LineChart,
-  Building2,
-  Store,
-  Bot,
-  Star,
-  Menu as MenuIcon,
-  X,
-  Flame,
-  UserCircle,
-  Printer,
-  LifeBuoy,
-} from "lucide-react";
 import { HelpFab } from "@/components/HelpFab";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
-
-
 import { useIsAdmin } from "@/hooks/use-role";
+import { RestaurantDashboardLayout } from "@/components/dashboard/RestaurantDashboardLayout";
+import type { DashboardRole } from "@/lib/dashboard";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -53,9 +28,6 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthLayout() {
   const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
-  // Resolvemos o restaurante aqui no shell (mesma chave de cache do
-  // RestaurantProvider abaixo — não dispara consulta extra) para poder
-  // montar a assinatura Realtime única e exibir o badge no menu.
   const { restaurant } = useCurrentRestaurant(user.id);
   return (
     <OrdersRealtimeProvider restaurantId={restaurant?.id ?? ""}>
@@ -66,163 +38,49 @@ function AuthLayout() {
 
 function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }) {
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { isAdmin } = useIsAdmin(userId);
-  const { unseenCount } = useOrdersRealtime();
-  const [open, setOpen] = useState(false);
+  const { restaurant } = useCurrentRestaurant(userId);
+
+  const role: DashboardRole = isAdmin ? "ADMIN" : "MANAGER";
+  const restaurantName = restaurant?.name ?? "Localix";
 
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
-  const nav = [
-    { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
-    { to: "/orders", label: "Pedidos", icon: ClipboardList },
-    { to: "/kitchen", label: "Painel da Cozinha", icon: UtensilsCrossed },
-    { to: "/menu", label: "Cardápio", icon: UtensilsCrossed },
-    { to: "/featured", label: "Categorias em Destaque", icon: Star },
-    { to: "/promotions", label: "Promoções", icon: Flame },
-    { to: "/builders", label: "Monte do Seu Jeito", icon: Sparkles },
-    { to: "/customers", label: "Clientes", icon: Users },
-    { to: "/loyalty", label: "Fidelidade", icon: Sparkles },
-    { to: "/reviews", label: "Avaliações", icon: Star },
-
-    { to: "/ai", label: "Central de IA", icon: Brain },
-    { to: "/consultor", label: "Consultor IA", icon: Bot },
-    { to: "/finance", label: "Financeiro", icon: Wallet },
-    { to: "/inventory", label: "Estoque", icon: Package },
-    { to: "/finance-ai", label: "Relatórios", icon: LineChart },
-    { to: "/units", label: "Multiunidades", icon: Building2 },
-    { to: "/suppliers", label: "Central de Negócios", icon: Store },
-    { to: "/settings", label: "Perfil do Estabelecimento", icon: Settings },
-    { to: "/print-settings", label: "Impressão", icon: Printer },
-    { to: "/perfil", label: "Meu Perfil", icon: UserCircle },
-    { to: "/support", label: "Central de Suporte", icon: LifeBuoy },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
-  ] as const;
-
-  const SidebarInner = (
-    <div className="flex h-full flex-col">
-      <Link
-        to="/dashboard"
-        onClick={() => setOpen(false)}
-        className="flex h-16 shrink-0 items-center gap-2 border-b px-5 font-display text-lg font-extrabold"
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-warm text-primary-foreground shadow-glow">
-          L
-        </span>
-        <span className="truncate">
-          Localix <span className="text-primary">AI</span>
-        </span>
-      </Link>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {nav.map(({ to, label, icon: Icon }) => {
-          const active = pathname === to || pathname.startsWith(`${to}/`);
-          const isOrders = to === "/orders";
-          const showBadge = isOrders && unseenCount > 0;
-          return (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => setOpen(false)}
-              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              } ${showBadge ? "ring-1 ring-primary/40 bg-primary/5" : ""}`}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
-              )}
-              <Icon className={`h-4 w-4 shrink-0 ${showBadge ? "text-primary" : ""}`} />
-              <span className="truncate">{label}</span>
-              {showBadge && (
-                <Badge className="ml-auto h-5 min-w-5 justify-center bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground animate-pulse">
-                  {unseenCount}
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="border-t p-3">
-        <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full justify-start">
-          <LogOut className="mr-2 h-4 w-4" /> Sair
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-background lg:block">
-        {SidebarInner}
-      </aside>
-
-      {/* Mobile sidebar overlay */}
-      {open && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm lg:hidden"
-            onClick={() => setOpen(false)}
-          />
-          <aside className="fixed inset-y-0 left-0 z-50 w-64 border-r bg-background lg:hidden">
-            <button
-              onClick={() => setOpen(false)}
-              className="absolute right-2 top-3 rounded-md p-1.5 hover:bg-accent"
-              aria-label="Fechar menu"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            {SidebarInner}
-          </aside>
-        </>
+    <>
+      <ImpersonationBanner />
+      {isAdmin && (
+        <div className="flex justify-end border-b bg-background/70 px-6 py-2">
+          <EnvSwitcherButton />
+        </div>
       )}
-
-      <div className="lg:pl-64">
-        {/* Impersonation banner (only when admin is viewing a partner) */}
-        <ImpersonationBanner />
-        {/* Mobile top bar with hamburger */}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur lg:hidden">
-          <button
-            onClick={() => setOpen(true)}
-            className="rounded-md p-2 hover:bg-accent"
-            aria-label="Abrir menu"
-          >
-            <MenuIcon className="h-5 w-5" />
-          </button>
-          <Link to="/dashboard" className="flex items-center gap-2 font-display font-extrabold">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-warm text-primary-foreground">
-              L
-            </span>
-            Localix
-          </Link>
-          {isAdmin && <div className="ml-auto"><EnvSwitcherButton /></div>}
-        </header>
-        {/* Desktop env switcher (admin only) */}
-        {isAdmin && (
-          <div className="hidden justify-end border-b bg-background/70 px-6 py-2 lg:flex">
-            <EnvSwitcherButton />
+      <RestaurantDashboardLayout
+        restaurantName={restaurantName}
+        role={role}
+        branding={{
+          logoUrl: restaurant?.logo_url ?? undefined,
+        }}
+      >
+        <RestaurantProvider
+          userId={userId}
+          fallbackWhenMissing={(refetch) => (
+            <OwnerOnboarding ownerId={userId} onCreated={() => refetch()} />
+          )}
+        >
+          <DemoExperience userEmail={userEmail} />
+          <PendingOrdersBanner />
+          <div className="mb-4 flex justify-end">
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
           </div>
-        )}
-
-
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
-          <RestaurantProvider
-            userId={userId}
-            fallbackWhenMissing={(refetch) => (
-              <OwnerOnboarding ownerId={userId} onCreated={() => refetch()} />
-            )}
-          >
-            <DemoExperience userEmail={userEmail} />
-            <PendingOrdersBanner />
-            <Outlet />
-          </RestaurantProvider>
-        </main>
-        <HelpFab />
-      </div>
-    </div>
+          <Outlet />
+        </RestaurantProvider>
+      </RestaurantDashboardLayout>
+      <HelpFab />
+    </>
   );
 }
