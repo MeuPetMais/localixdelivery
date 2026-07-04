@@ -905,6 +905,21 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           </div>
         </div>
       )}
+      <AddedToCartSheet
+        open={!!addedSheet}
+        onOpenChange={(o) => { if (!o) setAddedSheet(null); }}
+        lastAdded={addedSheet}
+        subtotal={subtotal}
+        minOrder={Number(restaurant.min_order ?? 0)}
+        suggestions={suggestions}
+        onAddSuggestion={(it: any) => {
+          const price = Number(isPromoActiveNow(it) ? it.promo_price : it.price);
+          add({ id: it.id, name: it.name, price });
+          setAddedSheet({ id: it.id, name: it.name, price, qty: 1, image_url: it.image_url ?? null });
+        }}
+        onContinue={() => setAddedSheet(null)}
+        onGoToCart={() => { setAddedSheet(null); setOpenSheet(true); }}
+      />
     </div>
   );
 }
