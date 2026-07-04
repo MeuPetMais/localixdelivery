@@ -17,7 +17,11 @@ export function canAccess(
   required?: DashboardRole[],
 ): boolean {
   if (!required || required.length === 0) return true;
-  return required.includes(role);
+  // OWNER (and its legacy alias ADMIN) always have full access to the restaurant panel.
+  const canonical = normalizeRestaurantRole(role);
+  if (canonical === "OWNER") return true;
+  const normalizedRequired = required.map(normalizeRestaurantRole);
+  return normalizedRequired.includes(canonical);
 }
 
 export function filterNavigation(
