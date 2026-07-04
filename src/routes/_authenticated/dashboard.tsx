@@ -1154,3 +1154,34 @@ function StatusDonut({ data }: { data?: Record<string, number> | null }) {
   );
 }
 
+
+function QuickActionCard({
+  to,
+  icon: Icon,
+  title,
+  desc,
+  tone = "from-primary/15 text-primary",
+}: {
+  to: string;
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  tone?: string;
+}) {
+  const [gradient, textColor] = tone.split(" ");
+  return (
+    <Link
+      to={to}
+      className="group flex min-h-[110px] flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
+      title={desc}
+    >
+      <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${gradient} to-transparent ${textColor} transition-transform group-hover:scale-110`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="mt-3">
+        <div className="text-sm font-semibold leading-tight">{title}</div>
+        <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{desc}</div>
+      </div>
+    </Link>
+  );
+}
