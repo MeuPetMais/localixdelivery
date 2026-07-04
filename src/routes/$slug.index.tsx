@@ -314,6 +314,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
+  const [addedSheet, setAddedSheet] = useState<AddedItem | null>(null);
+  const addAndPrompt = (raw: { id: string; name: string; price: number; image_url?: string | null }) => {
+    add({ id: raw.id, name: raw.name, price: raw.price });
+    setAddedSheet({ id: raw.id, name: raw.name, price: raw.price, qty: 1, image_url: raw.image_url ?? null });
+  };
+  const suggestions = useMemo(() => {
+    const items = (data?.items ?? []) as any[];
+    const inCart = new Set(cart.map((c) => c.id));
+    const lastId = addedSheet?.id;
+    const available = items.filter((i) => i.is_available !== false && !inCart.has(i.id) && i.id !== lastId);
+    const min = Number(data?.restaurant?.min_order ?? 0);
+    const missing = Math.max(0, min - subtotal);
+    const priceOf = (i: any) => Number(isPromoActiveNow(i) ? i.promo_price : i.price);
+    const catName = (i: any) => {
+      const cat = (data?.categories ?? []).find((c: any) => c.id === i.category_id);
+      return (cat?.name ?? "").toLowerCase();
+    };
+    const scored = available.map((i) => {
+      const p = priceOf(i);
+      const isComplement = /bebida|sobremesa|acompanh|adicional|complement/i.test(catName(i)) ? -5 : 0;
+      const distance = missing > 0 ? Math.abs(p - missing) : Math.abs(p - 15);
+      return { item: i, score: distance + isComplement };
+    }).sort((a, b) => a.score - b.score);
+    return scored.slice(0, 6).map((s) => s.item);
+  }, [data?.items, data?.categories, data?.restaurant?.min_order, cart, subtotal, addedSheet?.id]);
+
+
   const openBuilder = (builder: Builder) => {
     const builderStatus = getRestaurantStatus({
       is_open: data?.restaurant?.is_open,
