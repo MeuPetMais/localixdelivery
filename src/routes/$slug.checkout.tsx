@@ -178,8 +178,8 @@ function CheckoutPage() {
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Endereço</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Label>Endereço de entrega</Label>
+            <AddressAutocomplete value={address} onChange={setAddress} restaurantSlug={slug} autoFocus={!address} />
           </div>
           <div className="space-y-1.5">
             <Label>Observações (opcional)</Label>
