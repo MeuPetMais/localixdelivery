@@ -1180,9 +1180,33 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
               onChange={setSmartAddress}
               restaurantSlug={restaurant.slug}
             />
-            <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
-              💡 <Link to="/cliente" className="font-medium text-primary underline">Entre na sua conta</Link> para salvar seus endereços e pedir mais rápido.
-            </p>
+            <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Compre mais rápido!</h3>
+                    <p className="text-xs text-muted-foreground">Entre na sua conta e tenha vantagens:</p>
+                  </div>
+                  <ul className="grid gap-1 text-xs text-foreground/90 sm:grid-cols-2">
+                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Endereços salvos</li>
+                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Acompanhe seus pedidos</li>
+                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Refaça pedidos em segundos</li>
+                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Ofertas exclusivas</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <Button asChild size="sm" className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1">
+                  <Link to="/cliente">Entrar agora</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1">
+                  <Link to="/cliente">Criar conta gratuitamente</Link>
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
