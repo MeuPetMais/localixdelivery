@@ -121,6 +121,22 @@ function FidelidadePage() {
             </div>
           </Card>
 
+          {expiringQ.data && expiringQ.data.totalExpiring > 0 && expiringQ.data.next && (
+            <Card className="border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/20 animate-in fade-in slide-in-from-top-2">
+              <CardContent className="flex items-start gap-3 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-900 dark:text-amber-200">
+                    {expiringQ.data.next.points} pontos expiram em {expiringQ.data.next.days} {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
+                  </p>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                    Total expirando em até 30 dias: {expiringQ.data.totalExpiring} pts. Use antes que vençam.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Histórico */}
           <Card>
             <CardContent className="space-y-3 p-4">
