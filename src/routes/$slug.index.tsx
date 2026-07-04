@@ -1180,14 +1180,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
               onChange={setSmartAddress}
               restaurantSlug={restaurant.slug}
             />
-            <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-5">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-5 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="flex-1 space-y-2">
                   <div>
-                    <h3 className="text-base font-semibold text-foreground">Compre mais rápido!</h3>
+                    <h3 className="text-base font-semibold text-foreground">🚀 Compre mais rápido!</h3>
                     <p className="text-xs text-muted-foreground">Entre na sua conta e tenha vantagens:</p>
                   </div>
                   <ul className="grid gap-1 text-xs text-foreground/90 sm:grid-cols-2">
@@ -1198,7 +1198,31 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
                   </ul>
                 </div>
               </div>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+
+              <div className="rounded-xl border border-primary/15 bg-background/70 p-3 backdrop-blur-sm sm:p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    <Gift className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Benefícios exclusivos</h4>
+                    <p className="text-[11px] text-muted-foreground">Programa de Fidelidade Localix</p>
+                  </div>
+                </div>
+                <ul className="grid gap-1.5 text-xs text-foreground/90 sm:grid-cols-2">
+                  <li className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-amber-500" /> Acumule pontos a cada pedido</li>
+                  <li className="flex items-center gap-1.5"><Ticket className="h-3.5 w-3.5 text-emerald-500" /> Troque pontos por descontos</li>
+                  <li className="flex items-center gap-1.5"><Cake className="h-3.5 w-3.5 text-pink-500" /> Brindes em datas especiais</li>
+                  <li className="flex items-center gap-1.5"><Flame className="h-3.5 w-3.5 text-orange-500" /> Promoções exclusivas</li>
+                  <li className="flex items-center gap-1.5 sm:col-span-2"><Trophy className="h-3.5 w-3.5 text-yellow-500" /> Suba de nível e desbloqueie vantagens</li>
+                </ul>
+              </div>
+
+              <p className="text-[11px] italic text-muted-foreground">
+                Mais de 80% dos nossos clientes cadastrados aproveitam descontos e recompensas.
+              </p>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button asChild size="sm" className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1">
                   <Link to="/cliente">Entrar agora</Link>
                 </Button>
@@ -1206,6 +1230,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
                   <Link to="/cliente">Criar conta gratuitamente</Link>
                 </Button>
               </div>
+              <p className="text-center text-[11px] text-muted-foreground">É rápido e gratuito.</p>
             </div>
           </div>
         )}
