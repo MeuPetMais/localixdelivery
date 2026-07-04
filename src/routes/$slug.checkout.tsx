@@ -45,7 +45,7 @@ function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState<SelectedAddress | null>(null);
   const [notes, setNotes] = useState("");
   const [method, setMethod] = useState<CheckoutMethod>("pix");
   const [deliveryFee] = useState(0);
