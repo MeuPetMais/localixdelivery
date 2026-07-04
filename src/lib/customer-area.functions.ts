@@ -36,7 +36,7 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
         .in("restaurant_id", restaurantIds)
         .order("created_at", { ascending: false })
         .limit(200),
-      supabaseAdmin.from("customer_points").select("customer_id, balance, total_earned").in("customer_id", customerIds),
+      supabaseAdmin.from("customer_loyalty").select("customer_id, points_balance, lifetime_points").in("customer_id", customerIds),
       supabaseAdmin
         .from("coupons")
         .select("id, restaurant_id, code, discount_percent, valid_until, is_active")
@@ -53,8 +53,9 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
     const name = customers[0]?.name ?? "";
     const totalOrders = customers.reduce((s, c) => s + (c.total_orders ?? 0), 0);
     const totalSpent = customers.reduce((s, c) => s + Number(c.total_spent ?? 0), 0);
-    const totalPoints = (pointsRows ?? []).reduce((s, p: any) => s + (p.balance ?? 0), 0);
-    const totalEarned = (pointsRows ?? []).reduce((s, p: any) => s + (p.total_earned ?? 0), 0);
+    const totalPoints = (pointsRows ?? []).reduce((s, p: any) => s + (p.points_balance ?? 0), 0);
+    const totalEarned = (pointsRows ?? []).reduce((s, p: any) => s + (p.lifetime_points ?? 0), 0);
+
 
     const today = new Date(new Date().toDateString());
     const validCoupons = (coupons ?? []).filter((c: any) => !c.valid_until || new Date(c.valid_until) >= today);

@@ -1028,41 +1028,6 @@ export type Database = {
           },
         ]
       }
-      customer_points: {
-        Row: {
-          balance: number
-          created_at: string
-          customer_id: string
-          id: string
-          total_earned: number
-          updated_at: string
-        }
-        Insert: {
-          balance?: number
-          created_at?: string
-          customer_id: string
-          id?: string
-          total_earned?: number
-          updated_at?: string
-        }
-        Update: {
-          balance?: number
-          created_at?: string
-          customer_id?: string
-          id?: string
-          total_earned?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_points_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: true
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customer_preferences: {
         Row: {
           created_at: string
@@ -1971,6 +1936,8 @@ export type Database = {
       }
       loyalty_transactions: {
         Row: {
+          balance_after: number | null
+          balance_before: number | null
           cashback: number
           created_at: string
           customer_id: string
@@ -1981,9 +1948,12 @@ export type Database = {
           reference_id: string | null
           reference_type: string | null
           restaurant_id: string
+          source: string | null
           transaction_type: string
         }
         Insert: {
+          balance_after?: number | null
+          balance_before?: number | null
           cashback?: number
           created_at?: string
           customer_id: string
@@ -1994,9 +1964,12 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           restaurant_id: string
+          source?: string | null
           transaction_type: string
         }
         Update: {
+          balance_after?: number | null
+          balance_before?: number | null
           cashback?: number
           created_at?: string
           customer_id?: string
@@ -2007,6 +1980,7 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           restaurant_id?: string
+          source?: string | null
           transaction_type?: string
         }
         Relationships: [
@@ -2633,6 +2607,7 @@ export type Database = {
           gateway_fee: number
           gateway_revenue: number
           id: string
+          loyalty_discount: number
           order_id: string
           platform_fee: number
           platform_revenue: number
@@ -2651,6 +2626,7 @@ export type Database = {
           gateway_fee?: number
           gateway_revenue?: number
           id?: string
+          loyalty_discount?: number
           order_id: string
           platform_fee?: number
           platform_revenue?: number
@@ -2669,6 +2645,7 @@ export type Database = {
           gateway_fee?: number
           gateway_revenue?: number
           id?: string
+          loyalty_discount?: number
           order_id?: string
           platform_fee?: number
           platform_revenue?: number
@@ -2793,6 +2770,9 @@ export type Database = {
           fixed_fee: number | null
           id: string
           items: Json
+          loyalty_discount: number
+          loyalty_points_consumed: number
+          loyalty_points_reserved: number
           order_number: number | null
           payment_method: string | null
           platform_fee: number | null
@@ -2814,6 +2794,9 @@ export type Database = {
           fixed_fee?: number | null
           id?: string
           items?: Json
+          loyalty_discount?: number
+          loyalty_points_consumed?: number
+          loyalty_points_reserved?: number
           order_number?: number | null
           payment_method?: string | null
           platform_fee?: number | null
@@ -2835,6 +2818,9 @@ export type Database = {
           fixed_fee?: number | null
           id?: string
           items?: Json
+          loyalty_discount?: number
+          loyalty_points_consumed?: number
+          loyalty_points_reserved?: number
           order_number?: number | null
           payment_method?: string | null
           platform_fee?: number | null
@@ -4895,6 +4881,7 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          loyalty_settings: Json
           manager_name: string | null
           min_order: number
           name: string
@@ -4939,6 +4926,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          loyalty_settings?: Json
           manager_name?: string | null
           min_order?: number
           name: string
@@ -4983,6 +4971,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          loyalty_settings?: Json
           manager_name?: string | null
           min_order?: number
           name?: string
@@ -6072,6 +6061,38 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      loyalty_apply: {
+        Args: {
+          _customer_id: string
+          _description: string
+          _metadata?: Json
+          _points: number
+          _reference_id: string
+          _reference_type: string
+          _restaurant_id: string
+          _source: string
+          _tx_type: string
+        }
+        Returns: string
+      }
+      loyalty_commit_reserve: {
+        Args: { _order_id: string }
+        Returns: undefined
+      }
+      loyalty_expire_points: { Args: never; Returns: number }
+      loyalty_reserve: {
+        Args: {
+          _customer_id: string
+          _order_id: string
+          _points: number
+          _restaurant_id: string
+        }
+        Returns: string
+      }
+      loyalty_rollback_reserve: {
+        Args: { _order_id: string }
+        Returns: undefined
       }
       reset_demo_environment: { Args: never; Returns: Json }
       seed_demo_marketplace: { Args: never; Returns: undefined }

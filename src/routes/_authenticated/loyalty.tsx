@@ -100,14 +100,16 @@ function LoyaltyPage() {
       const ids = (custs ?? []).map((c) => c.id);
       if (ids.length === 0) return [];
       const { data: pts } = await supabase
-        .from("customer_points")
-        .select("customer_id, balance, total_earned")
-        .in("customer_id", ids);
+        .from("customer_loyalty")
+        .select("customer_id, points_balance, lifetime_points")
+        .in("customer_id", ids)
+        .eq("restaurant_id", restaurant!.id);
       const map = new Map((pts ?? []).map((p: any) => [p.customer_id, p]));
       return (custs ?? [])
-        .map((c) => ({ ...c, points: (map.get(c.id) as any)?.balance ?? 0, earned: (map.get(c.id) as any)?.total_earned ?? 0 }))
+        .map((c) => ({ ...c, points: (map.get(c.id) as any)?.points_balance ?? 0, earned: (map.get(c.id) as any)?.lifetime_points ?? 0 }))
         .sort((a, b) => b.points - a.points)
         .slice(0, 10);
+
     },
   });
 
