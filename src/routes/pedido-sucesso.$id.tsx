@@ -100,6 +100,30 @@ function SuccessPage() {
   const currentStep = statusIndex(order?.status ?? "novo");
   const isDelivered = order?.status === "entregue";
 
+  // Ganho de fidelidade — reaproveita LoyaltyService (leitura), sem duplicar regra.
+  const historyFn = useServerFn(getMyLoyaltyHistory);
+  const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
+  const slug = restaurant?.slug ?? "";
+  const loyaltySummaryQ = useQuery({
+    queryKey: ["loyalty", "summary", slug, user?.id ?? "anon"],
+    queryFn: () => summaryFn({ data: { slug } }),
+    enabled: !!user && !!slug,
+  });
+  const loyaltyHistoryQ = useQuery({
+    queryKey: ["loyalty", "history", slug, "earn", user?.id ?? "anon"],
+    queryFn: () => historyFn({ data: { slug, filter: "earn" } }),
+    enabled: !!user && !!slug && isDelivered,
+  });
+  const creditedForOrder =
+    (loyaltyHistoryQ.data ?? []).find(
+      (tx) => tx.reference_id === order?.id && tx.type === "EARN",
+    )?.points ?? 0;
+  const pointsPerReal = loyaltySummaryQ.data?.settings.points_per_real ?? 0;
+  const earnOn = loyaltySummaryQ.data?.settings.earn_on ?? "delivered";
+  const loyaltyActive = loyaltySummaryQ.data?.active ?? false;
+  const estimatedEarn = Math.floor(subtotal * pointsPerReal);
+
+
   async function shareOrder() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const text = `Pedido #${order?.order_number} em ${restaurant?.name} — acompanhe: ${url}`;
