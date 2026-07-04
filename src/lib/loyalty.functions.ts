@@ -500,3 +500,137 @@ export const getRestaurantCoupons = createServerFn({ method: "POST" })
         valid_until: c.valid_until ?? null,
       }));
   });
+
+// ------------- Customer: benefícios em andamento (loyalty_rules) -------------
+
+export type InProgressBenefit = {
+  id: string;
+  name: string;
+  ui_kind: string | null;
+  trigger_kind: "POINTS" | "ORDERS" | "PRODUCTS" | "SPENT" | string;
+  trigger_qty: number;
+  trigger_product_name: string | null;
+  reward_label: string;
+  progress: number;
+  target: number;
+  unit: "pts" | "pedidos" | "produtos" | "R$";
+  remaining: number;
+  ratio: number;
+  unlocked: boolean;
+};
+
+function describeRewardFromConfig(cfg: any): string {
+  const r = cfg?.reward ?? {};
+  const k = cfg?.ui_kind;
+  if (k === "FREE_PRODUCT") return `Ganhe 1 ${r.product_name || "produto"}`;
+  if (k === "DISCOUNT") return `${r.discount_percent ?? 0}% de desconto`;
+  if (k === "FREE_DELIVERY") return "Frete grátis";
+  if (k === "CASHBACK") return `R$ ${Number(r.cashback_amount || 0).toFixed(2)} de cashback`;
+  if (k === "COUPON") return `Cupom ${r.coupon_code || ""}`.trim();
+  if (k === "GIFT") return `Brinde: ${r.gift_note || "cortesia"}`;
+  return "Recompensa";
+}
+
+export const getMyInProgressBenefits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }): Promise<InProgressBenefit[]> => {
+    const rest = await findRestaurantBySlug(data.slug);
+    if (!rest) return [];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: rules }, customerId] = await Promise.all([
+      supabaseAdmin
+        .from("loyalty_rules")
+        .select("id, name, config, active")
+        .eq("restaurant_id", rest.id)
+        .eq("active", true),
+      findCustomerIdByAuth(context.userId, rest.id),
+    ]);
+    const activeRules = (rules ?? []) as Array<{ id: string; name: string; config: any }>;
+    if (activeRules.length === 0) return [];
+
+    let lifetime = 0;
+    let orderCount = 0;
+    let totalSpent = 0;
+    const productCounts = new Map<string, number>();
+
+    if (customerId) {
+      const [{ data: cl }, { data: orders }] = await Promise.all([
+        supabaseAdmin
+          .from("customer_loyalty")
+          .select("lifetime_points")
+          .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle(),
+        supabaseAdmin
+          .from("orders")
+          .select("total, items, status")
+          .eq("restaurant_id", rest.id)
+          .eq("customer_id", customerId)
+          .not("status", "eq", "cancelado"),
+      ]);
+      lifetime = Number(cl?.lifetime_points ?? 0);
+      const os = (orders ?? []) as Array<{ total: number; items: any; status: string }>;
+      orderCount = os.length;
+      for (const o of os) {
+        totalSpent += Number(o.total ?? 0);
+        const items = Array.isArray(o.items) ? o.items : [];
+        for (const it of items) {
+          const name = String(it?.name ?? "").toLowerCase().trim();
+          if (!name) continue;
+          const qty = Number(it?.qty ?? it?.quantity ?? 1);
+          productCounts.set(name, (productCounts.get(name) ?? 0) + qty);
+        }
+      }
+    }
+
+    return activeRules
+      .map((r): InProgressBenefit | null => {
+        const cfg = r.config ?? {};
+        const trig = cfg.trigger ?? {};
+        const kind = String(trig.kind ?? "").toUpperCase();
+        const target = Number(trig.qty ?? 0);
+        if (!kind || target <= 0) return null;
+
+        let progress = 0;
+        let unit: InProgressBenefit["unit"] = "pts";
+        let productName: string | null = null;
+
+        if (kind === "POINTS") { progress = lifetime; unit = "pts"; }
+        else if (kind === "ORDERS") { progress = orderCount; unit = "pedidos"; }
+        else if (kind === "SPENT") { progress = totalSpent; unit = "R$"; }
+        else if (kind === "PRODUCTS") {
+          productName = String(trig.product_name ?? "").trim() || null;
+          if (productName) {
+            const key = productName.toLowerCase();
+            let sum = 0;
+            for (const [n, q] of productCounts) if (n.includes(key)) sum += q;
+            progress = sum;
+          } else {
+            let sum = 0;
+            for (const q of productCounts.values()) sum += q;
+            progress = sum;
+          }
+          unit = "produtos";
+        } else {
+          return null;
+        }
+
+        return {
+          id: r.id,
+          name: r.name,
+          ui_kind: cfg.ui_kind ?? null,
+          trigger_kind: kind as any,
+          trigger_qty: target,
+          trigger_product_name: productName,
+          reward_label: describeRewardFromConfig(cfg),
+          progress: Math.min(progress, target),
+          target,
+          unit,
+          remaining: Math.max(0, target - progress),
+          ratio: target > 0 ? Math.min(1, progress / target) : 0,
+          unlocked: progress >= target,
+        };
+      })
+      .filter((x): x is InProgressBenefit => !!x)
+      .sort((a, b) => b.ratio - a.ratio);
+  });
