@@ -639,7 +639,7 @@ function InfoRow({ icon: Icon, label, value, href }: { icon: any; label: string;
 
 function PaymentMethod({ icon: Icon, label }: { icon: any; label: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-3">
+    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-[hsl(var(--success)/0.08)] p-3">
       <Icon className="h-5 w-5 shrink-0 text-success" />
       <p className="flex-1 text-sm font-medium">{label}</p>
       <CheckCircle2 className="h-4 w-4 text-success" />
