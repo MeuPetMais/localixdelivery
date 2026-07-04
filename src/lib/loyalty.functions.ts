@@ -555,31 +555,31 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
     let totalSpent = 0;
     const productCounts = new Map<string, number>();
 
-    if (customerId) {
-      const [{ data: cl }, { data: orders }] = await Promise.all([
-        supabaseAdmin
-          .from("customer_loyalty")
-          .select("lifetime_points")
-          .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle(),
-        supabaseAdmin
-          .from("orders")
-          .select("total, items, status")
-          .eq("restaurant_id", rest.id)
-          .eq("customer_id", context.userId)
-          .not("status", "eq", "cancelado"),
-      ]);
-      lifetime = Number(cl?.lifetime_points ?? 0);
-      const os = (orders ?? []) as Array<{ total: number; items: any; status: string }>;
-      orderCount = os.length;
-      for (const o of os) {
-        totalSpent += Number(o.total ?? 0);
-        const items = Array.isArray(o.items) ? o.items : [];
-        for (const it of items) {
-          const name = String(it?.name ?? "").toLowerCase().trim();
-          if (!name) continue;
-          const qty = Number(it?.qty ?? it?.quantity ?? 1);
-          productCounts.set(name, (productCounts.get(name) ?? 0) + qty);
-        }
+    const [clRes, ordersRes] = await Promise.all([
+      customerId
+        ? supabaseAdmin
+            .from("customer_loyalty")
+            .select("lifetime_points")
+            .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+      supabaseAdmin
+        .from("orders")
+        .select("total, items, status")
+        .eq("restaurant_id", rest.id)
+        .eq("customer_id", context.userId)
+        .not("status", "eq", "cancelado"),
+    ]);
+    lifetime = Number((clRes as any)?.data?.lifetime_points ?? 0);
+    const os = ((ordersRes as any)?.data ?? []) as Array<{ total: number; items: any; status: string }>;
+    orderCount = os.length;
+    for (const o of os) {
+      totalSpent += Number(o.total ?? 0);
+      const items = Array.isArray(o.items) ? o.items : [];
+      for (const it of items) {
+        const name = String(it?.name ?? "").toLowerCase().trim();
+        if (!name) continue;
+        const qty = Number(it?.qty ?? it?.quantity ?? 1);
+        productCounts.set(name, (productCounts.get(name) ?? 0) + qty);
       }
     }
 
