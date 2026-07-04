@@ -36,7 +36,7 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
         .in("restaurant_id", restaurantIds)
         .order("created_at", { ascending: false })
         .limit(200),
-      supabaseAdmin.from("customer_points").select("customer_id, balance, total_earned").in("customer_id", customerIds),
+      supabaseAdmin.from("customer_loyalty").select("customer_id, points_balance, lifetime_points").in("customer_id", customerIds),
       supabaseAdmin
         .from("coupons")
         .select("id, restaurant_id, code, discount_percent, valid_until, is_active")
