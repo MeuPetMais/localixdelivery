@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
 import {
   CheckCircle2, Clock, CreditCard, Loader2, MapPin, Store, Gift,
-  MessageCircle, Share2, ChefHat, Bike, PackageCheck, Copy, Star,
+  MessageCircle, Share2, ChefHat, Bike, PackageCheck, Copy, Star, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
@@ -98,6 +100,30 @@ function SuccessPage() {
   const currentStep = statusIndex(order?.status ?? "novo");
   const isDelivered = order?.status === "entregue";
 
+  // Ganho de fidelidade — reaproveita LoyaltyService (leitura), sem duplicar regra.
+  const historyFn = useServerFn(getMyLoyaltyHistory);
+  const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
+  const slug = restaurant?.slug ?? "";
+  const loyaltySummaryQ = useQuery({
+    queryKey: ["loyalty", "summary", slug, user?.id ?? "anon"],
+    queryFn: () => summaryFn({ data: { slug } }),
+    enabled: !!user && !!slug,
+  });
+  const loyaltyHistoryQ = useQuery({
+    queryKey: ["loyalty", "history", slug, "earn", user?.id ?? "anon"],
+    queryFn: () => historyFn({ data: { slug, filter: "earn" } }),
+    enabled: !!user && !!slug && isDelivered,
+  });
+  const creditedForOrder =
+    (loyaltyHistoryQ.data ?? []).find(
+      (tx) => tx.reference_id === order?.id && tx.type === "EARN",
+    )?.points ?? 0;
+  const pointsPerReal = loyaltySummaryQ.data?.settings.points_per_real ?? 0;
+  const earnOn = loyaltySummaryQ.data?.settings.earn_on ?? "delivered";
+  const loyaltyActive = loyaltySummaryQ.data?.active ?? false;
+  const estimatedEarn = Math.floor(subtotal * pointsPerReal);
+
+
   async function shareOrder() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const text = `Pedido #${order?.order_number} em ${restaurant?.name} — acompanhe: ${url}`;
@@ -155,6 +181,41 @@ function SuccessPage() {
             <Clock className="h-3 w-3" /> Previsão: {etaLabel}
           </div>
         </Card>
+
+        {/* Fidelidade: crédito real quando entregue, senão estimativa */}
+        {user && loyaltyActive && isDelivered && creditedForOrder > 0 && (
+          <Card className="mt-4 border-emerald-300/60 bg-emerald-50/60 p-4 dark:bg-emerald-950/20 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="text-sm">
+                <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+                  🎉 Parabéns! +{creditedForOrder} pontos foram creditados.
+                </p>
+                <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                  <Link to="/fidelidade" className="underline">Ver na Minha Carteira</Link>
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+        {user && loyaltyActive && !isDelivered && estimatedEarn > 0 && (
+          <Card className="mt-4 border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <p className="text-sm">
+                Você ganhará <b className="text-primary">+{estimatedEarn} pontos</b>{" "}
+                {earnOn === "delivered"
+                  ? "quando este pedido for entregue."
+                  : "após a confirmação do pagamento."}
+              </p>
+            </div>
+          </Card>
+        )}
+
 
 
         {/* Status tracker */}

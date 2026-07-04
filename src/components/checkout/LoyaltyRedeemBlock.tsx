@@ -100,8 +100,29 @@ export function LoyaltyRedeemBlock({
     );
   }
 
+  const pointsPerReal = summaryQ.data?.settings.points_per_real ?? 0;
+  const earnOn = summaryQ.data?.settings.earn_on ?? "delivered";
+  const estimatedEarn = Math.floor(subtotal * pointsPerReal);
+
   return (
-    <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-bottom-2">
+    <div className="space-y-3">
+      {summaryQ.data?.active && estimatedEarn > 0 && (
+        <Card className="border-emerald-300/60 bg-emerald-50/50 dark:bg-emerald-950/20 animate-in fade-in slide-in-from-bottom-2">
+          <CardContent className="p-3 flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+              <Sparkles className="h-4 w-4 text-emerald-600" />
+            </div>
+            <p className="text-sm">
+              Você ganhará <b className="text-emerald-700 dark:text-emerald-400">+{estimatedEarn} pontos</b>{" "}
+              {earnOn === "delivered"
+                ? "quando este pedido for entregue."
+                : "após a confirmação do pagamento."}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-bottom-2">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -148,5 +169,6 @@ export function LoyaltyRedeemBlock({
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

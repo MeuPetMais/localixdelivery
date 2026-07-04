@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { MouseEvent } from "react";
-import { Home, Gift, Heart, Receipt, User } from "lucide-react";
+import { Home, Wallet, Heart, Receipt, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
-type ItemKey = "home" | "beneficios" | "favoritos" | "pedidos" | "perfil";
+type ItemKey = "home" | "carteira" | "favoritos" | "pedidos" | "perfil";
 
 type Item = {
   key: ItemKey;
@@ -29,7 +29,7 @@ function isRestaurantPath(p: string) {
 
 const items: Item[] = [
   { key: "home", label: "Início", icon: Home, match: (p) => isRestaurantPath(p) },
-  { key: "beneficios", label: "Benefícios", icon: Gift, match: (p) => p.startsWith("/beneficios") },
+  { key: "carteira", label: "Carteira", icon: Wallet, match: (p) => p.startsWith("/fidelidade") || p.startsWith("/beneficios") },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
   { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
@@ -78,8 +78,8 @@ export function BottomNav() {
               ? ({ to: "/$slug", params: { slug: activeSlug } } as const)
               : isHome
                 ? ({ to: "/home" } as const)
-                : key === "beneficios"
-                  ? ({ to: "/beneficios" } as const)
+                : key === "carteira"
+                  ? ({ to: "/fidelidade" } as const)
                   : key === "favoritos"
                     ? ({ to: "/favoritos" } as const)
                     : key === "pedidos"
