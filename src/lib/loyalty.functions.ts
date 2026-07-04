@@ -59,6 +59,20 @@ export type LoyaltyRestaurantStats = {
   avgTicketWithLoyalty: number;
 };
 
+export type LoyaltyExpiringInfo = {
+  totalExpiring: number;
+  next: { points: number; days: number; expireAt: string } | null;
+  buckets: Array<{ days: number; points: number; expireAt: string }>;
+};
+
+export type LoyaltyAnalytics = {
+  activeCustomers: number;         // clientes com saldo > 0
+  neverRedeemed: number;           // clientes com saldo mas sem REDEEM
+  expiringSoonCustomers: number;   // com evento PointsExpiring aberto
+  expirationRate: number;          // 0..1: expirados / emitidos
+  utilizationRate: number;         // 0..1: resgatados / emitidos
+};
+
 // ------------- Helpers -------------
 
 function normalizeSettings(raw: unknown): LoyaltySettings {
