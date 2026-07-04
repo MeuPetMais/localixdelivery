@@ -95,6 +95,7 @@ function WalletPage() {
   const expiringFn = useServerFn(getMyExpiringPoints);
   const rewardsFn = useServerFn(getRestaurantRewards);
   const couponsFn = useServerFn(getRestaurantCoupons);
+  const benefitsFn = useServerFn(getMyInProgressBenefits);
   const [filter, setFilter] = useState<Filter>("all");
 
   const summaryQ = useQuery({
@@ -103,8 +104,8 @@ function WalletPage() {
     enabled: !!user && !!slug,
   });
   const historyQ = useQuery({
-    queryKey: ["loyalty", "history", slug, filter],
-    queryFn: () => historyFn({ data: { slug, filter } }),
+    queryKey: ["loyalty", "history", slug],
+    queryFn: () => historyFn({ data: { slug, filter: "all" } }),
     enabled: !!user && !!slug,
   });
   const expiringQ = useQuery({
@@ -122,10 +123,28 @@ function WalletPage() {
     queryFn: () => couponsFn({ data: { slug } }),
     enabled: !!user && !!slug,
   });
+  const benefitsQ = useQuery({
+    queryKey: ["loyalty", "benefits", slug],
+    queryFn: () => benefitsFn({ data: { slug } }),
+    enabled: !!user && !!slug,
+  });
 
   const s = summaryQ.data;
   const rewards = rewardsQ.data ?? [];
   const coupons = couponsQ.data ?? [];
+  const benefits = benefitsQ.data ?? [];
+  const allTxs = historyQ.data ?? [];
+
+  // KPIs derivados do histórico
+  const balanceStats = useMemo(() => {
+    let earned = 0, redeemed = 0, expired = 0;
+    for (const t of allTxs) {
+      if (t.type === "EARN" || t.type === "BONUS") earned += Math.max(0, t.points);
+      else if (t.type === "REDEEM") redeemed += Math.max(0, -t.points);
+      else if (t.type === "EXPIRE") expired += Math.max(0, -t.points);
+    }
+    return { earned, redeemed, expired };
+  }, [allTxs]);
 
   // Próxima recompensa alcançável (menor minimum_points > balance)
   const nextReward = useMemo(() => {
@@ -138,6 +157,7 @@ function WalletPage() {
     () => rewards.filter((r) => s && r.minimum_points <= s.balance),
     [rewards, s],
   );
+
 
   if (loading || !user) {
     return (
