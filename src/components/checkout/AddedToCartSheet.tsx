@@ -1,4 +1,5 @@
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Check, ImageIcon, Plus, ShoppingBag, ArrowLeft, Sparkles, AlertTriangle } from "lucide-react";
@@ -33,6 +34,7 @@ export function AddedToCartSheet({
         side="bottom"
         className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0 sm:max-w-xl sm:mx-auto sm:rounded-2xl"
       >
+        <VisuallyHidden><SheetTitle>Produto adicionado ao carrinho</SheetTitle></VisuallyHidden>
         {/* Confirmação */}
         <div className="bg-gradient-to-b from-success/10 to-transparent px-5 pb-4 pt-6">
           <div className="mb-3 flex items-center gap-2 text-success animate-in fade-in slide-in-from-top-1">
