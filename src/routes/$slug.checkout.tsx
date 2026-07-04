@@ -209,6 +209,14 @@ function CheckoutPage() {
         </CardContent>
       </Card>
 
+      {/* Fidelidade — antes da forma de pagamento */}
+      <LoyaltyRedeemBlock
+        slug={slug}
+        subtotal={subtotal}
+        authenticated={!!user}
+        onChange={setLoyalty}
+      />
+
       {/* Forma de pagamento */}
       <Card>
         <CardContent className="space-y-3 p-4">
@@ -228,13 +236,6 @@ function CheckoutPage() {
         </CardContent>
       </Card>
 
-      {/* Fidelidade */}
-      <LoyaltyRedeemBlock
-        slug={slug}
-        subtotal={subtotal}
-        authenticated={!!user}
-        onChange={setLoyalty}
-      />
 
       {/* Resumo */}
       <Card>
