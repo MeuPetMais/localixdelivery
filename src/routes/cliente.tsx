@@ -1,7 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
+import { getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -214,6 +218,10 @@ function ProfileView({ user }: { user: User }) {
           <p className="mt-1 text-sm opacity-90">Favoritos, cupons e pedidos sincronizados em qualquer dispositivo.</p>
         </Card>
 
+        <LoyaltyProfileCard />
+
+
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <ProfileLink to="/favoritos" icon={Heart} label="Favoritos" />
           <ProfileLink to="/beneficios" icon={Tag} label="Cupons & Pontos" />
@@ -412,6 +420,39 @@ function GoogleIcon() {
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
       <path fill="#EA4335" d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z" />
     </svg>
+  );
+}
+
+function LoyaltyProfileCard() {
+  const session = useRestaurantSession();
+  const slug = session.session?.restaurantSlug ?? "";
+  const summaryFn = useServerFn(getMyLoyaltyForRestaurant);
+  const { data } = useQuery({
+    queryKey: ["loyalty", "summary", slug, "profile"],
+    queryFn: () => summaryFn({ data: { slug } }),
+    enabled: !!slug,
+  });
+  if (!slug || !data?.active) return null;
+  return (
+    <Card className="animate-in fade-in slide-in-from-bottom-2 border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">🎁 Programa de Fidelidade</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {data.balance} pts · {data.level ?? "Iniciante"}
+              {data.nextLevel ? ` · Faltam ${data.nextLevel.remaining} p/ ${data.nextLevel.name}` : ""}
+            </p>
+          </div>
+        </div>
+        <Button asChild size="sm" variant="secondary">
+          <Link to="/fidelidade">Ver extrato</Link>
+        </Button>
+      </div>
+    </Card>
   );
 }
 

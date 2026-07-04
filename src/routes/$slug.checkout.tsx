@@ -15,7 +15,10 @@ import {
   previewCheckoutPricing,
   type CheckoutMethod,
 } from "@/lib/checkout/OrderService";
+import { applyLoyaltyReserveForOrder } from "@/lib/loyalty.functions";
 import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
+import { LoyaltyRedeemBlock } from "@/components/checkout/LoyaltyRedeemBlock";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 export const Route = createFileRoute("/$slug/checkout")({
   ssr: false,
@@ -50,6 +53,9 @@ function CheckoutPage() {
   const [method, setMethod] = useState<CheckoutMethod>("pix");
   const [deliveryFee] = useState(0);
   const [couponDiscount] = useState(0);
+  const [loyalty, setLoyalty] = useState<{ points: number; discount: number }>({ points: 0, discount: 0 });
+  const { user } = useCustomerAuth();
+  const applyLoyalty = useServerFn(applyLoyaltyReserveForOrder);
   const [pricing, setPricing] = useState<{
     subtotal: number;
     deliveryFee: number;
@@ -57,6 +63,7 @@ function CheckoutPage() {
     couponDiscount: number;
     customerTotal: number;
     currency: string;
+    loyaltyDiscount?: number;
   } | null>(null);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,12 +90,12 @@ function CheckoutPage() {
     }
     setLoading(true);
     preview({
-      data: { subtotal, deliveryFee, couponDiscount, paymentMethod: method },
+      data: { subtotal, deliveryFee, couponDiscount, loyaltyDiscount: loyalty.discount, paymentMethod: method },
     })
       .then((r) => {
         if (cancelled) return;
         if (r.ok) {
-          setPricing(r.pricing);
+          setPricing(r.pricing as any);
           setPricingError(null);
         } else {
           setPricing(null);
@@ -100,7 +107,7 @@ function CheckoutPage() {
     return () => {
       cancelled = true;
     };
-  }, [subtotal, deliveryFee, couponDiscount, method, preview]);
+  }, [subtotal, deliveryFee, couponDiscount, loyalty.discount, method, preview]);
 
   const addressComplete = !!address && !!(address.number || address.numberOverride);
   const canSubmit =
@@ -130,10 +137,24 @@ function CheckoutPage() {
           paymentMethod: method,
           deliveryFee,
           couponDiscount,
+          loyaltyDiscount: loyalty.discount,
+          loyaltyPoints: loyalty.points,
         },
       });
+      // Reserva de pontos (só se logado e escolheu resgatar)
+      if (loyalty.points > 0 && user) {
+        try {
+          await applyLoyalty({ data: { orderId: res.orderId, points: loyalty.points } });
+        } catch (e: any) {
+          console.warn("[loyalty] reserva falhou:", e?.message);
+        }
+      }
       sessionStorage.removeItem(`cart:${slug}`);
-      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
+      toast.success(
+        loyalty.discount > 0
+          ? `Pedido #${res.orderNumber ?? ""} criado — você economizou ${brl(loyalty.discount)} com pontos!`
+          : `Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`,
+      );
       navigate({ to: "/pedido-sucesso/$id", params: { id: res.orderId } });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar o pedido");
@@ -207,6 +228,14 @@ function CheckoutPage() {
         </CardContent>
       </Card>
 
+      {/* Fidelidade */}
+      <LoyaltyRedeemBlock
+        slug={slug}
+        subtotal={subtotal}
+        authenticated={!!user}
+        onChange={setLoyalty}
+      />
+
       {/* Resumo */}
       <Card>
         <CardContent className="space-y-2 p-4">
@@ -222,9 +251,17 @@ function CheckoutPage() {
               {pricing.couponDiscount > 0 && (
                 <Row label="Cupom" value={`- ${brl(pricing.couponDiscount)}`} />
               )}
+              {loyalty.discount > 0 && (
+                <Row label="🎁 Pontos" value={`- ${brl(loyalty.discount)}`} />
+              )}
               <Row label="Taxa da plataforma" value={brl(pricing.platformFee)} />
               <Separator className="my-2" />
               <Row label="Total" value={brl(pricing.customerTotal)} bold />
+              {loyalty.discount > 0 && (
+                <p className="text-xs text-primary text-right font-medium">
+                  Você economizou {brl(loyalty.discount)} usando pontos.
+                </p>
+              )}
             </div>
           )}
         </CardContent>
