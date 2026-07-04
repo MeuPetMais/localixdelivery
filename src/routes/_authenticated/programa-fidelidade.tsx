@@ -33,6 +33,7 @@ function ProgramaFidelidadePage() {
   const settingsFn = useServerFn(getRestaurantLoyaltySettings);
   const saveFn = useServerFn(saveRestaurantLoyaltySettings);
   const statsFn = useServerFn(getRestaurantLoyaltyStats);
+  const analyticsFn = useServerFn(getRestaurantLoyaltyAnalytics);
 
   const settingsQ = useQuery({
     queryKey: ["loyalty-settings", restaurant?.id],
@@ -43,6 +44,12 @@ function ProgramaFidelidadePage() {
   const statsQ = useQuery({
     queryKey: ["loyalty-stats", restaurant?.id],
     queryFn: () => statsFn({ data: { restaurantId: restaurant!.id } }),
+    enabled: !!restaurant?.id,
+  });
+
+  const analyticsQ = useQuery({
+    queryKey: ["loyalty-analytics", restaurant?.id],
+    queryFn: () => analyticsFn({ data: { restaurantId: restaurant!.id } }),
     enabled: !!restaurant?.id,
   });
 
