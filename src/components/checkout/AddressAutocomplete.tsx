@@ -152,7 +152,7 @@ export function AddressAutocomplete({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="🔍 Buscar endereço..."
+          placeholder="Digite sua rua, avenida ou CEP"
           aria-autocomplete="list"
           aria-expanded={open}
         />
