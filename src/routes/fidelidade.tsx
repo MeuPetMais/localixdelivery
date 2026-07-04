@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Gift, TrendingUp, ArrowLeft, Loader2, Trophy } from "lucide-react";
+import { Sparkles, Gift, TrendingUp, ArrowLeft, Loader2, Trophy, AlertTriangle } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { BottomNavSpacer } from "@/components/BottomNav";
 import {
   getMyLoyaltyForRestaurant,
   getMyLoyaltyHistory,
+  getMyExpiringPoints,
   type LoyaltyTransaction,
 } from "@/lib/loyalty.functions";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
