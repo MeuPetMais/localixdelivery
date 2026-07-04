@@ -377,56 +377,7 @@ function WalletPage() {
             )}
           </SectionCard>
 
-              <EmptyState
-                emoji="🎁"
-                title="Ainda não existem recompensas."
-                subtitle="Continue comprando. Novas recompensas aparecerão aqui."
-              />
-            ) : (
-              <div className="space-y-2">
-                {rewards.map((r) => {
-                  const reached = s.balance >= r.minimum_points;
-                  return (
-                    <div
-                      key={r.name}
-                      className={`animate-fade-in rounded-lg border p-3 transition-colors ${
-                        reached
-                          ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20"
-                          : "border-border/60 hover:bg-muted/40"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-                              reached
-                                ? "bg-emerald-500/15 text-emerald-600"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {guessRewardIcon(r.name)}
-                          </span>
-                          <p className="truncate text-sm font-medium">{r.name}</p>
-                        </div>
-                        <Badge variant={reached ? "default" : "outline"} className="shrink-0">
-                          {r.minimum_points} pts
-                        </Badge>
-                      </div>
-                      {r.benefits.length > 0 && (
-                        <ul className="mt-1.5 space-y-0.5 pl-10 text-xs text-muted-foreground">
-                          {r.benefits.map((b, i) => (
-                            <li key={i} className="list-disc">
-                              {b}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </SectionCard>
+
 
           {/* 6. CUPONS */}
           <SectionCard
