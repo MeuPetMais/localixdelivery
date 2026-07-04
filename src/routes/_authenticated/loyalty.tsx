@@ -16,7 +16,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Loader2, Plus, Trash2, Ticket, Sparkles, Settings, Gift, Trophy, Users, BarChart3,
   Megaphone, Percent, DollarSign, Timer, AlertTriangle, Activity, Crown,
+  Pencil, Copy, Pause, Play, Truck, Package, ChevronRight, ChevronLeft, Check,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   getRestaurantLoyaltySettings, saveRestaurantLoyaltySettings,
