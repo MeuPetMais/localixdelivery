@@ -349,3 +349,73 @@ export const applyLoyaltyReserveForOrder = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, txId: rpc as string | null };
   });
+
+// ------------- Customer: pontos expirando -------------
+
+export const getMyExpiringPoints = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }): Promise<LoyaltyExpiringInfo> => {
+    const empty: LoyaltyExpiringInfo = { totalExpiring: 0, next: null, buckets: [] };
+    const rest = await findRestaurantBySlug(data.slug);
+    if (!rest) return empty;
+    const settings = normalizeSettings(rest.loyalty_settings);
+    if (!settings.active) return empty;
+    const customerId = await findCustomerIdByAuth(context.userId, rest.id);
+    if (!customerId) return empty;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const nowMs = Date.now();
+    const horizonMs = nowMs + 30 * 86400_000;
+    const { data: rows } = await supabaseAdmin
+      .from("loyalty_transactions")
+      .select("points, created_at")
+      .eq("customer_id", customerId)
+      .eq("restaurant_id", rest.id)
+      .eq("transaction_type", "EARN");
+    const days = settings.validity_days;
+    const buckets = new Map<number, { days: number; points: number; expireAt: string }>();
+    for (const r of (rows ?? []) as Array<{ points: number; created_at: string }>) {
+      const exp = new Date(r.created_at).getTime() + days * 86400_000;
+      if (exp <= nowMs || exp > horizonMs) continue;
+      const remaining = Math.max(1, Math.ceil((exp - nowMs) / 86400_000));
+      const bucket = remaining <= 1 ? 1 : remaining <= 7 ? 7 : 30;
+      const cur = buckets.get(bucket) ?? { days: bucket, points: 0, expireAt: new Date(exp).toISOString() };
+      cur.points += r.points;
+      if (new Date(cur.expireAt).getTime() > exp) cur.expireAt = new Date(exp).toISOString();
+      buckets.set(bucket, cur);
+    }
+    const list = Array.from(buckets.values()).sort((a, b) => a.days - b.days);
+    const totalExpiring = list.reduce((s, b) => s + b.points, 0);
+    return { totalExpiring, next: list[0] ?? null, buckets: list };
+  });
+
+// ------------- Restaurante: analytics avançadas -------------
+
+export const getRestaurantLoyaltyAnalytics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ restaurantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<LoyaltyAnalytics> => {
+    await ensureOwner(context.userId, data.restaurantId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: cl }, { data: tx }, { data: ev }] = await Promise.all([
+      supabaseAdmin.from("customer_loyalty").select("customer_id, points_balance").eq("restaurant_id", data.restaurantId),
+      supabaseAdmin.from("loyalty_transactions").select("customer_id, transaction_type, points").eq("restaurant_id", data.restaurantId),
+      supabaseAdmin.from("loyalty_events").select("customer_id, event_type").eq("restaurant_id", data.restaurantId).eq("event_type", "PointsExpiring"),
+    ]);
+    const balances = (cl ?? []) as Array<{ customer_id: string; points_balance: number }>;
+    const activeCustomers = balances.filter((c) => (c.points_balance ?? 0) > 0).length;
+    const txs = (tx ?? []) as Array<{ customer_id: string; transaction_type: string; points: number }>;
+    const redeemersSet = new Set(txs.filter((t) => t.transaction_type === "REDEEM").map((t) => t.customer_id));
+    const neverRedeemed = balances.filter((c) => (c.points_balance ?? 0) > 0 && !redeemersSet.has(c.customer_id)).length;
+    const issued = txs.filter((t) => t.transaction_type === "EARN").reduce((s, t) => s + t.points, 0);
+    const redeemed = -txs.filter((t) => t.transaction_type === "REDEEM").reduce((s, t) => s + t.points, 0);
+    const expired = -txs.filter((t) => t.transaction_type === "EXPIRE").reduce((s, t) => s + t.points, 0);
+    const expiringSoonCustomers = new Set(((ev ?? []) as Array<{ customer_id: string }>).map((e) => e.customer_id)).size;
+    return {
+      activeCustomers,
+      neverRedeemed,
+      expiringSoonCustomers,
+      expirationRate: issued > 0 ? Math.round((expired / issued) * 1000) / 1000 : 0,
+      utilizationRate: issued > 0 ? Math.round((redeemed / issued) * 1000) / 1000 : 0,
+    };
+  });
