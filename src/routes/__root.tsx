@@ -173,7 +173,15 @@ const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
 
 
 function CustomerBottomNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname, isAdminArea } = useRouterState({
+    select: (s) => ({
+      pathname: s.location.pathname,
+      isAdminArea: s.matches.some((m) =>
+        m.routeId?.startsWith("/_authenticated") || m.routeId?.startsWith("/admin"),
+      ),
+    }),
+  });
+  if (isAdminArea) return null;
   const show = CUSTOMER_NAV_MATCHERS.some((m) => m(pathname));
   if (!show) return null;
   return (
