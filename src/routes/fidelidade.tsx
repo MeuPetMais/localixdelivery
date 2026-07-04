@@ -680,11 +680,13 @@ function HowItWorks({
   earnOn,
   minRedeem,
   validityDays,
+  maxDiscountPercent,
 }: {
   pointsPerReal: number;
   earnOn: "paid" | "delivered";
   minRedeem: number;
   validityDays: number;
+  maxDiscountPercent: number;
 }) {
   const items = [
     {
@@ -709,6 +711,11 @@ function HowItWorks({
       icon: <Hourglass className="h-5 w-5 text-amber-600" />,
       title: "Validade",
       desc: `${validityDays} dias após ganhar.`,
+    },
+    {
+      icon: <Ticket className="h-5 w-5 text-primary" />,
+      title: "Desconto máximo",
+      desc: `até ${maxDiscountPercent}% do valor do pedido.`,
     },
   ];
   return (
