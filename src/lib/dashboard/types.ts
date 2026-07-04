@@ -1,10 +1,30 @@
-export type DashboardRole =
-  | "ADMIN"
+// Restaurant-scoped roles (RBAC v2).
+// Canonical: OWNER | MANAGER | CASHIER | KITCHEN | DELIVERY | STAFF
+// Legacy aliases kept for backward compatibility during migration:
+//   ADMIN     → OWNER
+//   ATTENDANT → STAFF
+//   DRIVER    → DELIVERY
+export type RestaurantRole =
+  | "OWNER"
   | "MANAGER"
-  | "ATTENDANT"
   | "CASHIER"
   | "KITCHEN"
-  | "DRIVER";
+  | "DELIVERY"
+  | "STAFF";
+
+export type LegacyRestaurantRole = "ADMIN" | "ATTENDANT" | "DRIVER";
+
+export type DashboardRole = RestaurantRole | LegacyRestaurantRole;
+
+/** Normalize legacy role aliases to canonical RBAC v2 roles. */
+export function normalizeRestaurantRole(role: DashboardRole): RestaurantRole {
+  switch (role) {
+    case "ADMIN": return "OWNER";
+    case "ATTENDANT": return "STAFF";
+    case "DRIVER": return "DELIVERY";
+    default: return role;
+  }
+}
 
 export type WorkspaceId =
   | "operation"

@@ -41,7 +41,9 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   const { isAdmin } = useIsAdmin(userId);
   const { restaurant } = useCurrentRestaurant(userId);
 
-  const role: DashboardRole = isAdmin ? "ADMIN" : "MANAGER";
+  // RBAC v2: the user who owns the restaurant is its OWNER (full access to the restaurant panel).
+  // Platform-level admin (isAdmin) is scoped to /admin — it does not grant restaurant-panel roles.
+  const role: DashboardRole = restaurant?.owner_id === userId || isAdmin ? "OWNER" : "STAFF";
   const restaurantName = restaurant?.name ?? "Localix";
 
   async function handleLogout() {
