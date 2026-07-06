@@ -13,6 +13,13 @@ export const Route = createFileRoute("/admin")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/admin/login" });
+    // RC2-SEC-001: admin exige autenticação por e-mail/senha.
+    const provider =
+      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    if (provider !== "email") {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/admin/login" });
+    }
     return { user: data.user };
   },
   component: AdminLayout,
