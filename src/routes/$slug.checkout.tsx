@@ -306,7 +306,7 @@ function CheckoutPage() {
         disabled={!canSubmit || submitting}
       >
         {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Confirmar pedido
+        {method === "credit_card" ? "Pagar com cartão (Stripe)" : "Confirmar pedido"}
       </Button>
     </div>
   );
