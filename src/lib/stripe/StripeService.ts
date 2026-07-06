@@ -12,21 +12,25 @@
 import { StripeAccountService } from "./StripeAccountService";
 import { StripeBalanceService } from "./StripeBalanceService";
 import { StripeCapabilitiesService } from "./StripeCapabilitiesService";
+import { StripeCheckoutService } from "./StripeCheckoutService";
 import { StripeOAuthService } from "./StripeOAuthService";
 import { StripeTransferService } from "./StripeTransferService";
 import { StripeWebhookService } from "./StripeWebhookService";
 import { StripeEventBus } from "./StripeEventBus";
 import { StripeMapper } from "./StripeMapper";
+import { StripePaymentEventMapper } from "./StripePaymentEventMapper";
 
 export const StripeService = {
   account: StripeAccountService,
   balance: StripeBalanceService,
   capabilities: StripeCapabilitiesService,
+  checkout: StripeCheckoutService,
   oauth: StripeOAuthService,
   transfers: StripeTransferService,
   webhooks: StripeWebhookService,
   events: StripeEventBus,
   mapper: StripeMapper,
+  paymentEventMapper: StripePaymentEventMapper,
 
   // Onboarding — atalhos convenientes.
   async startOnboarding(restaurantId: string, returnUrl?: string) {
