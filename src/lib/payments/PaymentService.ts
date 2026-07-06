@@ -75,4 +75,31 @@ export const PaymentService = {
   async listByRestaurant(restaurantId: string, limit = 100) {
     return paymentsRepo.listByRestaurant(restaurantId, limit);
   },
+
+  // ------- Confirmação idempotente vinda de webhook (Stripe/MP) -------
+  // Não altera regras de negócio: apenas atualiza status/paid_at do payment
+  // identificado por (provider, external_id). Ledger e transição do pedido
+  // são responsabilidade da Edge Function do provedor (fonte da verdade
+  // durante o webhook).
+  async confirmPayment(input: {
+    provider: string;
+    externalId: string;
+    status: "pending" | "in_process" | "approved" | "rejected" | "cancelled" | "refunded";
+    paidAt?: string | null;
+  }) {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: existing } = await supabase
+      .from("payments" as any)
+      .select("id, status")
+      .eq("provider", input.provider)
+      .eq("external_id", input.externalId)
+      .maybeSingle();
+    if (!existing) return { ok: false as const, reason: "not_found" as const };
+    if ((existing as any).status === input.status) return { ok: true as const, changed: false };
+    const patch: Record<string, unknown> = { status: input.status };
+    if (input.status === "approved") patch.paid_at = input.paidAt ?? new Date().toISOString();
+    const { error } = await supabase.from("payments" as any).update(patch).eq("id", (existing as any).id);
+    if (error) return { ok: false as const, reason: error.message };
+    return { ok: true as const, changed: true };
+  },
 };
