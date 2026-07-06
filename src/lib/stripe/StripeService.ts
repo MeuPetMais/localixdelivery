@@ -15,6 +15,7 @@ import { StripeCapabilitiesService } from "./StripeCapabilitiesService";
 import { StripeCheckoutService } from "./StripeCheckoutService";
 import { StripeConnectService } from "./StripeConnectService";
 import { StripeOAuthService } from "./StripeOAuthService";
+import { StripeSplitService } from "./StripeSplitService";
 import { StripeTransferService } from "./StripeTransferService";
 import { StripeWebhookService } from "./StripeWebhookService";
 import { StripeEventBus } from "./StripeEventBus";
@@ -28,6 +29,7 @@ export const StripeService = {
   checkout: StripeCheckoutService,
   connect: StripeConnectService,
   oauth: StripeOAuthService,
+  split: StripeSplitService,
   transfers: StripeTransferService,
   webhooks: StripeWebhookService,
   events: StripeEventBus,
