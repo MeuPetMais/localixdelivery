@@ -151,7 +151,14 @@ Deno.serve(async (req) => {
     }
 
     if (orderId && mapped.paid) {
-      await sb.from("orders").update({ status: "novo" }).eq("id", orderId);
+      // Pedido pago avança para 'pago' (nunca volta para 'novo').
+      // Só promove se o pedido ainda estiver aguardando pagamento — nunca rebaixa
+      // um pedido já em preparo/saiu/entregue.
+      await sb
+        .from("orders")
+        .update({ status: "pago" })
+        .eq("id", orderId)
+        .in("status", ["aguardando_pagamento", "aguardando_confirmacao", "novo"]);
       // ledger idempotente por reference_id
       const refId = String(obj.payment_intent ?? obj.id);
       const { data: ledgerExists } = await sb
