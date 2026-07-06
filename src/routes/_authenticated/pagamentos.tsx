@@ -9,13 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { PaymentService } from "@/lib/payments/PaymentService";
+import { StripeConnectCard } from "@/components/payments/StripeConnectCard";
 
-type Search = { mp?: "success" | "error"; reason?: string };
+type Search = {
+  mp?: "success" | "error";
+  reason?: string;
+  stripe?: "success" | "refresh";
+};
 
 export const Route = createFileRoute("/_authenticated/pagamentos")({
   validateSearch: (s): Search => ({
     mp: s.mp === "success" || s.mp === "error" ? s.mp : undefined,
     reason: typeof s.reason === "string" ? s.reason : undefined,
+    stripe: s.stripe === "success" || s.stripe === "refresh" ? s.stripe : undefined,
   }),
   component: PagamentosPage,
 });
