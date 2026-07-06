@@ -9,13 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { PaymentService } from "@/lib/payments/PaymentService";
+import { StripeConnectCard } from "@/components/payments/StripeConnectCard";
 
-type Search = { mp?: "success" | "error"; reason?: string };
+type Search = {
+  mp?: "success" | "error";
+  reason?: string;
+  stripe?: "success" | "refresh";
+};
 
 export const Route = createFileRoute("/_authenticated/pagamentos")({
   validateSearch: (s): Search => ({
     mp: s.mp === "success" || s.mp === "error" ? s.mp : undefined,
     reason: typeof s.reason === "string" ? s.reason : undefined,
+    stripe: s.stripe === "success" || s.stripe === "refresh" ? s.stripe : undefined,
   }),
   component: PagamentosPage,
 });
@@ -129,10 +135,12 @@ function PagamentosPage() {
         </div>
       </Card>
 
+      <StripeConnectCard restaurantId={restaurantId} urlParam={search.stripe} />
+
       <Card className="p-6">
         <h3 className="font-semibold">Outros gateways</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pagar.me, Asaas e Stripe estarão disponíveis em breve — a plataforma já está preparada para
+          Pagar.me e Asaas estarão disponíveis em breve — a plataforma já está preparada para
           suportar múltiplos provedores sem alteração no checkout.
         </p>
       </Card>

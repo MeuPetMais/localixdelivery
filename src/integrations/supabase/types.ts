@@ -4942,6 +4942,14 @@ export type Database = {
           primary_color: string | null
           slug: string
           state: string | null
+          stripe_account_id: string | null
+          stripe_account_status: string | null
+          stripe_account_type: string | null
+          stripe_charges_enabled: boolean | null
+          stripe_details_submitted: boolean | null
+          stripe_last_sync: string | null
+          stripe_onboarding_completed: boolean | null
+          stripe_payouts_enabled: boolean | null
           updated_at: string
           website: string | null
           whatsapp_phone: string
@@ -4987,6 +4995,14 @@ export type Database = {
           primary_color?: string | null
           slug: string
           state?: string | null
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_account_type?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_details_submitted?: boolean | null
+          stripe_last_sync?: string | null
+          stripe_onboarding_completed?: boolean | null
+          stripe_payouts_enabled?: boolean | null
           updated_at?: string
           website?: string | null
           whatsapp_phone: string
@@ -5032,6 +5048,14 @@ export type Database = {
           primary_color?: string | null
           slug?: string
           state?: string | null
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_account_type?: string | null
+          stripe_charges_enabled?: boolean | null
+          stripe_details_submitted?: boolean | null
+          stripe_last_sync?: string | null
+          stripe_onboarding_completed?: boolean | null
+          stripe_payouts_enabled?: boolean | null
           updated_at?: string
           website?: string | null
           whatsapp_phone?: string

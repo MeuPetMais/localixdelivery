@@ -13,6 +13,7 @@ import { StripeAccountService } from "./StripeAccountService";
 import { StripeBalanceService } from "./StripeBalanceService";
 import { StripeCapabilitiesService } from "./StripeCapabilitiesService";
 import { StripeCheckoutService } from "./StripeCheckoutService";
+import { StripeConnectService } from "./StripeConnectService";
 import { StripeOAuthService } from "./StripeOAuthService";
 import { StripeTransferService } from "./StripeTransferService";
 import { StripeWebhookService } from "./StripeWebhookService";
@@ -25,6 +26,7 @@ export const StripeService = {
   balance: StripeBalanceService,
   capabilities: StripeCapabilitiesService,
   checkout: StripeCheckoutService,
+  connect: StripeConnectService,
   oauth: StripeOAuthService,
   transfers: StripeTransferService,
   webhooks: StripeWebhookService,
