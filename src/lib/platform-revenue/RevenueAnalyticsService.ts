@@ -14,7 +14,7 @@ async function sumRange(fromISO: string): Promise<RevenueSummary> {
     .from("order_pricing_snapshot" as any)
     .select("platform_revenue, currency, created_at")
     .gte("created_at", fromISO);
-  const rows = (data ?? []) as Array<{ platform_revenue: number; currency: string }>;
+  const rows = (data ?? []) as unknown as Array<{ platform_revenue: number; currency: string }>;
   const totalRevenue = rows.reduce((s, r) => s + Number(r.platform_revenue || 0), 0);
   const orders = rows.length;
   const avgPerOrder = orders > 0 ? totalRevenue / orders : 0;
@@ -37,7 +37,7 @@ export const RevenueAnalyticsService = {
       .select("platform_revenue, currency, orders!inner(restaurant_id)")
       .eq("orders.restaurant_id", restaurantId)
       .gte("created_at", fromISO);
-    const rows = (data ?? []) as Array<{ platform_revenue: number; currency: string }>;
+    const rows = (data ?? []) as unknown as Array<{ platform_revenue: number; currency: string }>;
     const totalRevenue = rows.reduce((s, r) => s + Number(r.platform_revenue || 0), 0);
     const orders = rows.length;
     return {
