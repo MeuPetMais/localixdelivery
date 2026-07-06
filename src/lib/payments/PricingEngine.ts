@@ -240,7 +240,15 @@ export const PricingEngine = {
   /** Cálculo de pricing de um pedido. Única entrada oficial. */
   async calculateOrderPricing(input: PricingInput): Promise<PricingResult> {
     const settings = await loadPricingSettings();
-    return computePricing(input, settings);
+    // Fonte única da taxa de serviço: PlatformRevenue Domain.
+    const { PlatformRevenueService } = await import("@/lib/platform-revenue");
+    const fee = await PlatformRevenueService.getCurrentServiceFee(Number(input.subtotal) || 0);
+    const merged: PricingSettings = {
+      ...settings,
+      platform_fee_until_30: fee,
+      platform_fee_above_30: fee,
+    };
+    return computePricing(input, merged);
   },
 
   /** Verifica se um subtotal atinge o pedido mínimo (sem lançar). */
