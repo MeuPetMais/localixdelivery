@@ -183,7 +183,53 @@ Deno.serve(async (req) => {
           metadata: { event_type: eventType },
         });
       }
+
+      // Persistência do SPLIT em `payment_split` (idempotente via split_reference)
+      const piId = String(obj.payment_intent ?? obj.id);
+      const meta = (obj?.metadata ?? {}) as Record<string, string>;
+      const isSplit =
+        meta.split === "true" || !!obj?.transfer_data?.destination || !!obj?.application_fee_amount;
+      if (isSplit) {
+        const platformCents = Number(obj?.application_fee_amount ?? 0);
+        const grossCents = Number(obj?.amount ?? obj?.amount_total ?? 0);
+        const destination =
+          (obj?.transfer_data?.destination as string) ?? meta.destination_account ?? null;
+        const platformBRL =
+          platformCents > 0 ? platformCents / 100 : Number(meta.platform_fee_brl ?? 0);
+        const grossBRL = grossCents > 0 ? grossCents / 100 : Number(payment?.amount ?? 0);
+        const restaurantBRL = +(grossBRL - platformBRL).toFixed(2);
+
+        const { data: splitExists } = await sb
+          .from("payment_split")
+          .select("id")
+          .eq("provider", "stripe")
+          .eq("split_reference", piId)
+          .maybeSingle();
+
+        if (!splitExists) {
+          await sb.from("payment_split").insert({
+            order_id: orderId,
+            payment_id: payment?.id ?? null,
+            restaurant_id: restaurantId,
+            provider: "stripe",
+            restaurant_amount: restaurantBRL,
+            platform_amount: platformBRL,
+            gateway_fee: 0,
+            status: "COMPLETED",
+            split_reference: piId,
+            processed_at: new Date().toISOString(),
+            metadata: {
+              destination,
+              event_type: eventType,
+              gross_brl: grossBRL,
+              application_fee_amount: platformCents,
+              currency: obj?.currency ?? "brl",
+            },
+          });
+        }
+      }
     }
+
 
     await sb.from("payment_webhook_events").update({
       processed: true,
