@@ -20,6 +20,7 @@ import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/
 import { LoyaltyRedeemBlock } from "@/components/checkout/LoyaltyRedeemBlock";
 import { LoyaltyBenefitsBlock } from "@/components/checkout/LoyaltyBenefitsBlock";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/$slug/checkout")({
   ssr: false,
