@@ -15,8 +15,7 @@ const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // @ts-expect-error jsdom
-  global.window = { location: { origin: "https://app.test" } } as any;
+  (globalThis as any).window = { location: { origin: "https://app.test" } };
 });
 
 describe("StripeConnectService", () => {
