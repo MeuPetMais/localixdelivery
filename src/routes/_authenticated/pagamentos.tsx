@@ -135,10 +135,12 @@ function PagamentosPage() {
         </div>
       </Card>
 
+      <StripeConnectCard restaurantId={restaurantId} urlParam={search.stripe} />
+
       <Card className="p-6">
         <h3 className="font-semibold">Outros gateways</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pagar.me, Asaas e Stripe estarão disponíveis em breve — a plataforma já está preparada para
+          Pagar.me e Asaas estarão disponíveis em breve — a plataforma já está preparada para
           suportar múltiplos provedores sem alteração no checkout.
         </p>
       </Card>
