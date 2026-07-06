@@ -152,6 +152,32 @@ function CheckoutPage() {
         }
       }
       sessionStorage.removeItem(`cart:${slug}`);
+
+      // Stripe Sandbox: redireciona ao Checkout hospedado para cartão
+      if (method === "credit_card") {
+        try {
+          const origin = window.location.origin;
+          const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+            body: {
+              orderId: res.orderId,
+              successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
+              cancelUrl: `${origin}/${slug}/checkout`,
+              customerEmail: user?.email ?? undefined,
+            },
+          });
+          if (error) throw error;
+          if (data?.url) {
+            window.location.href = data.url as string;
+            return;
+          }
+          throw new Error(data?.error ?? "Falha ao iniciar pagamento");
+        } catch (e: any) {
+          toast.error(e?.message ?? "Não foi possível iniciar o pagamento");
+          navigate({ to: "/pedido-sucesso/$id", params: { id: res.orderId } });
+          return;
+        }
+      }
+
       toast.success(
         loyalty.discount > 0
           ? `Pedido #${res.orderNumber ?? ""} criado — você economizou ${brl(loyalty.discount)} com pontos!`
