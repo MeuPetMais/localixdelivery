@@ -195,7 +195,7 @@ function AuthPage() {
       }
 
     } catch (err) {
-      toast.error(formatSupabaseError("inesperado", err));
+      notifyAuthError("inesperado", err);
     } finally {
       setLoading(false);
     }
