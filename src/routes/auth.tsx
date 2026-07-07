@@ -266,11 +266,21 @@ function AuthPage() {
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@restaurante.com" />
+                <Input id="email" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@restaurante.com" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">Senha</Label>
-                <PasswordInput id="pwd" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={tab === "signup" ? "new-password" : "current-password"} />
+                <PasswordInput
+                  key={tab === "signup" ? "pwd-signup" : "pwd-signin"}
+                  id="pwd"
+                  name={tab === "signup" ? "new-password" : "password"}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={tab === "signup" ? "new-password" : "current-password"}
+                />
               </div>
               {tab === "signin" && (
                 <div className="text-right">
