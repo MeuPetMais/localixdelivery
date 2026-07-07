@@ -77,17 +77,9 @@ function AuthPage() {
   }, [navigate]);
 
 
-  function formatSupabaseError(prefix: string, err: unknown) {
-    const e = err as { code?: string; message?: string; details?: string; hint?: string; status?: number } | null;
-    console.error(`[${prefix}]`, err);
-    const parts = [
-      e?.code && `code=${e.code}`,
-      e?.status && `status=${e.status}`,
-      e?.message && `msg=${e.message}`,
-      e?.details && `details=${e.details}`,
-      e?.hint && `hint=${e.hint}`,
-    ].filter(Boolean);
-    return `${prefix}: ${parts.join(" | ") || "erro desconhecido"}`;
+  function notifyAuthError(context: string, err: unknown) {
+    const [title, opts] = toastArgsFromAuthError(err, context);
+    toast.error(title, opts);
   }
 
   async function handleEmail(e: React.FormEvent) {
