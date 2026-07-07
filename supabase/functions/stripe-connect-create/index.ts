@@ -29,8 +29,11 @@ async function stripe(path: string, secret: string, body?: Record<string, string
   };
   if (body) init.body = new URLSearchParams(body).toString();
   const res = await fetch(`https://api.stripe.com/v1${path}`, init);
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Stripe: ${data?.error?.message ?? "stripe_error"}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.error(`[stripe] ${path} → ${res.status}`, JSON.stringify(data));
+    throw new Error(`Stripe: ${data?.error?.message ?? `HTTP ${res.status}`}`);
+  }
   return data;
 }
 
