@@ -187,7 +187,7 @@ function AuthPage() {
       } else {
         const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          toast.error(formatSupabaseError("auth.signInWithPassword", error));
+          notifyAuthError("signIn", error);
           return;
         }
         const dest = signInData.user ? await resolvePostLoginRedirect(signInData.user.id) : "/dashboard";
