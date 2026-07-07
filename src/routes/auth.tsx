@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/format";
 import { resolvePostLoginRedirect } from "@/lib/admin-mode";
+import { toastArgsFromAuthError } from "@/lib/auth-errors";
 
 
 export const Route = createFileRoute("/auth")({
@@ -76,17 +77,9 @@ function AuthPage() {
   }, [navigate]);
 
 
-  function formatSupabaseError(prefix: string, err: unknown) {
-    const e = err as { code?: string; message?: string; details?: string; hint?: string; status?: number } | null;
-    console.error(`[${prefix}]`, err);
-    const parts = [
-      e?.code && `code=${e.code}`,
-      e?.status && `status=${e.status}`,
-      e?.message && `msg=${e.message}`,
-      e?.details && `details=${e.details}`,
-      e?.hint && `hint=${e.hint}`,
-    ].filter(Boolean);
-    return `${prefix}: ${parts.join(" | ") || "erro desconhecido"}`;
+  function notifyAuthError(context: string, err: unknown) {
+    const [title, opts] = toastArgsFromAuthError(err, context);
+    toast.error(title, opts);
   }
 
   async function handleEmail(e: React.FormEvent) {
@@ -124,7 +117,7 @@ function AuthPage() {
           },
         });
         if (error) {
-          toast.error(formatSupabaseError("auth.signUp", error));
+          notifyAuthError("signUp", error);
           return;
         }
         console.info("[signup] auth.signUp ok", { userId: data.user?.id, hasSession: !!data.session });
@@ -170,7 +163,11 @@ function AuthPage() {
           break;
         }
         if (!insertOk) {
-          toast.error(formatSupabaseError("Usuário criado, mas falhou ao criar o estabelecimento", lastErr), { duration: 10000 });
+          console.error("[signup] insert restaurants falhou", lastErr);
+          toast.error("Não foi possível concluir o cadastro", {
+            description: "Sua conta foi criada, mas não conseguimos criar o estabelecimento. Tente novamente em instantes.",
+            duration: 10000,
+          });
           return;
         }
         // Save owner profile (best-effort)
@@ -190,7 +187,7 @@ function AuthPage() {
       } else {
         const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          toast.error(formatSupabaseError("auth.signInWithPassword", error));
+          notifyAuthError("signIn", error);
           return;
         }
         const dest = signInData.user ? await resolvePostLoginRedirect(signInData.user.id) : "/dashboard";
@@ -198,7 +195,7 @@ function AuthPage() {
       }
 
     } catch (err) {
-      toast.error(formatSupabaseError("inesperado", err));
+      notifyAuthError("inesperado", err);
     } finally {
       setLoading(false);
     }

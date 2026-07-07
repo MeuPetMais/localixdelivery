@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { toastArgsFromAuthError } from "@/lib/auth-errors";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -153,7 +154,8 @@ function CustomerAuthPage() {
       }
       goNext();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
+      const [title, opts] = toastArgsFromAuthError(err, tab === "signup" ? "signUp" : "signIn");
+      toast.error(title, opts);
     } finally {
       setLoading(null);
     }
