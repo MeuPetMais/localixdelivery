@@ -47,11 +47,53 @@ function returnUrls(path = "/pagamentos") {
   };
 }
 
+const FRIENDLY: Record<string, string> = {
+  unauthorized: "Sessão expirada. Faça login novamente para conectar a Stripe.",
+  forbidden: "Você não tem permissão para conectar esta conta Stripe.",
+  restaurant_not_found: "Restaurante não encontrado.",
+  missing_restaurant: "Restaurante não carregado.",
+  stripe_secret_missing: "Integração Stripe indisponível no momento. Tente novamente em instantes.",
+  no_account: "Nenhuma conta Stripe encontrada para esta operação.",
+};
+
+function friendly(code: string): string {
+  if (FRIENDLY[code]) return FRIENDLY[code];
+  if (code.startsWith("Stripe:")) return `Stripe recusou a operação: ${code.replace(/^Stripe:\s*/, "")}`;
+  return "Não foi possível concluir a operação com a Stripe. Tente novamente.";
+}
+
 async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error) throw new Error(error.message ?? `edge_${fn}_failed`);
+  if (error) {
+    // FunctionsHttpError esconde o body real; extrai para logs técnicos + msg amigável
+    let code = "";
+    let raw = "";
+    try {
+      const res = (error as any)?.context?.response;
+      if (res && typeof res.text === "function") {
+        raw = await res.text();
+        try {
+          const parsed = JSON.parse(raw);
+          code = parsed?.error ?? parsed?.message ?? "";
+        } catch {
+          code = raw;
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line no-console
+    console.error(`[stripe:${fn}]`, { message: error.message, code, raw });
+    const err = new Error(friendly(code || error.message || `edge_${fn}_failed`));
+    (err as any).code = code;
+    throw err;
+  }
   const payload = data as any;
-  if (payload?.error) throw new Error(payload.error);
+  if (payload?.error) {
+    // eslint-disable-next-line no-console
+    console.error(`[stripe:${fn}] payload error`, payload);
+    const err = new Error(friendly(payload.error));
+    (err as any).code = payload.error;
+    throw err;
+  }
   return payload as T;
 }
 
