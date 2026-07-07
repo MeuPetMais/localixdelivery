@@ -154,7 +154,8 @@ function CustomerAuthPage() {
       }
       goNext();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
+      const [title, opts] = toastArgsFromAuthError(err, tab === "signup" ? "signUp" : "signIn");
+      toast.error(title, opts);
     } finally {
       setLoading(null);
     }
