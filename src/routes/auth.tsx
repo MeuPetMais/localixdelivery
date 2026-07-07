@@ -117,7 +117,7 @@ function AuthPage() {
           },
         });
         if (error) {
-          toast.error(formatSupabaseError("auth.signUp", error));
+          notifyAuthError("signUp", error);
           return;
         }
         console.info("[signup] auth.signUp ok", { userId: data.user?.id, hasSession: !!data.session });
