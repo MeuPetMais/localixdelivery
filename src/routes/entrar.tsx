@@ -207,7 +207,7 @@ function CustomerAuthPage() {
             <span className="h-px flex-1 bg-border" />ou<span className="h-px flex-1 bg-border" />
           </div>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
+          <Tabs value={tab} onValueChange={(v) => { setTab(v as "signin" | "signup"); setPassword(""); }}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
@@ -217,17 +217,27 @@ function CustomerAuthPage() {
               <TabsContent value="signup" className="m-0 space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Nome</Label>
-                  <Input id="name" required={tab === "signup"} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
+                  <Input id="name" name="name" autoComplete="name" required={tab === "signup"} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
                 </div>
               </TabsContent>
 
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+                <Input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">Senha</Label>
-                <PasswordInput id="pwd" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={tab === "signup" ? "new-password" : "current-password"} />
+                <PasswordInput
+                  key={tab === "signup" ? "pwd-signup" : "pwd-signin"}
+                  id="pwd"
+                  name={tab === "signup" ? "new-password" : "password"}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={tab === "signup" ? "new-password" : "current-password"}
+                />
               </div>
 
               <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={isBusy}>
