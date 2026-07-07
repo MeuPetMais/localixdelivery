@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { toastArgsFromAuthError } from "@/lib/auth-errors";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
