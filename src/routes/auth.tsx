@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/format";
 import { resolvePostLoginRedirect } from "@/lib/admin-mode";
+import { toastArgsFromAuthError, translateAuthError } from "@/lib/auth-errors";
 
 
 export const Route = createFileRoute("/auth")({
