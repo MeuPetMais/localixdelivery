@@ -98,16 +98,25 @@ Deno.serve(async (req) => {
     let accountId = rest.stripe_account_id as string | null;
 
     if (!accountId && !onlyLink) {
-      const created = await stripe("/accounts", secret, {
+      const emailForStripe = (rest.email ?? userEmail ?? "").trim();
+      const accountParams: Record<string, string> = {
         type: "express",
         country: "BR",
-        email: rest.email ?? userEmail ?? "",
         "capabilities[card_payments][requested]": "true",
         "capabilities[transfers][requested]": "true",
         "business_type": "individual",
         "metadata[restaurant_id]": restaurantId,
         "metadata[owner_id]": userId,
-      });
+      };
+      if (emailForStripe) accountParams.email = emailForStripe;
+
+      let created;
+      try {
+        created = await stripe("/accounts", secret, accountParams);
+      } catch (e) {
+        console.error("[stripe-connect-create] accounts.create failed", (e as Error).message);
+        throw e;
+      }
       accountId = created.id as string;
 
       await db
