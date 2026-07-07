@@ -93,7 +93,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
   const s = statusQuery.data;
   const status = s?.status ?? "not_created";
   const connected = !!s?.accountId && status !== "not_created";
-  const active = status === "active";
+
 
   return (
     <Card className="p-6">
@@ -104,11 +104,11 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Recebimentos Stripe</h2>
+              <h2 className="text-lg font-semibold">Stripe Connect</h2>
               <StatusBadge loading={statusQuery.isLoading} status={status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Conta Stripe Connect Express — recebimentos direto no seu CNPJ.
+              Gateway oficial de pagamentos da Localix. Recebimentos diretamente no CNPJ do parceiro.
             </p>
           </div>
         </div>
@@ -125,9 +125,9 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
               )}
             </Button>
           )}
-          {connected && !active && (
+          {connected && (
             <Button onClick={() => relink.mutate()} disabled={relink.isPending}>
-              {relink.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continuar cadastro"}
+              {relink.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Gerenciar Stripe"}
             </Button>
           )}
           {connected && (
@@ -158,6 +158,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       </div>
 
       {connected && s && (
+
         <>
           <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
             <Info label="Conta" value={s.accountId ?? "—"} />
