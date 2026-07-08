@@ -12,7 +12,7 @@ export function applyFilters(
 ): OperationsOrderCard[] {
   return cards.filter((c) => {
     if (f.today && !todayMatch(c.createdAt, now)) return false;
-    if (f.pending && ["DELIVERED", "COMPLETED", "CANCELLED"].includes(c.status)) return false;
+    if (f.pending && ["entregue", "concluido", "cancelado"].includes(c.status)) return false;
     if (f.delivery && c.deliveryMode !== f.delivery) return false;
     if (f.payment && c.paymentMethod !== f.payment) return false;
     if (f.priority && c.priority !== f.priority) return false;

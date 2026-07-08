@@ -16,7 +16,7 @@ export function KitchenDisplay({ cards, onStart, onFinish }: Props) {
   }, []);
 
   const active = cards.filter((c) =>
-    ["RESTAURANT_ACCEPTED", "PREPARING", "READY"].includes(c.status),
+    ["aceito", "em_preparo", "pronto"].includes(c.status),
   );
 
   return (
@@ -42,17 +42,17 @@ export function KitchenDisplay({ cards, onStart, onFinish }: Props) {
               <p className="mt-2 rounded-md bg-muted p-2 text-xs">{c.observations}</p>
             )}
             <div className="mt-3 flex gap-2">
-              {c.status !== "PREPARING" && c.status !== "READY" && (
+              {c.status !== "em_preparo" && c.status !== "pronto" && (
                 <button onClick={() => onStart?.(c)} className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
                   Iniciar preparo
                 </button>
               )}
-              {c.status === "PREPARING" && (
+              {c.status === "em_preparo" && (
                 <button onClick={() => onFinish?.(c)} className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
                   Finalizar preparo
                 </button>
               )}
-              {c.status === "READY" && <span className="text-xs font-medium text-primary">Pronto</span>}
+              {c.status === "pronto" && <span className="text-xs font-medium text-primary">Pronto</span>}
             </div>
           </div>
         );

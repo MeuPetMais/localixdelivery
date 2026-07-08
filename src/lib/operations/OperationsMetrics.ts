@@ -9,10 +9,10 @@ export function computeCounters(cards: OperationsOrderCard[], now = Date.now()):
   const c = { new: 0, preparing: 0, delivering: 0, completedToday: 0, averagePrepMinutes: 0 };
   let prepTotal = 0, prepCount = 0;
   for (const o of cards) {
-    if (o.status === "CREATED" || o.status === "PAYMENT_APPROVED") c.new++;
-    if (o.status === "PREPARING") { c.preparing++; prepCount++; prepTotal += (now - new Date(o.createdAt).getTime()) / 60000; }
-    if (o.status === "OUT_FOR_DELIVERY") c.delivering++;
-    if ((o.status === "DELIVERED" || o.status === "COMPLETED") && isToday(o.createdAt, now)) c.completedToday++;
+    if (o.status === "novo" || o.status === "pago") c.new++;
+    if (o.status === "em_preparo") { c.preparing++; prepCount++; prepTotal += (now - new Date(o.createdAt).getTime()) / 60000; }
+    if (o.status === "saiu_para_entrega") c.delivering++;
+    if ((o.status === "entregue" || o.status === "concluido") && isToday(o.createdAt, now)) c.completedToday++;
   }
   c.averagePrepMinutes = prepCount ? Math.round(prepTotal / prepCount) : 0;
   return c;
@@ -37,7 +37,7 @@ export function computeMetrics(
     if (m.CREATED && (m.DELIVERED || m.COMPLETED)) {
       tot += ((m.DELIVERED ?? m.COMPLETED) - m.CREATED) / 60000; totN++;
     }
-    if (c.status === "CANCELLED") cancel++;
+    if (c.status === "cancelado") cancel++;
   }
   const hoursSpan = 1;
   const perHour = cards.filter((c) => (now - new Date(c.createdAt).getTime()) / 3600000 <= hoursSpan).length;

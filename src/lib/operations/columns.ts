@@ -2,15 +2,15 @@ import type { OperationsColumnId } from "./types";
 import type { OrderState } from "@/lib/orders/OrderStateMachine";
 
 export const OPERATIONS_COLUMNS: { id: OperationsColumnId; label: string; states: OrderState[] }[] = [
-  { id: "NEW", label: "Novos", states: ["CREATED"] },
-  { id: "WAITING_PAYMENT", label: "Aguardando pagamento", states: ["WAITING_PAYMENT"] },
-  { id: "PAID", label: "Pagos", states: ["PAYMENT_APPROVED"] },
-  { id: "ACCEPTED", label: "Aceitos", states: ["RESTAURANT_ACCEPTED"] },
-  { id: "PREPARING", label: "Em preparo", states: ["PREPARING"] },
-  { id: "READY", label: "Prontos", states: ["READY"] },
-  { id: "DELIVERING", label: "Em entrega", states: ["OUT_FOR_DELIVERY"] },
-  { id: "COMPLETED", label: "Finalizados", states: ["DELIVERED", "COMPLETED"] },
-  { id: "CANCELLED", label: "Cancelados", states: ["CANCELLED", "REFUNDED", "RESTAURANT_REJECTED", "CHARGEBACK", "PAYMENT_FAILED"] },
+  { id: "NEW", label: "Novos", states: ["novo"] },
+  { id: "aguardando_pagamento", label: "Aguardando pagamento", states: ["aguardando_pagamento"] },
+  { id: "PAID", label: "Pagos", states: ["pago"] },
+  { id: "ACCEPTED", label: "Aceitos", states: ["aceito"] },
+  { id: "em_preparo", label: "Em preparo", states: ["em_preparo"] },
+  { id: "pronto", label: "Prontos", states: ["pronto"] },
+  { id: "DELIVERING", label: "Em entrega", states: ["saiu_para_entrega"] },
+  { id: "concluido", label: "Finalizados", states: ["entregue", "concluido"] },
+  { id: "cancelado", label: "Cancelados", states: ["cancelado", "reembolsado", "rejeitado", "chargeback", "falha_pagamento"] },
 ];
 
 export function columnForState(state: OrderState): OperationsColumnId {

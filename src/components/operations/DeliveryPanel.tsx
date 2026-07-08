@@ -1,7 +1,7 @@
 import type { OperationsOrderCard } from "@/lib/operations";
 
 export function DeliveryPanel({ cards }: { cards: OperationsOrderCard[] }) {
-  const inFlight = cards.filter((c) => c.status === "OUT_FOR_DELIVERY" || c.status === "READY");
+  const inFlight = cards.filter((c) => c.status === "saiu_para_entrega" || c.status === "pronto");
   return (
     <div className="space-y-3">
       <div className="grid h-40 place-items-center rounded-xl border bg-muted/30 text-xs text-muted-foreground">
