@@ -627,25 +627,29 @@ function OrdersPage() {
                       Nenhum pedido
                     </p>
                   )}
-                  {list.map((o) => (
-                    <OrderCard
-                      key={o.id}
-                      order={o}
-                      accent={col.accent}
-                      nowMs={nowMs}
-                      isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
-                      onDragStart={(e) => onDragStart(e, o.id)}
-                      onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
-                      advanceLabel={NEXT[col.key]?.label}
-                      AdvanceIcon={NEXT[col.key]?.icon}
-                      onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
-                      onPrint={() => printOrder(o)}
-                      onWhatsapp={() => whatsappOrder(o)}
-                      isNew={col.key === "novo"}
-                      isFresh={freshIds.has(o.id)}
-                      onOpen={() => setDetailOrder(o)}
-                    />
-                  ))}
+                  {list.map((o) => {
+                    const next = NEXT_BY_STATUS[o.status as OrderStatus];
+                    const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                    return (
+                      <OrderCard
+                        key={o.id}
+                        order={o}
+                        accent={col.accent}
+                        nowMs={nowMs}
+                        isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
+                        onDragStart={(e) => onDragStart(e, o.id)}
+                        onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
+                        advanceLabel={next?.label}
+                        AdvanceIcon={next?.icon}
+                        onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                        onPrint={() => printOrder(o)}
+                        onWhatsapp={() => whatsappOrder(o)}
+                        isNew={col.key === "paid"}
+                        isFresh={freshIds.has(o.id)}
+                        onOpen={() => setDetailOrder(o)}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             );
@@ -655,11 +659,11 @@ function OrdersPage() {
 
       {/* Mobile: abas */}
       <div className="px-4 pb-4 md:hidden">
-        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as StatusKey)}>
-          <TabsList className="grid w-full grid-cols-4">
-            {COLUMNS.filter((c) => c.key !== "cancelado").map((c) => (
-              <TabsTrigger key={c.key} value={c.key} className="relative text-xs">
-                {c.key === "novo" ? "Novos" : c.key === "em_preparo" ? "Preparo" : c.key === "saiu_para_entrega" ? "Entrega" : "OK"}
+        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as ColumnKey)}>
+          <TabsList className="grid w-full grid-cols-6">
+            {COLUMNS.filter((c) => c.key !== "cancelled").map((c) => (
+              <TabsTrigger key={c.key} value={c.key} className="relative text-[10px]">
+                {c.short}
                 {grouped[c.key].length > 0 && (
                   <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary">
                     {grouped[c.key].length}
@@ -668,7 +672,7 @@ function OrdersPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          {COLUMNS.filter((c) => c.key !== "cancelado").map((col) => {
+          {COLUMNS.filter((c) => c.key !== "cancelled").map((col) => {
             const list = grouped[col.key];
             return (
               <TabsContent key={col.key} value={col.key} className="mt-3 space-y-3">
@@ -677,25 +681,29 @@ function OrdersPage() {
                     Nenhum pedido
                   </p>
                 )}
-                {list.map((o) => (
-                  <OrderCard
-                    key={o.id}
-                    order={o}
-                    accent={col.accent}
-                    nowMs={nowMs}
-                    isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
-                    onDragStart={() => {}}
-                    onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
-                    advanceLabel={NEXT[col.key]?.label}
-                    AdvanceIcon={NEXT[col.key]?.icon}
-                    onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
-                    onPrint={() => printOrder(o)}
-                    onWhatsapp={() => whatsappOrder(o)}
-                    isNew={col.key === "novo"}
-                    isFresh={freshIds.has(o.id)}
-                    onOpen={() => setDetailOrder(o)}
-                  />
-                ))}
+                {list.map((o) => {
+                  const next = NEXT_BY_STATUS[o.status as OrderStatus];
+                  const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                  return (
+                    <OrderCard
+                      key={o.id}
+                      order={o}
+                      accent={col.accent}
+                      nowMs={nowMs}
+                      isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
+                      onDragStart={() => {}}
+                      onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
+                      advanceLabel={next?.label}
+                      AdvanceIcon={next?.icon}
+                      onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                      onPrint={() => printOrder(o)}
+                      onWhatsapp={() => whatsappOrder(o)}
+                      isNew={col.key === "paid"}
+                      isFresh={freshIds.has(o.id)}
+                      onOpen={() => setDetailOrder(o)}
+                    />
+                  );
+                })}
               </TabsContent>
             );
           })}
