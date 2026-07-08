@@ -106,7 +106,6 @@ export const Route = createFileRoute("/api/internal/orders/transition")({
             } as never);
 
 
-            });
             if (error) throw new Error(`rpc_failed:${error.message}`);
             const result = data as { ok: boolean; reason?: string; current?: string; expected?: string } | null;
             if (!result?.ok) {
