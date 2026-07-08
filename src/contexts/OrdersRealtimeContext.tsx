@@ -85,6 +85,7 @@ export function OrdersRealtimeProvider({
 }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const transition = useServerFn(transitionOrderStatus);
 
   const [unseen, setUnseen] = useState<PendingOrder[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
