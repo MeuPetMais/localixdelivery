@@ -65,7 +65,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     // 1) Validar restaurante ativo + conectado
     const { data: rest, error: restErr } = await supabaseAdmin
       .from("restaurants")
-      .select("id, slug, active, is_open, owner_id")
+      .select("id, slug, active, is_open, owner_id, min_order")
       .eq("slug", data.restaurantSlug)
       .maybeSingle();
     if (restErr) throw new Error(restErr.message);
@@ -87,6 +87,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
         provider: "mercado_pago" as ProviderId,
         restaurantId: rest.id,
+        minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
       });
     } catch (e) {
       if (e instanceof PricingError) throw new Error(e.message);
