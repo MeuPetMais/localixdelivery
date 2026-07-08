@@ -12,6 +12,8 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
+import { transitionOrder } from "../_shared/order-transition.ts";
+
 
 type MpStatus = "approved"|"pending"|"in_process"|"rejected"|"cancelled"|"refunded"|"charged_back"|"expired";
 type LocalStatus = "PENDING"|"PROCESSING"|"APPROVED"|"REJECTED"|"CANCELLED"|"EXPIRED"|"REFUNDED"|"CHARGEBACK";
