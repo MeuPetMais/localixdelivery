@@ -66,65 +66,158 @@ type Order = {
 };
 
 
-type StatusKey = "novo" | "em_preparo" | "saiu_para_entrega" | "entregue" | "cancelado";
+// RC4.4 — Modelo Kanban baseado nos 14 estados oficiais do OrderStateMachine.
+// Cada coluna representa uma etapa operacional e agrega um ou mais estados.
+// Nenhuma transição foge do OrderOrchestrator (transitionOrderStatus).
+type OrderStatus =
+  | "novo"
+  | "aguardando_pagamento"
+  | "pago"
+  | "falha_pagamento"
+  | "aceito"
+  | "rejeitado"
+  | "em_preparo"
+  | "pronto"
+  | "saiu_para_entrega"
+  | "entregue"
+  | "concluido"
+  | "cancelado"
+  | "reembolsado"
+  | "chargeback";
+
+type ColumnKey =
+  | "pending_payment"
+  | "paid"
+  | "preparing"
+  | "ready"
+  | "delivering"
+  | "delivered"
+  | "cancelled";
+
+const STATUS_TO_COLUMN: Record<OrderStatus, ColumnKey> = {
+  novo: "pending_payment",
+  aguardando_pagamento: "pending_payment",
+  falha_pagamento: "pending_payment",
+  pago: "paid",
+  aceito: "preparing",
+  em_preparo: "preparing",
+  pronto: "ready",
+  saiu_para_entrega: "delivering",
+  entregue: "delivered",
+  concluido: "delivered",
+  cancelado: "cancelled",
+  rejeitado: "cancelled",
+  reembolsado: "cancelled",
+  chargeback: "cancelled",
+};
 
 const COLUMNS: Array<{
-  key: StatusKey;
+  key: ColumnKey;
   title: string;
+  short: string;
   emoji: string;
   headerCls: string;
   accent: string;
   dropCls: string;
+  /** Estado canônico usado quando o usuário arrasta um card para esta coluna. */
+  primaryState: OrderStatus;
 }> = [
   {
-    key: "novo",
-    title: "NOVOS",
-    emoji: "🆕",
+    key: "pending_payment",
+    title: "AGUARDANDO PAGAMENTO",
+    short: "Aguardando",
+    emoji: "⏳",
+    headerCls: "bg-slate-600 text-white",
+    accent: "border-l-4 border-slate-500",
+    dropCls: "ring-2 ring-slate-500/60 bg-slate-500/5",
+    primaryState: "aguardando_pagamento",
+  },
+  {
+    key: "paid",
+    title: "PAGOS / AGUARDANDO ACEITE",
+    short: "Pagos",
+    emoji: "💳",
     headerCls: "bg-primary text-primary-foreground",
     accent: "border-l-4 border-primary",
     dropCls: "ring-2 ring-primary/60 bg-primary/5",
+    primaryState: "pago",
   },
   {
-    key: "em_preparo",
+    key: "preparing",
     title: "EM PREPARO",
+    short: "Preparo",
     emoji: "👨‍🍳",
     headerCls: "bg-amber-500 text-white",
     accent: "border-l-4 border-amber-500",
     dropCls: "ring-2 ring-amber-500/60 bg-amber-500/5",
+    primaryState: "em_preparo",
   },
   {
-    key: "saiu_para_entrega",
+    key: "ready",
+    title: "PRONTOS",
+    short: "Prontos",
+    emoji: "📦",
+    headerCls: "bg-indigo-600 text-white",
+    accent: "border-l-4 border-indigo-500",
+    dropCls: "ring-2 ring-indigo-500/60 bg-indigo-500/5",
+    primaryState: "pronto",
+  },
+  {
+    key: "delivering",
     title: "SAIU P/ ENTREGA",
+    short: "Entrega",
     emoji: "🛵",
     headerCls: "bg-blue-600 text-white",
     accent: "border-l-4 border-blue-600",
     dropCls: "ring-2 ring-blue-500/60 bg-blue-500/5",
+    primaryState: "saiu_para_entrega",
   },
   {
-    key: "entregue",
+    key: "delivered",
     title: "ENTREGUES",
+    short: "Entregues",
     emoji: "✅",
     headerCls: "bg-emerald-600 text-white",
     accent: "border-l-4 border-emerald-600",
     dropCls: "ring-2 ring-emerald-500/60 bg-emerald-500/5",
+    primaryState: "entregue",
   },
   {
-    key: "cancelado",
+    key: "cancelled",
     title: "CANCELADOS",
+    short: "Cancelados",
     emoji: "❌",
     headerCls: "bg-destructive text-destructive-foreground",
     accent: "border-l-4 border-destructive",
     dropCls: "ring-2 ring-destructive/60 bg-destructive/5",
+    primaryState: "cancelado",
   },
 ];
 
-const NEXT: Record<StatusKey, { key: StatusKey; label: string; icon: any } | null> = {
-  novo: { key: "em_preparo", label: "Aceitar", icon: Check },
-  em_preparo: { key: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
-  saiu_para_entrega: { key: "entregue", label: "Finalizar", icon: PackageCheck },
-  entregue: null,
-  cancelado: null,
+// Botão "Avançar" por estado atual do pedido. Segue exatamente o
+// ALLOWED_TRANSITIONS do OrderStateMachine — nenhum atalho.
+const NEXT_BY_STATUS: Partial<
+  Record<OrderStatus, { to: OrderStatus; label: string; icon: any }>
+> = {
+  pago: { to: "aceito", label: "Aceitar", icon: Check },
+  aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
+  em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
+  pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
+  saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
+  entregue: { to: "concluido", label: "Concluir", icon: Check },
 };
+
+const TERMINAL_STATUSES: OrderStatus[] = [
+  "concluido",
+  "cancelado",
+  "rejeitado",
+  "reembolsado",
+  "chargeback",
+];
+
+function columnOf(status: string): ColumnKey {
+  return STATUS_TO_COLUMN[status as OrderStatus] ?? "pending_payment";
+}
 
 function normalizePhone(p?: string | null) {
   if (!p) return "";
@@ -140,7 +233,14 @@ function formatPhone(p?: string | null) {
   return p ?? "";
 }
 
-const ACTIVE_STATUSES: StatusKey[] = ["novo", "em_preparo", "saiu_para_entrega"];
+const ACTIVE_STATUSES: OrderStatus[] = [
+  "pago",
+  "aceito",
+  "em_preparo",
+  "pronto",
+  "saiu_para_entrega",
+];
+const ACTIVE_COLUMNS: ColumnKey[] = ["paid", "preparing", "ready", "delivering"];
 
 function minutesSince(iso: string, nowMs: number) {
   return Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 60000));
@@ -180,7 +280,7 @@ function isSameDay(iso: string, ref: Date) {
 function OrdersPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
-  const [dragOver, setDragOver] = useState<StatusKey | null>(null);
+  const [dragOver, setDragOver] = useState<ColumnKey | null>(null);
   const draggingId = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
@@ -214,7 +314,7 @@ function OrdersPage() {
     refetchOnWindowFocus: false,
   });
 
-  async function updateStatus(id: string, status: StatusKey) {
+  async function updateStatus(id: string, status: OrderStatus) {
     // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
     const keyPrefix = ["orders", restaurant.id];
     const snapshots = qc.getQueriesData<Order[]>({ queryKey: keyPrefix });
@@ -246,7 +346,7 @@ function OrdersPage() {
         case "cartao": if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false; break;
         case "dinheiro": if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false; break;
         case "urgentes":
-          if (!ACTIVE_STATUSES.includes(o.status as StatusKey)) return false;
+          if (!ACTIVE_STATUSES.includes(o.status as OrderStatus)) return false;
           if (minutesSince(o.created_at, nowMs) < 10) return false;
           break;
         case "hoje": if (!isSameDay(o.created_at, today)) return false; break;
@@ -264,22 +364,32 @@ function OrdersPage() {
   }, [orders, filter, search, nowMs]);
 
   const grouped = useMemo(() => {
-    const g: Record<StatusKey, Order[]> = {
-      novo: [], em_preparo: [], saiu_para_entrega: [], entregue: [], cancelado: [],
+    const g: Record<ColumnKey, Order[]> = {
+      pending_payment: [],
+      paid: [],
+      preparing: [],
+      ready: [],
+      delivering: [],
+      delivered: [],
+      cancelled: [],
     };
     for (const o of filtered) {
-      if (g[o.status as StatusKey]) g[o.status as StatusKey].push(o);
+      const col = columnOf(o.status);
+      g[col].push(o);
     }
-    // Novos: mais recentes no topo. Em preparo / saiu p/ entrega: mais antigos primeiro (FIFO).
-    // Entregues / cancelados: mais recentes no topo.
     const asc = (a: Order, b: Order) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     const desc = (a: Order, b: Order) => -asc(a, b);
-    g.novo.sort(desc);
-    g.em_preparo.sort(asc);
-    g.saiu_para_entrega.sort(asc);
-    g.entregue.sort(desc);
-    g.cancelado.sort(desc);
+    // Aguardando/pagos: mais recentes no topo (foco em novidade).
+    g.pending_payment.sort(desc);
+    g.paid.sort(desc);
+    // Em preparo, prontos, saiu p/ entrega: FIFO — mais antigos primeiro.
+    g.preparing.sort(asc);
+    g.ready.sort(asc);
+    g.delivering.sort(asc);
+    // Entregues / cancelados: mais recentes no topo.
+    g.delivered.sort(desc);
+    g.cancelled.sort(desc);
     return g;
   }, [filtered]);
 
@@ -304,7 +414,7 @@ function OrdersPage() {
   }, [orders]);
 
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
-  const [mobileTab, setMobileTab] = useState<StatusKey>("novo");
+  const [mobileTab, setMobileTab] = useState<ColumnKey>("paid");
 
   // Atalhos de teclado: A/P/S/F operam sobre o pedido aberto no drawer.
   useEffect(() => {
@@ -312,18 +422,20 @@ function OrdersPage() {
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
       if (!detailOrder) return;
-      const map: Record<string, StatusKey> = {
-        a: "em_preparo",
-        p: "em_preparo",
-        s: "saiu_para_entrega",
-        f: "entregue",
+      // Atalhos avançam o pedido conforme sua situação atual — nunca pulam etapas.
+      const next = NEXT_BY_STATUS[detailOrder.status as OrderStatus];
+      const map: Record<string, OrderStatus | undefined> = {
+        a: next?.to, // A = Avançar
+        p: next?.to, // P = Próximo estado
+        s: detailOrder.status === "pronto" ? "saiu_para_entrega" : next?.to,
+        f: detailOrder.status === "saiu_para_entrega" ? "entregue" : next?.to,
       };
-      const next = map[e.key.toLowerCase()];
-      if (!next) return;
+      const to = map[e.key.toLowerCase()];
+      if (!to) return;
       e.preventDefault();
-      updateStatus(detailOrder.id, next);
-      setDetailOrder({ ...detailOrder, status: next });
-      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${next.replace(/_/g, " ")}`);
+      updateStatus(detailOrder.id, to);
+      setDetailOrder({ ...detailOrder, status: to });
+      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${to.replace(/_/g, " ")}`);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -351,7 +463,7 @@ function OrdersPage() {
         )
       : 0;
     const overdue = (orders ?? []).filter(
-      (o) => ACTIVE_STATUSES.includes(o.status as StatusKey) && minutesSince(o.created_at, nowMs) >= 15,
+      (o) => ACTIVE_STATUSES.includes(o.status as OrderStatus) && minutesSince(o.created_at, nowMs) >= 15,
     ).length;
     return { count: list.length, revenue, avgTicket, avgMin, overdue };
   }, [orders, nowMs]);
@@ -362,20 +474,25 @@ function OrdersPage() {
     e.dataTransfer.setData("text/plain", orderId);
     e.dataTransfer.effectAllowed = "move";
   }
-  function onDragOverCol(e: React.DragEvent, col: StatusKey) {
+  function onDragOverCol(e: React.DragEvent, col: ColumnKey) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     if (dragOver !== col) setDragOver(col);
   }
-  function onDropCol(e: React.DragEvent, col: StatusKey) {
+  function onDropCol(e: React.DragEvent, col: ColumnKey) {
     e.preventDefault();
     const id = e.dataTransfer.getData("text/plain") || draggingId.current;
     setDragOver(null);
     draggingId.current = null;
     if (!id) return;
     const current = (orders ?? []).find((o) => o.id === id);
-    if (!current || current.status === col) return;
-    updateStatus(id, col);
+    if (!current) return;
+    if (columnOf(current.status) === col) return;
+    // Estado canônico da coluna alvo — o Orchestrator/RPC valida a transição
+    // e rejeita se não estiver em ALLOWED_TRANSITIONS.
+    const target = COLUMNS.find((c) => c.key === col)?.primaryState;
+    if (!target) return;
+    updateStatus(id, target);
   }
 
   function printOrder(o: Order, template: "kitchen" | "customer" = "customer") {
@@ -510,25 +627,29 @@ function OrdersPage() {
                       Nenhum pedido
                     </p>
                   )}
-                  {list.map((o) => (
-                    <OrderCard
-                      key={o.id}
-                      order={o}
-                      accent={col.accent}
-                      nowMs={nowMs}
-                      isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
-                      onDragStart={(e) => onDragStart(e, o.id)}
-                      onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
-                      advanceLabel={NEXT[col.key]?.label}
-                      AdvanceIcon={NEXT[col.key]?.icon}
-                      onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
-                      onPrint={() => printOrder(o)}
-                      onWhatsapp={() => whatsappOrder(o)}
-                      isNew={col.key === "novo"}
-                      isFresh={freshIds.has(o.id)}
-                      onOpen={() => setDetailOrder(o)}
-                    />
-                  ))}
+                  {list.map((o) => {
+                    const next = NEXT_BY_STATUS[o.status as OrderStatus];
+                    const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                    return (
+                      <OrderCard
+                        key={o.id}
+                        order={o}
+                        accent={col.accent}
+                        nowMs={nowMs}
+                        isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
+                        onDragStart={(e) => onDragStart(e, o.id)}
+                        onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
+                        advanceLabel={next?.label}
+                        AdvanceIcon={next?.icon}
+                        onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                        onPrint={() => printOrder(o)}
+                        onWhatsapp={() => whatsappOrder(o)}
+                        isNew={col.key === "paid"}
+                        isFresh={freshIds.has(o.id)}
+                        onOpen={() => setDetailOrder(o)}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             );
@@ -538,11 +659,11 @@ function OrdersPage() {
 
       {/* Mobile: abas */}
       <div className="px-4 pb-4 md:hidden">
-        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as StatusKey)}>
-          <TabsList className="grid w-full grid-cols-4">
-            {COLUMNS.filter((c) => c.key !== "cancelado").map((c) => (
-              <TabsTrigger key={c.key} value={c.key} className="relative text-xs">
-                {c.key === "novo" ? "Novos" : c.key === "em_preparo" ? "Preparo" : c.key === "saiu_para_entrega" ? "Entrega" : "OK"}
+        <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as ColumnKey)}>
+          <TabsList className="grid w-full grid-cols-6">
+            {COLUMNS.filter((c) => c.key !== "cancelled").map((c) => (
+              <TabsTrigger key={c.key} value={c.key} className="relative text-[10px]">
+                {c.short}
                 {grouped[c.key].length > 0 && (
                   <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary">
                     {grouped[c.key].length}
@@ -551,7 +672,7 @@ function OrdersPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          {COLUMNS.filter((c) => c.key !== "cancelado").map((col) => {
+          {COLUMNS.filter((c) => c.key !== "cancelled").map((col) => {
             const list = grouped[col.key];
             return (
               <TabsContent key={col.key} value={col.key} className="mt-3 space-y-3">
@@ -560,25 +681,29 @@ function OrdersPage() {
                     Nenhum pedido
                   </p>
                 )}
-                {list.map((o) => (
-                  <OrderCard
-                    key={o.id}
-                    order={o}
-                    accent={col.accent}
-                    nowMs={nowMs}
-                    isActiveStatus={ACTIVE_STATUSES.includes(col.key)}
-                    onDragStart={() => {}}
-                    onAdvance={NEXT[col.key] ? () => updateStatus(o.id, NEXT[col.key]!.key) : undefined}
-                    advanceLabel={NEXT[col.key]?.label}
-                    AdvanceIcon={NEXT[col.key]?.icon}
-                    onCancel={o.status !== "entregue" && o.status !== "cancelado" ? () => updateStatus(o.id, "cancelado") : undefined}
-                    onPrint={() => printOrder(o)}
-                    onWhatsapp={() => whatsappOrder(o)}
-                    isNew={col.key === "novo"}
-                    isFresh={freshIds.has(o.id)}
-                    onOpen={() => setDetailOrder(o)}
-                  />
-                ))}
+                {list.map((o) => {
+                  const next = NEXT_BY_STATUS[o.status as OrderStatus];
+                  const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                  return (
+                    <OrderCard
+                      key={o.id}
+                      order={o}
+                      accent={col.accent}
+                      nowMs={nowMs}
+                      isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
+                      onDragStart={() => {}}
+                      onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
+                      advanceLabel={next?.label}
+                      AdvanceIcon={next?.icon}
+                      onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                      onPrint={() => printOrder(o)}
+                      onWhatsapp={() => whatsappOrder(o)}
+                      isNew={col.key === "paid"}
+                      isFresh={freshIds.has(o.id)}
+                      onOpen={() => setDetailOrder(o)}
+                    />
+                  );
+                })}
               </TabsContent>
             );
           })}
@@ -720,7 +845,7 @@ function OrderCard({
         {onAdvance && (
           <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={(e) => { stop(e); onAdvance(); }}>
             {AdvanceIcon ? <AdvanceIcon className="h-3.5 w-3.5" /> : null}
-            {isNew ? "Aceitar e iniciar" : advanceLabel}
+            {advanceLabel}
           </Button>
         )}
         <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={(e) => { stop(e); onPrint(); }}>
