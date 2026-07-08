@@ -104,6 +104,14 @@ function AuthPage() {
     setLoading(true);
     try {
       if (tab === "signup") {
+        if (import.meta.env.DEV) {
+          console.info("[auth-debug] signUp:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/auth (signup tab)",
+          });
+        }
         console.info("[signup] start: auth.signUp");
         // Persist onboarding draft so the "Criar seu Localix" screen comes
         // pre-filled even if email confirmation is required (no session yet).
@@ -133,6 +141,17 @@ function AuthPage() {
             },
           },
         });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signUp:after", {
+            ok: !error,
+            userId: data?.user?.id,
+            hasSession: !!data?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
+        }
         if (error) {
           notifyAuthError("signUp", error);
           return;
@@ -202,7 +221,26 @@ function AuthPage() {
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
       } else {
+        if (import.meta.env.DEV) {
+          console.info("[auth-debug] signInWithPassword:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/auth (signin tab)",
+          });
+        }
         const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signInWithPassword:after", {
+            ok: !error,
+            userId: signInData?.user?.id,
+            hasSession: !!signInData?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
+        }
         if (error) {
           notifyAuthError("signIn", error);
           return;
