@@ -1287,10 +1287,20 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
           <div className="flex flex-wrap gap-2">
-            {["Pix", "Dinheiro", "Cartão na entrega"].map((p) => (
-              <button key={p} type="button" onClick={() => setPayment(p)} className={`rounded-full border px-3 py-1.5 text-sm ${payment === p ? "border-primary bg-primary/10 text-primary" : ""}`}>{p}</button>
+            {paymentOptions.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPaymentId(p.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${paymentId === p.id ? "border-primary bg-primary/10 text-primary" : ""}`}
+              >
+                {p.label}
+              </button>
             ))}
           </div>
+          {selectedPayment.online && (
+            <p className="text-xs text-muted-foreground">Você será redirecionado para o pagamento seguro (Stripe).</p>
+          )}
         </div>
         <div className="space-y-1.5"><Label>Observações (opcional)</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
 
