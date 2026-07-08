@@ -51,16 +51,33 @@ function AuthPage() {
       return;
     }
     setForgotSending(true);
+    if (import.meta.env.DEV) {
+      console.info("[auth-debug] resetPasswordForEmail:start", {
+        ts: new Date().toISOString(),
+        email: trimmed,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+        screen: "/auth (forgot dialog)",
+      });
+    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
+      if (import.meta.env.DEV) {
+        const e = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] resetPasswordForEmail:return", {
+          ok: !error,
+          errorCode: e?.code,
+          errorStatus: e?.status,
+          errorMessage: e?.message,
+        });
+      }
       if (error) throw error;
       setForgotSent(true);
     } catch (err) {
       // Não revelar existência de conta — apenas exibir mensagem genérica em erros não críticos
       setForgotSent(true);
-      console.error(err);
+      if (import.meta.env.DEV) console.error("[auth-debug] resetPasswordForEmail:catch", err);
     } finally {
       setForgotSending(false);
     }
