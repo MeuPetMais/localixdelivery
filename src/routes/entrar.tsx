@@ -65,6 +65,7 @@ function CustomerAuthPage() {
       redirectIfAuthenticated(data.session);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (import.meta.env.DEV) console.info("[auth-debug] onAuthStateChange(entrar)", { event: _event, hasSession: !!session, userId: session?.user?.id });
       redirectIfAuthenticated(session);
     });
     return () => sub.subscription.unsubscribe();
