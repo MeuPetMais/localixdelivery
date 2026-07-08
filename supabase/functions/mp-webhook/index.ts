@@ -234,43 +234,71 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     }).eq("order_id", orderId);
 
+    // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
+    const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;
+    const domainTarget: Record<string, string | null> = {
+      APPROVED: "pago",
+      REJECTED: "falha_pagamento",
+      CANCELLED: "falha_pagamento",
+      EXPIRED: "falha_pagamento",
+      REFUNDED: "reembolsado",
+      CHARGEBACK: "chargeback",
+      PENDING: null,
+      PROCESSING: null,
+    };
+    const targetStatus = domainTarget[local];
+    if (targetStatus) {
+      const tr = await transitionOrder({
+        orderId,
+        to: targetStatus,
+        reason: `mp:${local.toLowerCase()}`,
+        actorType: "webhook",
+        service: "mp-webhook",
+        correlationId,
+        metadata: { mp_status: mp.status, mp_status_detail: mp.status_detail ?? null, event_id: eventId },
+      });
+      if (!tr.ok) {
+        console.warn("[mp-webhook] order transition rejected", { orderId, correlationId, reason: tr.reason ?? tr.error });
+      }
+    }
+
     if (local === "APPROVED") {
-      await sb.from("orders").update({ status: "novo" }).eq("id", orderId);
       await sb.from("financial_ledger").insert({
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_APPROVED", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Pagamento aprovado", metadata: { status_detail: mp.status_detail ?? null },
+        description: "Pagamento aprovado", metadata: { status_detail: mp.status_detail ?? null, correlation_id: correlationId },
       });
     } else if (local === "PENDING" || local === "PROCESSING") {
       await sb.from("financial_ledger").insert({
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_PENDING", amount, currency: mp.currency_id ?? "BRL",
         status: "PENDING", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Pagamento pendente",
+        description: "Pagamento pendente", metadata: { correlation_id: correlationId },
       });
     } else if (local === "REJECTED" || local === "CANCELLED" || local === "EXPIRED") {
       await sb.from("financial_ledger").insert({
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_FAILED", amount, currency: mp.currency_id ?? "BRL",
         status: "FAILED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: `Pagamento ${local.toLowerCase()}`,
+        description: `Pagamento ${local.toLowerCase()}`, metadata: { correlation_id: correlationId },
       });
     } else if (local === "REFUNDED") {
       await sb.from("financial_ledger").insert({
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "REFUND", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Estorno",
+        description: "Estorno", metadata: { correlation_id: correlationId },
       });
     } else if (local === "CHARGEBACK") {
       await sb.from("financial_ledger").insert({
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "CHARGEBACK", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Chargeback",
+        description: "Chargeback", metadata: { correlation_id: correlationId },
       });
     }
+
 
     await sb.from("payment_webhook_events").update({
       processed: true,
