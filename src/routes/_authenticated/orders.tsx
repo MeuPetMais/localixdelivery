@@ -280,7 +280,7 @@ function isSameDay(iso: string, ref: Date) {
 function OrdersPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
-  const [dragOver, setDragOver] = useState<StatusKey | null>(null);
+  const [dragOver, setDragOver] = useState<ColumnKey | null>(null);
   const draggingId = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
@@ -314,7 +314,7 @@ function OrdersPage() {
     refetchOnWindowFocus: false,
   });
 
-  async function updateStatus(id: string, status: StatusKey) {
+  async function updateStatus(id: string, status: OrderStatus) {
     // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
     const keyPrefix = ["orders", restaurant.id];
     const snapshots = qc.getQueriesData<Order[]>({ queryKey: keyPrefix });
@@ -346,7 +346,7 @@ function OrdersPage() {
         case "cartao": if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false; break;
         case "dinheiro": if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false; break;
         case "urgentes":
-          if (!ACTIVE_STATUSES.includes(o.status as StatusKey)) return false;
+          if (!ACTIVE_STATUSES.includes(o.status as OrderStatus)) return false;
           if (minutesSince(o.created_at, nowMs) < 10) return false;
           break;
         case "hoje": if (!isSameDay(o.created_at, today)) return false; break;
@@ -364,22 +364,32 @@ function OrdersPage() {
   }, [orders, filter, search, nowMs]);
 
   const grouped = useMemo(() => {
-    const g: Record<StatusKey, Order[]> = {
-      novo: [], em_preparo: [], saiu_para_entrega: [], entregue: [], cancelado: [],
+    const g: Record<ColumnKey, Order[]> = {
+      pending_payment: [],
+      paid: [],
+      preparing: [],
+      ready: [],
+      delivering: [],
+      delivered: [],
+      cancelled: [],
     };
     for (const o of filtered) {
-      if (g[o.status as StatusKey]) g[o.status as StatusKey].push(o);
+      const col = columnOf(o.status);
+      g[col].push(o);
     }
-    // Novos: mais recentes no topo. Em preparo / saiu p/ entrega: mais antigos primeiro (FIFO).
-    // Entregues / cancelados: mais recentes no topo.
     const asc = (a: Order, b: Order) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     const desc = (a: Order, b: Order) => -asc(a, b);
-    g.novo.sort(desc);
-    g.em_preparo.sort(asc);
-    g.saiu_para_entrega.sort(asc);
-    g.entregue.sort(desc);
-    g.cancelado.sort(desc);
+    // Aguardando/pagos: mais recentes no topo (foco em novidade).
+    g.pending_payment.sort(desc);
+    g.paid.sort(desc);
+    // Em preparo, prontos, saiu p/ entrega: FIFO — mais antigos primeiro.
+    g.preparing.sort(asc);
+    g.ready.sort(asc);
+    g.delivering.sort(asc);
+    // Entregues / cancelados: mais recentes no topo.
+    g.delivered.sort(desc);
+    g.cancelled.sort(desc);
     return g;
   }, [filtered]);
 
@@ -404,7 +414,7 @@ function OrdersPage() {
   }, [orders]);
 
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
-  const [mobileTab, setMobileTab] = useState<StatusKey>("novo");
+  const [mobileTab, setMobileTab] = useState<ColumnKey>("paid");
 
   // Atalhos de teclado: A/P/S/F operam sobre o pedido aberto no drawer.
   useEffect(() => {
@@ -412,18 +422,20 @@ function OrdersPage() {
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
       if (!detailOrder) return;
-      const map: Record<string, StatusKey> = {
-        a: "em_preparo",
-        p: "em_preparo",
-        s: "saiu_para_entrega",
-        f: "entregue",
+      // Atalhos avançam o pedido conforme sua situação atual — nunca pulam etapas.
+      const next = NEXT_BY_STATUS[detailOrder.status as OrderStatus];
+      const map: Record<string, OrderStatus | undefined> = {
+        a: next?.to, // A = Avançar
+        p: next?.to, // P = Próximo estado
+        s: detailOrder.status === "pronto" ? "saiu_para_entrega" : next?.to,
+        f: detailOrder.status === "saiu_para_entrega" ? "entregue" : next?.to,
       };
-      const next = map[e.key.toLowerCase()];
-      if (!next) return;
+      const to = map[e.key.toLowerCase()];
+      if (!to) return;
       e.preventDefault();
-      updateStatus(detailOrder.id, next);
-      setDetailOrder({ ...detailOrder, status: next });
-      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${next.replace(/_/g, " ")}`);
+      updateStatus(detailOrder.id, to);
+      setDetailOrder({ ...detailOrder, status: to });
+      toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${to.replace(/_/g, " ")}`);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -451,7 +463,7 @@ function OrdersPage() {
         )
       : 0;
     const overdue = (orders ?? []).filter(
-      (o) => ACTIVE_STATUSES.includes(o.status as StatusKey) && minutesSince(o.created_at, nowMs) >= 15,
+      (o) => ACTIVE_STATUSES.includes(o.status as OrderStatus) && minutesSince(o.created_at, nowMs) >= 15,
     ).length;
     return { count: list.length, revenue, avgTicket, avgMin, overdue };
   }, [orders, nowMs]);
@@ -462,20 +474,25 @@ function OrdersPage() {
     e.dataTransfer.setData("text/plain", orderId);
     e.dataTransfer.effectAllowed = "move";
   }
-  function onDragOverCol(e: React.DragEvent, col: StatusKey) {
+  function onDragOverCol(e: React.DragEvent, col: ColumnKey) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     if (dragOver !== col) setDragOver(col);
   }
-  function onDropCol(e: React.DragEvent, col: StatusKey) {
+  function onDropCol(e: React.DragEvent, col: ColumnKey) {
     e.preventDefault();
     const id = e.dataTransfer.getData("text/plain") || draggingId.current;
     setDragOver(null);
     draggingId.current = null;
     if (!id) return;
     const current = (orders ?? []).find((o) => o.id === id);
-    if (!current || current.status === col) return;
-    updateStatus(id, col);
+    if (!current) return;
+    if (columnOf(current.status) === col) return;
+    // Estado canônico da coluna alvo — o Orchestrator/RPC valida a transição
+    // e rejeita se não estiver em ALLOWED_TRANSITIONS.
+    const target = COLUMNS.find((c) => c.key === col)?.primaryState;
+    if (!target) return;
+    updateStatus(id, target);
   }
 
   function printOrder(o: Order, template: "kitchen" | "customer" = "customer") {
