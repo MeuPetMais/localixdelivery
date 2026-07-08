@@ -93,6 +93,35 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  // DEV-only: log form input attributes + detect autofill on password field
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const pwd = document.getElementById("pwd") as HTMLInputElement | null;
+    const em = document.getElementById("email") as HTMLInputElement | null;
+    console.info("[auth-debug] form:mount", {
+      tab,
+      emailInput: em ? { name: em.name, autocomplete: em.autocomplete } : null,
+      passwordInput: pwd ? { name: pwd.name, autocomplete: pwd.autocomplete } : null,
+    });
+    if (!pwd) return;
+    let last = pwd.value;
+    const iv = window.setInterval(() => {
+      if (pwd.value !== last) {
+        const source = document.activeElement === pwd ? "user-typing" : "autofill/password-manager";
+        console.warn("[auth-debug] password:changed", {
+          tab,
+          length: pwd.value.length,
+          reactStateLength: password.length,
+          reactStateMatches: pwd.value === password,
+          source,
+        });
+        last = pwd.value;
+      }
+    }, 250);
+    return () => window.clearInterval(iv);
+  }, [tab, password]);
+
+
 
   function notifyAuthError(context: string, err: unknown) {
     const [title, opts] = toastArgsFromAuthError(err, context);
