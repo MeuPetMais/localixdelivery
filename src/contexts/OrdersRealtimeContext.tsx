@@ -10,11 +10,13 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
 import { printAutoCopies, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
+import { transitionOrderStatus } from "@/lib/orders/orders.functions";
 import {
   announceNewOrder,
   announcePendingCount,
