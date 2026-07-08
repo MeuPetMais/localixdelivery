@@ -92,7 +92,7 @@ export function createOrchestrator(deps: OrchestratorDeps) {
     await deps.updateOrderStatus(order.id, input.to);
 
     const metadata = buildAuditMetadata(input.audit, input.metadata ?? {});
-    await deps.insertHistory({
+    const historyRow = {
       order_id: order.id,
       previous_status: order.status,
       current_status: input.to,
@@ -100,7 +100,14 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       performed_by: input.audit.userId ?? null,
       performed_by_type: input.audit.actorType,
       metadata,
-    });
+    };
+    if (deps.applyAtomic) {
+      await deps.applyAtomic({ ...historyRow, next_status: input.to, expected_from: order.status });
+    } else {
+      await deps.updateOrderStatus(order.id, input.to);
+      await deps.insertHistory(historyRow);
+    }
+
 
     const eventName = STATE_TO_EVENT[input.to];
     await publish(eventName, {
