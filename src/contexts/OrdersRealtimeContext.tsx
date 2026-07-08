@@ -102,13 +102,19 @@ export function OrdersRealtimeProvider({
     const latest = unseen[unseen.length - 1];
     if (!latest) return;
     setUnseen((prev) => prev.filter((o) => o.id !== latest.id));
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "em_preparo" })
-      .eq("id", latest.id);
-    if (error) toast.error("Não foi possível aceitar o pedido");
-    else toast.success(`Pedido #${latest.order_number ?? ""} aceito`);
-  }, [unseen]);
+    try {
+      await transition({
+        data: {
+          orderId: latest.id,
+          to: "em_preparo",
+          actorType: "restaurant",
+        },
+      });
+      toast.success(`Pedido #${latest.order_number ?? ""} aceito`);
+    } catch {
+      toast.error("Não foi possível aceitar o pedido");
+    }
+  }, [unseen, transition]);
 
   // Carrega snapshot inicial de pedidos pendentes.
   useEffect(() => {
