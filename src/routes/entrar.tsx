@@ -139,7 +139,8 @@ function CustomerAuthPage() {
     }
     try {
       if (tab === "signup") {
-        const { error } = await supabase.auth.signUp({
+        if (import.meta.env.DEV) console.info("[auth-debug] signUp:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -147,10 +148,19 @@ function CustomerAuthPage() {
             data: { full_name: name },
           },
         });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signUp:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        }
         if (error) throw error;
         toast.success("Conta criada! Bem-vindo(a).");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (import.meta.env.DEV) console.info("[auth-debug] signInWithPassword:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signInWithPassword:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        }
         if (error) throw error;
       }
       goNext();
