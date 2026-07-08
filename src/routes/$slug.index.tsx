@@ -1028,10 +1028,33 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const selectedAddress = addresses.find((a: any) => a.id === selectedAddressId) ?? null;
 
   const discount = coupon ? +(subtotal * (coupon.discountPercent / 100)).toFixed(2) : 0;
-  const total = Math.max(0, subtotal - discount) + fee;
   const belowMin = subtotal < min;
 
-  const getOrderLink = useServerFn(buildWhatsappOrderLink);
+  const create = useServerFn(createCheckoutOrder);
+  const preview = useServerFn(previewCheckoutPricing);
+  const [pricing, setPricing] = useState<{
+    subtotal: number; deliveryFee: number; platformFee: number; couponDiscount: number; customerTotal: number;
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!subtotal) { setPricing(null); return; }
+    preview({
+      data: {
+        subtotal,
+        deliveryFee: fee,
+        couponDiscount: discount,
+        paymentMethod: selectedPayment.method,
+      },
+    })
+      .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
+      .catch(() => { /* silencioso — fallback para cálculo local */ });
+    return () => { cancelled = true; };
+  }, [subtotal, fee, discount, selectedPayment.method, preview]);
+
+  const total = pricing?.customerTotal ?? Math.max(0, subtotal - discount) + fee;
+  const platformFee = pricing?.platformFee ?? 0;
 
   async function applyCoupon() {
     if (!couponInput.trim()) return;
@@ -1061,48 +1084,26 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     return null;
   }
 
-  async function sendWhatsApp() {
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Preencha nome e telefone");
-      return;
-    }
+  async function confirmOrder() {
+    if (!name.trim() || !phone.trim()) { toast.error("Preencha nome e telefone"); return; }
     const fullAddress = buildAddressString();
-    if (!fullAddress) {
-      toast.error("Selecione ou informe um endereço de entrega");
-      return;
-    }
+    if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
+    if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
 
-    const lines = [
-      `Olá, gostaria de fazer o seguinte pedido:`,
-      ``,
-      ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
-      ``,
-      `Subtotal: ${brl(subtotal)}`,
-      coupon ? `Cupom ${coupon.code}: -${brl(discount)}` : "",
-      `Entrega: ${brl(fee)}`,
-      `*Total: ${brl(total)}*`,
-      ``,
-      `Nome: ${name}`,
-      `Telefone: ${phone}`,
-      `Endereço: ${fullAddress}`,
-      ``,
-      `Forma de pagamento: ${payment}`,
-      notes ? `\nObs: ${notes}` : "",
-    ].filter(Boolean).join("\n");
-
+    setSubmitting(true);
     try {
-      const { url, orderNumber, orderId, demo } = await getOrderLink({
+      const res = await create({
         data: {
-          slug: restaurant.slug,
-          message: lines,
-          customer: { name, phone, address: fullAddress, payment },
+          restaurantSlug: restaurant.slug,
+          customer: { name, phone, address: fullAddress, notes: notes || undefined },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          paymentMethod: selectedPayment.method,
           deliveryFee: fee,
-          couponCode: coupon?.code ?? null,
+          couponCode: coupon?.code ?? undefined,
+          couponDiscount: discount,
         },
       });
-      if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
 
       // Persist profile prefill for next orders (best-effort)
       if (user) {
@@ -1114,22 +1115,49 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
               full_name: name,
               phone,
               whatsapp: phone,
-              last_payment_method: payment,
+              last_payment_method: selectedPayment.label,
             }, { onConflict: "id" });
           qc.invalidateQueries({ queryKey: ["customer-profile", user.id] });
         } catch {}
       }
 
-      if (orderId && !demo && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(`wa-url:${orderId}`, url); } catch {}
+      // Cartão Online (Stripe Checkout hospedado)
+      if (selectedPayment.online) {
+        try {
+          const origin = window.location.origin;
+          const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+            body: {
+              orderId: res.orderId,
+              successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
+              cancelUrl: `${origin}/${restaurant.slug}`,
+              customerEmail: user?.email ?? undefined,
+            },
+          });
+          if (error) throw error;
+          if (data?.url) {
+            onClose();
+            window.location.href = data.url as string;
+            return;
+          }
+          throw new Error(data?.error ?? "Falha ao iniciar pagamento");
+        } catch (e: any) {
+          toast.error(e?.message ?? "Não foi possível iniciar o pagamento");
+          onClose();
+          onCreated(res.orderId);
+          return;
+        }
       }
-      if (!demo) window.open(url, "_blank");
+
+      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
       onClose();
-      if (orderId) onCreated(orderId);
+      onCreated(res.orderId);
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível enviar o pedido");
+      toast.error(e?.message ?? "Não foi possível criar o pedido");
+    } finally {
+      setSubmitting(false);
     }
   }
+
 
   return (
     <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
