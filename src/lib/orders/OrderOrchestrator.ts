@@ -38,11 +38,18 @@ export interface OrchestratorDeps {
   getOrder: (orderId: string) => Promise<OrderSnapshot | null>;
   updateOrderStatus: (orderId: string, next: OrderState) => Promise<void>;
   insertHistory: (row: Omit<StatusHistoryRow, "id" | "created_at">) => Promise<void>;
+  // RC4.2: opcional — quando presente, substitui updateOrderStatus + insertHistory
+  // por uma operação atômica única (RPC + CAS). Preserva compatibilidade dos testes
+  // e do path da UI que ainda usam a variante em dois passos.
+  applyAtomic?: (
+    row: Omit<StatusHistoryRow, "id" | "created_at"> & { next_status: OrderState; expected_from: OrderState },
+  ) => Promise<void>;
   publish?: (
     name: ReturnType<() => (typeof STATE_TO_EVENT)[OrderState]>,
     payload: OrderDomainEventPayload,
   ) => Promise<void>;
 }
+
 
 export interface TransitionInput {
   orderId: string;
@@ -82,10 +89,10 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       };
     }
 
-    await deps.updateOrderStatus(order.id, input.to);
+
 
     const metadata = buildAuditMetadata(input.audit, input.metadata ?? {});
-    await deps.insertHistory({
+    const historyRow = {
       order_id: order.id,
       previous_status: order.status,
       current_status: input.to,
@@ -93,7 +100,14 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       performed_by: input.audit.userId ?? null,
       performed_by_type: input.audit.actorType,
       metadata,
-    });
+    };
+    if (deps.applyAtomic) {
+      await deps.applyAtomic({ ...historyRow, next_status: input.to, expected_from: order.status });
+    } else {
+      await deps.updateOrderStatus(order.id, input.to);
+      await deps.insertHistory(historyRow);
+    }
+
 
     const eventName = STATE_TO_EVENT[input.to];
     await publish(eventName, {
