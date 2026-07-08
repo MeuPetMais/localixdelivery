@@ -233,7 +233,14 @@ function formatPhone(p?: string | null) {
   return p ?? "";
 }
 
-const ACTIVE_STATUSES: StatusKey[] = ["novo", "em_preparo", "saiu_para_entrega"];
+const ACTIVE_STATUSES: OrderStatus[] = [
+  "pago",
+  "aceito",
+  "em_preparo",
+  "pronto",
+  "saiu_para_entrega",
+];
+const ACTIVE_COLUMNS: ColumnKey[] = ["paid", "preparing", "ready", "delivering"];
 
 function minutesSince(iso: string, nowMs: number) {
   return Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 60000));
