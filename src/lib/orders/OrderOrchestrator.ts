@@ -89,7 +89,7 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       };
     }
 
-    await deps.updateOrderStatus(order.id, input.to);
+
 
     const metadata = buildAuditMetadata(input.audit, input.metadata ?? {});
     const historyRow = {
