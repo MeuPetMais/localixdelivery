@@ -74,7 +74,8 @@ export class PricingError extends Error {
 // ------------------------------------------------------------
 
 export const DEFAULT_PRICING_SETTINGS: PricingSettings = {
-  minimum_order: 20,
+  // 0 = sem mínimo obrigatório caso nem restaurante nem plataforma configurem.
+  minimum_order: 0,
   platform_fee_until_30: 0.99,
   platform_fee_above_30: 1.49,
   default_gateway: "mercado_pago",
