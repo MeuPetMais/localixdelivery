@@ -70,6 +70,7 @@ import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
+import { Route as ApiInternalOrdersTransitionRouteImport } from './routes/api/internal/orders.transition'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -378,6 +379,12 @@ const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
   path: '/api/public/mp/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInternalOrdersTransitionRoute =
+  ApiInternalOrdersTransitionRouteImport.update({
+    id: '/api/internal/orders/transition',
+    path: '/api/internal/orders/transition',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -438,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -498,6 +506,7 @@ export interface FileRoutesByTo {
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -562,6 +571,7 @@ export interface FileRoutesById {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -626,6 +636,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -686,6 +697,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug'
     | '/admin'
+    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
   id:
@@ -749,6 +761,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
   fileRoutesById: FileRoutesById
@@ -774,6 +787,7 @@ export interface RootRouteChildren {
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
+  ApiInternalOrdersTransitionRoute: typeof ApiInternalOrdersTransitionRoute
   ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
@@ -1207,6 +1221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/orders/transition': {
+      id: '/api/internal/orders/transition'
+      path: '/api/internal/orders/transition'
+      fullPath: '/api/internal/orders/transition'
+      preLoaderRoute: typeof ApiInternalOrdersTransitionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1334,6 +1355,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
+  ApiInternalOrdersTransitionRoute: ApiInternalOrdersTransitionRoute,
   ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
