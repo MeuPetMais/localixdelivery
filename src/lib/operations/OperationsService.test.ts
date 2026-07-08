@@ -73,8 +73,8 @@ describe("Operations Center", () => {
     expect(canPerform("KITCHEN", "START_PREP")).toBe(true);
     expect(canPerform("KITCHEN", "CANCEL")).toBe(false);
     expect(ACTION_TO_STATE.ACCEPT).toBe("aceito");
-    expect(columnForState("pronto")).toBe("pronto");
-    expect(columnForState("entregue")).toBe("concluido");
+    expect(columnForState("pronto")).toBe("READY");
+    expect(columnForState("entregue")).toBe("COMPLETED");
   });
 
   it("perform delegates to OrderOrchestrator and audits", async () => {
