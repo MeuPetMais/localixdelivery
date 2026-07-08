@@ -246,8 +246,15 @@ export const PricingEngine = {
     // Fonte única da taxa de serviço: PlatformRevenue Domain.
     const { PlatformRevenueService } = await import("@/lib/platform-revenue");
     const fee = await PlatformRevenueService.getCurrentServiceFee(Number(input.subtotal) || 0);
+    // Pedido mínimo: prioriza restaurante, faz fallback para plataforma.
+    const restaurantMin =
+      input.minimumOrder != null && Number.isFinite(Number(input.minimumOrder))
+        ? Number(input.minimumOrder)
+        : null;
+    const effectiveMinimum = restaurantMin ?? settings.minimum_order;
     const merged: PricingSettings = {
       ...settings,
+      minimum_order: effectiveMinimum,
       platform_fee_until_30: fee,
       platform_fee_above_30: fee,
     };
@@ -255,9 +262,13 @@ export const PricingEngine = {
   },
 
   /** Verifica se um subtotal atinge o pedido mínimo (sem lançar). */
-  async meetsMinimumOrder(subtotal: number): Promise<boolean> {
+  async meetsMinimumOrder(subtotal: number, restaurantMinimum?: number | null): Promise<boolean> {
     const s = await loadPricingSettings();
-    return subtotal >= s.minimum_order;
+    const min =
+      restaurantMinimum != null && Number.isFinite(Number(restaurantMinimum))
+        ? Number(restaurantMinimum)
+        : s.minimum_order;
+    return subtotal >= min;
   },
 
   loadSettings: loadPricingSettings,
