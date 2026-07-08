@@ -87,6 +87,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
         provider: "mercado_pago" as ProviderId,
         restaurantId: rest.id,
+        minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
       });
     } catch (e) {
       if (e instanceof PricingError) throw new Error(e.message);
