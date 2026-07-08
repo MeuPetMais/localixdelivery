@@ -9,6 +9,8 @@ export interface OrderAuditContext {
   service?: string | null;
   actorType: OrderActorType;
   occurredAt?: string;
+  // RC4.2: correlation_id propagado ponta-a-ponta (webhook → domain → timeline → logs).
+  correlationId?: string | null;
 }
 
 export function buildAuditMetadata(
@@ -23,6 +25,7 @@ export function buildAuditMetadata(
       service: ctx.service ?? null,
       actor_type: ctx.actorType,
       occurred_at: ctx.occurredAt ?? new Date().toISOString(),
+      correlation_id: ctx.correlationId ?? null,
     },
     ...extra,
   };
