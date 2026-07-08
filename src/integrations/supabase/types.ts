@@ -6167,6 +6167,18 @@ export type Database = {
         Returns: undefined
       }
       loyalty_scan_expiring: { Args: never; Returns: number }
+      order_apply_transition: {
+        Args: {
+          _actor_id: string
+          _actor_type: string
+          _expected_from: string
+          _metadata: Json
+          _next_status: string
+          _order_id: string
+          _reason: string
+        }
+        Returns: Json
+      }
       reset_demo_environment: { Args: never; Returns: Json }
       seed_demo_marketplace: { Args: never; Returns: undefined }
     }
