@@ -28,6 +28,8 @@ export interface PricingInput {
   paymentMethod?: PaymentMethod;
   provider?: ProviderId;
   restaurantId?: string;
+  /** Pedido mínimo do restaurante — se definido, sobrepõe o global da plataforma. */
+  minimumOrder?: number | null;
 }
 
 export interface PricingResult {
