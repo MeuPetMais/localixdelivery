@@ -845,7 +845,7 @@ function OrderCard({
         {onAdvance && (
           <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={(e) => { stop(e); onAdvance(); }}>
             {AdvanceIcon ? <AdvanceIcon className="h-3.5 w-3.5" /> : null}
-            {isNew ? "Aceitar e iniciar" : advanceLabel}
+            {advanceLabel}
           </Button>
         )}
         <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={(e) => { stop(e); onPrint(); }}>
