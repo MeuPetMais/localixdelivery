@@ -153,14 +153,21 @@ Deno.serve(async (req) => {
     }
 
     if (orderId && mapped.paid) {
-      // Pedido pago avança para 'pago' (nunca volta para 'novo').
-      // Só promove se o pedido ainda estiver aguardando pagamento — nunca rebaixa
-      // um pedido já em preparo/saiu/entregue.
-      await sb
-        .from("orders")
-        .update({ status: "pago" })
-        .eq("id", orderId)
-        .in("status", ["aguardando_pagamento", "aguardando_confirmacao", "novo"]);
+      // RC4.2 — Toda mudança de status passa pelo Order Domain via endpoint interno.
+      const correlationId = `stripe:${eventId ?? resourceId ?? crypto.randomUUID()}`;
+      const tr = await transitionOrder({
+        orderId,
+        to: "pago",
+        reason: `stripe:${eventType}`,
+        actorType: "webhook",
+        service: "stripe-webhook",
+        correlationId,
+        metadata: { event_type: eventType, event_id: eventId },
+      });
+      if (!tr.ok) {
+        console.warn("[stripe-webhook] order transition rejected", { orderId, correlationId, reason: tr.reason ?? tr.error });
+      }
+
       // ledger idempotente por reference_id
       const refId = String(obj.payment_intent ?? obj.id);
       const { data: ledgerExists } = await sb
