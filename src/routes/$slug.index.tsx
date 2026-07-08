@@ -936,7 +936,24 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [payment, setPayment] = useState("Pix");
+  type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
+  const BASE_METHODS: PayOption[] = [
+    { id: "pix", label: "Pix", method: "pix" },
+    { id: "cash", label: "Dinheiro", method: "cash" },
+    { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
+    { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
+  ];
+  const { data: readiness } = useQuery({
+    queryKey: ["payments-readiness", restaurant.id],
+    enabled: !!restaurant?.id,
+    queryFn: () => PaymentsReadinessService.isReadyForPayments(restaurant.id),
+    staleTime: 60_000,
+  });
+  const paymentOptions: PayOption[] = readiness?.ready
+    ? [...BASE_METHODS, { id: "card_online", label: "Cartão Online", method: "credit_card", online: true }]
+    : BASE_METHODS;
+  const [paymentId, setPaymentId] = useState<string>("pix");
+  const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
