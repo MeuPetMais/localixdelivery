@@ -98,7 +98,7 @@ describe("Operations Center", () => {
       card({ id: "2", status: "em_preparo" }),
     ], {}, NOW);
     expect(board.columns.find((c) => c.id === "NEW")?.cards).toHaveLength(1);
-    expect(board.columns.find((c) => c.id === "em_preparo")?.cards).toHaveLength(1);
+    expect(board.columns.find((c) => c.id === "PREPARING")?.cards).toHaveLength(1);
   });
 
   it("kitchen sounds emit only when enabled", () => {

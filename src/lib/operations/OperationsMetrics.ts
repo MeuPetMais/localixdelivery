@@ -32,10 +32,10 @@ export function computeMetrics(
   let prep = 0, prepN = 0, del = 0, delN = 0, tot = 0, totN = 0, cancel = 0;
   for (const c of cards) {
     const m = byOrder.get(c.id) ?? {};
-    if (m.PREPARING && m.READY) { prep += (m.READY - m.PREPARING) / 60000; prepN++; }
-    if (m.OUT_FOR_DELIVERY && m.DELIVERED) { del += (m.DELIVERED - m.OUT_FOR_DELIVERY) / 60000; delN++; }
-    if (m.CREATED && (m.DELIVERED || m.COMPLETED)) {
-      tot += ((m.DELIVERED ?? m.COMPLETED) - m.CREATED) / 60000; totN++;
+    if (m.em_preparo && m.pronto) { prep += (m.pronto - m.em_preparo) / 60000; prepN++; }
+    if (m.saiu_para_entrega && m.entregue) { del += (m.entregue - m.saiu_para_entrega) / 60000; delN++; }
+    if (m.novo && (m.entregue || m.concluido)) {
+      tot += ((m.entregue ?? m.concluido) - m.novo) / 60000; totN++;
     }
     if (c.status === "cancelado") cancel++;
   }
