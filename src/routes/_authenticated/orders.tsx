@@ -66,65 +66,158 @@ type Order = {
 };
 
 
-type StatusKey = "novo" | "em_preparo" | "saiu_para_entrega" | "entregue" | "cancelado";
+// RC4.4 — Modelo Kanban baseado nos 14 estados oficiais do OrderStateMachine.
+// Cada coluna representa uma etapa operacional e agrega um ou mais estados.
+// Nenhuma transição foge do OrderOrchestrator (transitionOrderStatus).
+type OrderStatus =
+  | "novo"
+  | "aguardando_pagamento"
+  | "pago"
+  | "falha_pagamento"
+  | "aceito"
+  | "rejeitado"
+  | "em_preparo"
+  | "pronto"
+  | "saiu_para_entrega"
+  | "entregue"
+  | "concluido"
+  | "cancelado"
+  | "reembolsado"
+  | "chargeback";
+
+type ColumnKey =
+  | "pending_payment"
+  | "paid"
+  | "preparing"
+  | "ready"
+  | "delivering"
+  | "delivered"
+  | "cancelled";
+
+const STATUS_TO_COLUMN: Record<OrderStatus, ColumnKey> = {
+  novo: "pending_payment",
+  aguardando_pagamento: "pending_payment",
+  falha_pagamento: "pending_payment",
+  pago: "paid",
+  aceito: "preparing",
+  em_preparo: "preparing",
+  pronto: "ready",
+  saiu_para_entrega: "delivering",
+  entregue: "delivered",
+  concluido: "delivered",
+  cancelado: "cancelled",
+  rejeitado: "cancelled",
+  reembolsado: "cancelled",
+  chargeback: "cancelled",
+};
 
 const COLUMNS: Array<{
-  key: StatusKey;
+  key: ColumnKey;
   title: string;
+  short: string;
   emoji: string;
   headerCls: string;
   accent: string;
   dropCls: string;
+  /** Estado canônico usado quando o usuário arrasta um card para esta coluna. */
+  primaryState: OrderStatus;
 }> = [
   {
-    key: "novo",
-    title: "NOVOS",
-    emoji: "🆕",
+    key: "pending_payment",
+    title: "AGUARDANDO PAGAMENTO",
+    short: "Aguardando",
+    emoji: "⏳",
+    headerCls: "bg-slate-600 text-white",
+    accent: "border-l-4 border-slate-500",
+    dropCls: "ring-2 ring-slate-500/60 bg-slate-500/5",
+    primaryState: "aguardando_pagamento",
+  },
+  {
+    key: "paid",
+    title: "PAGOS / AGUARDANDO ACEITE",
+    short: "Pagos",
+    emoji: "💳",
     headerCls: "bg-primary text-primary-foreground",
     accent: "border-l-4 border-primary",
     dropCls: "ring-2 ring-primary/60 bg-primary/5",
+    primaryState: "pago",
   },
   {
-    key: "em_preparo",
+    key: "preparing",
     title: "EM PREPARO",
+    short: "Preparo",
     emoji: "👨‍🍳",
     headerCls: "bg-amber-500 text-white",
     accent: "border-l-4 border-amber-500",
     dropCls: "ring-2 ring-amber-500/60 bg-amber-500/5",
+    primaryState: "em_preparo",
   },
   {
-    key: "saiu_para_entrega",
+    key: "ready",
+    title: "PRONTOS",
+    short: "Prontos",
+    emoji: "📦",
+    headerCls: "bg-indigo-600 text-white",
+    accent: "border-l-4 border-indigo-500",
+    dropCls: "ring-2 ring-indigo-500/60 bg-indigo-500/5",
+    primaryState: "pronto",
+  },
+  {
+    key: "delivering",
     title: "SAIU P/ ENTREGA",
+    short: "Entrega",
     emoji: "🛵",
     headerCls: "bg-blue-600 text-white",
     accent: "border-l-4 border-blue-600",
     dropCls: "ring-2 ring-blue-500/60 bg-blue-500/5",
+    primaryState: "saiu_para_entrega",
   },
   {
-    key: "entregue",
+    key: "delivered",
     title: "ENTREGUES",
+    short: "Entregues",
     emoji: "✅",
     headerCls: "bg-emerald-600 text-white",
     accent: "border-l-4 border-emerald-600",
     dropCls: "ring-2 ring-emerald-500/60 bg-emerald-500/5",
+    primaryState: "entregue",
   },
   {
-    key: "cancelado",
+    key: "cancelled",
     title: "CANCELADOS",
+    short: "Cancelados",
     emoji: "❌",
     headerCls: "bg-destructive text-destructive-foreground",
     accent: "border-l-4 border-destructive",
     dropCls: "ring-2 ring-destructive/60 bg-destructive/5",
+    primaryState: "cancelado",
   },
 ];
 
-const NEXT: Record<StatusKey, { key: StatusKey; label: string; icon: any } | null> = {
-  novo: { key: "em_preparo", label: "Aceitar", icon: Check },
-  em_preparo: { key: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
-  saiu_para_entrega: { key: "entregue", label: "Finalizar", icon: PackageCheck },
-  entregue: null,
-  cancelado: null,
+// Botão "Avançar" por estado atual do pedido. Segue exatamente o
+// ALLOWED_TRANSITIONS do OrderStateMachine — nenhum atalho.
+const NEXT_BY_STATUS: Partial<
+  Record<OrderStatus, { to: OrderStatus; label: string; icon: any }>
+> = {
+  pago: { to: "aceito", label: "Aceitar", icon: Check },
+  aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
+  em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
+  pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
+  saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
+  entregue: { to: "concluido", label: "Concluir", icon: Check },
 };
+
+const TERMINAL_STATUSES: OrderStatus[] = [
+  "concluido",
+  "cancelado",
+  "rejeitado",
+  "reembolsado",
+  "chargeback",
+];
+
+function columnOf(status: string): ColumnKey {
+  return STATUS_TO_COLUMN[status as OrderStatus] ?? "pending_payment";
+}
 
 function normalizePhone(p?: string | null) {
   if (!p) return "";
