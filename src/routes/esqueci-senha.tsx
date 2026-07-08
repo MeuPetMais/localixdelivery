@@ -21,14 +21,19 @@ function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    const redirectTo = `${window.location.origin}/redefinir-senha`;
+    if (import.meta.env.DEV) console.info("[auth-debug] resetPasswordForEmail:start", { ts: new Date().toISOString(), email, redirectTo, screen: "/esqueci-senha" });
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/redefinir-senha`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (import.meta.env.DEV) {
+        const er = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] resetPasswordForEmail:return", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+      }
       if (error) throw error;
       setSent(true);
       toast.success("Verifique seu e-mail");
     } catch (err) {
+      if (import.meta.env.DEV) console.error("[auth-debug] resetPasswordForEmail:catch", err);
       toast.error(err instanceof Error ? err.message : "Erro ao enviar e-mail");
     } finally {
       setLoading(false);
