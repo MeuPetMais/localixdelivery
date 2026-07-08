@@ -12,20 +12,20 @@ export type OrderActorType =
 
 // Estado alvo → atores permitidos.
 export const PERMISSIONS: Record<OrderState, OrderActorType[]> = {
-  CREATED: ["system", "customer"],
-  WAITING_PAYMENT: ["system"],
-  PAYMENT_APPROVED: ["webhook", "system", "admin"],
-  PAYMENT_FAILED: ["webhook", "system", "admin"],
-  RESTAURANT_ACCEPTED: ["restaurant", "admin"],
-  RESTAURANT_REJECTED: ["restaurant", "admin"],
-  PREPARING: ["restaurant", "admin"],
-  READY: ["restaurant", "admin"],
-  OUT_FOR_DELIVERY: ["restaurant", "courier", "admin"],
-  DELIVERED: ["courier", "restaurant", "admin"],
-  COMPLETED: ["system", "admin"],
-  CANCELLED: ["customer", "restaurant", "admin", "system"],
-  REFUNDED: ["admin", "webhook", "system"],
-  CHARGEBACK: ["webhook", "admin", "system"],
+  novo: ["system", "customer"],
+  aguardando_pagamento: ["system"],
+  pago: ["webhook", "system", "admin"],
+  falha_pagamento: ["webhook", "system", "admin"],
+  aceito: ["restaurant", "admin"],
+  rejeitado: ["restaurant", "admin"],
+  em_preparo: ["restaurant", "admin"],
+  pronto: ["restaurant", "admin"],
+  saiu_para_entrega: ["restaurant", "courier", "admin"],
+  entregue: ["courier", "restaurant", "admin"],
+  concluido: ["system", "admin"],
+  cancelado: ["customer", "restaurant", "admin", "system"],
+  reembolsado: ["admin", "webhook", "system"],
+  chargeback: ["webhook", "admin", "system"],
 };
 
 export function canActorPerform(actor: OrderActorType, target: OrderState): boolean {

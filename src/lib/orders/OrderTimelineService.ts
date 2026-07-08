@@ -12,20 +12,20 @@ export interface TimelineEntry {
 }
 
 const STATE_LABEL: Record<OrderState, string> = {
-  CREATED: "Pedido criado",
-  WAITING_PAYMENT: "Aguardando pagamento",
-  PAYMENT_APPROVED: "Pagamento aprovado",
-  PAYMENT_FAILED: "Pagamento recusado",
-  RESTAURANT_ACCEPTED: "Restaurante aceitou",
-  RESTAURANT_REJECTED: "Restaurante recusou",
-  PREPARING: "Em preparo",
-  READY: "Pedido pronto",
-  OUT_FOR_DELIVERY: "Saiu para entrega",
-  DELIVERED: "Entregue",
-  COMPLETED: "Concluído",
-  CANCELLED: "Cancelado",
-  REFUNDED: "Estornado",
-  CHARGEBACK: "Chargeback",
+  novo: "Pedido criado",
+  aguardando_pagamento: "Aguardando pagamento",
+  pago: "Pagamento aprovado",
+  falha_pagamento: "Pagamento recusado",
+  aceito: "Restaurante aceitou",
+  rejeitado: "Restaurante recusou",
+  em_preparo: "Em preparo",
+  pronto: "Pedido pronto",
+  saiu_para_entrega: "Saiu para entrega",
+  entregue: "Entregue",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  reembolsado: "Estornado",
+  chargeback: "Chargeback",
 };
 
 export const OrderTimelineService = {

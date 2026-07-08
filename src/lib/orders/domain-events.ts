@@ -20,20 +20,20 @@ export type OrderDomainEventName =
   | "ChargebackReceived";
 
 export const STATE_TO_EVENT: Record<OrderState, OrderDomainEventName> = {
-  CREATED: "OrderCreated",
-  WAITING_PAYMENT: "OrderWaitingPayment",
-  PAYMENT_APPROVED: "PaymentApproved",
-  PAYMENT_FAILED: "PaymentFailed",
-  RESTAURANT_ACCEPTED: "RestaurantAccepted",
-  RESTAURANT_REJECTED: "RestaurantRejected",
-  PREPARING: "PreparingStarted",
-  READY: "OrderReady",
-  OUT_FOR_DELIVERY: "DeliveryStarted",
-  DELIVERED: "OrderDelivered",
-  COMPLETED: "OrderCompleted",
-  CANCELLED: "OrderCancelled",
-  REFUNDED: "OrderRefunded",
-  CHARGEBACK: "ChargebackReceived",
+  novo: "OrderCreated",
+  aguardando_pagamento: "OrderWaitingPayment",
+  pago: "PaymentApproved",
+  falha_pagamento: "PaymentFailed",
+  aceito: "RestaurantAccepted",
+  rejeitado: "RestaurantRejected",
+  em_preparo: "PreparingStarted",
+  pronto: "OrderReady",
+  saiu_para_entrega: "DeliveryStarted",
+  entregue: "OrderDelivered",
+  concluido: "OrderCompleted",
+  cancelado: "OrderCancelled",
+  reembolsado: "OrderRefunded",
+  chargeback: "ChargebackReceived",
 };
 
 export interface OrderDomainEventPayload {

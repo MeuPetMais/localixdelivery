@@ -15,13 +15,13 @@ const MATRIX: Record<OperationsAction, OperationsRole[]> = {
 };
 
 export const ACTION_TO_STATE: Record<OperationsAction, OrderState> = {
-  ACCEPT: "RESTAURANT_ACCEPTED",
-  REJECT: "RESTAURANT_REJECTED",
-  START_PREP: "PREPARING",
-  FINISH_PREP: "READY",
-  DISPATCH: "OUT_FOR_DELIVERY",
-  MARK_DELIVERED: "DELIVERED",
-  CANCEL: "CANCELLED",
+  ACCEPT: "aceito",
+  REJECT: "rejeitado",
+  START_PREP: "em_preparo",
+  FINISH_PREP: "pronto",
+  DISPATCH: "saiu_para_entrega",
+  MARK_DELIVERED: "entregue",
+  CANCEL: "cancelado",
 };
 
 export function canPerform(role: OperationsRole, action: OperationsAction): boolean {
