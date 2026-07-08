@@ -99,10 +99,12 @@ export const Route = createFileRoute("/api/internal/orders/transition")({
               _order_id: row.order_id,
               _expected_from: row.expected_from,
               _next_status: row.next_status,
-              _reason: row.reason ?? "",
+              _reason: row.reason,
               _actor_type: row.performed_by_type,
-              _actor_id: row.performed_by ?? "00000000-0000-0000-0000-000000000000",
-              _metadata: row.metadata as never,
+              _actor_id: row.performed_by,
+              _metadata: row.metadata,
+            } as never);
+
 
             });
             if (error) throw new Error(`rpc_failed:${error.message}`);
