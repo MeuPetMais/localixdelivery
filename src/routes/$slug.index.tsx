@@ -16,7 +16,7 @@ import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from
 import { PaymentsReadinessService } from "@/lib/billing/PaymentsReadinessService";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
+import { ShoppingBag, Plus, Minus, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
 import { getFeaturedSections, type FeaturedItem, type FeaturedSection } from "@/lib/featured-sections.functions";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
