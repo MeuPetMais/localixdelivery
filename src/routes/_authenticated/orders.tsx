@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { brl } from "@/lib/format";
+import { transitionOrderStatus } from "@/lib/orders/orders.functions";
 
 import {
   Loader2,
@@ -220,10 +221,12 @@ function OrdersPage() {
     qc.setQueriesData<Order[]>({ queryKey: keyPrefix }, (prev) =>
       Array.isArray(prev) ? prev.map((o) => (o.id === id ? { ...o, status } : o)) : prev,
     );
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-    if (error) {
+    try {
+      await transitionOrderStatus({ data: { orderId: id, to: status } });
+    } catch (err) {
       toast.error("Não foi possível atualizar");
       snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
+      console.error("[orders] transition failed", err);
     }
   }
 
