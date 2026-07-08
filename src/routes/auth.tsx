@@ -51,16 +51,33 @@ function AuthPage() {
       return;
     }
     setForgotSending(true);
+    if (import.meta.env.DEV) {
+      console.info("[auth-debug] resetPasswordForEmail:start", {
+        ts: new Date().toISOString(),
+        email: trimmed,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+        screen: "/auth (forgot dialog)",
+      });
+    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
+      if (import.meta.env.DEV) {
+        const e = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] resetPasswordForEmail:return", {
+          ok: !error,
+          errorCode: e?.code,
+          errorStatus: e?.status,
+          errorMessage: e?.message,
+        });
+      }
       if (error) throw error;
       setForgotSent(true);
     } catch (err) {
       // Não revelar existência de conta — apenas exibir mensagem genérica em erros não críticos
       setForgotSent(true);
-      console.error(err);
+      if (import.meta.env.DEV) console.error("[auth-debug] resetPasswordForEmail:catch", err);
     } finally {
       setForgotSending(false);
     }
@@ -76,6 +93,35 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  // DEV-only: log form input attributes + detect autofill on password field
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const pwd = document.getElementById("pwd") as HTMLInputElement | null;
+    const em = document.getElementById("email") as HTMLInputElement | null;
+    console.info("[auth-debug] form:mount", {
+      tab,
+      emailInput: em ? { name: em.name, autocomplete: em.autocomplete } : null,
+      passwordInput: pwd ? { name: pwd.name, autocomplete: pwd.autocomplete } : null,
+    });
+    if (!pwd) return;
+    let last = pwd.value;
+    const iv = window.setInterval(() => {
+      if (pwd.value !== last) {
+        const source = document.activeElement === pwd ? "user-typing" : "autofill/password-manager";
+        console.warn("[auth-debug] password:changed", {
+          tab,
+          length: pwd.value.length,
+          reactStateLength: password.length,
+          reactStateMatches: pwd.value === password,
+          source,
+        });
+        last = pwd.value;
+      }
+    }, 250);
+    return () => window.clearInterval(iv);
+  }, [tab, password]);
+
+
 
   function notifyAuthError(context: string, err: unknown) {
     const [title, opts] = toastArgsFromAuthError(err, context);
@@ -87,6 +133,14 @@ function AuthPage() {
     setLoading(true);
     try {
       if (tab === "signup") {
+        if (import.meta.env.DEV) {
+          console.info("[auth-debug] signUp:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/auth (signup tab)",
+          });
+        }
         console.info("[signup] start: auth.signUp");
         // Persist onboarding draft so the "Criar seu Localix" screen comes
         // pre-filled even if email confirmation is required (no session yet).
@@ -116,6 +170,17 @@ function AuthPage() {
             },
           },
         });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signUp:after", {
+            ok: !error,
+            userId: data?.user?.id,
+            hasSession: !!data?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
+        }
         if (error) {
           notifyAuthError("signUp", error);
           return;
@@ -185,7 +250,26 @@ function AuthPage() {
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
       } else {
+        if (import.meta.env.DEV) {
+          console.info("[auth-debug] signInWithPassword:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/auth (signin tab)",
+          });
+        }
         const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        if (import.meta.env.DEV) {
+          const er = error as { code?: string; status?: number; message?: string } | null;
+          console.info("[auth-debug] signInWithPassword:after", {
+            ok: !error,
+            userId: signInData?.user?.id,
+            hasSession: !!signInData?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
+        }
         if (error) {
           notifyAuthError("signIn", error);
           return;

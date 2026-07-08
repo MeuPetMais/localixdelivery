@@ -49,8 +49,13 @@ function ResetPasswordPage() {
       return;
     }
     setLoading(true);
+    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/redefinir-senha", reason: "password reset", fields: ["password"], passwordLength: password.length });
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { data, error } = await supabase.auth.updateUser({ password });
+      if (import.meta.env.DEV) {
+        const er = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] updateUser:after", { ok: !error, userId: data?.user?.id, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+      }
       if (error) throw error;
       setSuccess(true);
     } catch (err) {

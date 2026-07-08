@@ -125,7 +125,10 @@ function RootComponent() {
 
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (import.meta.env.DEV) {
+        console.info("[auth-debug] onAuthStateChange(root)", { event, hasSession: !!session, userId: session?.user?.id, expiresAt: session?.expires_at });
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();

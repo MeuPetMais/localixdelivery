@@ -186,8 +186,13 @@ function MyProfilePage() {
   async function handleChangeEmail() {
     if (!newEmail) return;
     setSecurityBusy(true);
+    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/perfil", reason: "change email", fields: ["email"], newEmail });
     try {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (import.meta.env.DEV) {
+        const er = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] updateUser:after", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+      }
       if (error) throw error;
       toast.success("Enviamos um link de confirmação para o novo e-mail");
       setNewEmail("");
@@ -204,8 +209,13 @@ function MyProfilePage() {
       return;
     }
     setSecurityBusy(true);
+    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/perfil", reason: "change password", fields: ["password"], passwordLength: newPassword.length });
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (import.meta.env.DEV) {
+        const er = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] updateUser:after", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+      }
       if (error) throw error;
       toast.success("Senha alterada com sucesso");
       setNewPassword("");
