@@ -1,65 +1,68 @@
 // State Machine central de pedidos do Localix.
 // Regra: nenhum módulo pode alterar status diretamente. Toda transição passa
 // pelo OrderOrchestrator, que consulta este arquivo para validar.
+//
+// FONTE ÚNICA DE VERDADE: os valores abaixo são idênticos aos aceitos pela
+// constraint `orders_status_check` no banco. Não criar aliases nem paralelos.
 
 export type OrderState =
-  | "CREATED"
-  | "WAITING_PAYMENT"
-  | "PAYMENT_APPROVED"
-  | "PAYMENT_FAILED"
-  | "RESTAURANT_ACCEPTED"
-  | "RESTAURANT_REJECTED"
-  | "PREPARING"
-  | "READY"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "REFUNDED"
-  | "CHARGEBACK";
+  | "novo"
+  | "aguardando_pagamento"
+  | "pago"
+  | "falha_pagamento"
+  | "aceito"
+  | "rejeitado"
+  | "em_preparo"
+  | "pronto"
+  | "saiu_para_entrega"
+  | "entregue"
+  | "concluido"
+  | "cancelado"
+  | "reembolsado"
+  | "chargeback";
 
 export const ORDER_STATES: OrderState[] = [
-  "CREATED",
-  "WAITING_PAYMENT",
-  "PAYMENT_APPROVED",
-  "PAYMENT_FAILED",
-  "RESTAURANT_ACCEPTED",
-  "RESTAURANT_REJECTED",
-  "PREPARING",
-  "READY",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "COMPLETED",
-  "CANCELLED",
-  "REFUNDED",
-  "CHARGEBACK",
+  "novo",
+  "aguardando_pagamento",
+  "pago",
+  "falha_pagamento",
+  "aceito",
+  "rejeitado",
+  "em_preparo",
+  "pronto",
+  "saiu_para_entrega",
+  "entregue",
+  "concluido",
+  "cancelado",
+  "reembolsado",
+  "chargeback",
 ];
 
 // Estados terminais: nenhuma transição de saída permitida.
 export const TERMINAL_STATES: OrderState[] = [
-  "COMPLETED",
-  "CANCELLED",
-  "REFUNDED",
-  "CHARGEBACK",
-  "RESTAURANT_REJECTED",
+  "concluido",
+  "cancelado",
+  "reembolsado",
+  "chargeback",
+  "rejeitado",
 ];
 
 // Mapa de transições permitidas. Qualquer transição fora deste mapa é inválida.
 export const ALLOWED_TRANSITIONS: Record<OrderState, OrderState[]> = {
-  CREATED: ["WAITING_PAYMENT", "CANCELLED"],
-  WAITING_PAYMENT: ["PAYMENT_APPROVED", "PAYMENT_FAILED", "CANCELLED"],
-  PAYMENT_APPROVED: ["RESTAURANT_ACCEPTED", "RESTAURANT_REJECTED", "REFUNDED", "CHARGEBACK", "CANCELLED"],
-  PAYMENT_FAILED: ["WAITING_PAYMENT", "CANCELLED"],
-  RESTAURANT_ACCEPTED: ["PREPARING", "CANCELLED", "REFUNDED"],
-  RESTAURANT_REJECTED: [],
-  PREPARING: ["READY", "CANCELLED"],
-  READY: ["OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"],
-  OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],
-  DELIVERED: ["COMPLETED", "REFUNDED", "CHARGEBACK"],
-  COMPLETED: ["REFUNDED", "CHARGEBACK"],
-  CANCELLED: [],
-  REFUNDED: [],
-  CHARGEBACK: [],
+  novo: ["aguardando_pagamento", "cancelado"],
+  aguardando_pagamento: ["pago", "falha_pagamento", "cancelado"],
+  pago: ["aceito", "rejeitado", "reembolsado", "chargeback", "cancelado"],
+  falha_pagamento: ["aguardando_pagamento", "cancelado"],
+  aceito: ["em_preparo", "cancelado", "reembolsado"],
+  rejeitado: [],
+  em_preparo: ["pronto", "cancelado"],
+  pronto: ["saiu_para_entrega", "entregue", "cancelado"],
+  saiu_para_entrega: ["entregue", "cancelado"],
+  entregue: ["concluido", "reembolsado", "chargeback"],
+  concluido: ["reembolsado", "chargeback"],
+  cancelado: [],
+  reembolsado: [],
+  chargeback: [],
 };
 
 export function isTerminal(state: OrderState): boolean {
