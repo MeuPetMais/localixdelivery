@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { computeEtaMinutes, computeEtaLabel } from "@/lib/smart-eta";
 import { toast } from "sonner";
+import { transitionOrderStatus } from "@/lib/orders/orders.functions";
+import type { OrderState } from "@/lib/orders/OrderStateMachine";
 
 export const Route = createFileRoute("/_authenticated/kitchen")({
   head: () => ({ meta: [{ title: "Painel da Cozinha — Localix" }] }),
