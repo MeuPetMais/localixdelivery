@@ -12,10 +12,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
-import { buildWhatsappOrderLink } from "@/lib/whatsapp.functions";
+import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
+import { PaymentsReadinessService } from "@/lib/billing/PaymentsReadinessService";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, MessageCircle, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
+import { ShoppingBag, Plus, Minus, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
 import { getFeaturedSections, type FeaturedItem, type FeaturedSection } from "@/lib/featured-sections.functions";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
@@ -935,7 +936,24 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [payment, setPayment] = useState("Pix");
+  type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
+  const BASE_METHODS: PayOption[] = [
+    { id: "pix", label: "Pix", method: "pix" },
+    { id: "cash", label: "Dinheiro", method: "cash" },
+    { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
+    { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
+  ];
+  const { data: readiness } = useQuery({
+    queryKey: ["payments-readiness", restaurant.id],
+    enabled: !!restaurant?.id,
+    queryFn: () => PaymentsReadinessService.isReadyForPayments(restaurant.id),
+    staleTime: 60_000,
+  });
+  const paymentOptions: PayOption[] = readiness?.ready
+    ? [...BASE_METHODS, { id: "card_online", label: "Cartão Online", method: "credit_card", online: true }]
+    : BASE_METHODS;
+  const [paymentId, setPaymentId] = useState<string>("pix");
+  const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -992,7 +1010,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     const meta = (user.user_metadata ?? {}) as Record<string, any>;
     if (!name) setName(profile?.full_name || meta.full_name || meta.name || "");
     if (!phone) setPhone(profile?.phone || profile?.whatsapp || "");
-    if (profile?.last_payment_method) setPayment(profile.last_payment_method);
+    if (profile?.last_payment_method) {
+      const match = paymentOptions.find((p) => p.label === profile.last_payment_method || p.id === profile.last_payment_method);
+      if (match) setPaymentId(match.id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
@@ -1007,10 +1028,33 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const selectedAddress = addresses.find((a: any) => a.id === selectedAddressId) ?? null;
 
   const discount = coupon ? +(subtotal * (coupon.discountPercent / 100)).toFixed(2) : 0;
-  const total = Math.max(0, subtotal - discount) + fee;
   const belowMin = subtotal < min;
 
-  const getOrderLink = useServerFn(buildWhatsappOrderLink);
+  const create = useServerFn(createCheckoutOrder);
+  const preview = useServerFn(previewCheckoutPricing);
+  const [pricing, setPricing] = useState<{
+    subtotal: number; deliveryFee: number; platformFee: number; couponDiscount: number; customerTotal: number;
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!subtotal) { setPricing(null); return; }
+    preview({
+      data: {
+        subtotal,
+        deliveryFee: fee,
+        couponDiscount: discount,
+        paymentMethod: selectedPayment.method,
+      },
+    })
+      .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
+      .catch(() => { /* silencioso — fallback para cálculo local */ });
+    return () => { cancelled = true; };
+  }, [subtotal, fee, discount, selectedPayment.method, preview]);
+
+  const total = pricing?.customerTotal ?? Math.max(0, subtotal - discount) + fee;
+  const platformFee = pricing?.platformFee ?? 0;
 
   async function applyCoupon() {
     if (!couponInput.trim()) return;
@@ -1040,48 +1084,26 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     return null;
   }
 
-  async function sendWhatsApp() {
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Preencha nome e telefone");
-      return;
-    }
+  async function confirmOrder() {
+    if (!name.trim() || !phone.trim()) { toast.error("Preencha nome e telefone"); return; }
     const fullAddress = buildAddressString();
-    if (!fullAddress) {
-      toast.error("Selecione ou informe um endereço de entrega");
-      return;
-    }
+    if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
+    if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
 
-    const lines = [
-      `Olá, gostaria de fazer o seguinte pedido:`,
-      ``,
-      ...cart.map((c) => `• ${c.qty}x ${c.name} — ${brl(c.price * c.qty)}`),
-      ``,
-      `Subtotal: ${brl(subtotal)}`,
-      coupon ? `Cupom ${coupon.code}: -${brl(discount)}` : "",
-      `Entrega: ${brl(fee)}`,
-      `*Total: ${brl(total)}*`,
-      ``,
-      `Nome: ${name}`,
-      `Telefone: ${phone}`,
-      `Endereço: ${fullAddress}`,
-      ``,
-      `Forma de pagamento: ${payment}`,
-      notes ? `\nObs: ${notes}` : "",
-    ].filter(Boolean).join("\n");
-
+    setSubmitting(true);
     try {
-      const { url, orderNumber, orderId, demo } = await getOrderLink({
+      const res = await create({
         data: {
-          slug: restaurant.slug,
-          message: lines,
-          customer: { name, phone, address: fullAddress, payment },
+          restaurantSlug: restaurant.slug,
+          customer: { name, phone, address: fullAddress, notes: notes || undefined },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          paymentMethod: selectedPayment.method,
           deliveryFee: fee,
-          couponCode: coupon?.code ?? null,
+          couponCode: coupon?.code ?? undefined,
+          couponDiscount: discount,
         },
       });
-      if (orderNumber) toast.success(`Pedido #${orderNumber} enviado!`);
 
       // Persist profile prefill for next orders (best-effort)
       if (user) {
@@ -1093,22 +1115,49 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
               full_name: name,
               phone,
               whatsapp: phone,
-              last_payment_method: payment,
+              last_payment_method: selectedPayment.label,
             }, { onConflict: "id" });
           qc.invalidateQueries({ queryKey: ["customer-profile", user.id] });
         } catch {}
       }
 
-      if (orderId && !demo && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(`wa-url:${orderId}`, url); } catch {}
+      // Cartão Online (Stripe Checkout hospedado)
+      if (selectedPayment.online) {
+        try {
+          const origin = window.location.origin;
+          const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+            body: {
+              orderId: res.orderId,
+              successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
+              cancelUrl: `${origin}/${restaurant.slug}`,
+              customerEmail: user?.email ?? undefined,
+            },
+          });
+          if (error) throw error;
+          if (data?.url) {
+            onClose();
+            window.location.href = data.url as string;
+            return;
+          }
+          throw new Error(data?.error ?? "Falha ao iniciar pagamento");
+        } catch (e: any) {
+          toast.error(e?.message ?? "Não foi possível iniciar o pagamento");
+          onClose();
+          onCreated(res.orderId);
+          return;
+        }
       }
-      if (!demo) window.open(url, "_blank");
+
+      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
       onClose();
-      if (orderId) onCreated(orderId);
+      onCreated(res.orderId);
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível enviar o pedido");
+      toast.error(e?.message ?? "Não foi possível criar o pedido");
+    } finally {
+      setSubmitting(false);
     }
   }
+
 
   return (
     <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
@@ -1238,10 +1287,20 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
           <div className="flex flex-wrap gap-2">
-            {["Pix", "Dinheiro", "Cartão na entrega"].map((p) => (
-              <button key={p} type="button" onClick={() => setPayment(p)} className={`rounded-full border px-3 py-1.5 text-sm ${payment === p ? "border-primary bg-primary/10 text-primary" : ""}`}>{p}</button>
+            {paymentOptions.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPaymentId(p.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${paymentId === p.id ? "border-primary bg-primary/10 text-primary" : ""}`}
+              >
+                {p.label}
+              </button>
             ))}
           </div>
+          {selectedPayment.online && (
+            <p className="text-xs text-muted-foreground">Você será redirecionado para o pagamento seguro (Stripe).</p>
+          )}
         </div>
         <div className="space-y-1.5"><Label>Observações (opcional)</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
 
@@ -1258,16 +1317,18 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       </div>
 
       <div className="mt-5 space-y-1 rounded-xl bg-muted/50 p-4 text-sm">
-        <div className="flex justify-between"><span>Subtotal</span><span>{brl(subtotal)}</span></div>
-        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(discount)}</span></div>}
-        <div className="flex justify-between"><span>Entrega</span><span>{brl(fee)}</span></div>
+        <div className="flex justify-between"><span>Subtotal</span><span>{brl(pricing?.subtotal ?? subtotal)}</span></div>
+        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(pricing?.couponDiscount ?? discount)}</span></div>}
+        <div className="flex justify-between"><span>Entrega</span><span>{brl(pricing?.deliveryFee ?? fee)}</span></div>
+        {platformFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Taxa da plataforma</span><span>{brl(platformFee)}</span></div>}
         <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(total)}</span></div>
         {belowMin && <p className="mt-1 text-xs text-destructive">Pedido mínimo: {brl(min)}</p>}
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!effectiveOpen || belowMin}>
-          <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
+        <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
+          {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+          {selectedPayment.online ? "Pagar com cartão (Stripe)" : "Confirmar pedido"}
         </Button>
       </SheetFooter>
 
