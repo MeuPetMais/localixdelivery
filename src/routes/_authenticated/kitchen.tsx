@@ -125,13 +125,19 @@ function KitchenPage() {
   async function advance(o: Order) {
     const next = NEXT_STATUS[o.status];
     if (!next) return;
-    const { error } = await supabase.from("orders").update({ status: next }).eq("id", o.id);
-    if (error) toast.error("Não foi possível atualizar");
+    try {
+      await transitionOrderStatus({ data: { orderId: o.id, to: next as OrderState } });
+    } catch {
+      toast.error("Não foi possível atualizar");
+    }
   }
 
   async function cancel(o: Order) {
-    const { error } = await supabase.from("orders").update({ status: "cancelado" }).eq("id", o.id);
-    if (error) toast.error("Não foi possível cancelar");
+    try {
+      await transitionOrderStatus({ data: { orderId: o.id, to: "cancelado" } });
+    } catch {
+      toast.error("Não foi possível cancelar");
+    }
   }
 
   function toggleFullscreen() {
