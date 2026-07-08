@@ -1010,7 +1010,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     const meta = (user.user_metadata ?? {}) as Record<string, any>;
     if (!name) setName(profile?.full_name || meta.full_name || meta.name || "");
     if (!phone) setPhone(profile?.phone || profile?.whatsapp || "");
-    if (profile?.last_payment_method) setPayment(profile.last_payment_method);
+    if (profile?.last_payment_method) {
+      const match = paymentOptions.find((p) => p.label === profile.last_payment_method || p.id === profile.last_payment_method);
+      if (match) setPaymentId(match.id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
