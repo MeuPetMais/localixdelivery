@@ -10,11 +10,13 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
 import { printAutoCopies, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
+import { transitionOrderStatus } from "@/lib/orders/orders.functions";
 import {
   announceNewOrder,
   announcePendingCount,
@@ -83,6 +85,7 @@ export function OrdersRealtimeProvider({
 }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const transition = useServerFn(transitionOrderStatus);
 
   const [unseen, setUnseen] = useState<PendingOrder[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -99,13 +102,19 @@ export function OrdersRealtimeProvider({
     const latest = unseen[unseen.length - 1];
     if (!latest) return;
     setUnseen((prev) => prev.filter((o) => o.id !== latest.id));
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "em_preparo" })
-      .eq("id", latest.id);
-    if (error) toast.error("Não foi possível aceitar o pedido");
-    else toast.success(`Pedido #${latest.order_number ?? ""} aceito`);
-  }, [unseen]);
+    try {
+      await transition({
+        data: {
+          orderId: latest.id,
+          to: "em_preparo",
+          actorType: "restaurant",
+        },
+      });
+      toast.success(`Pedido #${latest.order_number ?? ""} aceito`);
+    } catch {
+      toast.error("Não foi possível aceitar o pedido");
+    }
+  }, [unseen, transition]);
 
   // Carrega snapshot inicial de pedidos pendentes.
   useEffect(() => {
