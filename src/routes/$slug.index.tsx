@@ -1317,16 +1317,18 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       </div>
 
       <div className="mt-5 space-y-1 rounded-xl bg-muted/50 p-4 text-sm">
-        <div className="flex justify-between"><span>Subtotal</span><span>{brl(subtotal)}</span></div>
-        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(discount)}</span></div>}
-        <div className="flex justify-between"><span>Entrega</span><span>{brl(fee)}</span></div>
+        <div className="flex justify-between"><span>Subtotal</span><span>{brl(pricing?.subtotal ?? subtotal)}</span></div>
+        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(pricing?.couponDiscount ?? discount)}</span></div>}
+        <div className="flex justify-between"><span>Entrega</span><span>{brl(pricing?.deliveryFee ?? fee)}</span></div>
+        {platformFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Taxa da plataforma</span><span>{brl(platformFee)}</span></div>}
         <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(total)}</span></div>
         {belowMin && <p className="mt-1 text-xs text-destructive">Pedido mínimo: {brl(min)}</p>}
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full bg-[#25D366] shadow-glow hover:bg-[#1ebe5d]" onClick={sendWhatsApp} disabled={!effectiveOpen || belowMin}>
-          <MessageCircle className="mr-2 h-5 w-5" /> Enviar pedido pelo WhatsApp
+        <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
+          {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+          {selectedPayment.online ? "Pagar com cartão (Stripe)" : "Confirmar pedido"}
         </Button>
       </SheetFooter>
 
