@@ -1139,9 +1139,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             },
           });
 
-              customerEmail: user?.email ?? undefined,
-            },
-          });
+
           if (error) throw error;
           if (data?.url) {
             onClose();
