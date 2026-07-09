@@ -188,6 +188,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    // Whitelist rígido: apenas presença/localização. Nada mais pode ser mutado por aqui.
     const patch: Record<string, unknown> = {
       online: data.online,
       last_seen_at: new Date().toISOString(),
@@ -196,11 +197,24 @@ export const setMyPresence = createServerFn({ method: "POST" })
       patch.last_lat = data.lat;
       patch.last_lng = data.lng;
     }
-    const { data: row, error } = await context.supabase
+    // O motoboy não possui mais permissão UPDATE via RLS (RC5.1.3).
+    // Escopo garantido por owner_id = usuário autenticado no middleware.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("delivery_drivers")
       .update(patch as any)
       .eq("owner_id", context.userId)
       .select().maybeSingle();
     if (error) throw new Error(error.message);
+    if (row) {
+      await supabaseAdmin.from("delivery_driver_audit").insert({
+        actor_id: context.userId,
+        restaurant_id: row.restaurant_id,
+        driver_id: row.id,
+        action: "PRESENCE",
+        before: null,
+        after: { online: patch.online, last_lat: patch.last_lat ?? null, last_lng: patch.last_lng ?? null },
+      });
+    }
     return row;
   });
