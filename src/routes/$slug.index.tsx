@@ -1132,8 +1132,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
           const { data, error } = await supabase.functions.invoke("stripe-checkout", {
             body: {
               orderId: res.orderId,
+              method: selectedPayment.method === "pix" ? "pix" : "card",
               successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
               cancelUrl: `${origin}/${restaurant.slug}`,
+              customerEmail: user?.email ?? undefined,
+            },
+          });
+
               customerEmail: user?.email ?? undefined,
             },
           });
