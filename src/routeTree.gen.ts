@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as MotoboyRouteImport } from './routes/motoboy'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
 import { Route as HomeRouteImport } from './routes/home'
@@ -76,6 +77,11 @@ import { Route as ApiInternalOrdersTransitionRouteImport } from './routes/api/in
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotoboyRoute = MotoboyRouteImport.update({
+  id: '/motoboy',
+  path: '/motoboy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
@@ -407,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -535,6 +543,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -601,6 +610,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -728,6 +739,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -794,6 +806,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  MotoboyRoute: typeof MotoboyRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   AdminLoginRoute: typeof AdminLoginRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -811,6 +824,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/motoboy': {
+      id: '/motoboy'
+      path: '/motoboy'
+      fullPath: '/motoboy'
+      preLoaderRoute: typeof MotoboyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meus-pedidos': {
@@ -1371,6 +1391,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  MotoboyRoute: MotoboyRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   AdminLoginRoute: AdminLoginRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
