@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as MotoboyRouteImport } from './routes/motoboy'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
 import { Route as HomeRouteImport } from './routes/home'
@@ -53,6 +54,7 @@ import { Route as AuthenticatedPrintSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authenticated/pagamentos'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedMotoboysRouteImport } from './routes/_authenticated/motoboys'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
 import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticated/kitchen'
@@ -75,6 +77,11 @@ import { Route as ApiInternalOrdersTransitionRouteImport } from './routes/api/in
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotoboyRoute = MotoboyRouteImport.update({
+  id: '/motoboy',
+  path: '/motoboy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
@@ -293,6 +300,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMotoboysRoute = AuthenticatedMotoboysRouteImport.update({
+  id: '/motoboys',
+  path: '/motoboys',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMenuRoute = AuthenticatedMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -401,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -417,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/kitchen': typeof AuthenticatedKitchenRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
+  '/motoboys': typeof AuthenticatedMotoboysRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -462,6 +476,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -478,6 +493,7 @@ export interface FileRoutesByTo {
   '/kitchen': typeof AuthenticatedKitchenRoute
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
+  '/motoboys': typeof AuthenticatedMotoboysRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -527,6 +543,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
@@ -543,6 +560,7 @@ export interface FileRoutesById {
   '/_authenticated/kitchen': typeof AuthenticatedKitchenRoute
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
+  '/_authenticated/motoboys': typeof AuthenticatedMotoboysRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/pagamentos': typeof AuthenticatedPagamentosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -592,6 +610,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -608,6 +627,7 @@ export interface FileRouteTypes {
     | '/kitchen'
     | '/loyalty'
     | '/menu'
+    | '/motoboys'
     | '/orders'
     | '/pagamentos'
     | '/perfil'
@@ -653,6 +673,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -669,6 +690,7 @@ export interface FileRouteTypes {
     | '/kitchen'
     | '/loyalty'
     | '/menu'
+    | '/motoboys'
     | '/orders'
     | '/pagamentos'
     | '/perfil'
@@ -717,6 +739,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/meus-enderecos'
     | '/meus-pedidos'
+    | '/motoboy'
     | '/redefinir-senha'
     | '/$slug/montar'
     | '/$slug/sobre'
@@ -733,6 +756,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kitchen'
     | '/_authenticated/loyalty'
     | '/_authenticated/menu'
+    | '/_authenticated/motoboys'
     | '/_authenticated/orders'
     | '/_authenticated/pagamentos'
     | '/_authenticated/perfil'
@@ -782,6 +806,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  MotoboyRoute: typeof MotoboyRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   AdminLoginRoute: typeof AdminLoginRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
@@ -799,6 +824,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/motoboy': {
+      id: '/motoboy'
+      path: '/motoboy'
+      fullPath: '/motoboy'
+      preLoaderRoute: typeof MotoboyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meus-pedidos': {
@@ -1102,6 +1134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/motoboys': {
+      id: '/_authenticated/motoboys'
+      path: '/motoboys'
+      fullPath: '/motoboys'
+      preLoaderRoute: typeof AuthenticatedMotoboysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/menu': {
       id: '/_authenticated/menu'
       path: '/menu'
@@ -1245,6 +1284,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
+  AuthenticatedMotoboysRoute: typeof AuthenticatedMotoboysRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPagamentosRoute: typeof AuthenticatedPagamentosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -1272,6 +1312,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
+  AuthenticatedMotoboysRoute: AuthenticatedMotoboysRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPagamentosRoute: AuthenticatedPagamentosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
@@ -1350,6 +1391,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  MotoboyRoute: MotoboyRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   AdminLoginRoute: AdminLoginRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
