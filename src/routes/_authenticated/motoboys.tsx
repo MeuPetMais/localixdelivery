@@ -88,12 +88,12 @@ function DriversPage() {
   );
 
   const createMut = useMutation({
-    mutationFn: (data: Parameters<typeof createDriver>[0]["data"]) => create({ data }),
+    mutationFn: (data: any) => create({ data }),
     onSuccess: () => { toast.success("Motoboy cadastrado"); setCreating(false); qc.invalidateQueries({ queryKey }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const updateMut = useMutation({
-    mutationFn: (data: Parameters<typeof updateDriver>[0]["data"]) => update({ data }),
+    mutationFn: (data: any) => update({ data }),
     onSuccess: () => { toast.success("Atualizado"); setEditing(null); qc.invalidateQueries({ queryKey }); },
     onError: (e: Error) => toast.error(e.message),
   });
