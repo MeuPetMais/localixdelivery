@@ -213,7 +213,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
         driver_id: row.id,
         action: "PRESENCE",
         before: null,
-        after: { online: patch.online, last_lat: patch.last_lat ?? null, last_lng: patch.last_lng ?? null },
+        after: { online: data.online, last_lat: (patch.last_lat as number | undefined) ?? null, last_lng: (patch.last_lng as number | undefined) ?? null },
       });
     }
     return row;
