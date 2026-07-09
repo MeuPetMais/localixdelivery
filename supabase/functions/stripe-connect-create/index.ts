@@ -107,7 +107,6 @@ Deno.serve(async (req) => {
         country: "BR",
         "capabilities[card_payments][requested]": "true",
         "capabilities[transfers][requested]": "true",
-        "capabilities[pix_payments][requested]": "true",
         "metadata[restaurant_id]": restaurantId,
         "metadata[owner_id]": userId,
       };
