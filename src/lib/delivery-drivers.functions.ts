@@ -198,7 +198,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await context.supabase
       .from("delivery_drivers")
-      .update(patch)
+      .update(patch as any)
       .eq("owner_id", context.userId)
       .select().maybeSingle();
     if (error) throw new Error(error.message);
