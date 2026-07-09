@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Driver updates own presence" ON public.delivery_drivers;
