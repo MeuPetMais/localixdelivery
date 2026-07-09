@@ -1335,7 +1335,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       <SheetFooter className="mt-5">
         <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-          {selectedPayment.online ? "Pagar com cartão (Stripe)" : "Confirmar pedido"}
+          {selectedPayment.online
+            ? selectedPayment.method === "pix" ? "Pagar com Pix (Stripe)" : "Pagar com cartão (Stripe)"
+            : "Confirmar pedido"}
+
         </Button>
       </SheetFooter>
 
