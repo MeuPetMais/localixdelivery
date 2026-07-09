@@ -1244,6 +1244,125 @@ export type Database = {
           },
         ]
       }
+      delivery_driver_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          restaurant_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          restaurant_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_driver_audit_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_drivers: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          document_url: string | null
+          email: string | null
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          name: string
+          online: boolean
+          owner_id: string | null
+          phone: string | null
+          photo_url: string | null
+          restaurant_id: string
+          status: Database["public"]["Enums"]["delivery_driver_status"]
+          updated_at: string
+          vehicle_plate: string | null
+          vehicle_type: Database["public"]["Enums"]["delivery_driver_vehicle"]
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          document_url?: string | null
+          email?: string | null
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          name: string
+          online?: boolean
+          owner_id?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["delivery_driver_status"]
+          updated_at?: string
+          vehicle_plate?: string | null
+          vehicle_type?: Database["public"]["Enums"]["delivery_driver_vehicle"]
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          document_url?: string | null
+          email?: string | null
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          name?: string
+          online?: boolean
+          owner_id?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["delivery_driver_status"]
+          updated_at?: string
+          vehicle_plate?: string | null
+          vehicle_type?: Database["public"]["Enums"]["delivery_driver_vehicle"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_drivers_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_drivers_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_orders: {
         Row: {
           created_at: string
@@ -6192,6 +6311,9 @@ export type Database = {
         | "atendimento"
         | "marketing"
         | "analista"
+        | "delivery_driver"
+      delivery_driver_status: "ativo" | "inativo" | "afastado"
+      delivery_driver_vehicle: "moto" | "bicicleta" | "carro" | "a_pe"
       ledger_status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED"
       ledger_transaction_type:
         | "ORDER_CREATED"
@@ -6447,7 +6569,10 @@ export const Constants = {
         "atendimento",
         "marketing",
         "analista",
+        "delivery_driver",
       ],
+      delivery_driver_status: ["ativo", "inativo", "afastado"],
+      delivery_driver_vehicle: ["moto", "bicicleta", "carro", "a_pe"],
       ledger_status: ["PENDING", "COMPLETED", "FAILED", "CANCELLED"],
       ledger_transaction_type: [
         "ORDER_CREATED",
