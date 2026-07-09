@@ -135,14 +135,8 @@ Deno.serve(async (req) => {
 
     if (!accountId) return json({ error: "no_account" }, { status: 400 });
 
-    // Garante que pix_payments seja solicitada mesmo em contas já existentes.
-    try {
-      await stripe(`/accounts/${accountId}`, secret, {
-        "capabilities[pix_payments][requested]": "true",
-      });
-    } catch (e) {
-      console.warn("[stripe-connect-create] pix_payments request failed", (e as Error).message);
-    }
+
+
 
 
     const link = await stripe("/account_links", secret, {
