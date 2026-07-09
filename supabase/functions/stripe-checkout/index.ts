@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
 
   const params: Record<string, string> = {
     mode: "payment",
-    "payment_method_types[0]": "card",
+    "payment_method_types[0]": method === "pix" ? "pix" : "card",
     "line_items[0][price_data][currency]": "brl",
     "line_items[0][price_data][unit_amount]": String(amount),
     "line_items[0][price_data][product_data][name]": `Pedido #${order.order_number ?? order.id.slice(0, 8)}`,
@@ -128,9 +128,15 @@ Deno.serve(async (req) => {
     cancel_url: cancelUrl,
     "metadata[order_id]": order.id,
     "metadata[restaurant_id]": order.restaurant_id,
+    "metadata[method]": method,
     "payment_intent_data[metadata][order_id]": order.id,
     "payment_intent_data[metadata][restaurant_id]": order.restaurant_id,
+    "payment_intent_data[metadata][method]": method,
   };
+  if (method === "pix") {
+    params["payment_method_options[pix][expires_after_seconds]"] = "3600";
+  }
+
 
   if (splitEligible) {
     params["payment_intent_data[application_fee_amount]"] = String(toCents(platformFeeBRL));
