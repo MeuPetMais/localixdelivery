@@ -72,10 +72,13 @@ Deno.serve(async (req) => {
   const successUrl: string = body?.successUrl ?? "";
   const cancelUrl: string = body?.cancelUrl ?? "";
   const customerEmail: string | null = body?.customerEmail ?? null;
+  const rawMethod: string = String(body?.method ?? "card").toLowerCase();
+  const method: "card" | "pix" = rawMethod === "pix" ? "pix" : "card";
 
   if (!orderId || !successUrl || !cancelUrl) {
     return json({ error: "missing_params", need: ["orderId","successUrl","cancelUrl"] }, { status: 400 });
   }
+
 
   const sb = admin();
 
