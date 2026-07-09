@@ -938,7 +938,6 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const [phone, setPhone] = useState("");
   type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
   const BASE_METHODS: PayOption[] = [
-    { id: "pix", label: "Pix", method: "pix" },
     { id: "cash", label: "Dinheiro", method: "cash" },
     { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
@@ -950,8 +949,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     staleTime: 60_000,
   });
   const paymentOptions: PayOption[] = readiness?.ready
-    ? [...BASE_METHODS, { id: "card_online", label: "Cartão Online", method: "credit_card", online: true }]
+    ? [
+        { id: "pix", label: "Pix (Stripe)", method: "pix", online: true },
+        { id: "card_online", label: "Cartão Online", method: "credit_card", online: true },
+        ...BASE_METHODS,
+      ]
     : BASE_METHODS;
+
   const [paymentId, setPaymentId] = useState<string>("pix");
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const [notes, setNotes] = useState("");
@@ -1128,11 +1132,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
           const { data, error } = await supabase.functions.invoke("stripe-checkout", {
             body: {
               orderId: res.orderId,
+              method: selectedPayment.method === "pix" ? "pix" : "card",
               successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
               cancelUrl: `${origin}/${restaurant.slug}`,
               customerEmail: user?.email ?? undefined,
             },
           });
+
+
           if (error) throw error;
           if (data?.url) {
             onClose();
@@ -1328,7 +1335,10 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
       <SheetFooter className="mt-5">
         <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-          {selectedPayment.online ? "Pagar com cartão (Stripe)" : "Confirmar pedido"}
+          {selectedPayment.online
+            ? selectedPayment.method === "pix" ? "Pagar com Pix (Stripe)" : "Pagar com cartão (Stripe)"
+            : "Confirmar pedido"}
+
         </Button>
       </SheetFooter>
 
