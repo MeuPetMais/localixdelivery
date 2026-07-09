@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
       restaurant_id: order.restaurant_id,
       provider: "stripe",
       external_id: externalId,
-      method: "credit_card",
+      method: method === "pix" ? "pix" : "credit_card",
       status: "pending",
       amount: amountBRL,
       platform_fee: platformFeeBRL,
