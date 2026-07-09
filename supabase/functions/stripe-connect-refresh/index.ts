@@ -81,7 +81,22 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Solicita pix_payments em contas já existentes (idempotente na Stripe).
+    try {
+      await fetch(`https://api.stripe.com/v1/accounts/${rest.stripe_account_id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ "capabilities[pix_payments][requested]": "true" }).toString(),
+      });
+    } catch (e) {
+      console.warn("[stripe-connect-refresh] pix_payments request failed", (e as Error).message);
+    }
+
     const a = await stripeGet(`/accounts/${rest.stripe_account_id}`, secret);
+
     const status = statusOf(a);
     const nowIso = new Date().toISOString();
 
