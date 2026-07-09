@@ -30,8 +30,8 @@ async function audit(
     restaurant_id: restaurantId,
     driver_id: driverId,
     action,
-    before: before ?? null,
-    after: after ?? null,
+    before: (before ?? null) as any,
+    after: (after ?? null) as any,
   });
 }
 
