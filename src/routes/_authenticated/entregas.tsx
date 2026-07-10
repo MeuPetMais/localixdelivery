@@ -52,7 +52,7 @@ function minutesSince(iso: string): number {
 }
 
 function EntregasPage() {
-  const { restaurant } = useRestaurant();
+  const restaurant = useRestaurant();
   const qc = useQueryClient();
   const rid = restaurant?.id;
 
