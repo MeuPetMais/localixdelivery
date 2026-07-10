@@ -14,3 +14,4 @@ export {
 } from "./tracking.realtime";
 export { setTrackingAuditSink, recordTrackingAudit } from "./tracking.audit";
 export type { TrackingAuditRecord } from "./tracking.audit";
+export * from "./location";
