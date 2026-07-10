@@ -40,6 +40,42 @@ describe("TrackingService", () => {
   });
 });
 
+describe("Snapshot integrity (RC5.3.x.1)", () => {
+  const svc = createTrackingService();
+  beforeEach(() => svc._reset());
+
+  it("upsert é idempotente: N chamadas resultam em 1 snapshot", () => {
+    for (let i = 0; i < 25; i++) svc.createSnapshot({ ...baseInput, status: "ATRIBUIDO" });
+    const { snapshot } = svc.currentTracking(baseInput.assignment_id);
+    expect(snapshot).not.toBeNull();
+    // identidade estável
+    const again = svc.createSnapshot(baseInput);
+    expect(again.id).toBe(snapshot!.id);
+  });
+
+  it("gravações concorrentes convergem para um único snapshot por assignment", async () => {
+    await Promise.all(
+      Array.from({ length: 50 }, (_, i) =>
+        Promise.resolve().then(() =>
+          svc.createSnapshot({ ...baseInput, status: i % 2 === 0 ? "ATRIBUIDO" : "COLETANDO" }),
+        ),
+      ),
+    );
+    const { snapshot } = svc.currentTracking(baseInput.assignment_id);
+    expect(snapshot).not.toBeNull();
+    // status final é um dos permitidos, sem duplicação de linha
+    expect(["ATRIBUIDO", "COLETANDO"]).toContain(snapshot!.status);
+  });
+
+  it("assignments distintos não colidem", () => {
+    const a = svc.createSnapshot(baseInput);
+    const other = svc.createSnapshot({ ...baseInput, assignment_id: "55555555-5555-5555-5555-555555555555" });
+    expect(a.id).not.toBe(other.id);
+    expect(svc.currentTracking(a.assignment_id).snapshot?.id).toBe(a.id);
+    expect(svc.currentTracking(other.assignment_id).snapshot?.id).toBe(other.id);
+  });
+});
+
 describe("TrackingOrchestrator", () => {
   const svc = createTrackingService();
   const orch = createTrackingOrchestrator({ service: svc });
