@@ -69,7 +69,7 @@ async function buildOrchestrator() {
         return data as AssignmentSnapshot;
       },
       applyAtomic: async (input) => {
-        const { data, error } = await supabaseAdmin.rpc("delivery_assignment_apply_transition", {
+        const { data, error } = await supabaseAdmin.rpc("delivery_assignment_apply_transition" as never, {
           _assignment_id: input.assignmentId,
           _expected_from: input.expectedFrom,
           _next_status: input.nextStatus,
@@ -77,10 +77,10 @@ async function buildOrchestrator() {
           _actor_id: input.actorId,
           _reason: input.reason,
           _correlation_id: input.correlationId,
-          _metadata: input.metadata as never,
-        });
+          _metadata: input.metadata,
+        } as never);
         if (error) return { ok: false, reason: error.message };
-        const res = data as { ok: boolean; reason?: string; current?: string };
+        const res = data as unknown as { ok: boolean; reason?: string; current?: string };
         return res;
       },
       onAssigned: async (a) => {
@@ -97,7 +97,7 @@ async function buildOrchestrator() {
           _next_status: "saiu_para_entrega",
           _reason: "Motoboy coletou o pedido",
           _actor_type: "courier",
-          _actor_id: null,
+          _actor_id: null as unknown as string,
           _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },
         });
       },
@@ -108,11 +108,12 @@ async function buildOrchestrator() {
           _next_status: "entregue",
           _reason: "Entrega concluída",
           _actor_type: "courier",
-          _actor_id: null,
+          _actor_id: null as unknown as string,
           _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },
         });
         // Retorna motoboy ao final da fila
         await supabaseAdmin.rpc("queue_return", {
+
           _restaurant_id: a.restaurant_id, _driver_id: a.driver_id,
         });
       },
