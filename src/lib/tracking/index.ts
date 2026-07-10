@@ -15,3 +15,4 @@ export {
 export { setTrackingAuditSink, recordTrackingAudit } from "./tracking.audit";
 export type { TrackingAuditRecord } from "./tracking.audit";
 export * from "./location";
+export * as Eta from "./eta";

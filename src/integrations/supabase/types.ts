@@ -6394,6 +6394,60 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_eta_history: {
+        Row: {
+          actual_eta_seconds: number | null
+          algorithm: string
+          assignment_id: string
+          confidence: string
+          correlation_id: string | null
+          created_at: string
+          difference_seconds: number | null
+          driver_id: string | null
+          id: string
+          metadata: Json
+          order_id: string
+          predicted_eta_seconds: number
+          restaurant_id: string
+          window_max_seconds: number | null
+          window_min_seconds: number | null
+        }
+        Insert: {
+          actual_eta_seconds?: number | null
+          algorithm?: string
+          assignment_id: string
+          confidence?: string
+          correlation_id?: string | null
+          created_at?: string
+          difference_seconds?: number | null
+          driver_id?: string | null
+          id?: string
+          metadata?: Json
+          order_id: string
+          predicted_eta_seconds: number
+          restaurant_id: string
+          window_max_seconds?: number | null
+          window_min_seconds?: number | null
+        }
+        Update: {
+          actual_eta_seconds?: number | null
+          algorithm?: string
+          assignment_id?: string
+          confidence?: string
+          correlation_id?: string | null
+          created_at?: string
+          difference_seconds?: number | null
+          driver_id?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string
+          predicted_eta_seconds?: number
+          restaurant_id?: string
+          window_max_seconds?: number | null
+          window_min_seconds?: number | null
+        }
+        Relationships: []
+      }
       tracking_snapshots: {
         Row: {
           assignment_id: string
