@@ -1687,6 +1687,135 @@ export type Database = {
           },
         ]
       }
+      driver_shift_timeline: {
+        Row: {
+          actor: string
+          correlation_id: string | null
+          created_at: string
+          current_state: string | null
+          event: string
+          id: string
+          metadata: Json
+          previous_state: string | null
+          shift_id: string
+        }
+        Insert: {
+          actor?: string
+          correlation_id?: string | null
+          created_at?: string
+          current_state?: string | null
+          event: string
+          id?: string
+          metadata?: Json
+          previous_state?: string | null
+          shift_id: string
+        }
+        Update: {
+          actor?: string
+          correlation_id?: string | null
+          created_at?: string
+          current_state?: string | null
+          event?: string
+          id?: string
+          metadata?: Json
+          previous_state?: string | null
+          shift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_shift_timeline_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "driver_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_shifts: {
+        Row: {
+          created_at: string
+          current_state: string
+          deliveries_count: number
+          delivery_minutes: number
+          distance_total_km: number
+          driver_id: string
+          earnings_total: number
+          finished_at: string | null
+          id: string
+          metadata: Json
+          online_minutes: number
+          pause_minutes: number
+          restaurant_id: string
+          return_minutes: number
+          started_at: string
+          status: string
+          updated_at: string
+          waiting_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          current_state?: string
+          deliveries_count?: number
+          delivery_minutes?: number
+          distance_total_km?: number
+          driver_id: string
+          earnings_total?: number
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          online_minutes?: number
+          pause_minutes?: number
+          restaurant_id: string
+          return_minutes?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          waiting_minutes?: number
+        }
+        Update: {
+          created_at?: string
+          current_state?: string
+          deliveries_count?: number
+          delivery_minutes?: number
+          distance_total_km?: number
+          driver_id?: string
+          earnings_total?: number
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          online_minutes?: number
+          pause_minutes?: number
+          restaurant_id?: string
+          return_minutes?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          waiting_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_shifts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_shifts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_shifts_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           created_at: string
