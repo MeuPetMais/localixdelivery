@@ -4,14 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ArrowRight, Bike, CheckCircle2, Circle, Clock, Home, LogOut, MapPin,
-  Package, PlayCircle, Sparkles, Trophy, TrendingUp, Wallet, User,
-  History as HistoryIcon, Target,
+  ArrowRight, Award, Bike, CheckCircle2, Circle, Clock, Home, LineChart,
+  LogOut, MapPin, Package, PlayCircle, Sparkles, Target, Trophy,
+  TrendingDown, TrendingUp, User, Wallet, History as HistoryIcon,
+  ChevronRight, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { setMyPresence } from "@/lib/delivery-drivers.functions";
 import {
@@ -20,6 +23,10 @@ import {
 import {
   collectDelivery, departDelivery, deliverDelivery,
 } from "@/lib/delivery-assignment.functions";
+import {
+  BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals,
+  type DriverGoals,
+} from "@/lib/driver-wallet";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -30,15 +37,14 @@ export const Route = createFileRoute("/motoboy")({
   component: DriverWallet,
 });
 
-type Tab = "home" | "fila" | "historico" | "perfil";
-
-const BRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+type Tab = "home" | "ganhos" | "historico" | "estatisticas" | "ranking" | "perfil";
+type Dash = NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>>;
 
 function DriverWallet() {
   const qc = useQueryClient();
   const [session, setSession] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("home");
+  const [goalsOpen, setGoalsOpen] = useState(false);
 
   const fetchDash = useServerFn(getDriverDashboard);
   const enter = useServerFn(enterQueue);
@@ -58,14 +64,18 @@ function DriverWallet() {
     queryKey: ["driver-wallet"],
     queryFn: () => fetchDash({}),
     enabled: session === true,
-    refetchInterval: 20000,
+    refetchInterval: 30000,
   });
 
   const dash = dashQ.data;
   const driver = dash?.driver;
   const restaurantId = driver?.restaurant_id ?? null;
 
-  // Realtime: fila e entregas
+  const [goals, setGoals] = useState<DriverGoals>(DEFAULT_GOALS);
+  useEffect(() => {
+    if (driver?.id) setGoals(loadGoals(driver.id));
+  }, [driver?.id]);
+
   useEffect(() => {
     if (!restaurantId || !driver?.id) return;
     const ch = supabase
@@ -80,7 +90,6 @@ function DriverWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [restaurantId, driver?.id, qc]);
 
-  // Heartbeat quando online
   useEffect(() => {
     if (!driver?.online) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -98,18 +107,12 @@ function DriverWallet() {
 
   const enterMut = useMutation({
     mutationFn: () => enter({}),
-    onSuccess: () => {
-      toast.success("Você entrou na fila");
-      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
-    },
+    onSuccess: () => { toast.success("Você entrou na fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const leaveMut = useMutation({
     mutationFn: () => leave({}),
-    onSuccess: () => {
-      toast.success("Você saiu da fila");
-      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
-    },
+    onSuccess: () => { toast.success("Você saiu da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const collectMut = useMutation({
@@ -124,10 +127,7 @@ function DriverWallet() {
   });
   const deliverMut = useMutation({
     mutationFn: (id: string) => doDeliver({ data: { assignmentId: id } }),
-    onSuccess: () => {
-      toast.success("Entrega concluída — de volta à fila 🎉");
-      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
-    },
+    onSuccess: () => { toast.success("Entrega concluída — de volta à fila 🎉"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -146,9 +146,7 @@ function DriverWallet() {
     }
   };
 
-  if (session === null || dashQ.isLoading) {
-    return <ScreenSkeleton />;
-  }
+  if (session === null || dashQ.isLoading) return <ScreenSkeleton />;
   if (!session) return <LoginPrompt />;
   if (!dash || !driver) return <UnauthorizedPrompt />;
 
@@ -165,23 +163,35 @@ function DriverWallet() {
         {tab === "home" && (
           <HomeTab
             dash={dash}
+            goals={goals}
+            onOpenGoals={() => setGoalsOpen(true)}
+            onEnter={() => enterMut.mutate()}
+            onLeave={() => leaveMut.mutate()}
             onCollect={(id) => collectMut.mutate(id)}
             onDepart={(id) => departMut.mutate(id)}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={collectMut.isPending || departMut.isPending || deliverMut.isPending}
+            busy={collectMut.isPending || departMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
           />
         )}
-        {tab === "fila" && (
-          <QueueTab
-            dash={dash}
-            onEnter={() => enterMut.mutate()}
-            onLeave={() => leaveMut.mutate()}
-            busy={enterMut.isPending || leaveMut.isPending}
-          />
-        )}
+        {tab === "ganhos" && <EarningsTab dash={dash} goals={goals} onOpenGoals={() => setGoalsOpen(true)} />}
         {tab === "historico" && <HistoryTab dash={dash} />}
+        {tab === "estatisticas" && <StatsTab dash={dash} />}
+        {tab === "ranking" && <RankingTab dash={dash} />}
         {tab === "perfil" && <ProfileTab dash={dash} />}
       </div>
+
+      {goalsOpen && driver && (
+        <GoalsSheet
+          initial={goals}
+          onClose={() => setGoalsOpen(false)}
+          onSave={(g) => {
+            saveGoals(driver.id, g);
+            setGoals(g);
+            setGoalsOpen(false);
+            toast.success("Meta salva");
+          }}
+        />
+      )}
 
       <BottomNav tab={tab} onChange={setTab} />
     </div>
@@ -207,16 +217,9 @@ function TopBar(props: {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground">Olá,</p>
-        <p className="truncate font-display text-lg font-extrabold leading-tight">
-          {props.name.split(" ")[0]}
-        </p>
+        <p className="truncate font-display text-lg font-extrabold leading-tight">{props.name.split(" ")[0]}</p>
       </div>
-      <Button
-        size="sm"
-        variant={props.online ? "outline" : "default"}
-        className="rounded-full"
-        onClick={props.onToggle}
-      >
+      <Button size="sm" variant={props.online ? "outline" : "default"} className="rounded-full" onClick={props.onToggle}>
         {props.online ? "Online" : "Ficar online"}
       </Button>
     </div>
@@ -226,40 +229,53 @@ function TopBar(props: {
 /* ---------- Home ---------- */
 
 function HomeTab(props: {
-  dash: NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>>;
+  dash: Dash;
+  goals: DriverGoals;
+  onOpenGoals: () => void;
+  onEnter: () => void;
+  onLeave: () => void;
   onCollect: (id: string) => void;
   onDepart: (id: string) => void;
   onDeliver: (id: string) => void;
   busy?: boolean;
 }) {
-  const { dash } = props;
-  const pct = Math.min(100, Math.round((dash.earnings.todayCount / dash.earnings.dailyGoal) * 100));
+  const { dash, goals } = props;
+  const goalPct = pct(dash.earnings.todayCount, goals.daily);
+  const yesterdayDelta = delta(dash.earnings.today, dash.earnings.yesterday);
+  const missing = Math.max(0, goals.daily - dash.earnings.todayCount);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-500">
-      {/* Saldo */}
+      {/* Card 1 — Ganhos de hoje */}
       <Card className="relative overflow-hidden rounded-3xl border-none bg-gradient-to-br from-primary via-primary to-primary/80 p-6 text-primary-foreground shadow-xl">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-80">
-            <Wallet className="h-3.5 w-3.5" />
-            Ganhos de hoje
+            <Wallet className="h-3.5 w-3.5" /> Ganhos de hoje
           </div>
-          <p className="mt-2 font-display text-5xl font-extrabold tracking-tight">
-            {BRL(dash.earnings.today)}
-          </p>
-          <div className="mt-4 flex items-center justify-between text-xs opacity-90">
-            <span>{dash.earnings.todayCount} entrega(s) hoje</span>
-            <span className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              Semana {BRL(dash.earnings.week)}
-            </span>
+          <p className="mt-2 font-display text-5xl font-extrabold tracking-tight">{BRL(dash.earnings.today)}</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-xs opacity-90">
+            <div>
+              <p className="opacity-80">Entregas</p>
+              <p className="font-semibold text-sm">{dash.earnings.todayCount}</p>
+            </div>
+            <div>
+              <p className="opacity-80">Ticket médio</p>
+              <p className="font-semibold text-sm">{BRL(dash.earnings.ticketToday)}</p>
+            </div>
+            <div>
+              <p className="opacity-80">vs ontem</p>
+              <p className="flex items-center gap-1 font-semibold text-sm">
+                {yesterdayDelta.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {yesterdayDelta.pct}%
+              </p>
+            </div>
           </div>
         </div>
       </Card>
 
-      {/* Meta */}
+      {/* Card 2 — Meta diária */}
       <Card className="rounded-3xl border-none bg-card/80 p-5 shadow-sm backdrop-blur">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -269,16 +285,25 @@ function HomeTab(props: {
             <div>
               <p className="text-sm font-semibold">Meta diária</p>
               <p className="text-xs text-muted-foreground">
-                {dash.earnings.todayCount} de {dash.earnings.dailyGoal} entregas
+                {dash.earnings.todayCount} de {goals.daily} entregas · faltam {missing}
               </p>
             </div>
           </div>
-          <p className="font-display text-2xl font-extrabold">{pct}%</p>
+          <button onClick={props.onOpenGoals} className="text-xs text-primary font-semibold">
+            Ajustar
+          </button>
         </div>
-        <Progress value={pct} className="mt-3 h-2" />
+        <div className="mt-3 flex items-baseline justify-between">
+          <p className="font-display text-3xl font-extrabold">{goalPct}%</p>
+          {goalPct >= 100 && <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10">Meta batida 🏆</Badge>}
+        </div>
+        <Progress value={goalPct} className="mt-2 h-2" />
       </Card>
 
-      {/* Entrega atual OU fila */}
+      {/* Card 3 — Fila operacional */}
+      <QueueCard dash={dash} onEnter={props.onEnter} onLeave={props.onLeave} busy={props.busy} />
+
+      {/* Card 4 — Entrega atual */}
       {dash.active ? (
         <ActiveDeliveryCard
           active={dash.active}
@@ -288,30 +313,81 @@ function HomeTab(props: {
           busy={props.busy}
         />
       ) : (
-        <QueueStatusCard queue={dash.queue} />
+        <Card className="rounded-3xl border-dashed bg-transparent p-8 text-center">
+          <Package className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-2 text-sm font-semibold">Aguardando nova entrega</p>
+          <p className="text-xs text-muted-foreground">Você receberá aqui quando for sua vez.</p>
+        </Card>
       )}
-
-      {/* Cards menores */}
-      <div className="grid grid-cols-2 gap-3">
-        <MiniCard
-          icon={<Trophy className="h-4 w-4" />}
-          label="Ranking"
-          value={dash.ranking.position ? `#${dash.ranking.position}` : "—"}
-          hint={dash.ranking.total > 0 ? `de ${dash.ranking.total}` : "hoje"}
-        />
-        <MiniCard
-          icon={<Sparkles className="h-4 w-4" />}
-          label="Conquistas"
-          value={dash.earnings.todayCount >= dash.earnings.dailyGoal ? "🏆" : "—"}
-          hint={dash.earnings.todayCount >= dash.earnings.dailyGoal ? "Meta batida!" : "Continue"}
-        />
-      </div>
     </div>
   );
 }
 
+function QueueCard(props: { dash: Dash; onEnter: () => void; onLeave: () => void; busy?: boolean }) {
+  const q = props.dash.queue;
+  const driver = props.dash.driver;
+  const canOperate = driver.status === "ativo";
+  const waitMin = q.waitingSince
+    ? Math.round((Date.now() - new Date(q.waitingSince).getTime()) / 60000)
+    : 0;
+
+  const statusLabel: Record<string, string> = {
+    AGUARDANDO: "Aguardando",
+    EM_ENTREGA: "Em entrega",
+    RETORNANDO: "Retornando",
+    OFFLINE: "Offline",
+  };
+  const statusColor: Record<string, string> = {
+    AGUARDANDO: "bg-primary/10 text-primary",
+    EM_ENTREGA: "bg-amber-500/10 text-amber-600",
+    RETORNANDO: "bg-sky-500/10 text-sky-600",
+    OFFLINE: "bg-muted text-muted-foreground",
+  };
+
+  return (
+    <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-3 text-primary">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Fila operacional</p>
+            <p className="text-xs text-muted-foreground">{q.length} motoboy(s) na fila</p>
+          </div>
+        </div>
+        <Badge className={`${statusColor[q.status]} hover:${statusColor[q.status]}`}>{statusLabel[q.status]}</Badge>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-muted/50 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Posição</p>
+          <p className="font-display text-3xl font-extrabold">{q.position ? `#${q.position}` : "—"}</p>
+        </div>
+        <div className="rounded-2xl bg-muted/50 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Aguardando há</p>
+          <p className="font-display text-3xl font-extrabold">{q.inQueue ? `${waitMin}m` : "—"}</p>
+        </div>
+      </div>
+      <div className="mt-4">
+        {q.inQueue ? (
+          <Button variant="outline" className="w-full rounded-2xl" onClick={props.onLeave} disabled={props.busy}>
+            Sair da fila
+          </Button>
+        ) : (
+          <Button className="w-full rounded-2xl" onClick={props.onEnter} disabled={props.busy || !canOperate || !driver.online}>
+            Entrar na fila <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+        {!driver.online && (
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">Fique online para entrar na fila.</p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function ActiveDeliveryCard(props: {
-  active: NonNullable<NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>>["active"]>;
+  active: NonNullable<Dash["active"]>;
   onCollect: (id: string) => void;
   onDepart: (id: string) => void;
   onDeliver: (id: string) => void;
@@ -329,31 +405,34 @@ function ActiveDeliveryCard(props: {
     return null;
   };
   const act = nextAction();
+  const deliveryEarn = 8 + 1.5 * (a.distance_km ?? 0);
 
   return (
     <Card className="animate-in slide-in-from-bottom-2 overflow-hidden rounded-3xl border-none bg-card p-5 shadow-md">
       <div className="mb-3 flex items-center justify-between">
-        <Badge className="rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10">
-          Entrega em andamento
-        </Badge>
-        {o?.order_number && (
-          <span className="text-xs text-muted-foreground">#{o.order_number}</span>
-        )}
+        <Badge className="rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10">Entrega em andamento</Badge>
+        {o?.order_number && <span className="text-xs text-muted-foreground">#{o.order_number}</span>}
       </div>
       <p className="font-display text-xl font-extrabold">{o?.customer_name ?? "Cliente"}</p>
-      {o?.delivery_address && (
+      {o?.address && (
         <p className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
-          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {typeof o.delivery_address === "string" ? o.delivery_address : JSON.stringify(o.delivery_address)}
+          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {o.address}
         </p>
       )}
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-xl bg-muted/50 p-2">
+          <p className="text-muted-foreground">Distância</p>
+          <p className="font-semibold">{(a.distance_km ?? 0).toFixed(1)} km</p>
+        </div>
+        <div className="rounded-xl bg-muted/50 p-2">
+          <p className="text-muted-foreground">Valor da entrega</p>
+          <p className="font-semibold text-emerald-600">{BRL(deliveryEarn)}</p>
+        </div>
+      </div>
 
       <div className="mt-4 grid grid-cols-4 gap-1">
         {steps.map((s, i) => (
-          <div
-            key={s}
-            className={`h-1.5 rounded-full transition-all ${i <= idx ? "bg-primary" : "bg-muted"}`}
-          />
+          <div key={s} className={`h-1.5 rounded-full transition-all ${i <= idx ? "bg-primary" : "bg-muted"}`} />
         ))}
       </div>
       <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -361,14 +440,8 @@ function ActiveDeliveryCard(props: {
       </div>
 
       {act && (
-        <Button
-          size="lg"
-          className="mt-5 h-14 w-full rounded-2xl text-base font-semibold"
-          onClick={act.fn}
-          disabled={props.busy}
-        >
-          {act.icon}
-          <span className="ml-2">{act.label}</span>
+        <Button size="lg" className="mt-5 h-14 w-full rounded-2xl text-base font-semibold" onClick={act.fn} disabled={props.busy}>
+          {act.icon}<span className="ml-2">{act.label}</span>
           <ArrowRight className="ml-auto h-4 w-4" />
         </Button>
       )}
@@ -376,136 +449,261 @@ function ActiveDeliveryCard(props: {
   );
 }
 
-function QueueStatusCard(props: { queue: { position: number | null; length: number; inQueue: boolean } }) {
+/* ---------- Ganhos ---------- */
+
+function EarningsTab(props: { dash: Dash; goals: DriverGoals; onOpenGoals: () => void }) {
+  const { dash, goals } = props;
+  const e = dash.earnings;
+  const rows: [string, number, number][] = [
+    ["Hoje", e.today, e.todayCount],
+    ["Semana", e.week, e.weekCount],
+    ["Mês", e.month, e.monthCount],
+    ["Ano", e.year, e.yearCount],
+  ];
   return (
-    <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="rounded-full bg-primary/10 p-3 text-primary">
-          <Clock className="h-5 w-5" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold">
-            {props.queue.inQueue ? "Você está na fila" : "Fora da fila"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {props.queue.inQueue
-              ? `Posição ${props.queue.position} de ${props.queue.length}`
-              : "Entre na fila para receber entregas"}
-          </p>
-        </div>
+    <div className="animate-in fade-in space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-extrabold">Ganhos</h2>
+        <button onClick={props.onOpenGoals} className="text-xs text-primary font-semibold">Ajustar metas</button>
       </div>
-    </Card>
-  );
-}
 
-function MiniCard(props: { icon: React.ReactNode; label: string; value: string; hint: string }) {
-  return (
-    <Card className="rounded-2xl border-none bg-card p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        {props.icon} {props.label}
+      <div className="grid grid-cols-2 gap-3">
+        {rows.map(([label, val, cnt]) => (
+          <Card key={label} className="rounded-2xl border-none p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="mt-1 font-display text-2xl font-extrabold">{BRL(val)}</p>
+            <p className="text-[11px] text-muted-foreground">{cnt} entrega(s)</p>
+          </Card>
+        ))}
       </div>
-      <p className="mt-1 font-display text-2xl font-extrabold leading-tight">{props.value}</p>
-      <p className="text-xs text-muted-foreground">{props.hint}</p>
-    </Card>
-  );
-}
 
-/* ---------- Fila ---------- */
-
-function QueueTab(props: {
-  dash: NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>>;
-  onEnter: () => void; onLeave: () => void; busy?: boolean;
-}) {
-  const { queue, driver } = props.dash;
-  const canOperate = driver.status === "ativo";
-
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4">
-      <Card className="rounded-3xl border-none bg-gradient-to-br from-primary/90 to-primary p-6 text-primary-foreground shadow-xl">
-        <p className="text-xs uppercase tracking-wider opacity-80">Sua posição</p>
-        <p className="mt-2 font-display text-6xl font-extrabold">
-          {queue.position ? `#${queue.position}` : "—"}
-        </p>
-        <p className="mt-1 text-sm opacity-90">
-          {queue.length} motoboy(s) na fila
-        </p>
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Média por entrega</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+          <div><p className="text-muted-foreground">Hoje</p><p className="font-display text-xl font-extrabold">{BRL(e.ticketToday)}</p></div>
+          <div><p className="text-muted-foreground">Mês</p><p className="font-display text-xl font-extrabold">{BRL(e.ticketMonth)}</p></div>
+        </div>
       </Card>
 
-      {queue.inQueue ? (
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-14 w-full rounded-2xl"
-          onClick={props.onLeave}
-          disabled={props.busy}
-        >
-          Sair da fila
-        </Button>
-      ) : (
-        <Button
-          size="lg"
-          className="h-14 w-full rounded-2xl text-base font-semibold"
-          onClick={props.onEnter}
-          disabled={props.busy || !canOperate || !driver.online}
-        >
-          Entrar na fila <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      )}
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Recordes</p>
+        <div className="mt-3 space-y-2 text-sm">
+          <RecordLine label="Maior dia" v={e.bestDay.value} sub={`${e.bestDay.count} entregas`} when={e.bestDay.key} />
+          <RecordLine label="Maior semana" v={e.bestWeek.value} sub={`${e.bestWeek.count} entregas`} when={e.bestWeek.key} />
+          <RecordLine label="Maior mês" v={e.bestMonth.value} sub={`${e.bestMonth.count} entregas`} when={e.bestMonth.key} />
+        </div>
+      </Card>
 
-      {!driver.online && (
-        <p className="text-center text-xs text-muted-foreground">
-          Fique online para entrar na fila.
-        </p>
-      )}
-      {!canOperate && (
-        <p className="text-center text-xs text-destructive">
-          Cadastro {driver.status}. Fale com o restaurante.
-        </p>
-      )}
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Progresso das metas</p>
+        <GoalLine label="Diária" current={e.todayCount} goal={goals.daily} unit="entregas" />
+        <GoalLine label="Semanal" current={e.weekCount} goal={goals.weekly} unit="entregas" />
+        <GoalLine label="Mensal" current={e.monthCount} goal={goals.monthly} unit="entregas" />
+      </Card>
+
+      <AchievementsCard dash={dash} />
+    </div>
+  );
+}
+
+function RecordLine(props: { label: string; v: number; sub: string; when: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/40 pb-2 last:border-0">
+      <div>
+        <p className="text-xs text-muted-foreground">{props.label}</p>
+        <p className="text-xs">{props.when || "—"}</p>
+      </div>
+      <div className="text-right">
+        <p className="font-display text-lg font-extrabold">{BRL(props.v)}</p>
+        <p className="text-[11px] text-muted-foreground">{props.sub}</p>
+      </div>
+    </div>
+  );
+}
+
+function GoalLine(props: { label: string; current: number; goal: number; unit: string }) {
+  const p = pct(props.current, props.goal);
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-semibold">{props.label}</span>
+        <span className="text-muted-foreground">{props.current}/{props.goal} {props.unit}</span>
+      </div>
+      <Progress value={p} className="mt-1 h-1.5" />
     </div>
   );
 }
 
 /* ---------- Histórico ---------- */
 
-function HistoryTab(props: { dash: NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>> }) {
-  const history = props.dash.history;
+function HistoryTab(props: { dash: Dash }) {
+  const grouped = useMemo(() => {
+    const m = new Map<string, Dash["history"]>();
+    for (const h of props.dash.history) {
+      const ts = h.delivered_at ?? h.created_at;
+      const d = new Date(ts!);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const yst = new Date(today); yst.setDate(today.getDate() - 1);
+      let key: string;
+      if (d >= today) key = "Hoje";
+      else if (d >= yst) key = "Ontem";
+      else key = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+      const arr = m.get(key) ?? [];
+      arr.push(h);
+      m.set(key, arr);
+    }
+    return [...m.entries()];
+  }, [props.dash.history]);
+
   return (
-    <div className="animate-in fade-in space-y-3">
-      <h2 className="font-display text-xl font-extrabold">Histórico</h2>
-      {history.length === 0 && (
+    <div className="animate-in fade-in space-y-4">
+      <h2 className="font-display text-2xl font-extrabold">Extrato</h2>
+      {grouped.length === 0 && (
         <Card className="rounded-2xl border-none p-8 text-center text-sm text-muted-foreground">
           Nenhuma entrega ainda.
         </Card>
       )}
-      {history.map((h: any) => (
-        <Card key={h.id} className="flex items-center gap-3 rounded-2xl border-none p-4 shadow-sm">
-          <div className={`rounded-full p-2 ${h.status === "ENTREGUE" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>
-            {h.status === "ENTREGUE" ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold capitalize">
-              {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(h.delivered_at ?? h.created_at).toLocaleString("pt-BR")}
-            </p>
-          </div>
-          {h.status === "ENTREGUE" && (
-            <p className="font-display text-sm font-extrabold text-emerald-600">
-              +{BRL(8 + 1.5 * (h.distance_km ?? 0))}
-            </p>
-          )}
-        </Card>
+      {grouped.map(([day, items]) => (
+        <div key={day}>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{day}</p>
+          <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
+            {items.map((h: any) => (
+              <div key={h.id} className="flex items-center gap-3 p-4">
+                <div className={`rounded-full p-2 ${h.status === "ENTREGUE" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>
+                  {h.status === "ENTREGUE" ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">
+                    Pedido {h.order?.order_number ? `#${h.order.order_number}` : ""}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {h.order?.customer_name ?? "—"} · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
+                  </p>
+                </div>
+                <p className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}>
+                  {h.status === "ENTREGUE" ? `+ ${BRL(h.earnings)}` : "—"}
+                </p>
+              </div>
+            ))}
+          </Card>
+        </div>
       ))}
     </div>
   );
 }
 
+/* ---------- Estatísticas ---------- */
+
+function StatsTab(props: { dash: Dash }) {
+  const s = props.dash.stats;
+  const e = props.dash.earnings;
+  return (
+    <div className="animate-in fade-in space-y-4">
+      <h2 className="font-display text-2xl font-extrabold">Estatísticas</h2>
+      <div className="grid grid-cols-3 gap-3">
+        <StatMini label="Hoje" value={String(e.todayCount)} />
+        <StatMini label="Semana" value={String(e.weekCount)} />
+        <StatMini label="Mês" value={String(e.monthCount)} />
+      </div>
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Tempos médios</p>
+        <StatRow label="Atribuição → Entregue" value={formatMinutes(s.avgAssignToDelivered)} />
+        <StatRow label="Coleta → Entregue" value={formatMinutes(s.avgPickupToDelivered)} />
+        <StatRow label="Saída → Entregue" value={formatMinutes(s.avgDepartToDelivered)} />
+      </Card>
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Distância percorrida</p>
+        <StatRow label="Hoje" value={`${s.distanceToday.toFixed(1)} km`} />
+        <StatRow label="Semana" value={`${s.distanceWeek.toFixed(1)} km`} />
+        <StatRow label="Mês" value={`${s.distanceMonth.toFixed(1)} km`} />
+      </Card>
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="text-sm font-semibold">Sequência</p>
+        <StatRow label="Dias seguidos batendo meta" value={`${s.streak} dia(s)`} />
+        <StatRow label="Valor médio por entrega" value={BRL(e.ticketMonth)} />
+      </Card>
+    </div>
+  );
+}
+
+function StatMini(props: { label: string; value: string }) {
+  return (
+    <Card className="rounded-2xl border-none p-3 text-center shadow-sm">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{props.label}</p>
+      <p className="font-display text-2xl font-extrabold">{props.value}</p>
+    </Card>
+  );
+}
+function StatRow(props: { label: string; value: string }) {
+  return (
+    <div className="mt-2 flex items-center justify-between border-b border-border/40 pb-2 last:border-0 text-sm">
+      <span className="text-muted-foreground">{props.label}</span>
+      <span className="font-semibold">{props.value}</span>
+    </div>
+  );
+}
+
+/* ---------- Ranking ---------- */
+
+function RankingTab(props: { dash: Dash }) {
+  const list = props.dash.ranking.list;
+  const myId = props.dash.driver.id;
+  return (
+    <div className="animate-in fade-in space-y-4">
+      <h2 className="font-display text-2xl font-extrabold">Ranking</h2>
+      <p className="text-xs text-muted-foreground">Motoboys deste restaurante — hoje.</p>
+      <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
+        {list.length === 0 && (
+          <div className="p-6 text-center text-sm text-muted-foreground">Sem entregas hoje ainda.</div>
+        )}
+        {list.map((r, i) => {
+          const me = r.id === myId;
+          return (
+            <div key={r.id} className={`flex items-center gap-3 p-4 ${me ? "bg-primary/5" : ""}`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${i < 3 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{i + 1}</div>
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
+                {r.photo_url ? <img src={r.photo_url} alt={r.name} className="h-full w-full object-cover" /> : null}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-semibold">{r.name}{me ? " (você)" : ""}</p>
+                <p className="text-xs text-muted-foreground">{r.deliveries} entregas · {formatMinutes(r.avgMinutes)}</p>
+              </div>
+              <p className="font-display text-sm font-extrabold">{BRL(r.earnings)}</p>
+            </div>
+          );
+        })}
+      </Card>
+    </div>
+  );
+}
+
+/* ---------- Conquistas ---------- */
+
+function AchievementsCard(props: { dash: Dash }) {
+  return (
+    <Card className="rounded-2xl border-none p-4 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Award className="h-4 w-4 text-primary" />
+        <p className="text-sm font-semibold">Conquistas</p>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {props.dash.achievements.map((a) => (
+          <div key={a.id} className={`rounded-xl p-3 text-xs ${a.achieved ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"}`}>
+            <Sparkles className={`h-3.5 w-3.5 ${a.achieved ? "" : "opacity-40"}`} />
+            <p className="mt-1 font-semibold">{a.label}</p>
+            <p className="text-[10px] opacity-80">{a.achieved ? "Desbloqueada" : "Bloqueada"}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 /* ---------- Perfil ---------- */
 
-function ProfileTab(props: { dash: NonNullable<Awaited<ReturnType<typeof getDriverDashboard>>> }) {
+function ProfileTab(props: { dash: Dash }) {
   const d = props.dash.driver;
+  const days = Math.max(0, Math.round((Date.now() - new Date(d.created_at).getTime()) / 86400000));
   return (
     <div className="animate-in fade-in space-y-4">
       <Card className="flex flex-col items-center rounded-3xl border-none p-6 shadow-sm">
@@ -526,17 +724,64 @@ function ProfileTab(props: { dash: NonNullable<Awaited<ReturnType<typeof getDriv
       </Card>
 
       <Card className="rounded-2xl border-none p-4 text-sm shadow-sm">
-        <p className="text-muted-foreground">Telefone</p>
-        <p className="font-semibold">{d.phone ?? "—"}</p>
-      </Card>
-      <Card className="rounded-2xl border-none p-4 text-sm shadow-sm">
-        <p className="text-muted-foreground">E-mail</p>
-        <p className="font-semibold">{d.email ?? "—"}</p>
+        <RowKV k="Telefone" v={d.phone ?? "—"} />
+        <RowKV k="E-mail" v={d.email ?? "—"} />
+        <RowKV k="Placa" v={d.vehicle_plate ?? "—"} />
+        <RowKV k="Dias na plataforma" v={`${days} dia(s)`} />
       </Card>
 
       <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>
         <LogOut className="mr-2 h-4 w-4" /> Sair
       </Button>
+    </div>
+  );
+}
+function RowKV(props: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/40 py-2 last:border-0">
+      <span className="text-muted-foreground text-xs">{props.k}</span>
+      <span className="font-semibold text-sm">{props.v}</span>
+    </div>
+  );
+}
+
+/* ---------- Goals sheet ---------- */
+
+function GoalsSheet(props: { initial: DriverGoals; onClose: () => void; onSave: (g: DriverGoals) => void }) {
+  const [daily, setDaily] = useState(String(props.initial.daily));
+  const [weekly, setWeekly] = useState(String(props.initial.weekly));
+  const [monthly, setMonthly] = useState(String(props.initial.monthly));
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={props.onClose}>
+      <div className="w-full max-w-md rounded-t-3xl bg-background p-6 shadow-2xl animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
+        <h3 className="font-display text-xl font-extrabold">Configurar metas</h3>
+        <p className="text-xs text-muted-foreground">Metas de entregas por período.</p>
+        <div className="mt-4 space-y-3">
+          <div>
+            <Label>Meta diária</Label>
+            <Input type="number" min={1} value={daily} onChange={(e) => setDaily(e.target.value)} />
+          </div>
+          <div>
+            <Label>Meta semanal</Label>
+            <Input type="number" min={1} value={weekly} onChange={(e) => setWeekly(e.target.value)} />
+          </div>
+          <div>
+            <Label>Meta mensal</Label>
+            <Input type="number" min={1} value={monthly} onChange={(e) => setMonthly(e.target.value)} />
+          </div>
+        </div>
+        <Button
+          className="mt-5 h-12 w-full rounded-2xl"
+          onClick={() => props.onSave({
+            daily: Math.max(1, Number(daily) || 1),
+            weekly: Math.max(1, Number(weekly) || 1),
+            monthly: Math.max(1, Number(monthly) || 1),
+          })}
+        >
+          <Save className="mr-2 h-4 w-4" /> Salvar metas
+        </Button>
+      </div>
     </div>
   );
 }
@@ -546,24 +791,24 @@ function ProfileTab(props: { dash: NonNullable<Awaited<ReturnType<typeof getDriv
 function BottomNav(props: { tab: Tab; onChange: (t: Tab) => void }) {
   const items: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: "home", icon: <Home className="h-5 w-5" />, label: "Início" },
-    { id: "fila", icon: <Clock className="h-5 w-5" />, label: "Fila" },
-    { id: "historico", icon: <HistoryIcon className="h-5 w-5" />, label: "Histórico" },
+    { id: "ganhos", icon: <Wallet className="h-5 w-5" />, label: "Ganhos" },
+    { id: "historico", icon: <HistoryIcon className="h-5 w-5" />, label: "Extrato" },
+    { id: "estatisticas", icon: <LineChart className="h-5 w-5" />, label: "Stats" },
+    { id: "ranking", icon: <Trophy className="h-5 w-5" />, label: "Ranking" },
     { id: "perfil", icon: <User className="h-5 w-5" />, label: "Perfil" },
   ];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+      <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
         {items.map((it) => {
           const active = props.tab === it.id;
           return (
             <button
               key={it.id}
               onClick={() => props.onChange(it.id)}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all ${active ? "text-primary" : "text-muted-foreground"}`}
+              className={`flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1 transition-all ${active ? "text-primary" : "text-muted-foreground"}`}
             >
-              <div className={`rounded-full p-1.5 transition-all ${active ? "bg-primary/10 scale-110" : ""}`}>
-                {it.icon}
-              </div>
+              <div className={`rounded-full p-1.5 transition-all ${active ? "bg-primary/10 scale-110" : ""}`}>{it.icon}</div>
               <span className={`text-[10px] font-semibold ${active ? "opacity-100" : "opacity-70"}`}>{it.label}</span>
             </button>
           );
@@ -584,21 +829,17 @@ function ScreenSkeleton() {
     </div>
   );
 }
-
 function LoginPrompt() {
   return (
     <div className="mx-auto max-w-md space-y-4 px-4 py-20 text-center">
       <h1 className="font-display text-3xl font-extrabold">Carteira do Motoboy</h1>
-      <p className="text-sm text-muted-foreground">
-        Entre com o e-mail cadastrado pelo restaurante.
-      </p>
+      <p className="text-sm text-muted-foreground">Entre com o e-mail cadastrado pelo restaurante.</p>
       <Button asChild size="lg" className="rounded-2xl">
         <Link to="/auth">Entrar</Link>
       </Button>
     </div>
   );
 }
-
 function UnauthorizedPrompt() {
   return (
     <div className="mx-auto max-w-md space-y-4 px-4 py-20 text-center">
