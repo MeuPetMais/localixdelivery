@@ -271,7 +271,7 @@ export const listAssignments = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
     z.object({
       restaurantId: z.string().uuid(),
-      status: z.enum(DELIVERY_ASSIGNMENT_STATES as [DeliveryAssignmentState, ...DeliveryAssignmentState[]]).optional(),
+      status: z.enum([...DELIVERY_ASSIGNMENT_STATES] as [DeliveryAssignmentState, ...DeliveryAssignmentState[]]).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
