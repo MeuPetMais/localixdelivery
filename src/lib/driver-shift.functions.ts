@@ -43,7 +43,7 @@ type ShiftRow = {
   delivery_minutes: number;
   return_minutes: number;
   pause_minutes: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   updated_at: string;
 };
 
