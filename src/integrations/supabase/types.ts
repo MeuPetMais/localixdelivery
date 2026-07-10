@@ -1244,6 +1244,139 @@ export type Database = {
           },
         ]
       }
+      delivery_assignment_timeline: {
+        Row: {
+          actor: string
+          actor_id: string | null
+          assignment_id: string
+          correlation_id: string | null
+          created_at: string
+          current_state: string
+          id: string
+          metadata: Json
+          previous_state: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor: string
+          actor_id?: string | null
+          assignment_id: string
+          correlation_id?: string | null
+          created_at?: string
+          current_state: string
+          id?: string
+          metadata?: Json
+          previous_state?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor?: string
+          actor_id?: string | null
+          assignment_id?: string
+          correlation_id?: string | null
+          created_at?: string
+          current_state?: string
+          id?: string
+          metadata?: Json
+          previous_state?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignment_timeline_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          correlation_id: string
+          created_at: string
+          delivered_at: string | null
+          departed_at: string | null
+          distance_km: number | null
+          driver_id: string
+          estimated_minutes: number | null
+          id: string
+          metadata: Json
+          order_id: string
+          picked_up_at: string | null
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          correlation_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          departed_at?: string | null
+          distance_km?: number | null
+          driver_id: string
+          estimated_minutes?: number | null
+          id?: string
+          metadata?: Json
+          order_id: string
+          picked_up_at?: string | null
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          correlation_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          departed_at?: string | null
+          distance_km?: number | null
+          driver_id?: string
+          estimated_minutes?: number | null
+          id?: string
+          metadata?: Json
+          order_id?: string
+          picked_up_at?: string | null
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_driver_audit: {
         Row: {
           action: string
@@ -6304,6 +6437,19 @@ export type Database = {
       }
     }
     Functions: {
+      delivery_assignment_apply_transition: {
+        Args: {
+          _actor: string
+          _actor_id: string
+          _assignment_id: string
+          _correlation_id: string
+          _expected_from: string
+          _metadata: Json
+          _next_status: string
+          _reason: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
