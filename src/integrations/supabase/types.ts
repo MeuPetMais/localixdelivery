@@ -6394,6 +6394,183 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_snapshots: {
+        Row: {
+          assignment_id: string
+          confidence: string
+          correlation_id: string
+          created_at: string
+          driver_id: string
+          eta_seconds: number | null
+          id: string
+          last_heading: number | null
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          last_speed: number | null
+          metadata: Json
+          order_id: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          confidence?: string
+          correlation_id?: string
+          created_at?: string
+          driver_id: string
+          eta_seconds?: number | null
+          id?: string
+          last_heading?: number | null
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          last_speed?: number | null
+          metadata?: Json
+          order_id: string
+          restaurant_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          confidence?: string
+          correlation_id?: string
+          created_at?: string
+          driver_id?: string
+          eta_seconds?: number | null
+          id?: string
+          last_heading?: number | null
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          last_speed?: number | null
+          metadata?: Json
+          order_id?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_snapshots_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: true
+            referencedRelation: "delivery_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_snapshots_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_snapshots_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_snapshots_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_snapshots_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_timeline: {
+        Row: {
+          actor: string
+          assignment_id: string
+          correlation_id: string
+          created_at: string
+          current_status: string | null
+          driver_id: string | null
+          event: string
+          id: string
+          metadata: Json
+          order_id: string
+          previous_status: string | null
+          restaurant_id: string
+        }
+        Insert: {
+          actor?: string
+          assignment_id: string
+          correlation_id?: string
+          created_at?: string
+          current_status?: string | null
+          driver_id?: string | null
+          event: string
+          id?: string
+          metadata?: Json
+          order_id: string
+          previous_status?: string | null
+          restaurant_id: string
+        }
+        Update: {
+          actor?: string
+          assignment_id?: string
+          correlation_id?: string
+          created_at?: string
+          current_status?: string | null
+          driver_id?: string | null
+          event?: string
+          id?: string
+          metadata?: Json
+          order_id?: string
+          previous_status?: string | null
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_timeline_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_timeline_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_timeline_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_timeline_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_timeline_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
