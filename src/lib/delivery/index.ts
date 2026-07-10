@@ -7,5 +7,6 @@ export * from "./TrackingService";
 export * from "./DispatchEngine";
 export * from "./DeliveryEngine";
 export * from "./DeliveryTimeline";
+export * from "./QueueService";
 export { getDeliveryProvider, registerDeliveryProvider } from "./providers";
 export type { DeliveryProvider } from "./providers";
