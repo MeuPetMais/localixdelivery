@@ -1414,6 +1414,64 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_queue: {
+        Row: {
+          created_at: string
+          driver_id: string
+          entered_at: string
+          id: string
+          left_at: string | null
+          position: number
+          restaurant_id: string
+          status: Database["public"]["Enums"]["delivery_queue_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          entered_at?: string
+          id?: string
+          left_at?: string | null
+          position: number
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["delivery_queue_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          entered_at?: string
+          id?: string
+          left_at?: string | null
+          position?: number
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["delivery_queue_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_queue_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_queue_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_queue_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_timeline: {
         Row: {
           actor: string | null
@@ -6298,6 +6356,30 @@ export type Database = {
         }
         Returns: Json
       }
+      queue_dequeue: {
+        Args: { _driver_id: string; _restaurant_id: string }
+        Returns: boolean
+      }
+      queue_enqueue: {
+        Args: { _driver_id: string; _restaurant_id: string }
+        Returns: string
+      }
+      queue_next_driver: {
+        Args: { _restaurant_id: string }
+        Returns: {
+          driver_id: string
+          queue_id: string
+          queue_position: number
+        }[]
+      }
+      queue_remove: {
+        Args: { _driver_id: string; _restaurant_id: string }
+        Returns: boolean
+      }
+      queue_return: {
+        Args: { _driver_id: string; _restaurant_id: string }
+        Returns: string
+      }
       reset_demo_environment: { Args: never; Returns: Json }
       seed_demo_marketplace: { Args: never; Returns: undefined }
     }
@@ -6314,6 +6396,11 @@ export type Database = {
         | "delivery_driver"
       delivery_driver_status: "ativo" | "inativo" | "afastado"
       delivery_driver_vehicle: "moto" | "bicicleta" | "carro" | "a_pe"
+      delivery_queue_status:
+        | "AGUARDANDO"
+        | "EM_ENTREGA"
+        | "RETORNANDO"
+        | "INATIVO"
       ledger_status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED"
       ledger_transaction_type:
         | "ORDER_CREATED"
@@ -6573,6 +6660,12 @@ export const Constants = {
       ],
       delivery_driver_status: ["ativo", "inativo", "afastado"],
       delivery_driver_vehicle: ["moto", "bicicleta", "carro", "a_pe"],
+      delivery_queue_status: [
+        "AGUARDANDO",
+        "EM_ENTREGA",
+        "RETORNANDO",
+        "INATIVO",
+      ],
       ledger_status: ["PENDING", "COMPLETED", "FAILED", "CANCELLED"],
       ledger_transaction_type: [
         "ORDER_CREATED",
