@@ -115,7 +115,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     if (active) {
       const { data: ord } = await supabase
         .from("orders")
-        .select("id, order_number, customer_name, customer_phone, delivery_address, total, subtotal, delivery_fee")
+        .select("id, order_number, customer_name, customer_phone, address, total")
         .eq("id", active.order_id)
         .maybeSingle();
       activeOrder = ord ?? null;
@@ -168,7 +168,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     const activeOrderIds = orderIds.length > 0 ? orderIds : ["00000000-0000-0000-0000-000000000000"];
     const { data: orders } = await supabase
       .from("orders")
-      .select("id, order_number, customer_name, delivery_address")
+      .select("id, order_number, customer_name, address")
       .in("id", activeOrderIds);
     const orderMap = new Map((orders ?? []).map((o) => [o.id, o]));
 
