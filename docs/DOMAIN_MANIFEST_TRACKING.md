@@ -231,13 +231,30 @@ Checklist obrigatório para qualquer release do domínio:
 - [ ] RLS completo
 - [ ] Escalabilidade validada
 
-## 22. Roadmap
+## 22. Retention Policy (RC5.3.x.3)
+
+Política oficial de retenção. **Observacional**: identifica e reporta, nunca
+exclui automaticamente. Aplica-se a `tracking_timeline` e `tracking_eta_history`.
+
+| Idade         | Tier      | Ação                                          |
+| ------------- | --------- | --------------------------------------------- |
+| 0 – 90 dias   | `ONLINE`  | Hot storage, consultas frequentes             |
+| 91 – 365 dias | `ARCHIVE` | Cold storage, consulta sob demanda            |
+| > 365 dias    | `PURGE`   | Elegível para expurgo manual/administrativo   |
+
+Serviço: `TrackingRetentionService` (`src/lib/tracking/retention`).
+Comando: `retentionPreview()` — retorna contagem, tamanho estimado e período
+por tabela/tier. Todo relatório carrega `correlation_id` propagado nos logs.
+
+## 23. Roadmap
 
 - **RC5.3.a** — Tracking Core
 - **RC5.3.b** — Driver Location
 - **RC5.3.c** — ETA Engine
 - **RC5.3.d** — Customer Tracking
 - **RC5.3.e** — Operations Tracking
+- **RC5.3.x.3** — Retention Policy
+
 
 ---
 

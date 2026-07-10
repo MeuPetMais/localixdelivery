@@ -16,6 +16,8 @@
 - Reconciliação automática Stripe ↔ Ledger
 - Responsividade mobile do painel admin
 - Fluxo de refund via UI
+- Tracking Retention Policy (RC5.3.x.3): preview implementado, executor administrativo pendente
+
 
 ## 🔵 Médio prazo
 
