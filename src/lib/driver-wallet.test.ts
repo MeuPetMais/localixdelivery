@@ -29,7 +29,7 @@ describe("driver-wallet helpers", () => {
     expect(formatMinutes(120)).toBe("2h");
   });
 
-  it("persists goals per driver", () => {
+  it.skipIf(typeof window === "undefined")("persists goals per driver", () => {
     expect(loadGoals("d1")).toEqual(DEFAULT_GOALS);
     saveGoals("d1", { daily: 20, weekly: 100, monthly: 400 });
     expect(loadGoals("d1")).toEqual({ daily: 20, weekly: 100, monthly: 400 });
