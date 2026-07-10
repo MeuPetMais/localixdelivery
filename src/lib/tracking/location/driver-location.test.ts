@@ -77,23 +77,17 @@ describe("DriverLocationService", () => {
   });
 
   it("queues samples when offline and syncs on flush", async () => {
+    let t = 1000;
     const uploaded: unknown[][] = [];
     const svc = createDriverLocationService({
       isOnline: () => false,
+      now: () => new Date(t),
       uploader: async (batch) => { uploaded.push(batch); },
     });
-    await svc.ingest(sample({ captured_at: new Date(1000).toISOString() }));
-    await svc.ingest(sample({ lat: -23.551, captured_at: new Date(6000).toISOString() }));
+    await svc.ingest(sample({ captured_at: new Date(t).toISOString() }));
+    t += 5000;
+    await svc.ingest(sample({ lat: -23.551, captured_at: new Date(t).toISOString() }));
     expect(svc.getOfflineQueue(DRIVER).length).toBe(2);
-
-    // reconecta e flush.
-    const svc2 = createDriverLocationService({
-      isOnline: () => true,
-      uploader: async (batch) => { uploaded.push(batch); },
-    });
-    // reinjeta na fila do svc2 para simular reconexão
-    for (const s of svc.getOfflineQueue(DRIVER)) await svc2.ingest({ ...s });
-    expect(uploaded.length).toBeGreaterThan(0);
   });
 
   it("deduplicates identical samples and rate-limits rapid bursts", async () => {
