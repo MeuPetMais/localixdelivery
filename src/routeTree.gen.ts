@@ -64,6 +64,7 @@ import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticated/kitchen'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedFinancialCenterRouteImport } from './routes/_authenticated/financial-center'
+import { Route as AuthenticatedFinanceiroMotoboysRouteImport } from './routes/_authenticated/financeiro-motoboys'
 import { Route as AuthenticatedFinanceAiRouteImport } from './routes/_authenticated/finance-ai'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedFeaturedRouteImport } from './routes/_authenticated/featured'
@@ -357,6 +358,12 @@ const AuthenticatedFinancialCenterRoute =
     path: '/financial-center',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFinanceiroMotoboysRoute =
+  AuthenticatedFinanceiroMotoboysRouteImport.update({
+    id: '/financeiro-motoboys',
+    path: '/financeiro-motoboys',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFinanceAiRoute = AuthenticatedFinanceAiRouteImport.update({
   id: '/finance-ai',
   path: '/finance-ai',
@@ -463,6 +470,7 @@ export interface FileRoutesByFullPath {
   '/featured': typeof AuthenticatedFeaturedRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/finance-ai': typeof AuthenticatedFinanceAiRoute
+  '/financeiro-motoboys': typeof AuthenticatedFinanceiroMotoboysRoute
   '/financial-center': typeof AuthenticatedFinancialCenterRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
@@ -532,6 +540,7 @@ export interface FileRoutesByTo {
   '/featured': typeof AuthenticatedFeaturedRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/finance-ai': typeof AuthenticatedFinanceAiRoute
+  '/financeiro-motoboys': typeof AuthenticatedFinanceiroMotoboysRoute
   '/financial-center': typeof AuthenticatedFinancialCenterRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
@@ -605,6 +614,7 @@ export interface FileRoutesById {
   '/_authenticated/featured': typeof AuthenticatedFeaturedRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/finance-ai': typeof AuthenticatedFinanceAiRoute
+  '/_authenticated/financeiro-motoboys': typeof AuthenticatedFinanceiroMotoboysRoute
   '/_authenticated/financial-center': typeof AuthenticatedFinancialCenterRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/kitchen': typeof AuthenticatedKitchenRoute
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/finance'
     | '/finance-ai'
+    | '/financeiro-motoboys'
     | '/financial-center'
     | '/inventory'
     | '/kitchen'
@@ -747,6 +758,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/finance'
     | '/finance-ai'
+    | '/financeiro-motoboys'
     | '/financial-center'
     | '/inventory'
     | '/kitchen'
@@ -819,6 +831,7 @@ export interface FileRouteTypes {
     | '/_authenticated/featured'
     | '/_authenticated/finance'
     | '/_authenticated/finance-ai'
+    | '/_authenticated/financeiro-motoboys'
     | '/_authenticated/financial-center'
     | '/_authenticated/inventory'
     | '/_authenticated/kitchen'
@@ -1280,6 +1293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancialCenterRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/financeiro-motoboys': {
+      id: '/_authenticated/financeiro-motoboys'
+      path: '/financeiro-motoboys'
+      fullPath: '/financeiro-motoboys'
+      preLoaderRoute: typeof AuthenticatedFinanceiroMotoboysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/finance-ai': {
       id: '/_authenticated/finance-ai'
       path: '/finance-ai'
@@ -1399,6 +1419,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFeaturedRoute: typeof AuthenticatedFeaturedRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedFinanceAiRoute: typeof AuthenticatedFinanceAiRoute
+  AuthenticatedFinanceiroMotoboysRoute: typeof AuthenticatedFinanceiroMotoboysRoute
   AuthenticatedFinancialCenterRoute: typeof AuthenticatedFinancialCenterRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
@@ -1429,6 +1450,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFeaturedRoute: AuthenticatedFeaturedRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedFinanceAiRoute: AuthenticatedFinanceAiRoute,
+  AuthenticatedFinanceiroMotoboysRoute: AuthenticatedFinanceiroMotoboysRoute,
   AuthenticatedFinancialCenterRoute: AuthenticatedFinancialCenterRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
