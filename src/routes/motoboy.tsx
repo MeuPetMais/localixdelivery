@@ -799,6 +799,11 @@ function ProfileTab(props: { dash: Dash }) {
         )}
       </Card>
 
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="mb-3 text-sm font-semibold">Aplicativo</p>
+        <PwaInstallButton />
+      </Card>
+
       <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>
         <LogOut className="mr-2 h-4 w-4" /> Sair
       </Button>
