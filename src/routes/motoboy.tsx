@@ -833,10 +833,18 @@ function LoginPrompt() {
   return (
     <div className="mx-auto max-w-md space-y-4 px-4 py-20 text-center">
       <h1 className="font-display text-3xl font-extrabold">Carteira do Motoboy</h1>
-      <p className="text-sm text-muted-foreground">Entre com o e-mail cadastrado pelo restaurante.</p>
+      <p className="text-sm text-muted-foreground">
+        Acesse com seu CPF ou telefone cadastrado.
+      </p>
       <Button asChild size="lg" className="rounded-2xl">
-        <Link to="/auth">Entrar</Link>
+        <Link to="/entregador/entrar">Entrar como Entregador</Link>
       </Button>
+      <p className="text-xs text-muted-foreground">
+        Ainda não ativou?{" "}
+        <Link to="/entregador/ativar" className="underline underline-offset-4">
+          Ativar minha conta
+        </Link>
+      </p>
     </div>
   );
 }
