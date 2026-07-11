@@ -69,7 +69,7 @@ export const registerDriverPending = createServerFn({ method: "POST" })
       .select().single();
     if (error) throw new Error(error.message);
 
-    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
       actor_id: context.userId,
       restaurant_id: data.restaurantId,
       driver_id: driver.id,
@@ -110,7 +110,7 @@ export const validateDriverActivation = createServerFn({ method: "POST" })
 
     if (!match) {
       // Auditoria de falha (sem PII no payload)
-      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
         actor_id: null,
         restaurant_id: null,
         driver_id: null,
@@ -124,7 +124,7 @@ export const validateDriverActivation = createServerFn({ method: "POST" })
     const { data: rest } = await supabaseAdmin
       .from("restaurants").select("name").eq("id", match.restaurant_id).maybeSingle();
 
-    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
       actor_id: null,
       restaurant_id: match.restaurant_id,
       driver_id: match.id,
@@ -173,7 +173,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
     );
 
     if (!driver) {
-      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
         actor_id: null, restaurant_id: null, driver_id: null,
         action: "ACTIVATION_FAIL_NOT_FOUND",
         before: null, after: { correlation_id: correlationId },
@@ -193,7 +193,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
       app_metadata: { provider: "email" },
     });
     if (authErr || !created?.user) {
-      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
         actor_id: null, restaurant_id: driver.restaurant_id, driver_id: driver.id,
         action: "ACTIVATION_FAIL_AUTH",
         before: null,
@@ -220,7 +220,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
     if (updErr || !updated) {
       // rollback do auth user
       await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
-      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
         actor_id: null, restaurant_id: driver.restaurant_id, driver_id: driver.id,
         action: "ACTIVATION_FAIL_LINK",
         before: null,
@@ -229,7 +229,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
       throw new Error("Não foi possível concluir a ativação. Tente novamente.");
     }
 
-    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
       actor_id: newUserId,
       restaurant_id: driver.restaurant_id,
       driver_id: driver.id,
@@ -257,7 +257,7 @@ export const requestDriverPasswordReset = createServerFn({ method: "POST" })
     const { data: rows } = await supabaseAdmin
       .from("delivery_drivers").select("id, phone, restaurant_id, owner_id");
     const match = (rows ?? []).find((r: any) => digits(r.phone) === phoneD && r.owner_id);
-    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({ /* @ts-expect-error nullable actor/restaurant for system events */ ..._noop, 
+    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
       actor_id: null,
       restaurant_id: match?.restaurant_id ?? null,
       driver_id: match?.id ?? null,
