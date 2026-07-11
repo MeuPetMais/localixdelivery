@@ -159,7 +159,7 @@ function DriverWallet() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <PwaInstallPrompt />
+      <PwaInstallModal auto />
       <div className="mx-auto max-w-md px-4 pt-6">
 
         <TopBar
