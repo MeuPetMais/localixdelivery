@@ -28,7 +28,7 @@ type DriverRow = {
   last_seen_at: string | null;
 };
 
-export type CentralGroup = "fila" | "em_entrega" | "retornando" | "pausa" | "offline";
+
 
 export type CentralDriver = DriverRow & {
   group: CentralGroup;
