@@ -3,6 +3,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import {
+  classifyDriver, returnGapsMinutes, averageMinutes,
+  type CentralGroup,
+} from "./operations-central";
+
+export type { CentralGroup } from "./operations-central";
 
 async function assertOwner(supabase: any, userId: string, restaurantId: string) {
   const { data } = await supabase
