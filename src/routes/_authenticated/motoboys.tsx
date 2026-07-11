@@ -248,12 +248,14 @@ function DriversPage() {
         <div className="-mx-1 flex gap-1 overflow-x-auto pb-1 sm:mx-0">
           {([
             ["all", "Todos"],
+            ["awaiting_activation", "Aguardando ativação"],
             ["online", "Online"],
             ["delivering", "Em entrega"],
             ["returning", "Retornando"],
             ["paused", "Pausa"],
             ["offline", "Offline"],
           ] as const).map(([id, label]) => (
+
             <Button
               key={id}
               variant={filter === id ? "default" : "outline"}
