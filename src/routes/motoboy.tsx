@@ -235,7 +235,43 @@ function TopBar(props: {
   );
 }
 
-/* ---------- Home ---------- */
+/* ---------- Home (RC6.5) ---------- */
+
+export function greetingFor(date = new Date()): "Bom dia" | "Boa tarde" | "Boa noite" {
+  const h = date.getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+export type DriverPresenceStatus = "DISPONIVEL" | "EM_ENTREGA" | "RETORNANDO" | "PAUSA";
+
+export function derivePresenceStatus(input: {
+  online: boolean;
+  queueStatus: string;
+  hasActive: boolean;
+}): DriverPresenceStatus {
+  if (!input.online) return "PAUSA";
+  if (input.hasActive || input.queueStatus === "EM_ENTREGA") return "EM_ENTREGA";
+  if (input.queueStatus === "RETORNANDO") return "RETORNANDO";
+  return "DISPONIVEL";
+}
+
+function StatusPill(props: { status: DriverPresenceStatus }) {
+  const map: Record<DriverPresenceStatus, { label: string; dot: string; bg: string; fg: string }> = {
+    DISPONIVEL: { label: "Disponível", dot: "bg-emerald-500", bg: "bg-emerald-500/10", fg: "text-emerald-700" },
+    EM_ENTREGA: { label: "Em entrega", dot: "bg-amber-500", bg: "bg-amber-500/10", fg: "text-amber-700" },
+    RETORNANDO: { label: "Retornando", dot: "bg-sky-500", bg: "bg-sky-500/10", fg: "text-sky-700" },
+    PAUSA: { label: "Pausa", dot: "bg-muted-foreground", bg: "bg-muted", fg: "text-muted-foreground" },
+  };
+  const m = map[props.status];
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${m.bg} ${m.fg}`}>
+      <span className={`inline-block h-2 w-2 rounded-full ${m.dot}`} />
+      {m.label}
+    </div>
+  );
+}
 
 function HomeTab(props: {
   dash: Dash;
@@ -248,72 +284,120 @@ function HomeTab(props: {
   onDeliver: (id: string) => void;
   busy?: boolean;
 }) {
-  const { dash, goals } = props;
-  const goalPct = pct(dash.earnings.todayCount, goals.daily);
-  const yesterdayDelta = delta(dash.earnings.today, dash.earnings.yesterday);
-  const missing = Math.max(0, goals.daily - dash.earnings.todayCount);
+  const { dash } = props;
+  const q = dash.queue;
+  const driver = dash.driver;
+  const restaurantName = (dash as any).restaurant?.name as string | undefined;
+  const firstName = driver.name.split(" ")[0];
+  const hasActive = !!dash.active;
+  const presence = derivePresenceStatus({
+    online: !!driver.online,
+    queueStatus: q.status,
+    hasActive,
+  });
+  const waitMin = q.waitingSince
+    ? Math.max(0, Math.round((Date.now() - new Date(q.waitingSince).getTime()) / 60000))
+    : 0;
+  const waitLabel = `${String(Math.floor(waitMin / 60)).padStart(2, "0")}:${String(waitMin % 60).padStart(2, "0")}`;
+  const nextMin = (q as any).nextDepartureMin as number | null | undefined;
+  const avgMin = Math.round(dash.stats.avgAssignToDelivered || 0);
+  const canOperate = driver.status === "ativo";
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-500">
-      {/* Card 1 — Ganhos de hoje */}
-      <Card className="relative overflow-hidden rounded-3xl border-none bg-gradient-to-br from-primary via-primary to-primary/80 p-6 text-primary-foreground shadow-xl">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative">
+      {/* Header — saudação + restaurante + status */}
+      <div className="rounded-3xl bg-card p-5 shadow-sm">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{greetingFor()},</p>
+        <p className="mt-1 font-display text-2xl font-extrabold leading-tight">{firstName}</p>
+        {restaurantName && (
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">{restaurantName}</p>
+        )}
+        <div className="mt-3">
+          <StatusPill status={presence} />
+        </div>
+      </div>
+
+      {/* Card — Fila */}
+      <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" /> Fila do restaurante
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Posição</p>
+            <p className="font-display text-3xl font-extrabold">{q.position ? `#${q.position}` : "—"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Aguardando</p>
+            <p className="font-display text-3xl font-extrabold tabular-nums">{q.inQueue ? waitLabel : "—"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Próx. saída</p>
+            <p className="font-display text-3xl font-extrabold">
+              {q.inQueue && nextMin ? `${nextMin}m` : "—"}
+            </p>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {q.length} motoboy(s) na fila
+        </p>
+      </Card>
+
+      {/* Cards — KPIs */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="rounded-3xl border-none bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-md">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-80">
             <Wallet className="h-3.5 w-3.5" /> Ganhos de hoje
           </div>
-          <p className="mt-2 font-display text-5xl font-extrabold tracking-tight">{BRL(dash.earnings.today)}</p>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs opacity-90">
-            <div>
-              <p className="opacity-80">Entregas</p>
-              <p className="font-semibold text-sm">{dash.earnings.todayCount}</p>
-            </div>
-            <div>
-              <p className="opacity-80">Ticket médio</p>
-              <p className="font-semibold text-sm">{BRL(dash.earnings.ticketToday)}</p>
-            </div>
-            <div>
-              <p className="opacity-80">vs ontem</p>
-              <p className="flex items-center gap-1 font-semibold text-sm">
-                {yesterdayDelta.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {yesterdayDelta.pct}%
-              </p>
-            </div>
+          <p className="mt-2 font-display text-3xl font-extrabold">{BRL(dash.earnings.today)}</p>
+        </Card>
+        <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <Package className="h-3.5 w-3.5" /> Entregas hoje
           </div>
-        </div>
-      </Card>
-
-      {/* Card 2 — Meta diária */}
-      <Card className="rounded-3xl border-none bg-card/80 p-5 shadow-sm backdrop-blur">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Target className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Meta diária</p>
-              <p className="text-xs text-muted-foreground">
-                {dash.earnings.todayCount} de {goals.daily} entregas · faltam {missing}
-              </p>
-            </div>
+          <p className="mt-2 font-display text-3xl font-extrabold">{dash.earnings.todayCount}</p>
+        </Card>
+        <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" /> Tempo médio
           </div>
-          <button onClick={props.onOpenGoals} className="text-xs text-primary font-semibold">
-            Ajustar
-          </button>
-        </div>
-        <div className="mt-3 flex items-baseline justify-between">
-          <p className="font-display text-3xl font-extrabold">{goalPct}%</p>
-          {goalPct >= 100 && <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10">Meta batida 🏆</Badge>}
-        </div>
-        <Progress value={goalPct} className="mt-2 h-2" />
-      </Card>
+          <p className="mt-2 font-display text-3xl font-extrabold">
+            {avgMin > 0 ? `${avgMin} min` : "—"}
+          </p>
+        </Card>
+      </div>
 
-      {/* Card 3 — Fila operacional */}
-      <QueueCard dash={dash} onEnter={props.onEnter} onLeave={props.onLeave} busy={props.busy} />
+      {/* Botão principal — Entrar/Sair da fila */}
+      <div>
+        {q.inQueue ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-14 w-full rounded-2xl text-base font-semibold"
+            onClick={props.onLeave}
+            disabled={props.busy}
+          >
+            Sair da fila
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="h-14 w-full rounded-2xl text-base font-semibold"
+            onClick={props.onEnter}
+            disabled={props.busy || !canOperate || !driver.online}
+          >
+            Entrar na fila <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+        {!driver.online && (
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            Fique online para entrar na fila.
+          </p>
+        )}
+      </div>
 
-      {/* Card 4 — Entrega atual */}
-      {dash.active ? (
+      {/* Entrega ativa */}
+      {dash.active && (
         <ActiveDeliveryCard
           active={dash.active}
           onCollect={props.onCollect}
@@ -321,79 +405,11 @@ function HomeTab(props: {
           onDeliver={props.onDeliver}
           busy={props.busy}
         />
-      ) : (
-        <Card className="rounded-3xl border-dashed bg-transparent p-8 text-center">
-          <Package className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-2 text-sm font-semibold">Aguardando nova entrega</p>
-          <p className="text-xs text-muted-foreground">Você receberá aqui quando for sua vez.</p>
-        </Card>
       )}
     </div>
   );
 }
 
-function QueueCard(props: { dash: Dash; onEnter: () => void; onLeave: () => void; busy?: boolean }) {
-  const q = props.dash.queue;
-  const driver = props.dash.driver;
-  const canOperate = driver.status === "ativo";
-  const waitMin = q.waitingSince
-    ? Math.round((Date.now() - new Date(q.waitingSince).getTime()) / 60000)
-    : 0;
-
-  const statusLabel: Record<string, string> = {
-    AGUARDANDO: "Aguardando",
-    EM_ENTREGA: "Em entrega",
-    RETORNANDO: "Retornando",
-    OFFLINE: "Offline",
-  };
-  const statusColor: Record<string, string> = {
-    AGUARDANDO: "bg-primary/10 text-primary",
-    EM_ENTREGA: "bg-amber-500/10 text-amber-600",
-    RETORNANDO: "bg-sky-500/10 text-sky-600",
-    OFFLINE: "bg-muted text-muted-foreground",
-  };
-
-  return (
-    <Card className="rounded-3xl border-none bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-primary/10 p-3 text-primary">
-            <Clock className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Fila operacional</p>
-            <p className="text-xs text-muted-foreground">{q.length} motoboy(s) na fila</p>
-          </div>
-        </div>
-        <Badge className={`${statusColor[q.status]} hover:${statusColor[q.status]}`}>{statusLabel[q.status]}</Badge>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-muted/50 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Posição</p>
-          <p className="font-display text-3xl font-extrabold">{q.position ? `#${q.position}` : "—"}</p>
-        </div>
-        <div className="rounded-2xl bg-muted/50 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Aguardando há</p>
-          <p className="font-display text-3xl font-extrabold">{q.inQueue ? `${waitMin}m` : "—"}</p>
-        </div>
-      </div>
-      <div className="mt-4">
-        {q.inQueue ? (
-          <Button variant="outline" className="w-full rounded-2xl" onClick={props.onLeave} disabled={props.busy}>
-            Sair da fila
-          </Button>
-        ) : (
-          <Button className="w-full rounded-2xl" onClick={props.onEnter} disabled={props.busy || !canOperate || !driver.online}>
-            Entrar na fila <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        )}
-        {!driver.online && (
-          <p className="mt-2 text-center text-[11px] text-muted-foreground">Fique online para entrar na fila.</p>
-        )}
-      </div>
-    </Card>
-  );
-}
 
 function ActiveDeliveryCard(props: {
   active: NonNullable<Dash["active"]>;
