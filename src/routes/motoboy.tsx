@@ -28,6 +28,8 @@ import {
   BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals,
   type DriverGoals,
 } from "@/lib/driver-wallet";
+import { registerDriverServiceWorker } from "@/lib/pwa-driver";
+import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -60,6 +62,10 @@ function DriverWallet() {
     const { data: sub } = supabase.auth.onAuthStateChange((_, s) => setSession(!!s));
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session === true) void registerDriverServiceWorker();
+  }, [session]);
 
   const dashQ = useQuery({
     queryKey: ["driver-wallet"],
@@ -153,7 +159,7 @@ function DriverWallet() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <PwaInstallPrompt />
+      <PwaInstallModal auto />
       <div className="mx-auto max-w-md px-4 pt-6">
 
         <TopBar
@@ -793,6 +799,11 @@ function ProfileTab(props: { dash: Dash }) {
         )}
       </Card>
 
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <p className="mb-3 text-sm font-semibold">Aplicativo</p>
+        <PwaInstallButton />
+      </Card>
+
       <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>
         <LogOut className="mr-2 h-4 w-4" /> Sair
       </Button>
@@ -925,64 +936,3 @@ function UnauthorizedPrompt() {
   );
 }
 
-/* ---------- PWA Install Prompt (só após login) ---------- */
-type BIPEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-function PwaInstallPrompt() {
-  const [evt, setEvt] = useState<BIPEvent | null>(null);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem("localix-driver-pwa-dismissed") === "1") return;
-    const mm = window.matchMedia?.("(display-mode: standalone)").matches;
-    const iosStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (mm || iosStandalone) return;
-    const onBIP = (e: Event) => {
-      e.preventDefault();
-      setEvt(e as BIPEvent);
-      setOpen(true);
-    };
-    window.addEventListener("beforeinstallprompt", onBIP);
-    return () => window.removeEventListener("beforeinstallprompt", onBIP);
-  }, []);
-
-  async function install() {
-    if (!evt) return;
-    try {
-      await evt.prompt();
-      await evt.userChoice;
-    } finally {
-      setEvt(null);
-      setOpen(false);
-    }
-  }
-
-  function dismiss() {
-    try { window.localStorage.setItem("localix-driver-pwa-dismissed", "1"); } catch {}
-    setOpen(false);
-  }
-
-  if (!open) return null;
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md p-4">
-      <div className="rounded-3xl border bg-background p-5 shadow-2xl">
-        <p className="font-display text-lg font-extrabold">Instalar Localix Entregador</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Adicione o app à tela inicial para abrir mais rápido e receber melhor as suas entregas.
-        </p>
-        <div className="mt-4 flex gap-2">
-          <Button variant="outline" className="flex-1 rounded-2xl" onClick={dismiss}>
-            Agora não
-          </Button>
-          <Button className="flex-1 rounded-2xl" onClick={install}>
-            Instalar
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
