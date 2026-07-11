@@ -31,6 +31,7 @@ import {
 import { registerDriverServiceWorker } from "@/lib/pwa-driver";
 import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 import { DriverWalletTab } from "@/components/driver/DriverWalletTab";
+import { DriverProfileTab } from "@/components/driver/DriverProfileTab";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
