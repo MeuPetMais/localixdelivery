@@ -308,11 +308,13 @@ function DriversPage() {
           open
           onClose={() => setCreating(false)}
           restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
           onSubmit={async (form) => {
             await createMut.mutateAsync({ ...form, restaurantId: restaurant.id });
           }}
         />
       )}
+
       {editing && (
         <EditDialog
           open
