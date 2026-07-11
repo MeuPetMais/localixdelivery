@@ -460,19 +460,47 @@ function EmptyState({ hasAny, onCreate }: { hasAny: boolean; onCreate: () => voi
   );
 }
 
-/* ============ WIZARD ============ */
+/* ============ WIZARD ============
+ *
+ * NOTA DE ARQUITETURA — Ativação de conta do entregador
+ * ------------------------------------------------------
+ * O restaurante NÃO cria credenciais de acesso. Ele apenas cadastra o
+ * colaborador. A ativação da conta (validação de CPF/telefone, criação
+ * de e-mail opcional, criação de senha e login) é responsabilidade do
+ * aplicativo "Localix Motoboy", em RC futuro.
+ *
+ * Como a server function `createDriver` (contrato imutável neste RC)
+ * ainda exige e-mail + senha para provisionar o usuário no Auth, geramos
+ * um placeholder determinístico aqui no cliente — o entregador troca
+ * essas credenciais pelo app quando ativar a própria conta.
+ *
+ * Pontos de extensão previstos (não implementados agora):
+ *   - fluxo de ativação por CPF+telefone no app do entregador
+ *   - envio de código OTP para o telefone cadastrado
+ *   - opção de definir e-mail real durante a ativação
+ *   - reset seguro de senha placeholder no primeiro login
+ * ==================================================== */
 
 type WizardForm = {
-  name: string; phone: string; cpf: string; email: string; password: string;
+  name: string; phone: string; cpf: string;
   vehicleType: Vehicle; vehiclePlate: string; vehicleModel: string; vehicleColor: string;
-  photoUrl: string; cnhUrl: string; documentUrl: string;
+  photoUrl: string; cnhUrl: string; addressProofUrl: string;
 };
 
 const emptyForm: WizardForm = {
-  name: "", phone: "", cpf: "", email: "", password: "",
+  name: "", phone: "", cpf: "",
   vehicleType: "moto", vehiclePlate: "", vehicleModel: "", vehicleColor: "",
-  photoUrl: "", cnhUrl: "", documentUrl: "",
+  photoUrl: "", cnhUrl: "", addressProofUrl: "",
 };
+
+/** Gera credenciais placeholder — o entregador as substitui via app Localix Motoboy. */
+function generatePendingCredentials(): { email: string; password: string } {
+  const id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
+  return {
+    email: `driver-${id}@pending.localix.app`,
+    password: `Lx!${id.slice(0, 16)}`,
+  };
+}
 
 function WizardDialog({
   open, onClose, restaurantId, onSubmit,
@@ -493,9 +521,7 @@ function WizardDialog({
 
   const validateStep = (): string | null => {
     if (step === 1) {
-      if (f.name.trim().length < 2) return "Informe o nome completo";
-      if (!/^\S+@\S+\.\S+$/.test(f.email)) return "E-mail inválido";
-      if (f.password.length < 6) return "Senha deve ter ao menos 6 caracteres";
+      if (f.name.trim().length < 2) return "Informe o nome completo do entregador";
     }
     if (step === 2) {
       if (!f.vehicleType) return "Selecione o tipo de veículo";
@@ -512,16 +538,21 @@ function WizardDialog({
   const submit = async () => {
     setSaving(true);
     try {
+      // Credenciais placeholder — ativação real acontece no app Localix Motoboy.
+      const { email, password } = generatePendingCredentials();
       await onSubmit({
         name: f.name.trim(),
         phone: f.phone.trim() || null,
         cpf: f.cpf.trim() || null,
-        email: f.email.trim(),
-        password: f.password,
+        email,
+        password,
         vehicleType: f.vehicleType,
         vehiclePlate: f.vehiclePlate.trim() || null,
         photoUrl: f.photoUrl || null,
-        documentUrl: f.cnhUrl || f.documentUrl || null,
+        // O schema atual persiste um único document_url; priorizamos a CNH,
+        // com o comprovante de endereço como fallback. Uma migração futura
+        // pode separar os dois campos sem impacto nesta UI.
+        documentUrl: f.cnhUrl || f.addressProofUrl || null,
       });
       setStep(4);
     } catch (e) {
@@ -532,6 +563,7 @@ function WizardDialog({
   };
 
   const progress = step === 4 ? 100 : (step / 3) * 100;
+  const stepLabel = step === 1 ? "Dados pessoais" : step === 2 ? "Veículo" : "Documentação";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -542,10 +574,10 @@ function WizardDialog({
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg">Cadastrar motoboy</DialogTitle>
+              <DialogTitle className="text-lg">Cadastrar entregador</DialogTitle>
               {step < 4 && (
                 <p className="text-xs text-muted-foreground">
-                  Etapa {step} de 3 • {step === 1 ? "Dados pessoais" : step === 2 ? "Veículo" : "Documentos"}
+                  Etapa {step} de 3 • {stepLabel}
                 </p>
               )}
             </div>
@@ -564,10 +596,10 @@ function WizardDialog({
           {step === 4 ? (
             <>
               <Button variant="outline" onClick={reset}>
-                <Plus className="mr-1 h-4 w-4" /> Cadastrar outro
+                <Plus className="mr-1 h-4 w-4" /> Cadastrar outro entregador
               </Button>
               <Button onClick={onClose}>
-                <Check className="mr-1 h-4 w-4" /> Ir para lista
+                <Check className="mr-1 h-4 w-4" /> Voltar para lista
               </Button>
             </>
           ) : (
@@ -583,7 +615,7 @@ function WizardDialog({
                 <Button onClick={next}>Próximo <ArrowRight className="ml-1 h-4 w-4" /></Button>
               ) : (
                 <Button onClick={submit} disabled={saving}>
-                  {saving ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Salvando…</>) : (<><Check className="mr-1 h-4 w-4" /> Finalizar cadastro</>)}
+                  {saving ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Salvando…</>) : (<><Check className="mr-1 h-4 w-4" /> Cadastrar entregador</>)}
                 </Button>
               )}
             </>
@@ -611,18 +643,10 @@ function StepPersonal({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => voi
           <Input value={f.cpf} onChange={(e) => setF({ ...f, cpf: e.target.value })} placeholder="000.000.000-00" />
         </div>
       </div>
-      <div className="rounded-lg border bg-muted/30 p-4">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Acesso ao aplicativo</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label>E-mail *</Label>
-            <Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="motoboy@exemplo.com" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label>Senha *</Label>
-            <Input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} placeholder="Mín. 6 caracteres" />
-          </div>
-        </div>
+      <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-xs text-muted-foreground">
+        As credenciais de acesso serão criadas pelo próprio entregador no
+        aplicativo <span className="font-semibold text-foreground">Localix Motoboy</span> após
+        o cadastro ser concluído.
       </div>
     </div>
   );
@@ -664,11 +688,11 @@ function StepVehicle({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => void
           <Input value={f.vehiclePlate} onChange={(e) => setF({ ...f, vehiclePlate: e.target.value.toUpperCase() })} placeholder="ABC-1D23" />
         </div>
         <div className="grid gap-1.5">
-          <Label>Modelo</Label>
+          <Label>Modelo <span className="text-muted-foreground">(opcional)</span></Label>
           <Input value={f.vehicleModel} onChange={(e) => setF({ ...f, vehicleModel: e.target.value })} placeholder="Honda Biz" />
         </div>
         <div className="grid gap-1.5">
-          <Label>Cor</Label>
+          <Label>Cor <span className="text-muted-foreground">(opcional)</span></Label>
           <Input value={f.vehicleColor} onChange={(e) => setF({ ...f, vehicleColor: e.target.value })} placeholder="Vermelha" />
         </div>
       </div>
@@ -680,30 +704,44 @@ function StepDocuments({
   f, setF, restaurantId,
 }: { f: WizardForm; setF: (v: WizardForm) => void; restaurantId: string }) {
   return (
-    <div className="grid gap-4 animate-in fade-in slide-in-from-right-2 duration-200 sm:grid-cols-3">
-      <UploadTile
-        label="Foto do motoboy" icon={Camera} kind="photo"
-        value={f.photoUrl} onChange={(url) => setF({ ...f, photoUrl: url })}
-        restaurantId={restaurantId}
-      />
-      <UploadTile
-        label="CNH" icon={IdCard} kind="cnh"
-        value={f.cnhUrl} onChange={(url) => setF({ ...f, cnhUrl: url })}
-        restaurantId={restaurantId}
-      />
-      <UploadTile
-        label="Documento" icon={ShieldCheck} kind="document"
-        value={f.documentUrl} onChange={(url) => setF({ ...f, documentUrl: url })}
-        restaurantId={restaurantId}
-      />
+    <div className="grid gap-5 animate-in fade-in slide-in-from-right-2 duration-200">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <UploadTile
+          label="Foto do Entregador"
+          description="Envie uma foto para identificação do entregador."
+          icon={Camera} kind="photo"
+          value={f.photoUrl} onChange={(url) => setF({ ...f, photoUrl: url })}
+          restaurantId={restaurantId}
+        />
+        <UploadTile
+          label="CNH"
+          description="Envie a frente da Carteira Nacional de Habilitação."
+          icon={IdCard} kind="cnh"
+          value={f.cnhUrl} onChange={(url) => setF({ ...f, cnhUrl: url })}
+          restaurantId={restaurantId}
+        />
+        <UploadTile
+          label="Comprovante de Endereço"
+          description="Conta de água, energia, telefone ou outro comprovante recente."
+          icon={ShieldCheck} kind="document"
+          value={f.addressProofUrl} onChange={(url) => setF({ ...f, addressProofUrl: url })}
+          restaurantId={restaurantId}
+        />
+      </div>
+      <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+        Os documentos enviados são utilizados exclusivamente para validação do
+        cadastro e permanecem protegidos conforme a política de privacidade da
+        Localix.
+      </p>
     </div>
   );
 }
 
 function UploadTile({
-  label, icon: Icon, value, onChange, restaurantId, kind,
+  label, description, icon: Icon, value, onChange, restaurantId, kind,
 }: {
   label: string;
+  description?: string;
   icon: React.ComponentType<{ className?: string }>;
   value: string; onChange: (url: string) => void;
   restaurantId: string;
@@ -711,6 +749,7 @@ function UploadTile({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
 
   const pick = () => inputRef.current?.click();
   const onFile = async (file?: File | null) => {
@@ -719,6 +758,7 @@ function UploadTile({
     try {
       const url = await uploadDriverAsset(file, restaurantId, kind);
       onChange(url);
+      setFileMeta({ name: file.name, size: file.size });
       toast.success(`${label} enviado`);
     } catch (e) {
       toast.error((e as Error).message);
@@ -727,14 +767,28 @@ function UploadTile({
     }
   };
 
+  const remove = () => { onChange(""); setFileMeta(null); };
+
+  const humanSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
   return (
     <div className="grid gap-2">
-      <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+      <div>
+        <Label className="text-sm font-semibold">{label}</Label>
+        {description && (
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{description}</p>
+        )}
+      </div>
       <button
         type="button"
         onClick={pick}
+        aria-label={value ? `Trocar ${label}` : `Enviar ${label}`}
         className={cn(
-          "group relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all",
+          "group relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           value ? "border-transparent" : "hover:border-primary hover:bg-primary/5",
         )}
       >
@@ -755,9 +809,15 @@ function UploadTile({
         )}
       </button>
       {value && (
-        <Button size="sm" variant="ghost" onClick={() => onChange("")}>
-          <X className="mr-1 h-3.5 w-3.5" /> Remover
-        </Button>
+        <div className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+          <div className="min-w-0">
+            <p className="truncate font-medium">{fileMeta?.name ?? "Arquivo enviado"}</p>
+            {fileMeta && <p className="text-muted-foreground">{humanSize(fileMeta.size)}</p>}
+          </div>
+          <Button size="sm" variant="ghost" onClick={remove} className="h-7 px-2">
+            <X className="mr-1 h-3.5 w-3.5" /> Remover
+          </Button>
+        </div>
       )}
       <input
         ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
@@ -769,13 +829,25 @@ function UploadTile({
 
 function StepSuccess() {
   return (
-    <div className="flex flex-col items-center gap-4 py-8 text-center animate-in fade-in zoom-in-95 duration-300">
+    <div className="flex flex-col items-center gap-4 py-6 text-center animate-in fade-in zoom-in-95 duration-300">
       <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-500/15 text-emerald-600">
         <Check className="h-10 w-10" />
       </div>
-      <div>
-        <h3 className="text-xl font-bold">Motoboy cadastrado com sucesso!</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Ele já pode acessar o aplicativo com o e-mail e a senha definidos.</p>
+      <div className="max-w-md space-y-3">
+        <h3 className="text-xl font-bold">Entregador cadastrado com sucesso.</h3>
+        <div className="rounded-lg border bg-muted/30 p-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Próximo passo
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed">
+            Solicite que o entregador instale o aplicativo{" "}
+            <span className="font-semibold">Localix Motoboy</span> para ativar
+            sua conta e criar suas credenciais de acesso.
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+          <Clock className="h-3.5 w-3.5" /> Status: Aguardando Ativação
+        </div>
       </div>
     </div>
   );
