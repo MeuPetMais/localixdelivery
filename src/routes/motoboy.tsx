@@ -28,6 +28,8 @@ import {
   BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals,
   type DriverGoals,
 } from "@/lib/driver-wallet";
+import { registerDriverServiceWorker } from "@/lib/pwa-driver";
+import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
