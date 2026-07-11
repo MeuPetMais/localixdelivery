@@ -30,6 +30,7 @@ import {
 } from "@/lib/driver-wallet";
 import { registerDriverServiceWorker } from "@/lib/pwa-driver";
 import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
+import { DriverWalletTab } from "@/components/driver/DriverWalletTab";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -188,7 +189,7 @@ function DriverWallet() {
             busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
           />
         )}
-        {tab === "ganhos" && <EarningsTab dash={dash} goals={goals} onOpenGoals={() => setGoalsOpen(true)} />}
+        {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />}
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
@@ -906,7 +907,7 @@ function GoalsSheet(props: { initial: DriverGoals; onClose: () => void; onSave: 
 function BottomNav(props: { tab: Tab; onChange: (t: Tab) => void }) {
   const items: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: "home", icon: <Home className="h-5 w-5" />, label: "Início" },
-    { id: "ganhos", icon: <Wallet className="h-5 w-5" />, label: "Ganhos" },
+    { id: "ganhos", icon: <Wallet className="h-5 w-5" />, label: "Carteira" },
     { id: "historico", icon: <HistoryIcon className="h-5 w-5" />, label: "Extrato" },
     { id: "estatisticas", icon: <LineChart className="h-5 w-5" />, label: "Stats" },
     { id: "ranking", icon: <Trophy className="h-5 w-5" />, label: "Ranking" },

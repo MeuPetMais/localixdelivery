@@ -264,6 +264,15 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     const bestWeek = pickMax(byWeek);
     const bestMonth = pickMax(byMonth);
 
+    // RC6.7 — série diária dos últimos 30 dias (para gráfico da carteira)
+    const dailySeries: { date: string; value: number; count: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const day = startOfLocalDay(-i);
+      const key = day.toISOString().slice(0, 10);
+      const arr = byDay.get(key) ?? [];
+      dailySeries.push({ date: key, value: sumEarn(arr), count: arr.length });
+    }
+
     const avg = (n: number, d: number) => (d > 0 ? n / d : 0);
 
     return {
@@ -297,6 +306,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
         bestDay,
         bestWeek,
         bestMonth,
+        dailySeries,
       },
       stats: {
         avgAssignToDelivered: avgMinutes(year, "assigned_at", "delivered_at"),
