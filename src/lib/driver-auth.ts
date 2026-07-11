@@ -16,6 +16,12 @@ Enquanto isso, entre em contato com o restaurante ou com o suporte da Localix.`;
 
 export const digits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
 
+function normalizeBrazilPhone(value: string | null | undefined) {
+  const onlyDigits = digits(value);
+  if (onlyDigits.length >= 12 && onlyDigits.startsWith("55")) return onlyDigits.slice(2);
+  return onlyDigits;
+}
+
 export function isActiveDriverLoginCandidate(candidate: DriverLoginCandidate) {
   return candidate.status === "ativo" && !!candidate.owner_id && !!candidate.email;
 }
@@ -26,7 +32,11 @@ export function matchesDriverIdentifier(candidate: DriverLoginCandidate, identif
   const isDocumentOrPhone = normalizedDigits.length >= 8;
 
   if (isDocumentOrPhone) {
-    return digits(candidate.cpf) === normalizedDigits || digits(candidate.phone) === normalizedDigits;
+    const cpfDigits = digits(candidate.cpf);
+    const candidatePhone = normalizeBrazilPhone(candidate.phone);
+    const inputPhone = normalizeBrazilPhone(identifier);
+
+    return cpfDigits === normalizedDigits || candidatePhone === inputPhone;
   }
 
   return (candidate.email ?? "").toLowerCase() === normalized;
