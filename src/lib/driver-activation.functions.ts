@@ -291,9 +291,6 @@ export const resolveDriverEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const id = data.identifier.trim();
-    const idDigits = digits(id);
-    const isDigits = idDigits.length >= 8;
 
     const { data: rows } = await supabaseAdmin
       .from("delivery_drivers")
@@ -301,7 +298,7 @@ export const resolveDriverEmail = createServerFn({ method: "POST" })
       .eq("status", "ativo" as any)
       .not("owner_id", "is", null);
 
-    const email = resolveDriverLoginEmail((rows ?? []) as any, isDigits ? idDigits : id);
+    const email = resolveDriverLoginEmail((rows ?? []) as any, data.identifier);
     if (!email) return { found: false as const };
     return { found: true as const, email };
   });
