@@ -102,10 +102,20 @@ function DriversPage() {
   const remove = useServerFn(deleteDriver);
 
   const queryKey = ["delivery-drivers", restaurant.id] as const;
-  const { data: drivers = [], isLoading } = useQuery({
+  const { data: drivers = [], isLoading, error: listError } = useQuery({
     queryKey,
     queryFn: () => list({ data: { restaurantId: restaurant.id } }),
+    enabled: !!restaurant.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: 1,
   });
+  useEffect(() => {
+    if (listError) {
+      console.error("[motoboys] listDrivers error", listError);
+      toast.error("Falha ao carregar motoboys: " + (listError as Error).message);
+    }
+  }, [listError]);
 
   useEffect(() => {
     const ch = supabase
