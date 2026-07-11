@@ -122,19 +122,26 @@ function DriverWallet() {
     onSuccess: () => { toast.success("Você saiu da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
-  const collectMut = useMutation({
-    mutationFn: (id: string) => doCollect({ data: { assignmentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const departMut = useMutation({
-    mutationFn: (id: string) => doDepart({ data: { assignmentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
+  // RC6.6 — "Retirar pedido" = coletar + partir (tracking iniciado) em uma ação só.
+  const pickupMut = useMutation({
+    mutationFn: async (input: { id: string; status: string }) => {
+      if (input.status === "ATRIBUIDO") {
+        await doCollect({ data: { assignmentId: input.id } });
+      }
+      await doDepart({ data: { assignmentId: input.id } });
+    },
+    onSuccess: () => {
+      toast.success("Pedido retirado — em entrega 🚴");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const deliverMut = useMutation({
     mutationFn: (id: string) => doDeliver({ data: { assignmentId: id } }),
-    onSuccess: () => { toast.success("Entrega concluída — de volta à fila 🎉"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onSuccess: () => {
+      toast.success("Entrega concluída — de volta à fila 🎉");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
