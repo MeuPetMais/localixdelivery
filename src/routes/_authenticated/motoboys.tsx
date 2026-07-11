@@ -368,11 +368,12 @@ function StatCard({
 }
 
 function DriverCard({
-  driver, presence, onView, onEdit, onToggle, onDelete,
+  driver, presence, restaurantName, onView, onEdit, onToggle, onDelete,
 }: {
-  driver: Driver; presence: PresenceState;
+  driver: Driver; presence: PresenceState; restaurantName: string;
   onView: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void;
 }) {
+
   const meta = PRESENCE_META[presence];
   const online = presence === "online" || presence === "delivering" || presence === "returning";
   const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
