@@ -92,11 +92,10 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
       }
     }
 
-    const ACTIVE = new Set(["ATRIBUIDO", "COLETANDO", "EM_ROTA"]);
     const activeByDriver = new Map<string, typeof al[number]>();
     for (const a of al) {
       if (!a.driver_id) continue;
-      if (!ACTIVE.has(a.status)) continue;
+      if (!["ATRIBUIDO", "COLETANDO", "EM_ROTA"].includes(a.status)) continue;
       if (!activeByDriver.has(a.driver_id)) activeByDriver.set(a.driver_id, a);
     }
 
@@ -107,14 +106,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
       const q = queueByDriver.get(d.id);
       const a = activeByDriver.get(d.id);
       const order = a?.order_id ? orders[a.order_id] : undefined;
-      let group: CentralGroup;
-      if (d.status === "afastado") group = "pausa";
-      else if (a) group = "em_entrega";
-      else if (q?.status === "RETORNANDO") group = "retornando";
-      else if (q?.status === "AGUARDANDO") group = "fila";
-      else if (d.online) group = "fila";
-      else group = "offline";
-
+      const group = classifyDriver(d, q, a);
       return {
         ...d,
         group,
@@ -125,38 +117,15 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
       };
     });
 
-    // Metrics: use last 50 entregas
-    const delivered = al.filter((a) => a.status === "ENTREGUE" && a.assigned_at && a.delivered_at).slice(0, 50);
-    let avgTotalMinutes: number | null = null;
-    if (delivered.length > 0) {
-      const total = delivered.reduce((s, a) => {
-        const t = (new Date(a.delivered_at!).getTime() - new Date(a.assigned_at!).getTime()) / 60000;
-        return s + Math.max(0, t);
-      }, 0);
-      avgTotalMinutes = Math.round(total / delivered.length);
-    }
-
-    // Tempo de retorno: por motoboy, gap entre delivered_at e assigned_at seguinte
-    const byDriver = new Map<string, typeof al>();
-    for (const a of al) {
-      if (!a.driver_id) continue;
-      const list = byDriver.get(a.driver_id) ?? [];
-      list.push(a);
-      byDriver.set(a.driver_id, list);
-    }
-    const gaps: number[] = [];
-    for (const list of byDriver.values()) {
-      const asc = [...list].sort((x, y) => (x.assigned_at ?? "").localeCompare(y.assigned_at ?? ""));
-      for (let i = 0; i < asc.length - 1; i++) {
-        const prev = asc[i], next = asc[i + 1];
-        if (prev.status !== "ENTREGUE" || !prev.delivered_at || !next.assigned_at) continue;
-        const gap = (new Date(next.assigned_at).getTime() - new Date(prev.delivered_at).getTime()) / 60000;
-        if (gap >= 0 && gap <= 120) gaps.push(gap);
-      }
-    }
-    const avgReturnMinutes = gaps.length > 0
-      ? Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length)
-      : null;
+    // Tempo médio por entrega (últimas 50 entregas)
+    const delivered = al
+      .filter((a) => a.status === "ENTREGUE" && a.assigned_at && a.delivered_at)
+      .slice(0, 50);
+    const totalDeltas = delivered.map(
+      (a) => Math.max(0, (new Date(a.delivered_at!).getTime() - new Date(a.assigned_at!).getTime()) / 60000),
+    );
+    const avgTotalMinutes = averageMinutes(totalDeltas);
+    const avgReturnMinutes = averageMinutes(returnGapsMinutes(al));
 
     const counts = enriched.reduce(
       (acc, d) => { acc[d.group] = (acc[d.group] ?? 0) + 1; return acc; },
