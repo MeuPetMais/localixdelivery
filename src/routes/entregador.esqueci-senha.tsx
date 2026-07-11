@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestDriverPasswordReset } from "@/lib/driver-activation.functions";
+import { DRIVER_PASSWORD_RESET_CONFIRMATION } from "@/lib/driver-auth";
 
 export const Route = createFileRoute("/entregador/esqueci-senha")({
   ssr: false,
@@ -53,9 +54,8 @@ function ForgotPassword() {
           {sent ? (
             <>
               <h2 className="font-display text-xl font-extrabold">Solicitação registrada</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Se este telefone estiver vinculado a uma conta, nossa equipe entrará em contato
-                para redefinir sua senha. Em breve teremos redefinição automática por SMS.
+              <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                {DRIVER_PASSWORD_RESET_CONFIRMATION.replace("Solicitação registrada.\n\n", "")}
               </p>
             </>
           ) : (

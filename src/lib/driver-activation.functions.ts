@@ -7,8 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+import { digits, resolveDriverLoginEmail } from "@/lib/driver-auth";
 
 const VEHICLES = ["moto", "bicicleta", "carro", "a_pe"] as const;
 
@@ -203,10 +202,21 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
     }
     const newUserId = created.user.id;
 
-    // Papel
-    await supabaseAdmin.from("user_roles").insert({
-      user_id: newUserId, role: "delivery_driver" as any,
-    });
+    // Papel do app do entregador: obrigatório para o acesso ao domínio próprio.
+    const { error: roleErr } = await supabaseAdmin.from("user_roles").upsert(
+      { user_id: newUserId, role: "delivery_driver" as any },
+      { onConflict: "user_id,role" },
+    );
+    if (roleErr) {
+      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+      await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
+        actor_id: null, restaurant_id: driver.restaurant_id, driver_id: driver.id,
+        action: "ACTIVATION_FAIL_ROLE",
+        before: null,
+        after: { correlation_id: correlationId, error: roleErr.message },
+      });
+      throw new Error("Não foi possível liberar o acesso do entregador. Tente novamente.");
+    }
 
     // Vincula driver
     const { data: updated, error: updErr } = await supabaseAdmin
@@ -291,12 +301,7 @@ export const resolveDriverEmail = createServerFn({ method: "POST" })
       .eq("status", "ativo" as any)
       .not("owner_id", "is", null);
 
-    const match = (rows ?? []).find((r: any) => {
-      if (!r.email) return false;
-      if (isDigits) return digits(r.cpf) === idDigits || digits(r.phone) === idDigits;
-      return String(r.email).toLowerCase() === id.toLowerCase();
-    });
-
-    if (!match) return { found: false as const };
-    return { found: true as const, email: match.email as string };
+    const email = resolveDriverLoginEmail((rows ?? []) as any, isDigits ? idDigits : id);
+    if (!email) return { found: false as const };
+    return { found: true as const, email };
   });

@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { setMyPresence } from "@/lib/delivery-drivers.functions";
@@ -705,7 +706,30 @@ function AchievementsCard(props: { dash: Dash }) {
 
 function ProfileTab(props: { dash: Dash }) {
   const d = props.dash.driver;
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
   const days = Math.max(0, Math.round((Date.now() - new Date(d.created_at).getTime()) / 86400000));
+
+  async function handleChangePassword() {
+    if (newPassword.length < 8) return toast.error("A senha precisa ter ao menos 8 caracteres");
+    if (newPassword !== confirmPassword) return toast.error("As senhas não coincidem");
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword("");
+      setConfirmPassword("");
+      setChangePasswordOpen(false);
+      toast.success("Senha alterada");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   return (
     <div className="animate-in fade-in space-y-4">
       <Card className="flex flex-col items-center rounded-3xl border-none p-6 shadow-sm">
@@ -730,6 +754,43 @@ function ProfileTab(props: { dash: Dash }) {
         <RowKV k="E-mail" v={d.email ?? "—"} />
         <RowKV k="Placa" v={d.vehicle_plate ?? "—"} />
         <RowKV k="Dias na plataforma" v={`${days} dia(s)`} />
+      </Card>
+
+      <Card className="rounded-2xl border-none p-4 shadow-sm">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between text-left text-sm font-semibold"
+          onClick={() => setChangePasswordOpen((open) => !open)}
+          aria-expanded={changePasswordOpen}
+        >
+          Alterar senha
+          <ChevronRight className={`h-4 w-4 transition-transform ${changePasswordOpen ? "rotate-90" : ""}`} />
+        </button>
+        {changePasswordOpen && (
+          <div className="mt-4 space-y-3">
+            <div>
+              <Label>Nova senha</Label>
+              <PasswordInput
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <Label>Confirmar nova senha</Label>
+              <PasswordInput
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repita a nova senha"
+                autoComplete="new-password"
+              />
+            </div>
+            <Button className="w-full rounded-2xl" onClick={handleChangePassword} disabled={changingPassword}>
+              <Save className="mr-2 h-4 w-4" /> {changingPassword ? "Salvando..." : "Salvar nova senha"}
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>

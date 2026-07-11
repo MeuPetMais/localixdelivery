@@ -8,6 +8,7 @@ import { ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, User, Lock, Bike } fr
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,8 +80,10 @@ function ActivateDriver() {
         email: res.email, password: pw,
       });
       if (error) throw error;
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente entrar novamente.");
       setStep(4);
-      setTimeout(() => nav({ to: "/motoboy" }), 1500);
+      setTimeout(() => nav({ to: "/motoboy", replace: true }), 1500);
     } catch (e) { toast.error((e as Error).message); }
     finally { setLoading(false); }
   }
@@ -172,7 +175,7 @@ function ActivateDriver() {
               </div>
               <div>
                 <Label>Senha</Label>
-                <Input type="password" placeholder="Mínimo 8 caracteres" value={pw} onChange={(e) => setPw(e.target.value)} />
+                <PasswordInput placeholder="Mínimo 8 caracteres" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
                 <div className="mt-1 flex gap-1">
                   {[0, 1, 2, 3].map((i) => (
                     <div key={i} className={`h-1 flex-1 rounded ${i < pwStrength ? "bg-primary" : "bg-muted"}`} />
@@ -181,7 +184,7 @@ function ActivateDriver() {
               </div>
               <div>
                 <Label>Confirmar senha</Label>
-                <Input type="password" placeholder="Repita a senha" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+                <PasswordInput placeholder="Repita a senha" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
               </div>
             </div>
             <div className="mt-6 flex gap-2">
