@@ -9,6 +9,7 @@ import { Bike, ArrowLeft, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveDriverEmail } from "@/lib/driver-activation.functions";
@@ -46,7 +47,9 @@ function DriverLogin() {
         email: res.email, password,
       });
       if (error) throw error;
-      nav({ to: "/motoboy" });
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente novamente.");
+      nav({ to: "/motoboy", replace: true });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -84,8 +87,7 @@ function DriverLogin() {
             </div>
             <div>
               <Label>Senha</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
