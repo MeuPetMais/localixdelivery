@@ -54,7 +54,7 @@ export const getFinancialClosing = createServerFn({ method: "GET" })
         .gte("delivered_at", from.toISOString())
         .lt("delivered_at", to.toISOString()),
       sb.from("delivery_drivers")
-        .select("id, name, photo_url, pix_key")
+        .select("id, name, photo_url")
         .eq("restaurant_id", data.restaurantId),
     ]);
 
