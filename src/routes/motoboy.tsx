@@ -122,19 +122,26 @@ function DriverWallet() {
     onSuccess: () => { toast.success("Você saiu da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
-  const collectMut = useMutation({
-    mutationFn: (id: string) => doCollect({ data: { assignmentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const departMut = useMutation({
-    mutationFn: (id: string) => doDepart({ data: { assignmentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
+  // RC6.6 — "Retirar pedido" = coletar + partir (tracking iniciado) em uma ação só.
+  const pickupMut = useMutation({
+    mutationFn: async (input: { id: string; status: string }) => {
+      if (input.status === "ATRIBUIDO") {
+        await doCollect({ data: { assignmentId: input.id } });
+      }
+      await doDepart({ data: { assignmentId: input.id } });
+    },
+    onSuccess: () => {
+      toast.success("Pedido retirado — em entrega 🚴");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const deliverMut = useMutation({
     mutationFn: (id: string) => doDeliver({ data: { assignmentId: id } }),
-    onSuccess: () => { toast.success("Entrega concluída — de volta à fila 🎉"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onSuccess: () => {
+      toast.success("Entrega concluída — de volta à fila 🎉");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -176,10 +183,9 @@ function DriverWallet() {
             onOpenGoals={() => setGoalsOpen(true)}
             onEnter={() => enterMut.mutate()}
             onLeave={() => leaveMut.mutate()}
-            onCollect={(id) => collectMut.mutate(id)}
-            onDepart={(id) => departMut.mutate(id)}
+            onPickup={(id, status) => pickupMut.mutate({ id, status })}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={collectMut.isPending || departMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
+            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
           />
         )}
         {tab === "ganhos" && <EarningsTab dash={dash} goals={goals} onOpenGoals={() => setGoalsOpen(true)} />}
@@ -279,8 +285,7 @@ function HomeTab(props: {
   onOpenGoals: () => void;
   onEnter: () => void;
   onLeave: () => void;
-  onCollect: (id: string) => void;
-  onDepart: (id: string) => void;
+  onPickup: (id: string, status: string) => void;
   onDeliver: (id: string) => void;
   busy?: boolean;
 }) {
@@ -400,8 +405,7 @@ function HomeTab(props: {
       {dash.active && (
         <ActiveDeliveryCard
           active={dash.active}
-          onCollect={props.onCollect}
-          onDepart={props.onDepart}
+          onPickup={props.onPickup}
           onDeliver={props.onDeliver}
           busy={props.busy}
         />
@@ -413,30 +417,32 @@ function HomeTab(props: {
 
 function ActiveDeliveryCard(props: {
   active: NonNullable<Dash["active"]>;
-  onCollect: (id: string) => void;
-  onDepart: (id: string) => void;
+  onPickup: (id: string, status: string) => void;
   onDeliver: (id: string) => void;
   busy?: boolean;
 }) {
   const a = props.active.assignment;
   const o = props.active.order as any;
-  const steps = ["ATRIBUIDO", "COLETANDO", "EM_ROTA", "ENTREGUE"] as const;
-  const idx = steps.indexOf(a.status as any);
-
-  const nextAction = () => {
-    if (a.status === "ATRIBUIDO") return { label: "Coletar pedido", icon: <Package className="h-4 w-4" />, fn: () => props.onCollect(a.id) };
-    if (a.status === "COLETANDO") return { label: "Iniciar entrega", icon: <PlayCircle className="h-4 w-4" />, fn: () => props.onDepart(a.id) };
-    if (a.status === "EM_ROTA") return { label: "Confirmar entrega", icon: <CheckCircle2 className="h-4 w-4" />, fn: () => props.onDeliver(a.id) };
-    return null;
-  };
-  const act = nextAction();
+  // RC6.6 — Fluxo simplificado: Novo pedido → Retirar → Em entrega → Entregue → Retornando (auto-fila)
+  const isNew = a.status === "ATRIBUIDO";
+  const inRoute = a.status === "EM_ROTA" || a.status === "COLETANDO";
   const deliveryEarn = 8 + 1.5 * (a.distance_km ?? 0);
+
+  const mapsUrl = o?.address
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.address)}`
+    : null;
+
+  const badge = isNew
+    ? { label: "🆕 Novo pedido", cls: "bg-primary/10 text-primary" }
+    : inRoute
+    ? { label: "Em entrega", cls: "bg-amber-500/10 text-amber-700" }
+    : { label: "Entrega em andamento", cls: "bg-emerald-500/10 text-emerald-600" };
 
   return (
     <Card className="animate-in slide-in-from-bottom-2 overflow-hidden rounded-3xl border-none bg-card p-5 shadow-md">
       <div className="mb-3 flex items-center justify-between">
-        <Badge className="rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10">Entrega em andamento</Badge>
-        {o?.order_number && <span className="text-xs text-muted-foreground">#{o.order_number}</span>}
+        <Badge className={`rounded-full ${badge.cls} hover:${badge.cls}`}>{badge.label}</Badge>
+        {o?.order_number && <span className="text-xs text-muted-foreground">Pedido #{o.order_number}</span>}
       </div>
       <p className="font-display text-xl font-extrabold">{o?.customer_name ?? "Cliente"}</p>
       {o?.address && (
@@ -455,18 +461,37 @@ function ActiveDeliveryCard(props: {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-1">
-        {steps.map((s, i) => (
-          <div key={s} className={`h-1.5 rounded-full transition-all ${i <= idx ? "bg-primary" : "bg-muted"}`} />
-        ))}
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>Atribuído</span><span>Coletado</span><span>Em rota</span><span>Entregue</span>
-      </div>
+      {mapsUrl && (
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border/60 py-2 text-sm font-semibold hover:bg-muted"
+        >
+          <MapPin className="h-4 w-4" /> Abrir no mapa
+        </a>
+      )}
 
-      {act && (
-        <Button size="lg" className="mt-5 h-14 w-full rounded-2xl text-base font-semibold" onClick={act.fn} disabled={props.busy}>
-          {act.icon}<span className="ml-2">{act.label}</span>
+      {isNew ? (
+        <Button
+          size="lg"
+          className="mt-5 h-14 w-full rounded-2xl text-base font-semibold"
+          onClick={() => props.onPickup(a.id, a.status)}
+          disabled={props.busy}
+        >
+          <Package className="h-4 w-4" />
+          <span className="ml-2">Retirar pedido</span>
+          <ArrowRight className="ml-auto h-4 w-4" />
+        </Button>
+      ) : (
+        <Button
+          size="lg"
+          className="mt-5 h-14 w-full rounded-2xl bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-600/90"
+          onClick={() => props.onDeliver(a.id)}
+          disabled={props.busy}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          <span className="ml-2">Pedido entregue</span>
           <ArrowRight className="ml-auto h-4 w-4" />
         </Button>
       )}
