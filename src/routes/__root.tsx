@@ -159,6 +159,7 @@ const RESERVED_TOP = new Set([
   "inventory", "loyalty", "promotions", "reviews", "suppliers", "units",
   "builders", "r", "featured", "kitchen", "perfil", "print-settings",
   "support", "escolher-ambiente", "pagamentos", "analytics", "relatorios",
+  "entregador", "motoboy",
 ]);
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
