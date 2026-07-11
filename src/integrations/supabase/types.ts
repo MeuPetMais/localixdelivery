@@ -6900,7 +6900,11 @@ export type Database = {
         | "marketing"
         | "analista"
         | "delivery_driver"
-      delivery_driver_status: "ativo" | "inativo" | "afastado"
+      delivery_driver_status:
+        | "ativo"
+        | "inativo"
+        | "afastado"
+        | "aguardando_ativacao"
       delivery_driver_vehicle: "moto" | "bicicleta" | "carro" | "a_pe"
       delivery_queue_status:
         | "AGUARDANDO"
@@ -7164,7 +7168,12 @@ export const Constants = {
         "analista",
         "delivery_driver",
       ],
-      delivery_driver_status: ["ativo", "inativo", "afastado"],
+      delivery_driver_status: [
+        "ativo",
+        "inativo",
+        "afastado",
+        "aguardando_ativacao",
+      ],
       delivery_driver_vehicle: ["moto", "bicicleta", "carro", "a_pe"],
       delivery_queue_status: [
         "AGUARDANDO",
