@@ -71,6 +71,7 @@ import { Route as AuthenticatedEntregasRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
+import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
 import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticated/builders'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
@@ -391,6 +392,11 @@ const AuthenticatedConsultorRoute = AuthenticatedConsultorRouteImport.update({
   path: '/consultor',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCentralRoute = AuthenticatedCentralRouteImport.update({
+  id: '/central',
+  path: '/central',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBuildersRoute = AuthenticatedBuildersRouteImport.update({
   id: '/builders',
   path: '/builders',
@@ -449,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
+  '/central': typeof AuthenticatedCentralRoute
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -517,6 +524,7 @@ export interface FileRoutesByTo {
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
   '/builders': typeof AuthenticatedBuildersRoute
+  '/central': typeof AuthenticatedCentralRoute
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -589,6 +597,7 @@ export interface FileRoutesById {
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/builders': typeof AuthenticatedBuildersRoute
+  '/_authenticated/central': typeof AuthenticatedCentralRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -661,6 +670,7 @@ export interface FileRouteTypes {
     | '/$slug/sobre'
     | '/ai'
     | '/builders'
+    | '/central'
     | '/consultor'
     | '/customers'
     | '/dashboard'
@@ -729,6 +739,7 @@ export interface FileRouteTypes {
     | '/$slug/sobre'
     | '/ai'
     | '/builders'
+    | '/central'
     | '/consultor'
     | '/customers'
     | '/dashboard'
@@ -800,6 +811,7 @@ export interface FileRouteTypes {
     | '/$slug/sobre'
     | '/_authenticated/ai'
     | '/_authenticated/builders'
+    | '/_authenticated/central'
     | '/_authenticated/consultor'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -1317,6 +1329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsultorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/central': {
+      id: '/_authenticated/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof AuthenticatedCentralRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/builders': {
       id: '/_authenticated/builders'
       path: '/builders'
@@ -1372,6 +1391,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBuildersRoute: typeof AuthenticatedBuildersRoute
+  AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
   AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1401,6 +1421,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBuildersRoute: AuthenticatedBuildersRoute,
+  AuthenticatedCentralRoute: AuthenticatedCentralRoute,
   AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
