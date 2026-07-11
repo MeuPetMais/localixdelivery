@@ -33,6 +33,18 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-queue: var(--queue);
+  --color-queue-foreground: var(--queue-foreground);
+  --color-delivery: var(--delivery);
+  --color-delivery-foreground: var(--delivery-foreground);
+  --color-returning: var(--returning);
+  --color-returning-foreground: var(--returning-foreground);
+  --color-offline: var(--offline);
+  --color-offline-foreground: var(--offline-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
