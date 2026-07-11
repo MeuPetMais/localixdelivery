@@ -183,10 +183,9 @@ function DriverWallet() {
             onOpenGoals={() => setGoalsOpen(true)}
             onEnter={() => enterMut.mutate()}
             onLeave={() => leaveMut.mutate()}
-            onCollect={(id) => collectMut.mutate(id)}
-            onDepart={(id) => departMut.mutate(id)}
+            onPickup={(id, status) => pickupMut.mutate({ id, status })}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={collectMut.isPending || departMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
+            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
           />
         )}
         {tab === "ganhos" && <EarningsTab dash={dash} goals={goals} onOpenGoals={() => setGoalsOpen(true)} />}
