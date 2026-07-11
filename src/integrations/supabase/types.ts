@@ -1420,6 +1420,8 @@ export type Database = {
       }
       delivery_drivers: {
         Row: {
+          address_proof_url: string | null
+          cnh_url: string | null
           cpf: string | null
           created_at: string
           document_url: string | null
@@ -1436,10 +1438,13 @@ export type Database = {
           restaurant_id: string
           status: Database["public"]["Enums"]["delivery_driver_status"]
           updated_at: string
+          vehicle_model: string | null
           vehicle_plate: string | null
           vehicle_type: Database["public"]["Enums"]["delivery_driver_vehicle"]
         }
         Insert: {
+          address_proof_url?: string | null
+          cnh_url?: string | null
           cpf?: string | null
           created_at?: string
           document_url?: string | null
@@ -1456,10 +1461,13 @@ export type Database = {
           restaurant_id: string
           status?: Database["public"]["Enums"]["delivery_driver_status"]
           updated_at?: string
+          vehicle_model?: string | null
           vehicle_plate?: string | null
           vehicle_type?: Database["public"]["Enums"]["delivery_driver_vehicle"]
         }
         Update: {
+          address_proof_url?: string | null
+          cnh_url?: string | null
           cpf?: string | null
           created_at?: string
           document_url?: string | null
@@ -1476,6 +1484,7 @@ export type Database = {
           restaurant_id?: string
           status?: Database["public"]["Enums"]["delivery_driver_status"]
           updated_at?: string
+          vehicle_model?: string | null
           vehicle_plate?: string | null
           vehicle_type?: Database["public"]["Enums"]["delivery_driver_vehicle"]
         }

@@ -31,6 +31,7 @@ import {
 import { registerDriverServiceWorker } from "@/lib/pwa-driver";
 import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 import { DriverWalletTab } from "@/components/driver/DriverWalletTab";
+import { DriverProfileTab } from "@/components/driver/DriverProfileTab";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -193,7 +194,7 @@ function DriverWallet() {
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
-        {tab === "perfil" && <ProfileTab dash={dash} />}
+        {tab === "perfil" && <DriverProfileTab driver={dash.driver as any} />}
       </div>
 
       {goalsOpen && driver && (
@@ -750,116 +751,7 @@ function AchievementsCard(props: { dash: Dash }) {
   );
 }
 
-/* ---------- Perfil ---------- */
-
-function ProfileTab(props: { dash: Dash }) {
-  const d = props.dash.driver;
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPassword, setChangingPassword] = useState(false);
-  const days = Math.max(0, Math.round((Date.now() - new Date(d.created_at).getTime()) / 86400000));
-
-  async function handleChangePassword() {
-    if (newPassword.length < 8) return toast.error("A senha precisa ter ao menos 8 caracteres");
-    if (newPassword !== confirmPassword) return toast.error("As senhas não coincidem");
-    setChangingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      setNewPassword("");
-      setConfirmPassword("");
-      setChangePasswordOpen(false);
-      toast.success("Senha alterada");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setChangingPassword(false);
-    }
-  }
-
-  return (
-    <div className="animate-in fade-in space-y-4">
-      <Card className="flex flex-col items-center rounded-3xl border-none p-6 shadow-sm">
-        <div className="h-20 w-20 overflow-hidden rounded-full bg-muted">
-          {d.photo_url ? (
-            <img src={d.photo_url} alt={d.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-muted-foreground">
-              {d.name.slice(0, 1).toUpperCase()}
-            </div>
-          )}
-        </div>
-        <p className="mt-3 font-display text-xl font-extrabold">{d.name}</p>
-        <p className="text-sm text-muted-foreground flex items-center gap-1">
-          <Bike className="h-3 w-3" /> {d.vehicle_type}{d.vehicle_plate ? ` • ${d.vehicle_plate}` : ""}
-        </p>
-        <Badge variant="outline" className="mt-2 capitalize">{d.status}</Badge>
-      </Card>
-
-      <Card className="rounded-2xl border-none p-4 text-sm shadow-sm">
-        <RowKV k="Telefone" v={d.phone ?? "—"} />
-        <RowKV k="E-mail" v={d.email ?? "—"} />
-        <RowKV k="Placa" v={d.vehicle_plate ?? "—"} />
-        <RowKV k="Dias na plataforma" v={`${days} dia(s)`} />
-      </Card>
-
-      <Card className="rounded-2xl border-none p-4 shadow-sm">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between text-left text-sm font-semibold"
-          onClick={() => setChangePasswordOpen((open) => !open)}
-          aria-expanded={changePasswordOpen}
-        >
-          Alterar senha
-          <ChevronRight className={`h-4 w-4 transition-transform ${changePasswordOpen ? "rotate-90" : ""}`} />
-        </button>
-        {changePasswordOpen && (
-          <div className="mt-4 space-y-3">
-            <div>
-              <Label>Nova senha</Label>
-              <PasswordInput
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <Label>Confirmar nova senha</Label>
-              <PasswordInput
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repita a nova senha"
-                autoComplete="new-password"
-              />
-            </div>
-            <Button className="w-full rounded-2xl" onClick={handleChangePassword} disabled={changingPassword}>
-              <Save className="mr-2 h-4 w-4" /> {changingPassword ? "Salvando..." : "Salvar nova senha"}
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      <Card className="rounded-2xl border-none p-4 shadow-sm">
-        <p className="mb-3 text-sm font-semibold">Aplicativo</p>
-        <PwaInstallButton />
-      </Card>
-
-      <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>
-        <LogOut className="mr-2 h-4 w-4" /> Sair
-      </Button>
-    </div>
-  );
-}
-function RowKV(props: { k: string; v: string }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border/40 py-2 last:border-0">
-      <span className="text-muted-foreground text-xs">{props.k}</span>
-      <span className="font-semibold text-sm">{props.v}</span>
-    </div>
-  );
-}
+/* ---------- Perfil movido para components/driver/DriverProfileTab.tsx (RC6.8) ---------- */
 
 /* ---------- Goals sheet ---------- */
 
