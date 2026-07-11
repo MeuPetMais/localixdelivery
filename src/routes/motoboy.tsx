@@ -285,8 +285,7 @@ function HomeTab(props: {
   onOpenGoals: () => void;
   onEnter: () => void;
   onLeave: () => void;
-  onCollect: (id: string) => void;
-  onDepart: (id: string) => void;
+  onPickup: (id: string, status: string) => void;
   onDeliver: (id: string) => void;
   busy?: boolean;
 }) {
