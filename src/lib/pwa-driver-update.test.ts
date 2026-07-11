@@ -1,12 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { checkForDriverAppUpdate } from "./pwa-driver-update";
 
+const setNav = (v: unknown) => {
+  (globalThis as any).navigator = v;
+};
+
 describe("checkForDriverAppUpdate", () => {
-  const originalNavigator = globalThis.navigator;
+  const originalNavigator = (globalThis as any).navigator;
 
   afterEach(() => {
-    // @ts-expect-error restore
-    globalThis.navigator = originalNavigator;
+    setNav(originalNavigator);
   });
 
   it("returns 'unsupported' when serviceWorker is missing", async () => {
