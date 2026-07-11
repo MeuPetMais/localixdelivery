@@ -306,6 +306,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
         bestDay,
         bestWeek,
         bestMonth,
+        dailySeries,
       },
       stats: {
         avgAssignToDelivered: avgMinutes(year, "assigned_at", "delivered_at"),
