@@ -284,6 +284,7 @@ function DriversPage() {
               key={d.id}
               driver={d}
               presence={d._presence}
+              restaurantName={restaurant.name}
               onView={() => setViewing(d)}
               onEdit={() => setEditing(d)}
               onToggle={() =>
@@ -296,6 +297,7 @@ function DriversPage() {
                 if (confirm(`Remover ${d.name}?`)) removeMut.mutate(d.id);
               }}
             />
+
           ))}
         </section>
       )}
