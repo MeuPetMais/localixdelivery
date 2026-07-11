@@ -2,9 +2,11 @@
 // Sem regras de negócio: apenas formatação, validação leve e montagem
 // de mensagens/links. Nenhuma dependência de rede ou banco.
 
-/** URL oficial de ativação (documente aqui — não hardcode espalhado). */
-export const DRIVER_ACTIVATION_URL = "https://motoboy.localix.com.br";
-/** URL alternativa dentro do próprio app (fallback web). */
+/** URL oficial de ativação (landing publicada dentro do app principal).
+ *  Enquanto `motoboy.localix.com.br` não estiver conectado à Lovable
+ *  (DNS apontando para 185.158.133.1), usamos o custom domain já ativo. */
+export const DRIVER_ACTIVATION_URL = "https://app.rngdigital.com.br/entregador";
+/** Caminho relativo dentro do próprio app (fallback web). */
 export const DRIVER_ACTIVATION_APP_URL = "/entregador";
 
 /* -------------------- Máscaras -------------------- */
