@@ -427,6 +427,43 @@ function DriverCard({
           </p>
         )}
 
+        {presence === "awaiting_activation" && (
+          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">
+              Cadastro concluído. Conta ainda não ativada.
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              Envie o convite para o entregador ativar a conta pelo app.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                size="sm" variant="default"
+                onClick={() => {
+                  const url = buildWhatsAppUrl({
+                    phone: driver.phone ?? "",
+                    driverName: driver.name,
+                    restaurantName,
+                  });
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <MessageCircle className="mr-1 h-3.5 w-3.5" /> Enviar convite
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(DRIVER_ACTIVATION_URL);
+                    toast.success("Link copiado");
+                  } catch { toast.error("Não foi possível copiar"); }
+                }}
+              >
+                <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 flex items-center justify-between gap-2">
           <Button size="sm" variant="outline" onClick={onView} className="flex-1">
             <Eye className="mr-1 h-4 w-4" /> Detalhes
@@ -439,6 +476,7 @@ function DriverCard({
           </Button>
           <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Remover">
             <Trash2 className="h-4 w-4 text-destructive" />
+
           </Button>
         </div>
       </div>
