@@ -53,8 +53,8 @@ export function DriverWalletTab({ earnings, history }: Props) {
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-80">
           <Wallet className="h-3.5 w-3.5" /> Saldo disponível
         </div>
-        <p className="mt-2 font-display text-4xl font-extrabold">{BRL(earnings.today + earnings.week + earnings.month - earnings.week - earnings.month + earnings.week)}</p>
-        <p className="mt-1 text-xs opacity-80">Estimativa da semana em curso</p>
+        <p className="mt-2 font-display text-4xl font-extrabold">{BRL(earnings.week)}</p>
+        <p className="mt-1 text-xs opacity-80">Ganhos da semana em curso</p>
       </Card>
 
       {/* KPIs Hoje / Semana / Mês */}
