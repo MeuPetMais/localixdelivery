@@ -275,6 +275,9 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
         inQueue: !!myEntry,
         waitingSince,
         status: queueStatus,
+        nextDepartureMin: myPosition
+          ? Math.max(1, myPosition * (restaurant?.avg_pickup_minutes ?? 4))
+          : null,
       },
       active: active ? { assignment: active, order: activeOrder } : null,
       earnings: {
