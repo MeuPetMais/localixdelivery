@@ -76,6 +76,10 @@ describe("driver login resolver", () => {
     expect(resolveDriverLoginEmail(rows, "11122233344")).toBe("driver@example.com");
   });
 
+  it("resolves active driver login with phone even when typed with country code", () => {
+    expect(resolveDriverLoginEmail(rows, "+55 (11) 99999-8888")).toBe("driver@example.com");
+  });
+
   it("does not resolve invalid or inactive driver credentials", () => {
     expect(resolveDriverLoginEmail(rows, "00000000000")).toBeNull();
     expect(resolveDriverLoginEmail(rows, "55566677788")).toBeNull();
