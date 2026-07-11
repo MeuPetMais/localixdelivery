@@ -194,7 +194,7 @@ function DriverWallet() {
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
-        {tab === "perfil" && <ProfileTab dash={dash} />}
+        {tab === "perfil" && <DriverProfileTab driver={dash.driver as any} />}
       </div>
 
       {goalsOpen && driver && (
