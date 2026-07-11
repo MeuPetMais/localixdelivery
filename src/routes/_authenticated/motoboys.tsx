@@ -48,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/motoboys")({
 });
 
 type Vehicle = "moto" | "bicicleta" | "carro" | "a_pe";
-type DriverStatus = "ativo" | "inativo" | "afastado";
+type DriverStatus = "ativo" | "inativo" | "afastado" | "aguardando_ativacao";
 
 type Driver = {
   id: string; name: string; phone: string | null; email: string | null;
@@ -71,12 +71,14 @@ function VehicleIcon({ v, className }: { v: Vehicle; className?: string }) {
 }
 
 /* ============ STATUS =============
- * 🟢 Online 🔵 Em entrega 🟡 Retornando 🟠 Pausa ⚪ Offline 🔴 Inativo
- * Baseado em: driver.status + driver.online (dados disponíveis atualmente).
+ * 🟢 Online 🔵 Em entrega 🟡 Retornando 🟠 Pausa ⚪ Offline 🔴 Inativo 🟡 Aguardando ativação
  */
-type PresenceState = "online" | "delivering" | "returning" | "paused" | "offline" | "inactive";
+type PresenceState =
+  | "online" | "delivering" | "returning" | "paused"
+  | "offline" | "inactive" | "awaiting_activation";
 
 function derivePresence(d: Driver): PresenceState {
+  if (d.status === "aguardando_ativacao") return "awaiting_activation";
   if (d.status === "inativo") return "inactive";
   if (d.status === "afastado") return "paused";
   if (d.online) return "online";
@@ -84,13 +86,15 @@ function derivePresence(d: Driver): PresenceState {
 }
 
 const PRESENCE_META: Record<PresenceState, { label: string; dot: string; text: string; bg: string; ring: string }> = {
-  online:     { label: "Online",      dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
-  delivering: { label: "Em entrega",  dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-400",         bg: "bg-sky-500/10",     ring: "ring-sky-500/30" },
-  returning:  { label: "Retornando",  dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/10",   ring: "ring-amber-400/30" },
-  paused:     { label: "Pausa",       dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-400",   bg: "bg-orange-500/10",  ring: "ring-orange-500/30" },
-  offline:    { label: "Offline",     dot: "bg-muted-foreground/50", text: "text-muted-foreground",          bg: "bg-muted",          ring: "ring-border" },
-  inactive:   { label: "Inativo",     dot: "bg-red-500",     text: "text-red-700 dark:text-red-400",         bg: "bg-red-500/10",     ring: "ring-red-500/30" },
+  online:              { label: "Online",              dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
+  delivering:          { label: "Em entrega",          dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-400",         bg: "bg-sky-500/10",     ring: "ring-sky-500/30" },
+  returning:           { label: "Retornando",          dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/10",   ring: "ring-amber-400/30" },
+  paused:              { label: "Pausa",               dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-400",   bg: "bg-orange-500/10",  ring: "ring-orange-500/30" },
+  offline:             { label: "Offline",             dot: "bg-muted-foreground/50", text: "text-muted-foreground",          bg: "bg-muted",          ring: "ring-border" },
+  inactive:            { label: "Inativo",             dot: "bg-red-500",     text: "text-red-700 dark:text-red-400",         bg: "bg-red-500/10",     ring: "ring-red-500/30" },
+  awaiting_activation: { label: "Aguardando ativação", dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/15",   ring: "ring-amber-400/40" },
 };
+
 
 function StatusPill({ state }: { state: PresenceState }) {
   const m = PRESENCE_META[state];
