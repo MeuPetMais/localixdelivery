@@ -24,7 +24,7 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  listDrivers, createDriver, updateDriver, deleteDriver,
+  listDrivers, updateDriver, deleteDriver,
 } from "@/lib/delivery-drivers.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
 
