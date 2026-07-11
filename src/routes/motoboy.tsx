@@ -189,7 +189,7 @@ function DriverWallet() {
             busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
           />
         )}
-        {tab === "ganhos" && <EarningsTab dash={dash} goals={goals} onOpenGoals={() => setGoalsOpen(true)} />}
+        {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />}
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
