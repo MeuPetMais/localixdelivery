@@ -226,12 +226,13 @@ function DriversPage() {
       {/* STATS */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard icon={Users} label="Cadastrados" value={stats.total} />
+        <StatCard icon={Clock} label="Aguardando" value={stats.awaiting} tone="amber" />
         <StatCard icon={Wifi} label="Online" value={stats.online} tone="emerald" />
         <StatCard icon={Package} label="Em entrega" value={stats.delivering} tone="sky" />
         <StatCard icon={ArrowLeft} label="Retornando" value={stats.returning} tone="amber" />
-        <StatCard icon={Clock} label="Em pausa" value={stats.paused} tone="orange" />
         <StatCard icon={ShieldCheck} label="Offline" value={stats.offline} tone="muted" />
       </section>
+
 
       {/* SEARCH + FILTERS */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
