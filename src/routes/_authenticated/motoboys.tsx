@@ -102,10 +102,20 @@ function DriversPage() {
   const remove = useServerFn(deleteDriver);
 
   const queryKey = ["delivery-drivers", restaurant.id] as const;
-  const { data: drivers = [], isLoading } = useQuery({
+  const { data: drivers = [], isLoading, error: listError } = useQuery({
     queryKey,
     queryFn: () => list({ data: { restaurantId: restaurant.id } }),
+    enabled: !!restaurant.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: 1,
   });
+  useEffect(() => {
+    if (listError) {
+      console.error("[motoboys] listDrivers error", listError);
+      toast.error("Falha ao carregar motoboys: " + (listError as Error).message);
+    }
+  }, [listError]);
 
   useEffect(() => {
     const ch = supabase
@@ -151,17 +161,33 @@ function DriversPage() {
 
   const createMut = useMutation({
     mutationFn: (data: any) => create({ data }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: async () => {
+      toast.success("Motoboy cadastrado com sucesso");
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
+    onError: (e: Error) => {
+      console.error("[motoboys] createDriver error", e);
+      toast.error(e.message);
+    },
   });
   const updateMut = useMutation({
     mutationFn: (data: any) => update({ data }),
-    onSuccess: () => { toast.success("Motoboy atualizado"); setEditing(null); qc.invalidateQueries({ queryKey }); },
+    onSuccess: async () => {
+      toast.success("Motoboy atualizado");
+      setEditing(null);
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const removeMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id, restaurantId: restaurant.id } }),
-    onSuccess: () => { toast.success("Motoboy removido"); qc.invalidateQueries({ queryKey }); },
+    onSuccess: async () => {
+      toast.success("Motoboy removido");
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
