@@ -7,6 +7,7 @@ import {
   Bike, Car, Footprints, Search, Plus, Trash2, Pencil, MapPin, Users,
   Wifi, Package, Clock, ArrowLeft, ArrowRight, Check, Upload, X, Eye,
   UserPlus, ShieldCheck, IdCard, Camera, Loader2, Phone,
+  MessageCircle, Copy, Share2, FileText, Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -28,6 +32,12 @@ import {
 } from "@/lib/delivery-drivers.functions";
 import { registerDriverPending } from "@/lib/driver-activation.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
+import {
+  maskCPF, maskPhoneBR, isValidCPF, isValidPhoneBR,
+  buildWhatsAppUrl, buildInviteMessage,
+  DRIVER_ACTIVATION_URL,
+} from "@/lib/driver-invite";
+
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
   head: () => ({ meta: [
@@ -38,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/motoboys")({
 });
 
 type Vehicle = "moto" | "bicicleta" | "carro" | "a_pe";
-type DriverStatus = "ativo" | "inativo" | "afastado";
+type DriverStatus = "ativo" | "inativo" | "afastado" | "aguardando_ativacao";
 
 type Driver = {
   id: string; name: string; phone: string | null; email: string | null;
@@ -61,12 +71,14 @@ function VehicleIcon({ v, className }: { v: Vehicle; className?: string }) {
 }
 
 /* ============ STATUS =============
- * 🟢 Online 🔵 Em entrega 🟡 Retornando 🟠 Pausa ⚪ Offline 🔴 Inativo
- * Baseado em: driver.status + driver.online (dados disponíveis atualmente).
+ * 🟢 Online 🔵 Em entrega 🟡 Retornando 🟠 Pausa ⚪ Offline 🔴 Inativo 🟡 Aguardando ativação
  */
-type PresenceState = "online" | "delivering" | "returning" | "paused" | "offline" | "inactive";
+type PresenceState =
+  | "online" | "delivering" | "returning" | "paused"
+  | "offline" | "inactive" | "awaiting_activation";
 
 function derivePresence(d: Driver): PresenceState {
+  if (d.status === "aguardando_ativacao") return "awaiting_activation";
   if (d.status === "inativo") return "inactive";
   if (d.status === "afastado") return "paused";
   if (d.online) return "online";
@@ -74,13 +86,15 @@ function derivePresence(d: Driver): PresenceState {
 }
 
 const PRESENCE_META: Record<PresenceState, { label: string; dot: string; text: string; bg: string; ring: string }> = {
-  online:     { label: "Online",      dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
-  delivering: { label: "Em entrega",  dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-400",         bg: "bg-sky-500/10",     ring: "ring-sky-500/30" },
-  returning:  { label: "Retornando",  dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/10",   ring: "ring-amber-400/30" },
-  paused:     { label: "Pausa",       dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-400",   bg: "bg-orange-500/10",  ring: "ring-orange-500/30" },
-  offline:    { label: "Offline",     dot: "bg-muted-foreground/50", text: "text-muted-foreground",          bg: "bg-muted",          ring: "ring-border" },
-  inactive:   { label: "Inativo",     dot: "bg-red-500",     text: "text-red-700 dark:text-red-400",         bg: "bg-red-500/10",     ring: "ring-red-500/30" },
+  online:              { label: "Online",              dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
+  delivering:          { label: "Em entrega",          dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-400",         bg: "bg-sky-500/10",     ring: "ring-sky-500/30" },
+  returning:           { label: "Retornando",          dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/10",   ring: "ring-amber-400/30" },
+  paused:              { label: "Pausa",               dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-400",   bg: "bg-orange-500/10",  ring: "ring-orange-500/30" },
+  offline:             { label: "Offline",             dot: "bg-muted-foreground/50", text: "text-muted-foreground",          bg: "bg-muted",          ring: "ring-border" },
+  inactive:            { label: "Inativo",             dot: "bg-red-500",     text: "text-red-700 dark:text-red-400",         bg: "bg-red-500/10",     ring: "ring-red-500/30" },
+  awaiting_activation: { label: "Aguardando ativação", dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/15",   ring: "ring-amber-400/40" },
 };
+
 
 function StatusPill({ state }: { state: PresenceState }) {
   const m = PRESENCE_META[state];
@@ -157,8 +171,10 @@ function DriversPage() {
     const returning = enriched.filter((d) => d._presence === "returning").length;
     const paused = enriched.filter((d) => d._presence === "paused").length;
     const offline = enriched.filter((d) => d._presence === "offline" || d._presence === "inactive").length;
-    return { total, online, delivering, returning, paused, offline };
+    const awaiting = enriched.filter((d) => d._presence === "awaiting_activation").length;
+    return { total, online, delivering, returning, paused, offline, awaiting };
   }, [enriched]);
+
 
   const createMut = useMutation({
     mutationFn: (data: any) => create({ data }),
@@ -210,12 +226,13 @@ function DriversPage() {
       {/* STATS */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard icon={Users} label="Cadastrados" value={stats.total} />
+        <StatCard icon={Clock} label="Aguardando" value={stats.awaiting} tone="amber" />
         <StatCard icon={Wifi} label="Online" value={stats.online} tone="emerald" />
         <StatCard icon={Package} label="Em entrega" value={stats.delivering} tone="sky" />
         <StatCard icon={ArrowLeft} label="Retornando" value={stats.returning} tone="amber" />
-        <StatCard icon={Clock} label="Em pausa" value={stats.paused} tone="orange" />
         <StatCard icon={ShieldCheck} label="Offline" value={stats.offline} tone="muted" />
       </section>
+
 
       {/* SEARCH + FILTERS */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -231,12 +248,14 @@ function DriversPage() {
         <div className="-mx-1 flex gap-1 overflow-x-auto pb-1 sm:mx-0">
           {([
             ["all", "Todos"],
+            ["awaiting_activation", "Aguardando ativação"],
             ["online", "Online"],
             ["delivering", "Em entrega"],
             ["returning", "Retornando"],
             ["paused", "Pausa"],
             ["offline", "Offline"],
           ] as const).map(([id, label]) => (
+
             <Button
               key={id}
               variant={filter === id ? "default" : "outline"}
@@ -265,6 +284,7 @@ function DriversPage() {
               key={d.id}
               driver={d}
               presence={d._presence}
+              restaurantName={restaurant.name}
               onView={() => setViewing(d)}
               onEdit={() => setEditing(d)}
               onToggle={() =>
@@ -277,6 +297,7 @@ function DriversPage() {
                 if (confirm(`Remover ${d.name}?`)) removeMut.mutate(d.id);
               }}
             />
+
           ))}
         </section>
       )}
@@ -287,11 +308,13 @@ function DriversPage() {
           open
           onClose={() => setCreating(false)}
           restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
           onSubmit={async (form) => {
             await createMut.mutateAsync({ ...form, restaurantId: restaurant.id });
           }}
         />
       )}
+
       {editing && (
         <EditDialog
           open
@@ -345,11 +368,12 @@ function StatCard({
 }
 
 function DriverCard({
-  driver, presence, onView, onEdit, onToggle, onDelete,
+  driver, presence, restaurantName, onView, onEdit, onToggle, onDelete,
 }: {
-  driver: Driver; presence: PresenceState;
+  driver: Driver; presence: PresenceState; restaurantName: string;
   onView: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void;
 }) {
+
   const meta = PRESENCE_META[presence];
   const online = presence === "online" || presence === "delivering" || presence === "returning";
   const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
@@ -403,6 +427,43 @@ function DriverCard({
           </p>
         )}
 
+        {presence === "awaiting_activation" && (
+          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">
+              Cadastro concluído. Conta ainda não ativada.
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              Envie o convite para o entregador ativar a conta pelo app.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                size="sm" variant="default"
+                onClick={() => {
+                  const url = buildWhatsAppUrl({
+                    phone: driver.phone ?? "",
+                    driverName: driver.name,
+                    restaurantName,
+                  });
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <MessageCircle className="mr-1 h-3.5 w-3.5" /> Enviar convite
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(DRIVER_ACTIVATION_URL);
+                    toast.success("Link copiado");
+                  } catch { toast.error("Não foi possível copiar"); }
+                }}
+              >
+                <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 flex items-center justify-between gap-2">
           <Button size="sm" variant="outline" onClick={onView} className="flex-1">
             <Eye className="mr-1 h-4 w-4" /> Detalhes
@@ -415,6 +476,7 @@ function DriverCard({
           </Button>
           <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Remover">
             <Trash2 className="h-4 w-4 text-destructive" />
+
           </Button>
         </div>
       </div>
@@ -495,9 +557,9 @@ const emptyForm: WizardForm = {
 };
 
 function WizardDialog({
-  open, onClose, restaurantId, onSubmit,
+  open, onClose, restaurantId, restaurantName, onSubmit,
 }: {
-  open: boolean; onClose: () => void; restaurantId: string;
+  open: boolean; onClose: () => void; restaurantId: string; restaurantName: string;
   onSubmit: (data: {
     name: string; phone: string; cpf: string;
     vehicleType: Vehicle; vehiclePlate: string | null;
@@ -510,29 +572,25 @@ function WizardDialog({
 
   const reset = () => { setF(emptyForm); setStep(1); };
 
-  const validateStep = (): string | null => {
-    if (step === 1) {
-      if (f.name.trim().length < 2) return "Informe o nome completo do entregador";
-      if (f.cpf.replace(/\D/g, "").length < 11) return "Informe um CPF válido";
-      if (f.phone.replace(/\D/g, "").length < 10) return "Informe um telefone válido";
-    }
-    if (step === 2) {
-      if (!f.vehicleType) return "Selecione o tipo de veículo";
-    }
-    return null;
-  };
+  const personalErrors = useMemo(() => ({
+    name: f.name.trim().length < 2 ? "Informe o nome completo" : null,
+    cpf: !f.cpf ? "CPF obrigatório" : (!isValidCPF(f.cpf) ? "CPF inválido" : null),
+    phone: !f.phone ? "Telefone obrigatório" : (!isValidPhoneBR(f.phone) ? "Telefone inválido" : null),
+  }), [f.name, f.cpf, f.phone]);
+
+  const step1Valid = !personalErrors.name && !personalErrors.cpf && !personalErrors.phone;
+  const step2Valid = !!f.vehicleType;
+
+  const canProceed = step === 1 ? step1Valid : step === 2 ? step2Valid : true;
 
   const next = () => {
-    const err = validateStep();
-    if (err) { toast.error(err); return; }
+    if (!canProceed) return;
     setStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
   };
 
   const submit = async () => {
     setSaving(true);
     try {
-      // RC5.4 — Restaurante NÃO cria login/senha. A conta é ativada pelo
-      // próprio entregador em /entregador/ativar (app Localix Entregador).
       await onSubmit({
         name: f.name.trim(),
         phone: f.phone.trim(),
@@ -549,7 +607,6 @@ function WizardDialog({
       setSaving(false);
     }
   };
-
 
   const progress = step === 4 ? 100 : (step / 3) * 100;
   const stepLabel = step === 1 ? "Dados pessoais" : step === 2 ? "Veículo" : "Documentação";
@@ -575,10 +632,16 @@ function WizardDialog({
         </DialogHeader>
 
         <div className="max-h-[65vh] overflow-y-auto p-6">
-          {step === 1 && <StepPersonal f={f} setF={setF} />}
+          {step === 1 && <StepPersonal f={f} setF={setF} errors={personalErrors} />}
           {step === 2 && <StepVehicle f={f} setF={setF} />}
           {step === 3 && <StepDocuments f={f} setF={setF} restaurantId={restaurantId} />}
-          {step === 4 && <StepSuccess />}
+          {step === 4 && (
+            <StepSuccess
+              driverName={f.name.trim()}
+              driverPhone={f.phone.trim()}
+              restaurantName={restaurantName}
+            />
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t p-4">
@@ -601,7 +664,9 @@ function WizardDialog({
                 {step === 1 ? "Cancelar" : (<><ArrowLeft className="mr-1 h-4 w-4" /> Voltar</>)}
               </Button>
               {step < 3 ? (
-                <Button onClick={next}>Próximo <ArrowRight className="ml-1 h-4 w-4" /></Button>
+                <Button onClick={next} disabled={!canProceed}>
+                  Próximo <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
               ) : (
                 <Button onClick={submit} disabled={saving}>
                   {saving ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Salvando…</>) : (<><Check className="mr-1 h-4 w-4" /> Cadastrar entregador</>)}
@@ -615,26 +680,52 @@ function WizardDialog({
   );
 }
 
-function StepPersonal({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => void }) {
+function StepPersonal({
+  f, setF, errors,
+}: {
+  f: WizardForm; setF: (v: WizardForm) => void;
+  errors: { name: string | null; cpf: string | null; phone: string | null };
+}) {
   return (
     <div className="grid gap-4 animate-in fade-in slide-in-from-right-2 duration-200">
       <div className="grid gap-1.5">
-        <Label>Nome completo *</Label>
-        <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="João da Silva" />
+        <Label htmlFor="drv-name">Nome completo *</Label>
+        <Input
+          id="drv-name"
+          value={f.name}
+          onChange={(e) => setF({ ...f, name: e.target.value })}
+          placeholder="João da Silva"
+          aria-invalid={!!errors.name}
+        />
+        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
-          <Label>Telefone</Label>
-          <Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="(11) 90000-0000" />
+          <Label htmlFor="drv-phone">Telefone *</Label>
+          <Input
+            id="drv-phone" inputMode="tel"
+            value={f.phone}
+            onChange={(e) => setF({ ...f, phone: maskPhoneBR(e.target.value) })}
+            placeholder="(11) 90000-0000"
+            aria-invalid={!!errors.phone}
+          />
+          {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
         </div>
         <div className="grid gap-1.5">
-          <Label>CPF</Label>
-          <Input value={f.cpf} onChange={(e) => setF({ ...f, cpf: e.target.value })} placeholder="000.000.000-00" />
+          <Label htmlFor="drv-cpf">CPF *</Label>
+          <Input
+            id="drv-cpf" inputMode="numeric"
+            value={f.cpf}
+            onChange={(e) => setF({ ...f, cpf: maskCPF(e.target.value) })}
+            placeholder="000.000.000-00"
+            aria-invalid={!!errors.cpf}
+          />
+          {errors.cpf && <p className="text-xs text-destructive">{errors.cpf}</p>}
         </div>
       </div>
       <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-xs text-muted-foreground">
         As credenciais de acesso serão criadas pelo próprio entregador no
-        aplicativo <span className="font-semibold text-foreground">Localix Motoboy</span> após
+        aplicativo <span className="font-semibold text-foreground">Localix Entregador</span> após
         o cadastro ser concluído.
       </div>
     </div>
@@ -693,30 +784,28 @@ function StepDocuments({
   f, setF, restaurantId,
 }: { f: WizardForm; setF: (v: WizardForm) => void; restaurantId: string }) {
   return (
-    <div className="grid gap-5 animate-in fade-in slide-in-from-right-2 duration-200">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <UploadTile
-          label="Foto do Entregador"
-          description="Envie uma foto para identificação do entregador."
-          icon={Camera} kind="photo"
-          value={f.photoUrl} onChange={(url) => setF({ ...f, photoUrl: url })}
-          restaurantId={restaurantId}
-        />
-        <UploadTile
-          label="CNH"
-          description="Envie a frente da Carteira Nacional de Habilitação."
-          icon={IdCard} kind="cnh"
-          value={f.cnhUrl} onChange={(url) => setF({ ...f, cnhUrl: url })}
-          restaurantId={restaurantId}
-        />
-        <UploadTile
-          label="Comprovante de Endereço"
-          description="Conta de água, energia, telefone ou outro comprovante recente."
-          icon={ShieldCheck} kind="document"
-          value={f.addressProofUrl} onChange={(url) => setF({ ...f, addressProofUrl: url })}
-          restaurantId={restaurantId}
-        />
-      </div>
+    <div className="grid gap-3 animate-in fade-in slide-in-from-right-2 duration-200">
+      <DocumentRow
+        label="Foto do Entregador"
+        description="Foto nítida para identificação do entregador."
+        icon={Camera} kind="photo"
+        value={f.photoUrl} onChange={(url) => setF({ ...f, photoUrl: url })}
+        restaurantId={restaurantId}
+      />
+      <DocumentRow
+        label="CNH"
+        description="Frente da Carteira Nacional de Habilitação."
+        icon={IdCard} kind="cnh"
+        value={f.cnhUrl} onChange={(url) => setF({ ...f, cnhUrl: url })}
+        restaurantId={restaurantId}
+      />
+      <DocumentRow
+        label="Comprovante de Endereço"
+        description="Conta de água, energia, telefone ou equivalente."
+        icon={Home} kind="document"
+        value={f.addressProofUrl} onChange={(url) => setF({ ...f, addressProofUrl: url })}
+        restaurantId={restaurantId}
+      />
       <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
         Os documentos enviados são utilizados exclusivamente para validação do
         cadastro e permanecem protegidos conforme a política de privacidade da
@@ -726,11 +815,11 @@ function StepDocuments({
   );
 }
 
-function UploadTile({
+function DocumentRow({
   label, description, icon: Icon, value, onChange, restaurantId, kind,
 }: {
   label: string;
-  description?: string;
+  description: string;
   icon: React.ComponentType<{ className?: string }>;
   value: string; onChange: (url: string) => void;
   restaurantId: string;
@@ -738,21 +827,27 @@ function UploadTile({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [fileMeta, setFileMeta] = useState<{ name: string; size: number; type: string } | null>(null);
 
   const pick = () => inputRef.current?.click();
+
   const onFile = async (file?: File | null) => {
     if (!file) return;
-    setBusy(true);
+    setBusy(true); setProgress(10);
+    const tick = setInterval(() => setProgress((p) => Math.min(p + 8, 85)), 120);
     try {
       const url = await uploadDriverAsset(file, restaurantId, kind);
       onChange(url);
-      setFileMeta({ name: file.name, size: file.size });
+      setFileMeta({ name: file.name, size: file.size, type: file.type });
+      setProgress(100);
       toast.success(`${label} enviado`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
+      clearInterval(tick);
       setBusy(false);
+      setTimeout(() => setProgress(0), 400);
     }
   };
 
@@ -764,83 +859,253 @@ function UploadTile({
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
+  const isImage = (fileMeta?.type ?? "").startsWith("image/") || !!value && !fileMeta;
+
   return (
-    <div className="grid gap-2">
-      <div>
-        <Label className="text-sm font-semibold">{label}</Label>
-        {description && (
-          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{description}</p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={pick}
-        aria-label={value ? `Trocar ${label}` : `Enviar ${label}`}
-        className={cn(
-          "group relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          value ? "border-transparent" : "hover:border-primary hover:bg-primary/5",
-        )}
-      >
-        {value ? (
-          <>
-            <img src={value} alt={label} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <div className="flex h-full items-center justify-center gap-2 text-white">
-                <Upload className="h-4 w-4" /> Trocar
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Icon className="h-6 w-6" />}
-            <span className="text-xs">{busy ? "Enviando…" : "Selecionar arquivo"}</span>
-          </div>
-        )}
-      </button>
-      {value && (
-        <div className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
-          <div className="min-w-0">
-            <p className="truncate font-medium">{fileMeta?.name ?? "Arquivo enviado"}</p>
-            {fileMeta && <p className="text-muted-foreground">{humanSize(fileMeta.size)}</p>}
-          </div>
-          <Button size="sm" variant="ghost" onClick={remove} className="h-7 px-2">
-            <X className="mr-1 h-3.5 w-3.5" /> Remover
-          </Button>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/40">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
         </div>
-      )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold">{label}</p>
+            {value ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <Check className="h-3 w-3" /> Enviado
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                Pendente
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
+          {value && fileMeta && (
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {fileMeta.name} • {humanSize(fileMeta.size)}
+            </p>
+          )}
+          {busy && <Progress value={progress} className="mt-2 h-1" />}
+        </div>
+
+        {value && (
+          <div className="hidden h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-muted sm:block">
+            {isImage ? (
+              <img src={value} alt={label} className="h-full w-full object-cover" />
+            ) : (
+              <div className="grid h-full w-full place-items-center text-muted-foreground">
+                <FileText className="h-5 w-5" />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex shrink-0 items-center gap-1">
+          {value && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" aria-label={`Visualizar ${label}`} asChild>
+                    <a href={value} target="_blank" rel="noreferrer">
+                      <Eye className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Visualizar</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" aria-label={`Substituir ${label}`} onClick={pick} disabled={busy}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Substituir</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" aria-label={`Remover ${label}`} onClick={remove}>
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Remover</TooltipContent>
+              </Tooltip>
+            </>
+          )}
+          {!value && (
+            <Button size="sm" onClick={pick} disabled={busy}>
+              {busy
+                ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…</>)
+                : (<><Upload className="mr-1 h-4 w-4" /> Selecionar</>)}
+            </Button>
+          )}
+        </div>
+
+        <input
+          ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
+          onChange={(e) => onFile(e.target.files?.[0])}
+        />
+      </div>
+    </TooltipProvider>
+  );
+}
+
+/** UploadTile — mantido para a tela de edição (photo apenas). */
+function UploadTile({
+  label, icon: Icon, value, onChange, restaurantId, kind,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  value: string; onChange: (url: string) => void;
+  restaurantId: string;
+  kind: "photo" | "cnh" | "document";
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const pick = () => inputRef.current?.click();
+  const onFile = async (file?: File | null) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const url = await uploadDriverAsset(file, restaurantId, kind);
+      onChange(url);
+      toast.success(`${label} enviado`);
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <Button type="button" size="sm" variant="outline" onClick={pick} disabled={busy}>
+        {busy
+          ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…</>)
+          : (<><Icon className="mr-1 h-4 w-4" /> {label}</>)}
+      </Button>
       <input
-        ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
+        ref={inputRef} type="file" accept="image/*" className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}
       />
     </div>
   );
 }
 
-function StepSuccess() {
+function StepSuccess({
+  driverName, driverPhone, restaurantName,
+}: {
+  driverName: string; driverPhone: string; restaurantName: string;
+}) {
+  const waUrl = buildWhatsAppUrl({
+    phone: driverPhone, driverName, restaurantName,
+  });
+  const inviteMessage = buildInviteMessage({ driverName, restaurantName });
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(DRIVER_ACTIVATION_URL);
+      toast.success("Link copiado");
+    } catch { toast.error("Não foi possível copiar"); }
+  };
+
+  const share = async () => {
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try {
+        await (navigator as any).share({
+          title: "Localix Entregador",
+          text: inviteMessage,
+          url: DRIVER_ACTIVATION_URL,
+        });
+      } catch { /* usuário cancelou */ }
+    } else {
+      copyLink();
+    }
+  };
+
+  const steps = [
+    { done: true, label: "Cadastro realizado" },
+    { done: false, label: "Entregador ativa conta" },
+    { done: false, label: "Primeiro acesso" },
+    { done: false, label: "Entrada na fila" },
+  ];
+
   return (
-    <div className="flex flex-col items-center gap-4 py-6 text-center animate-in fade-in zoom-in-95 duration-300">
-      <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-500/15 text-emerald-600">
-        <Check className="h-10 w-10" />
-      </div>
-      <div className="max-w-md space-y-3">
-        <h3 className="text-xl font-bold">Entregador cadastrado com sucesso.</h3>
-        <div className="rounded-lg border bg-muted/30 p-4 text-left">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Próximo passo
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed">
-            Solicite que o entregador instale o aplicativo{" "}
-            <span className="font-semibold">Localix Motoboy</span> para ativar
-            sua conta e criar suas credenciais de acesso.
-          </p>
+    <div className="grid gap-4 animate-in fade-in zoom-in-95 duration-300">
+      <div className="flex items-center gap-3">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-600">
+          <Check className="h-6 w-6" />
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-          <Clock className="h-3.5 w-3.5" /> Status: Aguardando Ativação
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-bold">Entregador cadastrado com sucesso</h3>
+          <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Aguardando ativação
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Próximos passos
+        </p>
+        <ul className="mt-2 space-y-1.5 text-sm">
+          {steps.map((s) => (
+            <li key={s.label} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "grid h-4 w-4 shrink-0 place-items-center rounded-sm border",
+                  s.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40",
+                )}
+              >
+                {s.done && <Check className="h-3 w-3" />}
+              </span>
+              <span className={cn(s.done ? "text-foreground" : "text-muted-foreground")}>
+                {s.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="rounded-xl border bg-primary/5 p-4">
+        <p className="text-sm font-semibold">Ativar conta do entregador</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Envie o convite para {driverName.split(" ")[0] || "o entregador"} ativar
+          a conta no aplicativo Localix Entregador.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild>
+                  <a href={waUrl} target="_blank" rel="noreferrer" aria-label="Enviar convite pelo WhatsApp">
+                    <MessageCircle className="mr-1 h-4 w-4" /> Enviar pelo WhatsApp
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Abre uma conversa no WhatsApp com a mensagem pronta</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={copyLink} aria-label="Copiar link de ativação">
+                  <Copy className="mr-1 h-4 w-4" /> Copiar link
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copia {DRIVER_ACTIVATION_URL}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={share} aria-label="Compartilhar convite">
+                  <Share2 className="mr-1 h-4 w-4" /> Compartilhar
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Compartilha usando o menu nativo do sistema</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </div>
   );
 }
+
 
 /* ============ EDIT / DETAILS ============ */
 
