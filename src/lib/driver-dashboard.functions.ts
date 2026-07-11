@@ -268,6 +268,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
 
     return {
       driver,
+      restaurant: restaurant ?? null,
       queue: {
         position: myPosition,
         length: queueLength,
