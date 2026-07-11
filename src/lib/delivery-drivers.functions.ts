@@ -218,3 +218,47 @@ export const setMyPresence = createServerFn({ method: "POST" })
     }
     return row;
   });
+
+/**
+ * Self-update do próprio motoboy (perfil). Whitelist rígido: apenas campos
+ * pessoais e mídias. Não permite alterar restaurant_id, status, email ou role.
+ */
+export const updateMyDriverProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      patch: z.object({
+        name: z.string().trim().min(2).max(120).optional(),
+        phone: z.string().trim().max(30).nullable().optional(),
+        cpf: z.string().trim().max(20).nullable().optional(),
+        vehicle_type: z.enum(VEHICLES).optional(),
+        vehicle_model: z.string().trim().max(80).nullable().optional(),
+        vehicle_plate: z.string().trim().max(20).nullable().optional(),
+        photo_url: z.string().url().max(2048).nullable().optional(),
+        cnh_url: z.string().url().max(2048).nullable().optional(),
+        address_proof_url: z.string().url().max(2048).nullable().optional(),
+        document_url: z.string().url().max(2048).nullable().optional(),
+      }),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: before } = await supabaseAdmin
+      .from("delivery_drivers").select("*").eq("owner_id", context.userId).maybeSingle();
+    if (!before) throw new Error("Perfil de entregador não encontrado");
+    const { data: after, error } = await supabaseAdmin
+      .from("delivery_drivers")
+      .update(data.patch as any)
+      .eq("owner_id", context.userId)
+      .select().single();
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("delivery_driver_audit").insert({
+      actor_id: context.userId,
+      restaurant_id: before.restaurant_id,
+      driver_id: before.id,
+      action: "SELF_UPDATE",
+      before,
+      after,
+    });
+    return after;
+  });
