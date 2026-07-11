@@ -46,8 +46,8 @@ export function rangeBounds(
   return { from, to: t };
 }
 
-export function filterHistory(items: HistoryItem[], range: WalletRange, custom?: { from?: string | null; to?: string | null }): HistoryItem[] {
-  const { from, to } = rangeBounds(range, custom);
+export function filterHistory(items: HistoryItem[], range: WalletRange, custom?: { from?: string | null; to?: string | null }, now = new Date()): HistoryItem[] {
+  const { from, to } = rangeBounds(range, custom, now);
   return items.filter((h) => {
     const ts = h.delivered_at ?? h.created_at ?? null;
     if (!ts) return false;
