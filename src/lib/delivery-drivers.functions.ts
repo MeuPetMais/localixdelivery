@@ -61,8 +61,8 @@ export const createDriver = createServerFn({ method: "POST" })
       cpf: z.string().trim().max(20).optional().nullable(),
       vehicleType: z.enum(VEHICLES).default("moto"),
       vehiclePlate: z.string().trim().max(20).optional().nullable(),
-      photoUrl: z.string().url().max(500).optional().nullable(),
-      documentUrl: z.string().url().max(500).optional().nullable(),
+      photoUrl: z.string().url().max(2048).optional().nullable(),
+      documentUrl: z.string().url().max(2048).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -122,8 +122,8 @@ export const updateDriver = createServerFn({ method: "POST" })
         cpf: z.string().trim().max(20).nullable().optional(),
         vehicle_type: z.enum(VEHICLES).optional(),
         vehicle_plate: z.string().trim().max(20).nullable().optional(),
-        photo_url: z.string().url().max(500).nullable().optional(),
-        document_url: z.string().url().max(500).nullable().optional(),
+        photo_url: z.string().url().max(2048).nullable().optional(),
+        document_url: z.string().url().max(2048).nullable().optional(),
         status: z.enum(STATUSES).optional(),
       }),
     }).parse(d),
