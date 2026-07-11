@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import {
   listDrivers, updateDriver, deleteDriver,
 } from "@/lib/delivery-drivers.functions";
+import { registerDriverPending } from "@/lib/driver-activation.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
