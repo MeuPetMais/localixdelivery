@@ -268,3 +268,35 @@ export const requestDriverPasswordReset = createServerFn({ method: "POST" })
     // Sempre resposta neutra (não revelar existência)
     return { ok: true as const };
   });
+
+/* ============================================================
+ * DRIVER-SIDE — resolver e-mail por CPF ou Telefone (para login próprio)
+ * ============================================================
+ * Retorna o e-mail para uso em signInWithPassword. Não revela existência:
+ * quando não há correspondência ativa, retorna { found: false }.
+ */
+export const resolveDriverEmail = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ identifier: z.string().trim().min(3).max(60) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const id = data.identifier.trim();
+    const idDigits = digits(id);
+    const isDigits = idDigits.length >= 8;
+
+    const { data: rows } = await supabaseAdmin
+      .from("delivery_drivers")
+      .select("email, cpf, phone, status, owner_id")
+      .eq("status", "ativo" as any)
+      .not("owner_id", "is", null);
+
+    const match = (rows ?? []).find((r: any) => {
+      if (!r.email) return false;
+      if (isDigits) return digits(r.cpf) === idDigits || digits(r.phone) === idDigits;
+      return String(r.email).toLowerCase() === id.toLowerCase();
+    });
+
+    if (!match) return { found: false as const };
+    return { found: true as const, email: match.email as string };
+  });
