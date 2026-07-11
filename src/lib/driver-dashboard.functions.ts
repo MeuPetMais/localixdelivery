@@ -95,6 +95,12 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
 
     if (!driver) return null;
 
+    const { data: restaurant } = await supabase
+      .from("restaurants")
+      .select("id, name, avg_pickup_minutes, avg_delivery_minutes")
+      .eq("id", driver.restaurant_id)
+      .maybeSingle();
+
     const dayStart = startOfLocalDay().toISOString();
     const yesterdayStart = startOfLocalDay(-1).toISOString();
     const weekStart = startOfWeek().toISOString();
