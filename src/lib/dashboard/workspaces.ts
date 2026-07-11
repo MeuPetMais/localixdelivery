@@ -79,6 +79,7 @@ export const NAVIGATION: NavigationItem[] = [
       { id: "financial-center", label: "Central Financeira", to: "/financial-center", workspace: "financial", requiredRoles: ["OWNER", "MANAGER", "CASHIER"] },
       { id: "finance", label: "Finance", to: "/finance", workspace: "financial", requiredRoles: ["OWNER", "MANAGER", "CASHIER"] },
       { id: "finance-ai", label: "Finance AI", to: "/finance-ai", workspace: "financial", requiredRoles: ["OWNER", "MANAGER"] },
+      { id: "financeiro-motoboys", label: "Fechamento Entregadores", to: "/financeiro-motoboys", workspace: "financial", requiredRoles: ["OWNER", "MANAGER"] },
     ],
   },
   {
