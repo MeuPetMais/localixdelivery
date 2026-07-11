@@ -171,8 +171,10 @@ function DriversPage() {
     const returning = enriched.filter((d) => d._presence === "returning").length;
     const paused = enriched.filter((d) => d._presence === "paused").length;
     const offline = enriched.filter((d) => d._presence === "offline" || d._presence === "inactive").length;
-    return { total, online, delivering, returning, paused, offline };
+    const awaiting = enriched.filter((d) => d._presence === "awaiting_activation").length;
+    return { total, online, delivering, returning, paused, offline, awaiting };
   }, [enriched]);
+
 
   const createMut = useMutation({
     mutationFn: (data: any) => create({ data }),
