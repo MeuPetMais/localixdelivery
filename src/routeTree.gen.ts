@@ -33,6 +33,7 @@ import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
 import { Route as EntregadorEsqueciSenhaRouteImport } from './routes/entregador.esqueci-senha'
+import { Route as EntregadorEntrarRouteImport } from './routes/entregador.entrar'
 import { Route as EntregadorAtivarRouteImport } from './routes/entregador.ativar'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
@@ -195,6 +196,11 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
 const EntregadorEsqueciSenhaRoute = EntregadorEsqueciSenhaRouteImport.update({
   id: '/entregador/esqueci-senha',
   path: '/entregador/esqueci-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntregadorEntrarRoute = EntregadorEntrarRouteImport.update({
+  id: '/entregador/entrar',
+  path: '/entregador/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntregadorAtivarRoute = EntregadorAtivarRouteImport.update({
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -547,6 +554,7 @@ export interface FileRoutesByTo {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -618,6 +626,7 @@ export interface FileRoutesById {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin_/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
@@ -689,6 +698,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
+    | '/entregador/entrar'
     | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -756,6 +766,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
+    | '/entregador/entrar'
     | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -826,6 +837,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin_/login'
     | '/entregador/ativar'
+    | '/entregador/entrar'
     | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
@@ -858,6 +870,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   AdminLoginRoute: typeof AdminLoginRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
+  EntregadorEntrarRoute: typeof EntregadorEntrarRoute
   EntregadorEsqueciSenhaRoute: typeof EntregadorEsqueciSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
@@ -1036,6 +1049,13 @@ declare module '@tanstack/react-router' {
       path: '/entregador/esqueci-senha'
       fullPath: '/entregador/esqueci-senha'
       preLoaderRoute: typeof EntregadorEsqueciSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entregador/entrar': {
+      id: '/entregador/entrar'
+      path: '/entregador/entrar'
+      fullPath: '/entregador/entrar'
+      preLoaderRoute: typeof EntregadorEntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entregador/ativar': {
@@ -1476,6 +1496,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   AdminLoginRoute: AdminLoginRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
+  EntregadorEntrarRoute: EntregadorEntrarRoute,
   EntregadorEsqueciSenhaRoute: EntregadorEsqueciSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
