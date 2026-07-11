@@ -161,17 +161,33 @@ function DriversPage() {
 
   const createMut = useMutation({
     mutationFn: (data: any) => create({ data }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: async () => {
+      toast.success("Motoboy cadastrado com sucesso");
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
+    onError: (e: Error) => {
+      console.error("[motoboys] createDriver error", e);
+      toast.error(e.message);
+    },
   });
   const updateMut = useMutation({
     mutationFn: (data: any) => update({ data }),
-    onSuccess: () => { toast.success("Motoboy atualizado"); setEditing(null); qc.invalidateQueries({ queryKey }); },
+    onSuccess: async () => {
+      toast.success("Motoboy atualizado");
+      setEditing(null);
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const removeMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id, restaurantId: restaurant.id } }),
-    onSuccess: () => { toast.success("Motoboy removido"); qc.invalidateQueries({ queryKey }); },
+    onSuccess: async () => {
+      toast.success("Motoboy removido");
+      await qc.invalidateQueries({ queryKey });
+      await qc.refetchQueries({ queryKey });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
