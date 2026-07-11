@@ -63,6 +63,10 @@ function DriverWallet() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (session === true) void registerDriverServiceWorker();
+  }, [session]);
+
   const dashQ = useQuery({
     queryKey: ["driver-wallet"],
     queryFn: () => fetchDash({}),
