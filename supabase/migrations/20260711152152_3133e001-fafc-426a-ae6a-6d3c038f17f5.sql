@@ -1,0 +1,1 @@
+ALTER TYPE public.delivery_driver_status ADD VALUE IF NOT EXISTS 'aguardando_ativacao';

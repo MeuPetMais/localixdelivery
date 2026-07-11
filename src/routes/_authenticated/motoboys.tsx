@@ -24,8 +24,9 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  listDrivers, createDriver, updateDriver, deleteDriver,
+  listDrivers, updateDriver, deleteDriver,
 } from "@/lib/delivery-drivers.functions";
+import { registerDriverPending } from "@/lib/driver-activation.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
@@ -97,7 +98,7 @@ function DriversPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
   const list = useServerFn(listDrivers);
-  const create = useServerFn(createDriver);
+  const create = useServerFn(registerDriverPending);
   const update = useServerFn(updateDriver);
   const remove = useServerFn(deleteDriver);
 
@@ -493,22 +494,12 @@ const emptyForm: WizardForm = {
   photoUrl: "", cnhUrl: "", addressProofUrl: "",
 };
 
-/** Gera credenciais placeholder — o entregador as substitui via app Localix Motoboy. */
-function generatePendingCredentials(): { email: string; password: string } {
-  const id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
-  return {
-    email: `driver-${id}@pending.localix.app`,
-    password: `Lx!${id.slice(0, 16)}`,
-  };
-}
-
 function WizardDialog({
   open, onClose, restaurantId, onSubmit,
 }: {
   open: boolean; onClose: () => void; restaurantId: string;
   onSubmit: (data: {
-    name: string; phone: string | null; cpf: string | null;
-    email: string; password: string;
+    name: string; phone: string; cpf: string;
     vehicleType: Vehicle; vehiclePlate: string | null;
     photoUrl: string | null; documentUrl: string | null;
   }) => Promise<void>;
@@ -522,6 +513,8 @@ function WizardDialog({
   const validateStep = (): string | null => {
     if (step === 1) {
       if (f.name.trim().length < 2) return "Informe o nome completo do entregador";
+      if (f.cpf.replace(/\D/g, "").length < 11) return "Informe um CPF válido";
+      if (f.phone.replace(/\D/g, "").length < 10) return "Informe um telefone válido";
     }
     if (step === 2) {
       if (!f.vehicleType) return "Selecione o tipo de veículo";
@@ -538,20 +531,15 @@ function WizardDialog({
   const submit = async () => {
     setSaving(true);
     try {
-      // Credenciais placeholder — ativação real acontece no app Localix Motoboy.
-      const { email, password } = generatePendingCredentials();
+      // RC5.4 — Restaurante NÃO cria login/senha. A conta é ativada pelo
+      // próprio entregador em /entregador/ativar (app Localix Entregador).
       await onSubmit({
         name: f.name.trim(),
-        phone: f.phone.trim() || null,
-        cpf: f.cpf.trim() || null,
-        email,
-        password,
+        phone: f.phone.trim(),
+        cpf: f.cpf.trim(),
         vehicleType: f.vehicleType,
         vehiclePlate: f.vehiclePlate.trim() || null,
         photoUrl: f.photoUrl || null,
-        // O schema atual persiste um único document_url; priorizamos a CNH,
-        // com o comprovante de endereço como fallback. Uma migração futura
-        // pode separar os dois campos sem impacto nesta UI.
         documentUrl: f.cnhUrl || f.addressProofUrl || null,
       });
       setStep(4);
@@ -561,6 +549,7 @@ function WizardDialog({
       setSaving(false);
     }
   };
+
 
   const progress = step === 4 ? 100 : (step / 3) * 100;
   const stepLabel = step === 1 ? "Dados pessoais" : step === 2 ? "Veículo" : "Documentação";
