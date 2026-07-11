@@ -34,15 +34,15 @@ describe("rangeBounds", () => {
 
 describe("filterHistory", () => {
   it("today", () => {
-    const f = filterHistory(items, "today", undefined);
+    const f = filterHistory(items, "today", undefined, REF);
     expect(f.map((i) => i.id).sort()).toEqual(["1", "4"]);
   });
   it("month", () => {
-    const f = filterHistory(items, "month", undefined);
+    const f = filterHistory(items, "month", undefined, REF);
     expect(f.map((i) => i.id).sort()).toEqual(["1", "2", "3", "4"]);
   });
   it("custom range", () => {
-    const f = filterHistory(items, "custom", { from: "2025-05-01", to: "2025-05-31" });
+    const f = filterHistory(items, "custom", { from: "2025-05-01", to: "2025-05-31" }, REF);
     expect(f.map((i) => i.id)).toEqual(["5"]);
   });
 });
