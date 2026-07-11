@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { checkForDriverAppUpdate } from "./pwa-driver-update";
 
 const setNav = (v: unknown) => {
-  (globalThis as any).navigator = v;
+  Object.defineProperty(globalThis, "navigator", { value: v, configurable: true, writable: true });
 };
 
 describe("checkForDriverAppUpdate", () => {
