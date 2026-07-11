@@ -7,6 +7,7 @@ import {
   Bike, Car, Footprints, Search, Plus, Trash2, Pencil, MapPin, Users,
   Wifi, Package, Clock, ArrowLeft, ArrowRight, Check, Upload, X, Eye,
   UserPlus, ShieldCheck, IdCard, Camera, Loader2, Phone,
+  MessageCircle, Copy, Share2, FileText, Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -28,6 +32,12 @@ import {
 } from "@/lib/delivery-drivers.functions";
 import { registerDriverPending } from "@/lib/driver-activation.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
+import {
+  maskCPF, maskPhoneBR, isValidCPF, isValidPhoneBR,
+  buildWhatsAppUrl, buildInviteMessage,
+  DRIVER_ACTIVATION_URL,
+} from "@/lib/driver-invite";
+
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
   head: () => ({ meta: [

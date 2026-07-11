@@ -26,6 +26,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EntregadorIndexRouteImport } from './routes/entregador.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
@@ -159,6 +160,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntregadorIndexRoute = EntregadorIndexRouteImport.update({
+  id: '/entregador/',
+  path: '/entregador/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/entregador/': typeof EntregadorIndexRoute
   '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -546,6 +553,7 @@ export interface FileRoutesByTo {
   '/r/$': typeof RSplatRoute
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/entregador': typeof EntregadorIndexRoute
   '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -616,6 +624,7 @@ export interface FileRoutesById {
   '/r/$': typeof RSplatRoute
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/entregador/': typeof EntregadorIndexRoute
   '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -686,6 +695,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/entregador/'
     | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
@@ -752,6 +762,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug'
     | '/admin'
+    | '/entregador'
     | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
@@ -821,6 +832,7 @@ export interface FileRouteTypes {
     | '/r/$'
     | '/$slug/'
     | '/admin/'
+    | '/entregador/'
     | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
@@ -850,6 +862,7 @@ export interface RootRouteChildren {
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
+  EntregadorIndexRoute: typeof EntregadorIndexRoute
   ApiInternalOrdersTransitionRoute: typeof ApiInternalOrdersTransitionRoute
   ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -974,6 +987,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entregador/': {
+      id: '/entregador/'
+      path: '/entregador'
+      fullPath: '/entregador/'
+      preLoaderRoute: typeof EntregadorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1460,6 +1480,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
+  EntregadorIndexRoute: EntregadorIndexRoute,
   ApiInternalOrdersTransitionRoute: ApiInternalOrdersTransitionRoute,
   ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
