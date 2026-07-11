@@ -31,6 +31,7 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as EntregadorEsqueciSenhaRouteImport } from './routes/entregador.esqueci-senha'
 import { Route as EntregadorAtivarRouteImport } from './routes/entregador.ativar'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
@@ -183,6 +184,11 @@ const PedidoIdRoute = PedidoIdRouteImport.update({
 const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   id: '/pedido-sucesso/$id',
   path: '/pedido-sucesso/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntregadorEsqueciSenhaRoute = EntregadorEsqueciSenhaRouteImport.update({
+  id: '/entregador/esqueci-senha',
+  path: '/entregador/esqueci-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntregadorAtivarRoute = EntregadorAtivarRouteImport.update({
@@ -468,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -533,6 +540,7 @@ export interface FileRoutesByTo {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -602,6 +610,7 @@ export interface FileRoutesById {
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin_/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
+  '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -671,6 +680,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
+    | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -736,6 +746,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
+    | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -804,6 +815,7 @@ export interface FileRouteTypes {
     | '/admin/transacoes'
     | '/admin_/login'
     | '/entregador/ativar'
+    | '/entregador/esqueci-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -834,6 +846,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   AdminLoginRoute: typeof AdminLoginRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
+  EntregadorEsqueciSenhaRoute: typeof EntregadorEsqueciSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
@@ -996,6 +1009,13 @@ declare module '@tanstack/react-router' {
       path: '/pedido-sucesso/$id'
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entregador/esqueci-senha': {
+      id: '/entregador/esqueci-senha'
+      path: '/entregador/esqueci-senha'
+      fullPath: '/entregador/esqueci-senha'
+      preLoaderRoute: typeof EntregadorEsqueciSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entregador/ativar': {
@@ -1436,6 +1456,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   AdminLoginRoute: AdminLoginRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
+  EntregadorEsqueciSenhaRoute: EntregadorEsqueciSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
