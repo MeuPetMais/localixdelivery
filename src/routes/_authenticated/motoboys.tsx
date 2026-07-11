@@ -98,7 +98,7 @@ function DriversPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
   const list = useServerFn(listDrivers);
-  const create = useServerFn(createDriver);
+  const create = useServerFn(registerDriverPending);
   const update = useServerFn(updateDriver);
   const remove = useServerFn(deleteDriver);
 
