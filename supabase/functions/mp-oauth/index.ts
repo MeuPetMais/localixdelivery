@@ -51,7 +51,14 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("code_challenge", codeChallenge);
       authUrl.searchParams.set("code_challenge_method", "S256");
 
-      return json({ authorize_url: authUrl.toString() });
+      const _full = authUrl.toString();
+      const _masked = _full.replace(
+        /client_id=([^&]+)/,
+        (_m, v: string) =>
+          `client_id=${v.slice(0, 4)}***${v.slice(-4)}`,
+      );
+      console.log("[mp-oauth][start] authorize_url:", _masked);
+      return json({ authorize_url: _full });
     }
 
     if (action === "status") {
