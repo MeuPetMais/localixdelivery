@@ -5386,6 +5386,7 @@ export type Database = {
           owner_id: string
           owner_name: string | null
           payment_methods: Json | null
+          payment_provider: string
           phone: string | null
           primary_color: string | null
           slug: string
@@ -5439,6 +5440,7 @@ export type Database = {
           owner_id: string
           owner_name?: string | null
           payment_methods?: Json | null
+          payment_provider?: string
           phone?: string | null
           primary_color?: string | null
           slug: string
@@ -5492,6 +5494,7 @@ export type Database = {
           owner_id?: string
           owner_name?: string | null
           payment_methods?: Json | null
+          payment_provider?: string
           phone?: string | null
           primary_color?: string | null
           slug?: string
