@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
+import { PaymentService } from "@/lib/payments/PaymentService";
 import { PaymentsReadinessService } from "@/lib/billing/PaymentsReadinessService";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
