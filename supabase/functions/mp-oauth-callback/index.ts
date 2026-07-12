@@ -1,6 +1,6 @@
 // Callback público do Mercado Pago (chamado pelo próprio MP após autorizar).
-// Recebe ?code&state, troca por access_token usando MP_ACCESS_TOKEN do
-// marketplace como client_secret, cifra e persiste tokens.
+// Recebe ?code&state, troca por access_token usando o Client Secret do
+// aplicativo Mercado Pago, cifra e persiste tokens.
 // verify_jwt = false (configurado em supabase/config.toml).
 
 import { corsHeaders } from "../_shared/cors.ts";
@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
     if (new Date(st.expires_at).getTime() < Date.now()) return jsonErr("state expirado", 400);
 
     const appId = Deno.env.get("MP_APP_ID");
-    const mpAccessToken = Deno.env.get("MP_ACCESS_TOKEN");
-    if (!appId || !mpAccessToken) return jsonErr("MP_APP_ID/MP_ACCESS_TOKEN não configurados", 500);
+    const mpClientSecret = Deno.env.get("MP_CLIENT_SECRET") || Deno.env.get("MP_ACCESS_TOKEN");
+    if (!appId || !mpClientSecret) return jsonErr("MP_APP_ID/MP_CLIENT_SECRET não configurados", 500);
 
     console.log("[mp-oauth-callback][pre-exchange]", {
       state_found: !!st,
@@ -43,21 +43,20 @@ Deno.serve(async (req) => {
       code_length: code?.length ?? 0,
       redirect_uri: REDIRECT_URI,
       client_id: appId,
-      client_secret_present: !!mpAccessToken,
+      client_secret_present: !!mpClientSecret,
+      client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
     });
 
     // Troca do authorization_code por access_token do lojista.
-    // MP aceita MP_ACCESS_TOKEN do marketplace no lugar do client_secret.
     const tokenRes = await fetch(MP_TOKEN_URL, {
       method: "POST",
       headers: {
         "content-type": "application/x-www-form-urlencoded",
         accept: "application/json",
-        authorization: `Bearer ${mpAccessToken}`,
       },
       body: new URLSearchParams({
         client_id: appId,
-        client_secret: mpAccessToken,
+        client_secret: mpClientSecret,
         grant_type: "authorization_code",
         code,
         redirect_uri: REDIRECT_URI,
@@ -81,7 +80,8 @@ Deno.serve(async (req) => {
         body: rawBody,
         redirect_uri: REDIRECT_URI,
         client_id: appId,
-        client_secret_present: !!mpAccessToken,
+        client_secret_present: !!mpClientSecret,
+        client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
         code_verifier_found: !!st?.code_verifier,
         state_found: !!st,
         code_present: !!code,
@@ -95,7 +95,8 @@ Deno.serve(async (req) => {
           body: tokenJson,
           redirect_uri: REDIRECT_URI,
           client_id: appId,
-          client_secret_present: !!mpAccessToken,
+          client_secret_present: !!mpClientSecret,
+          client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
           code_verifier_found: !!st?.code_verifier,
         },
       });
