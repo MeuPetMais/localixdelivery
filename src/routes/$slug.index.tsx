@@ -1137,6 +1137,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             return;
           }
           const origin = window.location.origin;
+          try {
+            await PaymentService.assertPrimaryReady(restaurant.id);
+          } catch (e: any) {
+            toast.error(e?.message ?? "Nenhum gateway de pagamento configurado.");
+            onClose();
+            onCreated(res.orderId);
+            return;
+          }
           const result = await PaymentService.createPayment({
             restaurantId: restaurant.id,
             orderId: res.orderId,
@@ -1146,6 +1154,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
             cancelUrl: `${origin}/${restaurant.slug}`,
           });
+
           if (result.redirectUrl) {
             onClose();
             window.location.href = result.redirectUrl;
