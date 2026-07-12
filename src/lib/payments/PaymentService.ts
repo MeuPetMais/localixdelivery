@@ -67,12 +67,34 @@ export const PaymentService = {
     };
   },
 
-  // ------- Placeholders — Prompt 5+ -------
-  async createPayment(_input: CreatePaymentInput): Promise<never> {
-    throw new Error("PaymentService.createPayment ainda não implementado (Prompt 5).");
+  // ------- Criação de cobrança (única porta de entrada) -------
+  async createPayment(input: CreatePaymentInput): Promise<CreateCheckoutResult> {
+    if (!input.orderId) throw new Error("orderId obrigatório");
+    if (!input.restaurantId) throw new Error("restaurantId obrigatório");
+    if (!input.customerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.customerEmail)) {
+      throw new Error("customerEmail obrigatório e válido");
+    }
+    if (!input.successUrl || !input.cancelUrl) {
+      throw new Error("successUrl e cancelUrl obrigatórios");
+    }
+    if (!input.amount || input.amount <= 0) throw new Error("amount inválido");
+    const method: "pix" | "card" = input.method === "pix" ? "pix" : "card";
+    const providerId = input.providerId ?? DEFAULT_PROVIDER_ID;
+    const provider = this.provider(providerId);
+    const checkoutInput: CreateCheckoutInput = {
+      orderId: input.orderId,
+      restaurantId: input.restaurantId,
+      method,
+      amount: input.amount,
+      customerEmail: input.customerEmail,
+      successUrl: input.successUrl,
+      cancelUrl: input.cancelUrl,
+    };
+    return provider.createCheckout(checkoutInput);
   },
+
   async refreshStatus(_paymentId: string): Promise<never> {
-    throw new Error("PaymentService.refreshStatus ainda não implementado (Prompt 5).");
+    throw new Error("PaymentService.refreshStatus ainda não implementado.");
   },
 
   async listByRestaurant(restaurantId: string, limit = 100) {
