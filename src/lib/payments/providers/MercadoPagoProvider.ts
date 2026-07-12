@@ -51,4 +51,30 @@ export const MercadoPagoProvider: PaymentProvider = {
   async disconnect(restaurantId) {
     await callMpOauth("disconnect", { restaurant_id: restaurantId });
   },
+
+  async createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult> {
+    // MP roteia via PaymentIntentService (mp-payment-intent). Aqui apenas
+    // delegamos, mantendo o Provider Pattern como única porta de entrada.
+    const { data, error } = await supabase.functions.invoke("mp-payment-intent", {
+      body: {
+        action: "create",
+        order_id: input.orderId,
+        payment_method: input.method === "card" ? "credit_card" : "pix",
+        payer_email: input.customerEmail,
+      },
+    });
+    if (error) throw new Error(error.message);
+    if ((data as any)?.error) throw new Error(String((data as any).error));
+    return {
+      provider: "mercado_pago",
+      redirectUrl: (data?.payment_url as string) ?? null,
+      externalId: (data?.payment_id as string) ?? null,
+      pix: {
+        qrCode: data?.qr_code ?? null,
+        qrCodeBase64: data?.qr_code_base64 ?? null,
+        expirationDate: data?.expiration_date ?? null,
+      },
+      status: data?.status === "PROCESSING" ? "PROCESSING" : "PENDING",
+    };
+  },
 };
