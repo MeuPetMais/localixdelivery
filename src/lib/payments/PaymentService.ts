@@ -31,7 +31,7 @@ export interface FeeBreakdown {
 
 export const PaymentService = {
   // ------- Providers -------
-  provider(id: string = "mercado_pago"): PaymentProvider {
+  provider(id: string = DEFAULT_PROVIDER_ID): PaymentProvider {
     return getProvider(id);
   },
   listProviders(): PaymentProvider[] {
