@@ -6,6 +6,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import type {
   ConnectionStatus,
+  CreateCheckoutInput,
+  CreateCheckoutResult,
   OAuthStartResult,
   PaymentProvider,
 } from "./PaymentProvider";
