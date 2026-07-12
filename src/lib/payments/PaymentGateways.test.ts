@@ -1,13 +1,14 @@
 // Testes da Central de Gateways — getPrimaryProvider / setPrimaryProvider.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const invoke = vi.fn();
-const from = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { functions: { invoke }, from: (...a: any[]) => from(...a) },
+  supabase: { functions: { invoke: vi.fn() }, from: vi.fn() },
 }));
 
 import { PaymentService } from "./PaymentService";
+import { supabase } from "@/integrations/supabase/client";
+const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
+
 
 beforeEach(() => {
   invoke.mockReset();
