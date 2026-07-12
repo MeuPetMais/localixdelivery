@@ -67,6 +67,26 @@ export const PaymentService = {
     };
   },
 
+  // ------- Gateway principal por restaurante -------
+  async getPrimaryProvider(restaurantId: string): Promise<string> {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase
+      .from("restaurants")
+      .select("payment_provider")
+      .eq("id", restaurantId)
+      .maybeSingle();
+    return (data as any)?.payment_provider ?? DEFAULT_PROVIDER_ID;
+  },
+  async setPrimaryProvider(restaurantId: string, providerId: string): Promise<void> {
+    if (!paymentProviders[providerId]) throw new Error(`Provider inválido: ${providerId}`);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase
+      .from("restaurants")
+      .update({ payment_provider: providerId } as any)
+      .eq("id", restaurantId);
+    if (error) throw new Error(error.message);
+  },
+
   // ------- Criação de cobrança (única porta de entrada) -------
   async createPayment(input: CreatePaymentInput): Promise<CreateCheckoutResult> {
     if (!input.orderId) throw new Error("orderId obrigatório");
@@ -79,8 +99,13 @@ export const PaymentService = {
     }
     if (!input.amount || input.amount <= 0) throw new Error("amount inválido");
     const method: "pix" | "card" = input.method === "pix" ? "pix" : "card";
-    const providerId = input.providerId ?? DEFAULT_PROVIDER_ID;
+    const providerId = input.providerId ?? (await this.getPrimaryProvider(input.restaurantId));
     const provider = this.provider(providerId);
+    // Valida se o gateway principal está conectado antes de tentar cobrar.
+    const status = await provider.getStatus(input.restaurantId).catch(() => null);
+    if (!status?.connected) {
+      throw new Error("Nenhum gateway de pagamento configurado.");
+    }
     const checkoutInput: CreateCheckoutInput = {
       orderId: input.orderId,
       restaurantId: input.restaurantId,
@@ -92,6 +117,7 @@ export const PaymentService = {
     };
     return provider.createCheckout(checkoutInput);
   },
+
 
   async refreshStatus(_paymentId: string): Promise<never> {
     throw new Error("PaymentService.refreshStatus ainda não implementado.");
