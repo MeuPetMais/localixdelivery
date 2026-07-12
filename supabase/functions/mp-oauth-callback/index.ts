@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 });
 
 function redirect(path: string) {
-  const base = "https://localixdelivery.lovable.app";
+  const base = "https://app.rngdigital.com.br";
   const to = path.startsWith("http") ? path : base + path;
   return new Response(null, { status: 302, headers: { location: to, ...corsHeaders } });
 }
