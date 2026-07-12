@@ -148,7 +148,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // PIX
+      // PIX — requer payer_email real; sem fallback fictício.
+      const payerEmail = String(payload?.payer_email ?? "").trim().toLowerCase();
+      if (!payerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payerEmail)) {
+        return json({ error: "payer_email_required" }, { status: 400 });
+      }
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       let mp;
       try {
@@ -156,7 +160,7 @@ Deno.serve(async (req) => {
           amount: Number(order.total),
           description: `Pedido #${order.order_number ?? order.id}`,
           externalReference: order.id,
-          payerEmail: payload?.payer_email || "cliente@localix.app",
+          payerEmail,
           expirationDate: expiration,
         });
       } catch (e) {

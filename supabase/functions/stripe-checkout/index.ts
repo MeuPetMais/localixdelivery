@@ -78,6 +78,9 @@ Deno.serve(async (req) => {
   if (!orderId || !successUrl || !cancelUrl) {
     return json({ error: "missing_params", need: ["orderId","successUrl","cancelUrl"] }, { status: 400 });
   }
+  if (!customerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customerEmail)) {
+    return json({ error: "customer_email_required" }, { status: 400 });
+  }
 
 
   const sb = admin();

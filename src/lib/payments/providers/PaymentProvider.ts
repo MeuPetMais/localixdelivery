@@ -1,6 +1,6 @@
 // Contrato genérico para gateways de pagamento.
-// Novos providers (Pagar.me, Asaas, Stripe) implementam a mesma interface
-// e são registrados em `providers/index.ts` — o resto do app não muda.
+// Novos providers implementam a mesma interface e são registrados em
+// `providers/index.ts` — o restante do app usa apenas PaymentService.
 
 export interface OAuthStartResult {
   authorizeUrl: string;
@@ -19,6 +19,31 @@ export interface ConnectionStatus {
   publicKey: string | null;
 }
 
+export interface CreateCheckoutInput {
+  orderId: string;
+  restaurantId: string;
+  method: "pix" | "card";
+  amount: number;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
+export interface CreateCheckoutResult {
+  provider: string;
+  /** URL para redirecionar o cliente (Stripe Checkout / ticket_url MP). */
+  redirectUrl: string | null;
+  /** Identificador do pagamento no provider (session_id / payment_id). */
+  externalId: string | null;
+  /** Dados de PIX quando aplicável. */
+  pix?: {
+    qrCode: string | null;
+    qrCodeBase64: string | null;
+    expirationDate: string | null;
+  };
+  status: "PENDING" | "PROCESSING";
+}
+
 export interface PaymentProvider {
   readonly id: string;
   readonly label: string;
@@ -32,4 +57,7 @@ export interface PaymentProvider {
 
   /** Desconecta o restaurante do gateway. */
   disconnect(restaurantId: string): Promise<void>;
+
+  /** Cria uma cobrança / checkout no gateway. */
+  createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult>;
 }

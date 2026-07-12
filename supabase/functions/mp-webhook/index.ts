@@ -46,7 +46,7 @@ async function verifySignature(opts: {
   xRequestId: string | null;
   dataId: string | null;
 }): Promise<boolean> {
-  if (!opts.secret) return true; // sem secret configurado: aceita e loga
+  if (!opts.secret) return false; // fail-closed: sem secret configurado, rejeita
   if (!opts.xSignature || !opts.xRequestId || !opts.dataId) return false;
   const parts: Record<string,string> = Object.fromEntries(
     opts.xSignature.split(",").map((p) => {

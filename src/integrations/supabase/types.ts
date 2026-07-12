@@ -6819,6 +6819,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_pending_payment_orders: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
