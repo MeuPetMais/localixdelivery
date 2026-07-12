@@ -11,9 +11,9 @@ const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
 
 
 beforeEach(() => {
-  invoke.mockReset();
   from.mockReset();
 });
+
 
 function chain(result: any) {
   const q: any = {
