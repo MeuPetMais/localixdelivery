@@ -15,6 +15,7 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
 import { PaymentService } from "@/lib/payments/PaymentService";
 import { PaymentsReadinessService } from "@/lib/billing/PaymentsReadinessService";
+import { getGatewayDisplay } from "@/lib/payments/gatewayDisplay";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { ShoppingBag, Plus, Minus, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
@@ -949,10 +950,17 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     queryFn: () => PaymentsReadinessService.isReadyForPayments(restaurant.id),
     staleTime: 60_000,
   });
+  const { data: primaryProviderId } = useQuery({
+    queryKey: ["primary-provider", restaurant.id],
+    enabled: !!restaurant?.id,
+    queryFn: () => PaymentService.getPrimaryProvider(restaurant.id),
+    staleTime: 60_000,
+  });
+  const gateway = getGatewayDisplay(primaryProviderId);
   const paymentOptions: PayOption[] = readiness?.ready
     ? [
-        { id: "pix", label: "Pix (Stripe)", method: "pix", online: true },
-        { id: "card_online", label: "Cartão Online", method: "credit_card", online: true },
+        { id: "pix", label: gateway.pix, method: "pix", online: true },
+        { id: "card_online", label: `${gateway.card} Online`, method: "credit_card", online: true },
         ...BASE_METHODS,
       ]
     : BASE_METHODS;
@@ -1320,7 +1328,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             ))}
           </div>
           {selectedPayment.online && (
-            <p className="text-xs text-muted-foreground">Você será redirecionado para o pagamento seguro (Stripe).</p>
+            <p className="text-xs text-muted-foreground">Você será redirecionado para um ambiente seguro de pagamento.</p>
           )}
         </div>
         <div className="space-y-1.5"><Label>Observações (opcional)</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
@@ -1350,7 +1358,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
           {selectedPayment.online
-            ? selectedPayment.method === "pix" ? "Pagar com Pix (Stripe)" : "Pagar com cartão (Stripe)"
+            ? selectedPayment.method === "pix" ? "Pagar com Pix" : "Pagar com Cartão"
             : "Confirmar pedido"}
 
         </Button>
