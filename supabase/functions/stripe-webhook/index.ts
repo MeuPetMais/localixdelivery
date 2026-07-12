@@ -152,12 +152,21 @@ Deno.serve(async (req) => {
       }).eq("id", payment.id);
     }
 
-    if (orderId && mapped.paid) {
-      // RC4.2 — Toda mudança de status passa pelo Order Domain via endpoint interno.
+    // Mapear status → transição no domínio de Orders.
+    const domainTarget: Record<string, string | null> = {
+      approved: "pago",
+      rejected: "falha_pagamento",
+      cancelled: "falha_pagamento",
+      refunded: "reembolsado",
+      in_process: null,
+      pending: null,
+    };
+    const targetStatus = domainTarget[mapped.local];
+    if (orderId && targetStatus) {
       const correlationId = `stripe:${eventId ?? resourceId ?? crypto.randomUUID()}`;
       const tr = await transitionOrder({
         orderId,
-        to: "pago",
+        to: targetStatus,
         reason: `stripe:${eventType}`,
         actorType: "webhook",
         service: "stripe-webhook",
@@ -167,6 +176,9 @@ Deno.serve(async (req) => {
       if (!tr.ok) {
         console.warn("[stripe-webhook] order transition rejected", { orderId, correlationId, reason: tr.reason ?? tr.error });
       }
+    }
+
+    if (orderId && mapped.paid) {
 
       // ledger idempotente por reference_id
       const refId = String(obj.payment_intent ?? obj.id);
