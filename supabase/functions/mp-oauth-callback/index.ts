@@ -36,6 +36,16 @@ Deno.serve(async (req) => {
     const mpAccessToken = Deno.env.get("MP_ACCESS_TOKEN");
     if (!appId || !mpAccessToken) return jsonErr("MP_APP_ID/MP_ACCESS_TOKEN não configurados", 500);
 
+    console.log("[mp-oauth-callback][pre-exchange]", {
+      state_found: !!st,
+      code_verifier_found: !!st?.code_verifier,
+      code_present: !!code,
+      code_length: code?.length ?? 0,
+      redirect_uri: REDIRECT_URI,
+      client_id: appId,
+      client_secret_present: !!mpAccessToken,
+    });
+
     // Troca do authorization_code por access_token do lojista.
     // MP aceita MP_ACCESS_TOKEN do marketplace no lugar do client_secret.
     const tokenRes = await fetch(MP_TOKEN_URL, {
@@ -55,17 +65,43 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const tokenJson = await tokenRes.json();
+    const rawBody = await tokenRes.text();
+    let tokenJson: any = {};
+    try { tokenJson = JSON.parse(rawBody); } catch { tokenJson = { raw: rawBody }; }
+
+    console.log("[mp-oauth-callback][mp-response]", {
+      http_status: tokenRes.status,
+      ok: tokenRes.ok,
+      body: rawBody,
+    });
+
     if (!tokenRes.ok) {
-      console.error("[mp-oauth-callback] MP error", tokenJson);
+      console.error("[mp-oauth-callback] MP error", {
+        status: tokenRes.status,
+        body: rawBody,
+        redirect_uri: REDIRECT_URI,
+        client_id: appId,
+        client_secret_present: !!mpAccessToken,
+        code_verifier_found: !!st?.code_verifier,
+        state_found: !!st,
+        code_present: !!code,
+      });
       await admin.from("payment_logs").insert({
         restaurant_id: st.restaurant_id,
         level: "error",
         message: "MP OAuth token exchange failed",
-        data: tokenJson,
+        data: {
+          http_status: tokenRes.status,
+          body: tokenJson,
+          redirect_uri: REDIRECT_URI,
+          client_id: appId,
+          client_secret_present: !!mpAccessToken,
+          code_verifier_found: !!st?.code_verifier,
+        },
       });
       return redirect("/pagamentos?mp=error&reason=exchange_failed");
     }
+
 
     const expiresAt = tokenJson.expires_in
       ? new Date(Date.now() + Number(tokenJson.expires_in) * 1000).toISOString()
