@@ -7,7 +7,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 
-const REDIRECT_URI = "https://localixdelivery.lovable.app/api/public/mp/callback";
+const REDIRECT_URI = "https://app.rngdigital.com.br/api/public/mp/callback";
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
 Deno.serve(async (req) => {
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 });
 
 function redirect(path: string) {
-  const base = "https://localixdelivery.lovable.app";
+  const base = "https://app.rngdigital.com.br";
   const to = path.startsWith("http") ? path : base + path;
   return new Response(null, { status: 302, headers: { location: to, ...corsHeaders } });
 }

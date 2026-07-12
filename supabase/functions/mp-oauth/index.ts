@@ -9,7 +9,7 @@ import {
   randomBase64Url,
 } from "../_shared/crypto.ts";
 
-const REDIRECT_URI = "https://localixdelivery.lovable.app/api/public/mp/callback";
+const REDIRECT_URI = "https://app.rngdigital.com.br/api/public/mp/callback";
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
 Deno.serve(async (req) => {
