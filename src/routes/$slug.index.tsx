@@ -1141,7 +1141,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             restaurantId: restaurant.id,
             orderId: res.orderId,
             method: selectedPayment.method === "pix" ? "pix" : "card",
-            amount: Number(res.pricing?.total ?? 0),
+            amount: Number(res.pricing?.customerTotal ?? 0),
             customerEmail: email,
             successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
             cancelUrl: `${origin}/${restaurant.slug}`,
