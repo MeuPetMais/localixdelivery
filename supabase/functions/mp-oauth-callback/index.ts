@@ -7,7 +7,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 
-const REDIRECT_URI = "https://localixdelivery.lovable.app/api/public/mp/callback";
+const REDIRECT_URI = "https://app.rngdigital.com.br/api/public/mp/callback";
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
 Deno.serve(async (req) => {
