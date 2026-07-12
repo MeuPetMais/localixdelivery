@@ -1,6 +1,6 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useRestaurant } from "@/contexts/RestaurantContext";
-import { StripeConnectCard } from "@/components/payments/StripeConnectCard";
+import { PaymentGatewaysCenter } from "@/components/payments/PaymentGatewaysCenter";
 
 type Search = {
   stripe?: "success" | "refresh";
@@ -21,13 +21,13 @@ function PagamentosPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
       <header>
-        <h1 className="text-2xl font-semibold">Pagamentos</h1>
+        <h1 className="text-2xl font-semibold">Central de Gateways</h1>
         <p className="text-sm text-muted-foreground">
-          Gateway de pagamentos oficial da Localix: Stripe Connect. Receba diretamente no CNPJ do seu estabelecimento.
+          Conecte um ou mais gateways de pagamento. Escolha qual será utilizado para PIX, cartão e futuros meios de pagamento.
         </p>
       </header>
 
-      <StripeConnectCard restaurantId={restaurantId} urlParam={search.stripe} />
+      <PaymentGatewaysCenter restaurantId={restaurantId} stripeParam={search.stripe} />
     </div>
   );
 }
