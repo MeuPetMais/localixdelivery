@@ -6,16 +6,19 @@
 //    é uma alteração local, sem tocar no restante do app.
 
 import { paymentsRepo, platformFeesRepo } from "./repositories";
-import { getProvider, paymentProviders } from "./providers";
-import type { PaymentProvider } from "./providers";
+import { getProvider, paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
+import type { CreateCheckoutInput, CreateCheckoutResult, PaymentProvider } from "./providers/PaymentProvider";
 import type { PaymentMethod, PlatformFees } from "./types";
 
 export interface CreatePaymentInput {
+  providerId?: string;
   restaurantId: string;
-  orderId?: string;
-  method: PaymentMethod;
+  orderId: string;
+  method: PaymentMethod | "pix" | "card";
   amount: number;
-  payerEmail?: string;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
 }
 
 export interface FeeBreakdown {
