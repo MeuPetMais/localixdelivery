@@ -1126,28 +1126,32 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         } catch {}
       }
 
-      // Cartão Online (Stripe Checkout hospedado)
+      // Cartão/Pix Online — via PaymentService (Provider Pattern).
       if (selectedPayment.online) {
         try {
-          const origin = window.location.origin;
-          const { data, error } = await supabase.functions.invoke("stripe-checkout", {
-            body: {
-              orderId: res.orderId,
-              method: selectedPayment.method === "pix" ? "pix" : "card",
-              successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
-              cancelUrl: `${origin}/${restaurant.slug}`,
-              customerEmail: user?.email ?? undefined,
-            },
-          });
-
-
-          if (error) throw error;
-          if (data?.url) {
+          const email = user?.email;
+          if (!email) {
+            toast.error("Faça login com e-mail para pagar online");
             onClose();
-            window.location.href = data.url as string;
+            onCreated(res.orderId);
             return;
           }
-          throw new Error(data?.error ?? "Falha ao iniciar pagamento");
+          const origin = window.location.origin;
+          const result = await PaymentService.createPayment({
+            restaurantId: restaurant.id,
+            orderId: res.orderId,
+            method: selectedPayment.method === "pix" ? "pix" : "card",
+            amount: Number(res.total ?? 0),
+            customerEmail: email,
+            successUrl: `${origin}/pedido-sucesso/${res.orderId}`,
+            cancelUrl: `${origin}/${restaurant.slug}`,
+          });
+          if (result.redirectUrl) {
+            onClose();
+            window.location.href = result.redirectUrl;
+            return;
+          }
+          throw new Error("Gateway não retornou URL de pagamento");
         } catch (e: any) {
           toast.error(e?.message ?? "Não foi possível iniciar o pagamento");
           onClose();
