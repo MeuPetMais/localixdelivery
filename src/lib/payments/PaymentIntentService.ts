@@ -65,13 +65,6 @@ export async function runIntent(
   };
 }
 
-async function edgeInvoke(body: Record<string, unknown>) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body });
-  if (error) throw new Error(error.message);
-  return data;
-}
-
 const createSchema = z.object({
   orderId: z.string().uuid(),
   paymentMethod: z.enum(["pix", "credit_card", "debit_card"]).default("pix"),
@@ -81,21 +74,74 @@ const orderOnlySchema = z.object({ orderId: z.string().uuid() });
 
 export const createPaymentIntent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => createSchema.parse(d))
-  .handler(({ data }) =>
-    runIntent(edgeInvoke, "create", {
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
+      action: "create",
       order_id: data.orderId,
       payment_method: data.paymentMethod,
       payer_email: data.payerEmail,
-    }),
-  );
+    } });
+    if (error) throw new Error(error.message);
+    if (r?.error) throw new Error(String(r.error));
+    const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "PENDING";
+    return {
+      payment_id: r?.payment_id ?? null,
+      status,
+      qr_code: r?.qr_code ?? null,
+      qr_code_base64: r?.qr_code_base64 ?? null,
+      payment_url: r?.payment_url ?? null,
+      expiration_date: r?.expiration_date ?? null,
+      pending: !!r?.pending,
+      message: r?.message,
+    };
+  });
 
 export const getPaymentIntentStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderOnlySchema.parse(d))
-  .handler(({ data }) => runIntent(edgeInvoke, "status", { order_id: data.orderId }));
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
+      action: "status",
+      order_id: data.orderId,
+    } });
+    if (error) throw new Error(error.message);
+    if (r?.error) throw new Error(String(r.error));
+    const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "PENDING";
+    return {
+      payment_id: r?.payment_id ?? null,
+      status,
+      qr_code: r?.qr_code ?? null,
+      qr_code_base64: r?.qr_code_base64 ?? null,
+      payment_url: r?.payment_url ?? null,
+      expiration_date: r?.expiration_date ?? null,
+      pending: !!r?.pending,
+      message: r?.message,
+    };
+  });
 
 export const cancelPaymentIntent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderOnlySchema.parse(d))
-  .handler(({ data }) => runIntent(edgeInvoke, "cancel", { order_id: data.orderId }));
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
+      action: "cancel",
+      order_id: data.orderId,
+    } });
+    if (error) throw new Error(error.message);
+    if (r?.error) throw new Error(String(r.error));
+    const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "CANCELLED";
+    return {
+      payment_id: r?.payment_id ?? null,
+      status,
+      qr_code: r?.qr_code ?? null,
+      qr_code_base64: r?.qr_code_base64 ?? null,
+      payment_url: r?.payment_url ?? null,
+      expiration_date: r?.expiration_date ?? null,
+      pending: !!r?.pending,
+      message: r?.message,
+    };
+  });
 
 export default {
   create: createPaymentIntent,
