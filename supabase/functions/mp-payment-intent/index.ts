@@ -84,12 +84,12 @@ async function createPixPayment(token: string, params: {
     },
     body: JSON.stringify(body),
   });
-  const body = await res.json().catch(() => ({}));
+  const resBody = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = body?.message || body?.error || `MP error ${res.status}`;
+    const msg = resBody?.message || resBody?.error || `MP error ${res.status}`;
     throw new Error(msg);
   }
-  return body;
+  return resBody;
 }
 
 async function getPayment(token: string, paymentId: string) {
