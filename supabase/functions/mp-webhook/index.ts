@@ -40,31 +40,74 @@ function mapStatus(s: string | null | undefined): LocalStatus {
   }
 }
 
+/**
+ * Validação HMAC oficial do webhook do Mercado Pago.
+ *
+ * Manifest: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
+ *   - `data.id`: preferir o valor vindo da query string (`?data.id=...`),
+ *     normalizado em lowercase. Fallback: `data.id` do body.
+ *   - `x-request-id`: header `x-request-id`.
+ *   - `ts` e `v1`: extraídos do header `x-signature` (`ts=...,v1=...`).
+ * Algoritmo: HMAC-SHA256; saída em hex lowercase; comparação constant-time.
+ */
 async function verifySignature(opts: {
   secret: string | null;
   xSignature: string | null;
   xRequestId: string | null;
-  dataId: string | null;
-}): Promise<boolean> {
-  if (!opts.secret) return false; // fail-closed: sem secret configurado, rejeita
-  if (!opts.xSignature || !opts.xRequestId || !opts.dataId) return false;
-  const parts: Record<string,string> = Object.fromEntries(
+  dataIdFromQuery: string | null;
+  dataIdFromBody: string | null;
+}): Promise<{
+  ok: boolean;
+  reason?: string;
+  manifest?: string;
+  dataId?: string;
+  ts?: string;
+  calculated?: string;
+  received?: string;
+}> {
+  if (!opts.secret) return { ok: false, reason: "missing_secret" };
+  if (!opts.xSignature) return { ok: false, reason: "missing_x_signature_header" };
+
+  const parts: Record<string, string> = Object.fromEntries(
     opts.xSignature.split(",").map((p) => {
       const [k, ...r] = p.trim().split("=");
       return [k.trim(), r.join("=").trim()];
     }),
   );
-  const ts = parts.ts, v1 = parts.v1;
-  if (!ts || !v1) return false;
-  const manifest = `id:${opts.dataId};request-id:${opts.xRequestId};ts:${ts};`;
+  const ts = parts.ts;
+  const v1 = (parts.v1 ?? "").toLowerCase();
+  if (!ts) return { ok: false, reason: "missing_ts_in_x_signature" };
+  if (!v1) return { ok: false, reason: "missing_v1_in_x_signature" };
+
+  const rawDataId = opts.dataIdFromQuery ?? opts.dataIdFromBody ?? "";
+  if (!rawDataId) return { ok: false, reason: "missing_data_id" };
+  const dataId = rawDataId.toLowerCase();
+
+  const requestId = opts.xRequestId ?? "";
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(opts.secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(opts.secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(manifest));
-  const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  if (hex.length !== v1.length) return false;
+  const hex = [...new Uint8Array(sig)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (hex.length !== v1.length) {
+    return { ok: false, reason: "length_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+  }
   let diff = 0;
   for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ v1.charCodeAt(i);
-  return diff === 0;
+  if (diff !== 0) {
+    return { ok: false, reason: "hmac_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+  }
+  return { ok: true, manifest, dataId, ts, calculated: hex, received: v1 };
 }
 
 async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string | null> {
@@ -98,11 +141,14 @@ Deno.serve(async (req) => {
   const rawBody = await req.text();
   const body = (() => { try { return JSON.parse(rawBody); } catch { return {}; } })();
 
+  const url = new URL(req.url);
+  const dataIdFromQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
   const xSignature = req.headers.get("x-signature");
   const xRequestId = req.headers.get("x-request-id");
   const eventType = String(body?.type ?? body?.topic ?? "").toLowerCase() || null;
   const action = String(body?.action ?? "").toLowerCase() || null;
-  const resourceId = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+  const dataIdFromBody = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+  const resourceId = dataIdFromBody ?? dataIdFromQuery;
   const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
 
@@ -149,20 +195,40 @@ Deno.serve(async (req) => {
     return json({ ok: true, duplicated: true });
   }
 
-  // Validar assinatura
-  const okSig = await verifySignature({
+  // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
+  const sigResult = await verifySignature({
     secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
     xSignature,
     xRequestId,
-    dataId: resourceId,
+    dataIdFromQuery,
+    dataIdFromBody,
   });
-  if (!okSig) {
+
+  console.log("[mp-webhook] signature audit", {
+    ok: sigResult.ok,
+    reason: sigResult.reason ?? null,
+    manifest: sigResult.manifest ?? null,
+    data_id: sigResult.dataId ?? null,
+    data_id_source: dataIdFromQuery ? "query" : dataIdFromBody ? "body" : "none",
+    ts: sigResult.ts ?? null,
+    x_request_id: xRequestId,
+    calculated_hmac: sigResult.calculated ?? null,
+    received_hmac: sigResult.received ?? null,
+    diverged_field:
+      sigResult.ok
+        ? null
+        : sigResult.reason === "hmac_mismatch" || sigResult.reason === "length_mismatch"
+        ? "v1"
+        : sigResult.reason,
+  });
+
+  if (!sigResult.ok) {
     await sb.from("payment_webhook_events").update({
       processed: false,
-      error_message: "invalid_signature",
+      error_message: `invalid_signature:${sigResult.reason ?? "unknown"}`,
       processing_attempts: 1,
     }).eq("id", eventPk);
-    return json({ ok: false, error: "invalid_signature" }, { status: 401 });
+    return json({ ok: false, error: "invalid_signature", reason: sigResult.reason ?? null }, { status: 401 });
   }
 
   const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));
