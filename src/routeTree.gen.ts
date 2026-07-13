@@ -77,9 +77,9 @@ import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
+import { Route as ApiPublicOrdersTransitionRouteImport } from './routes/api/public/orders.transition'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
-import { Route as ApiInternalOrdersTransitionRouteImport } from './routes/api/internal/orders.transition'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -424,6 +424,12 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
   path: '/montar',
   getParentRoute: () => SlugRoute,
 } as any)
+const ApiPublicOrdersTransitionRoute =
+  ApiPublicOrdersTransitionRouteImport.update({
+    id: '/api/public/orders/transition',
+    path: '/api/public/orders/transition',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp/webhook',
   path: '/api/public/mp/webhook',
@@ -434,12 +440,6 @@ const ApiPublicMpCallbackRoute = ApiPublicMpCallbackRouteImport.update({
   path: '/api/public/mp/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiInternalOrdersTransitionRoute =
-  ApiInternalOrdersTransitionRouteImport.update({
-    id: '/api/internal/orders/transition',
-    path: '/api/internal/orders/transition',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -509,9 +509,9 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
-  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -579,9 +579,9 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
   '/entregador': typeof EntregadorIndexRoute
-  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -653,9 +653,9 @@ export interface FileRoutesById {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
-  '/api/internal/orders/transition': typeof ApiInternalOrdersTransitionRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -727,9 +727,9 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
-    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
+    | '/api/public/orders/transition'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -797,9 +797,9 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/admin'
     | '/entregador'
-    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
+    | '/api/public/orders/transition'
   id:
     | '__root__'
     | '/'
@@ -870,9 +870,9 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
-    | '/api/internal/orders/transition'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
+    | '/api/public/orders/transition'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -901,9 +901,9 @@ export interface RootRouteChildren {
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
   EntregadorIndexRoute: typeof EntregadorIndexRoute
-  ApiInternalOrdersTransitionRoute: typeof ApiInternalOrdersTransitionRoute
   ApiPublicMpCallbackRoute: typeof ApiPublicMpCallbackRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiPublicOrdersTransitionRoute: typeof ApiPublicOrdersTransitionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1384,6 +1384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugMontarRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/api/public/orders/transition': {
+      id: '/api/public/orders/transition'
+      path: '/api/public/orders/transition'
+      fullPath: '/api/public/orders/transition'
+      preLoaderRoute: typeof ApiPublicOrdersTransitionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp/webhook': {
       id: '/api/public/mp/webhook'
       path: '/api/public/mp/webhook'
@@ -1396,13 +1403,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/mp/callback'
       fullPath: '/api/public/mp/callback'
       preLoaderRoute: typeof ApiPublicMpCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/internal/orders/transition': {
-      id: '/api/internal/orders/transition'
-      path: '/api/internal/orders/transition'
-      fullPath: '/api/internal/orders/transition'
-      preLoaderRoute: typeof ApiInternalOrdersTransitionRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -1545,9 +1545,9 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,
   EntregadorIndexRoute: EntregadorIndexRoute,
-  ApiInternalOrdersTransitionRoute: ApiInternalOrdersTransitionRoute,
   ApiPublicMpCallbackRoute: ApiPublicMpCallbackRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiPublicOrdersTransitionRoute: ApiPublicOrdersTransitionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

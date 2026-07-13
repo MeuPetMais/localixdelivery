@@ -6,7 +6,7 @@
 // Nenhum UPDATE direto em orders acontece aqui — só HTTP para o Order Domain.
 
 const DEFAULT_URL =
-  "https://project--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app/api/internal/orders/transition";
+  "https://project--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app/api/public/orders/transition";
 
 export type OrderTransitionActor =
   | "customer" | "restaurant" | "admin" | "system" | "webhook" | "courier";

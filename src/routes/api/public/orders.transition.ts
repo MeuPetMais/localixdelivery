@@ -54,7 +54,7 @@ async function authenticate(request: Request, rawBody: string): Promise<{ ok: tr
   return { ok: true };
 }
 
-export const Route = createFileRoute("/api/internal/orders/transition")({
+export const Route = createFileRoute("/api/public/orders/transition")({
   server: {
     handlers: {
       POST: async ({ request }) => {
