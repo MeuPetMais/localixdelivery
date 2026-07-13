@@ -141,11 +141,14 @@ Deno.serve(async (req) => {
   const rawBody = await req.text();
   const body = (() => { try { return JSON.parse(rawBody); } catch { return {}; } })();
 
+  const url = new URL(req.url);
+  const dataIdFromQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
   const xSignature = req.headers.get("x-signature");
   const xRequestId = req.headers.get("x-request-id");
   const eventType = String(body?.type ?? body?.topic ?? "").toLowerCase() || null;
   const action = String(body?.action ?? "").toLowerCase() || null;
-  const resourceId = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+  const dataIdFromBody = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+  const resourceId = dataIdFromBody ?? dataIdFromQuery;
   const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
 
