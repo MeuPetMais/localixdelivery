@@ -225,6 +225,21 @@ Deno.serve(async (req) => {
         ?? mp?.transaction_details?.external_resource_url
         ?? null;
 
+      // Valida notification_url no response do MP — sem ela não devolvemos ticket_url.
+      const returnedNotifUrl = String(mp?.notification_url ?? "").trim();
+      if (!returnedNotifUrl || returnedNotifUrl !== notificationUrl) {
+        console.error("[mp-payment-intent] notification_url ausente/divergente no response MP", {
+          orderId, mpId: String(mp?.id ?? ""), sent: notificationUrl, received: returnedNotifUrl,
+        });
+        try { await cancelPayment(token, String(mp.id)); } catch (_) { /* ignore */ }
+        await sb.from("order_payment").update({
+          status: "CANCELLED",
+          last_error: "notification_url_missing_in_response",
+        }).eq("order_id", orderId);
+        return json({ error: "notification_url_missing_in_response" }, { status: 500 });
+      }
+
+
       const { data: postUp, error: postErr } = await sb.from("order_payment").upsert({
         order_id: orderId,
         restaurant_id: order.restaurant_id,
