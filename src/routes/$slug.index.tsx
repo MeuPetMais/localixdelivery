@@ -1181,18 +1181,11 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             // Marca pedido pendente para auto-redirecionar caso o usuário
             // volte manualmente à loja.
             try { sessionStorage.setItem(`pending-order:${restaurant.slug}`, res.orderId); } catch {}
-            // Limpa carrinho + navega o app para o acompanhamento do pedido.
+            // Limpa carrinho antes de sair para o gateway. O callback_url do
+            // Mercado Pago retorna esta mesma aba para /pedido-sucesso/:id.
             onClose();
             onCreated(res.orderId);
-            // Abre a página do gateway em nova aba — quando o usuário
-            // finalizar o pagamento, a aba do app já está no tracking e o
-            // realtime atualiza sozinho.
-            const popup = window.open(result.redirectUrl, "_blank", "noopener,noreferrer");
-            if (!popup) {
-              // Popup bloqueado: envia a mesma aba para o gateway; o
-              // pending-order garante a volta ao tracking.
-              window.location.href = result.redirectUrl;
-            }
+            window.location.assign(result.redirectUrl);
             return;
           }
           throw new Error("Gateway não retornou URL de pagamento");
