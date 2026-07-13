@@ -227,6 +227,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     } catch {}
   }, [slug]);
 
+  // Auto-redirect: se há pedido pendente para este restaurante, abre o
+  // acompanhamento imediatamente (usuário voltou do gateway ou app).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pending = sessionStorage.getItem(`pending-order:${slug}`);
+      if (pending) {
+        navigate({ to: "/pedido-sucesso/$id", params: { id: pending } });
+      }
+    } catch {}
+  }, [slug, navigate]);
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
@@ -903,7 +915,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => { setCart([]); navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } }); }} />
+              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => {
+                setCart([]);
+                try {
+                  sessionStorage.removeItem(`cart:${slug}`);
+                  sessionStorage.removeItem(`repeat:${slug}`);
+                  sessionStorage.removeItem(`builder:add:${slug}`);
+                } catch {}
+                setPendingCart(null);
+                navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
+              }} />
             </Sheet>
           </div>
         </div>
@@ -1157,8 +1178,21 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
           });
 
           if (result.redirectUrl) {
+            // Marca pedido pendente para auto-redirecionar caso o usuário
+            // volte manualmente à loja.
+            try { sessionStorage.setItem(`pending-order:${restaurant.slug}`, res.orderId); } catch {}
+            // Limpa carrinho + navega o app para o acompanhamento do pedido.
             onClose();
-            window.location.href = result.redirectUrl;
+            onCreated(res.orderId);
+            // Abre a página do gateway em nova aba — quando o usuário
+            // finalizar o pagamento, a aba do app já está no tracking e o
+            // realtime atualiza sozinho.
+            const popup = window.open(result.redirectUrl, "_blank", "noopener,noreferrer");
+            if (!popup) {
+              // Popup bloqueado: envia a mesma aba para o gateway; o
+              // pending-order garante a volta ao tracking.
+              window.location.href = result.redirectUrl;
+            }
             return;
           }
           throw new Error("Gateway não retornou URL de pagamento");
