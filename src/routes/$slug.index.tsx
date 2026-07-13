@@ -227,6 +227,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     } catch {}
   }, [slug]);
 
+  // Auto-redirect: se há pedido pendente para este restaurante, abre o
+  // acompanhamento imediatamente (usuário voltou do gateway ou app).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pending = sessionStorage.getItem(`pending-order:${slug}`);
+      if (pending) {
+        navigate({ to: "/pedido-sucesso/$id", params: { id: pending } });
+      }
+    } catch {}
+  }, [slug, navigate]);
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
