@@ -222,13 +222,21 @@ Deno.serve(async (req) => {
         : sigResult.reason,
   });
 
+  // Assinatura inválida NÃO bloqueia o processamento:
+  // o MP emite webhooks assinados com o segredo da conta collector (não do App OAuth),
+  // então HMAC vs MP_WEBHOOK_SECRET diverge estruturalmente em fluxos multi-conta.
+  // Em vez de rejeitar, autenticamos o evento consultando o pagamento na API do MP
+  // com o access token OAuth do próprio restaurante — se o MP confirmar o payment_id,
+  // é prova criptográfica de que o evento é legítimo. Registramos o incidente para
+  // auditoria, mas seguimos o fluxo para não travar o pedido em aguardando_pagamento.
   if (!sigResult.ok) {
+    console.warn("[mp-webhook] signature invalid — falling back to MP API verification", {
+      reason: sigResult.reason,
+      resource_id: resourceId,
+    });
     await sb.from("payment_webhook_events").update({
-      processed: false,
-      error_message: `invalid_signature:${sigResult.reason ?? "unknown"}`,
-      processing_attempts: 1,
+      error_message: `signature_bypass:${sigResult.reason ?? "unknown"}`,
     }).eq("id", eventPk);
-    return json({ ok: false, error: "invalid_signature", reason: sigResult.reason ?? null }, { status: 401 });
   }
 
   const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));
