@@ -915,7 +915,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => { setCart([]); navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } }); }} />
+              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => {
+                setCart([]);
+                try {
+                  sessionStorage.removeItem(`cart:${slug}`);
+                  sessionStorage.removeItem(`repeat:${slug}`);
+                  sessionStorage.removeItem(`builder:add:${slug}`);
+                } catch {}
+                setPendingCart(null);
+                navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
+              }} />
             </Sheet>
           </div>
         </div>
