@@ -57,7 +57,24 @@ async function createPixPayment(token: string, params: {
   payerEmail: string;
   expirationDate: string;
   notificationUrl: string;
+  callbackUrl?: string | null;
 }) {
+  const body: Record<string, unknown> = {
+    transaction_amount: Number(params.amount.toFixed(2)),
+    description: params.description,
+    payment_method_id: "pix",
+    external_reference: params.externalReference,
+    date_of_expiration: params.expirationDate,
+    notification_url: params.notificationUrl,
+    payer: { email: params.payerEmail },
+  };
+
+  // O retorno automático do Mercado Pago para PIX usa callback_url.
+  // Mantemos opcional para não quebrar ambiente local sem HTTPS.
+  if (params.callbackUrl && /^https:\/\/[^\s]+$/.test(params.callbackUrl)) {
+    body.callback_url = params.callbackUrl;
+  }
+
   const res = await fetch("https://api.mercadopago.com/v1/payments", {
     method: "POST",
     headers: {
@@ -65,15 +82,7 @@ async function createPixPayment(token: string, params: {
       "Authorization": `Bearer ${token}`,
       "X-Idempotency-Key": crypto.randomUUID(),
     },
-    body: JSON.stringify({
-      transaction_amount: Number(params.amount.toFixed(2)),
-      description: params.description,
-      payment_method_id: "pix",
-      external_reference: params.externalReference,
-      date_of_expiration: params.expirationDate,
-      notification_url: params.notificationUrl,
-      payer: { email: params.payerEmail },
-    }),
+    body: JSON.stringify(body),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -211,6 +220,7 @@ Deno.serve(async (req) => {
       }
 
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      const callbackUrl = String(payload?.success_url ?? "").trim();
 
       // notification_url — obrigatório para receber webhook do MP.
       const notificationUrl = (Deno.env.get("MP_NOTIFICATION_URL") ?? "https://app.rngdigital.com.br/api/public/mp/webhook").trim();
@@ -228,6 +238,7 @@ Deno.serve(async (req) => {
         order_id: orderId,
         external_reference: order.id,
         notification_url: notificationUrl,
+          callback_url: /^https:\/\/[^\s]+$/.test(callbackUrl) ? callbackUrl : null,
         payment_method: "pix",
         transaction_amount: Number(order.total),
       });
@@ -241,6 +252,7 @@ Deno.serve(async (req) => {
           payerEmail,
           expirationDate: expiration,
           notificationUrl,
+          callbackUrl,
         });
       } catch (e) {
         await sb.from("order_payment").update({
@@ -320,6 +332,7 @@ Deno.serve(async (req) => {
         qr_code: qr.qr_code ?? null,
         qr_code_base64: qr.qr_code_base64 ?? null,
         payment_url: ticketUrl,
+        callback_url: /^https:\/\/[^\s]+$/.test(callbackUrl) ? callbackUrl : null,
         expiration_date: mp?.date_of_expiration ?? expiration,
       });
     }

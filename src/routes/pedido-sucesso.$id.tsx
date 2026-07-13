@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getPaymentIntentStatus } from "@/lib/payments/PaymentIntentService";
 import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ function SuccessPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const fetchOrder = useServerFn(getPublicOrderById);
+  const syncPaymentStatus = useServerFn(getPaymentIntentStatus);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
   const { user } = useCustomerAuth();
@@ -87,6 +89,38 @@ function SuccessPage() {
 
     return () => { mounted = false; supabase.removeChannel(channel); };
   }, [id, fetchOrder, rememberRestaurantRoute]);
+
+  useEffect(() => {
+    const paymentMethod = String(order?.payment_method ?? "").toLowerCase();
+    const waitingPayment = order?.status === "aguardando_pagamento";
+    const canSync = order?.id && waitingPayment && (paymentMethod === "pix" || paymentMethod === "credit_card");
+    if (!canSync) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 12;
+
+    async function pollPaymentApproval() {
+      while (!cancelled && attempts < maxAttempts) {
+        attempts += 1;
+        try {
+          const payment = await syncPaymentStatus({ data: { orderId: id } });
+          const refreshed = await fetchOrder({ data: { id } });
+          if (cancelled) return;
+          if (refreshed?.order) setOrder(refreshed.order);
+          if (payment?.status === "APPROVED" || refreshed?.order?.status !== "aguardando_pagamento") return;
+        } catch {
+          // Webhook/realtime seguem como fonte principal; este polling é fallback de retorno.
+        }
+        if (!cancelled && attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+        }
+      }
+    }
+
+    pollPaymentApproval();
+    return () => { cancelled = true; };
+  }, [order?.id, order?.status, order?.payment_method, id, fetchOrder, syncPaymentStatus]);
 
   const { subtotal, delivery, items } = useMemo(() => {
     const its: OrderItem[] = Array.isArray(order?.items) ? order.items : [];

@@ -61,6 +61,8 @@ export const MercadoPagoProvider: PaymentProvider = {
         order_id: input.orderId,
         payment_method: input.method === "card" ? "credit_card" : "pix",
         payer_email: input.customerEmail,
+        success_url: input.successUrl,
+        cancel_url: input.cancelUrl,
       },
     });
     if (error) throw new Error(error.message);
