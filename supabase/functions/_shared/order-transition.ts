@@ -2,7 +2,6 @@
 // Usado por edge functions de webhook (Stripe, Mercado Pago). Encapsula:
 //   - URL do endpoint interno (env INTERNAL_TRANSITION_URL, fallback published URL)
 //   - HMAC signature (INTERNAL_TRANSITION_HMAC_SECRET)
-//   - HMAC signature (INTERNAL_TRANSITION_HMAC_SECRET)
 //   - fallback direto por RPC transacional se a rota pública ainda estiver com
 //     deploy antigo/autenticação divergente. Nunca faz UPDATE direto em orders.
 
