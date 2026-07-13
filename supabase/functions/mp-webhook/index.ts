@@ -40,31 +40,74 @@ function mapStatus(s: string | null | undefined): LocalStatus {
   }
 }
 
+/**
+ * Validação HMAC oficial do webhook do Mercado Pago.
+ *
+ * Manifest: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
+ *   - `data.id`: preferir o valor vindo da query string (`?data.id=...`),
+ *     normalizado em lowercase. Fallback: `data.id` do body.
+ *   - `x-request-id`: header `x-request-id`.
+ *   - `ts` e `v1`: extraídos do header `x-signature` (`ts=...,v1=...`).
+ * Algoritmo: HMAC-SHA256; saída em hex lowercase; comparação constant-time.
+ */
 async function verifySignature(opts: {
   secret: string | null;
   xSignature: string | null;
   xRequestId: string | null;
-  dataId: string | null;
-}): Promise<boolean> {
-  if (!opts.secret) return false; // fail-closed: sem secret configurado, rejeita
-  if (!opts.xSignature || !opts.xRequestId || !opts.dataId) return false;
-  const parts: Record<string,string> = Object.fromEntries(
+  dataIdFromQuery: string | null;
+  dataIdFromBody: string | null;
+}): Promise<{
+  ok: boolean;
+  reason?: string;
+  manifest?: string;
+  dataId?: string;
+  ts?: string;
+  calculated?: string;
+  received?: string;
+}> {
+  if (!opts.secret) return { ok: false, reason: "missing_secret" };
+  if (!opts.xSignature) return { ok: false, reason: "missing_x_signature_header" };
+
+  const parts: Record<string, string> = Object.fromEntries(
     opts.xSignature.split(",").map((p) => {
       const [k, ...r] = p.trim().split("=");
       return [k.trim(), r.join("=").trim()];
     }),
   );
-  const ts = parts.ts, v1 = parts.v1;
-  if (!ts || !v1) return false;
-  const manifest = `id:${opts.dataId};request-id:${opts.xRequestId};ts:${ts};`;
+  const ts = parts.ts;
+  const v1 = (parts.v1 ?? "").toLowerCase();
+  if (!ts) return { ok: false, reason: "missing_ts_in_x_signature" };
+  if (!v1) return { ok: false, reason: "missing_v1_in_x_signature" };
+
+  const rawDataId = opts.dataIdFromQuery ?? opts.dataIdFromBody ?? "";
+  if (!rawDataId) return { ok: false, reason: "missing_data_id" };
+  const dataId = rawDataId.toLowerCase();
+
+  const requestId = opts.xRequestId ?? "";
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(opts.secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(opts.secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(manifest));
-  const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  if (hex.length !== v1.length) return false;
+  const hex = [...new Uint8Array(sig)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (hex.length !== v1.length) {
+    return { ok: false, reason: "length_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+  }
   let diff = 0;
   for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ v1.charCodeAt(i);
-  return diff === 0;
+  if (diff !== 0) {
+    return { ok: false, reason: "hmac_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+  }
+  return { ok: true, manifest, dataId, ts, calculated: hex, received: v1 };
 }
 
 async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string | null> {
