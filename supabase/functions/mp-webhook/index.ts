@@ -180,8 +180,9 @@ Deno.serve(async (req) => {
     const { data: op } = await sb
       .from("order_payment")
       .select("order_id, orders:order_id(id, restaurant_id)")
-      .eq("provider_payment_id", resourceId)
-      .maybeSingle();
+        .eq("payment_id", resourceId)
+        .maybeSingle();
+
 
     let orderId: string | null = op?.order_id ?? null;
     let restaurantId: string | null = (op as any)?.orders?.restaurant_id ?? null;
