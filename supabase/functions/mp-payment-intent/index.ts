@@ -55,6 +55,7 @@ async function createPixPayment(token: string, params: {
   externalReference: string;
   payerEmail: string;
   expirationDate: string;
+  notificationUrl: string;
 }) {
   const res = await fetch("https://api.mercadopago.com/v1/payments", {
     method: "POST",
@@ -69,6 +70,7 @@ async function createPixPayment(token: string, params: {
       payment_method_id: "pix",
       external_reference: params.externalReference,
       date_of_expiration: params.expirationDate,
+      notification_url: params.notificationUrl,
       payer: { email: params.payerEmail },
     }),
   });
@@ -177,6 +179,27 @@ Deno.serve(async (req) => {
       }
 
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+      // notification_url — obrigatório para receber webhook do MP.
+      const notificationUrl = (Deno.env.get("MP_NOTIFICATION_URL") ?? "https://app.rngdigital.com.br/api/public/mp/webhook").trim();
+      if (!/^https:\/\/[^\s]+\/api\/public\/mp\/webhook$/.test(notificationUrl)) {
+        console.error("[mp-payment-intent] notification_url inválida", { orderId, notificationUrl });
+        await sb.from("order_payment").update({
+          status: "PENDING",
+          last_error: "notification_url_invalid",
+        }).eq("order_id", orderId);
+        return json({ error: "notification_url_invalid" }, { status: 500 });
+      }
+
+      console.log("[mp-payment-intent] creating pix", {
+        restaurant_id: order.restaurant_id,
+        order_id: orderId,
+        external_reference: order.id,
+        notification_url: notificationUrl,
+        payment_method: "pix",
+        transaction_amount: Number(order.total),
+      });
+
       let mp;
       try {
         mp = await createPixPayment(token, {
@@ -185,6 +208,7 @@ Deno.serve(async (req) => {
           externalReference: order.id,
           payerEmail,
           expirationDate: expiration,
+          notificationUrl,
         });
       } catch (e) {
         await sb.from("order_payment").update({
@@ -194,11 +218,27 @@ Deno.serve(async (req) => {
         return json({ error: String((e as Error).message ?? e) }, { status: 502 });
       }
 
+
       const qr = mp?.point_of_interaction?.transaction_data ?? {};
       const status = mapStatus(mp?.status);
       const ticketUrl = mp?.point_of_interaction?.transaction_data?.ticket_url
         ?? mp?.transaction_details?.external_resource_url
         ?? null;
+
+      // Valida notification_url no response do MP — sem ela não devolvemos ticket_url.
+      const returnedNotifUrl = String(mp?.notification_url ?? "").trim();
+      if (!returnedNotifUrl || returnedNotifUrl !== notificationUrl) {
+        console.error("[mp-payment-intent] notification_url ausente/divergente no response MP", {
+          orderId, mpId: String(mp?.id ?? ""), sent: notificationUrl, received: returnedNotifUrl,
+        });
+        try { await cancelPayment(token, String(mp.id)); } catch (_) { /* ignore */ }
+        await sb.from("order_payment").update({
+          status: "CANCELLED",
+          last_error: "notification_url_missing_in_response",
+        }).eq("order_id", orderId);
+        return json({ error: "notification_url_missing_in_response" }, { status: 500 });
+      }
+
 
       const { data: postUp, error: postErr } = await sb.from("order_payment").upsert({
         order_id: orderId,
