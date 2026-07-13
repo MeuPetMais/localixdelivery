@@ -195,20 +195,40 @@ Deno.serve(async (req) => {
     return json({ ok: true, duplicated: true });
   }
 
-  // Validar assinatura
-  const okSig = await verifySignature({
+  // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
+  const sigResult = await verifySignature({
     secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
     xSignature,
     xRequestId,
-    dataId: resourceId,
+    dataIdFromQuery,
+    dataIdFromBody,
   });
-  if (!okSig) {
+
+  console.log("[mp-webhook] signature audit", {
+    ok: sigResult.ok,
+    reason: sigResult.reason ?? null,
+    manifest: sigResult.manifest ?? null,
+    data_id: sigResult.dataId ?? null,
+    data_id_source: dataIdFromQuery ? "query" : dataIdFromBody ? "body" : "none",
+    ts: sigResult.ts ?? null,
+    x_request_id: xRequestId,
+    calculated_hmac: sigResult.calculated ?? null,
+    received_hmac: sigResult.received ?? null,
+    diverged_field:
+      sigResult.ok
+        ? null
+        : sigResult.reason === "hmac_mismatch" || sigResult.reason === "length_mismatch"
+        ? "v1"
+        : sigResult.reason,
+  });
+
+  if (!sigResult.ok) {
     await sb.from("payment_webhook_events").update({
       processed: false,
-      error_message: "invalid_signature",
+      error_message: `invalid_signature:${sigResult.reason ?? "unknown"}`,
       processing_attempts: 1,
     }).eq("id", eventPk);
-    return json({ ok: false, error: "invalid_signature" }, { status: 401 });
+    return json({ ok: false, error: "invalid_signature", reason: sigResult.reason ?? null }, { status: 401 });
   }
 
   const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));
