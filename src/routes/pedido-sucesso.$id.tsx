@@ -49,6 +49,13 @@ function SuccessPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try { setWaUrl(window.sessionStorage.getItem(`wa-url:${id}`)); } catch {}
+    // Limpa marcadores de pedido pendente — usuário chegou ao tracking.
+    try {
+      for (let i = window.sessionStorage.length - 1; i >= 0; i--) {
+        const k = window.sessionStorage.key(i);
+        if (k && k.startsWith("pending-order:")) window.sessionStorage.removeItem(k);
+      }
+    } catch {}
   }, [id]);
 
   useEffect(() => {
