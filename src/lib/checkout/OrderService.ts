@@ -9,6 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import PricingEngine, { PricingError, type PaymentMethod, type ProviderId } from "@/lib/payments/PricingEngine";
+import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
 
 const CHECKOUT_METHODS = [
   "pix",
@@ -58,8 +59,9 @@ const inputSchema = z.object({
 export type CheckoutInput = z.infer<typeof inputSchema>;
 
 export const createCheckoutOrder = createServerFn({ method: "POST" })
+  .middleware([optionalSupabaseAuth])
   .inputValidator((d: unknown) => inputSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1) Validar restaurante ativo + conectado
@@ -99,6 +101,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         restaurant_id: rest.id,
+        customer_id: context.userId,
         customer_name: data.customer.name,
         customer_phone: data.customer.phone,
         address: data.customer.address,
