@@ -55,6 +55,7 @@ async function createPixPayment(token: string, params: {
   externalReference: string;
   payerEmail: string;
   expirationDate: string;
+  notificationUrl: string;
 }) {
   const res = await fetch("https://api.mercadopago.com/v1/payments", {
     method: "POST",
@@ -69,6 +70,7 @@ async function createPixPayment(token: string, params: {
       payment_method_id: "pix",
       external_reference: params.externalReference,
       date_of_expiration: params.expirationDate,
+      notification_url: params.notificationUrl,
       payer: { email: params.payerEmail },
     }),
   });
