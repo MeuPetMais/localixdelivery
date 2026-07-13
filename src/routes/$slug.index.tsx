@@ -915,7 +915,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId) => {
+              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId, options) => {
                 setCart([]);
                 try {
                   sessionStorage.removeItem(`cart:${slug}`);
@@ -923,7 +923,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   sessionStorage.removeItem(`builder:add:${slug}`);
                 } catch {}
                 setPendingCart(null);
-                navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
+                if (options?.navigate !== false) {
+                  navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
+                }
               }} />
             </Sheet>
           </div>
@@ -952,7 +954,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   restaurant: any; cart: CartItem[]; subtotal: number;
   dec: (id: string) => void; add: (it: { id: string; name: string; price: number }) => void;
   onClose: () => void;
-  onCreated: (orderId: string) => void;
+  onCreated: (orderId: string, options?: { navigate?: boolean }) => void;
 }) {
   const { user } = useCustomerAuth();
   const qc = useQueryClient();
@@ -1181,10 +1183,11 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
             // Marca pedido pendente para auto-redirecionar caso o usuário
             // volte manualmente à loja.
             try { sessionStorage.setItem(`pending-order:${restaurant.slug}`, res.orderId); } catch {}
-            // Limpa carrinho antes de sair para o gateway. O callback_url do
-            // Mercado Pago retorna esta mesma aba para /pedido-sucesso/:id.
+            // Limpa carrinho antes de sair para o gateway sem navegar agora.
+            // O callback_url do Mercado Pago retorna esta mesma aba para
+            // /pedido-sucesso/:id após a confirmação.
             onClose();
-            onCreated(res.orderId);
+            onCreated(res.orderId, { navigate: false });
             window.location.assign(result.redirectUrl);
             return;
           }
