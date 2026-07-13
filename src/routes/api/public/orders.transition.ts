@@ -1,9 +1,10 @@
 // RC4.2 — Endpoint interno para transições de status de pedidos.
 // USO EXCLUSIVO por chamadores server-to-server (edge functions de webhook).
-// Autenticação em dupla camada:
-//   1. Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>
-//   2. x-internal-signature: HMAC-SHA256(rawBody, INTERNAL_TRANSITION_HMAC_SECRET)
-// Falha qualquer camada → 401. Nunca exposto ao frontend.
+// Autenticação server-to-server por HMAC:
+//   - x-internal-signature: HMAC-SHA256(rawBody, INTERNAL_TRANSITION_HMAC_SECRET)
+// Authorization pode ser enviado como camada extra de auditoria, mas não é a
+// raiz de confiança porque os runtimes podem expor chaves internas diferentes.
+// Falha no HMAC → 401. Nunca exposto ao frontend.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
@@ -41,16 +42,18 @@ function safeEqualStr(a: string, b: string): boolean {
 async function authenticate(request: Request, rawBody: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const hmacSecret = process.env.INTERNAL_TRANSITION_HMAC_SECRET;
-  if (!serviceKey || !hmacSecret) return { ok: false, error: "internal_auth_not_configured" };
-
-  const auth = request.headers.get("authorization") ?? "";
-  const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!bearer || !safeEqualStr(bearer, serviceKey)) return { ok: false, error: "invalid_bearer" };
+  if (!hmacSecret) return { ok: false, error: "internal_auth_not_configured" };
 
   const signature = request.headers.get("x-internal-signature") ?? "";
   if (!signature) return { ok: false, error: "missing_signature" };
   const expected = createHmac("sha256", hmacSecret).update(rawBody).digest("hex");
   if (!safeEqualStr(signature, expected)) return { ok: false, error: "invalid_signature" };
+
+  const auth = request.headers.get("authorization") ?? "";
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (serviceKey && bearer && !safeEqualStr(bearer, serviceKey)) {
+    console.warn("[internal.orders.transition] bearer mismatch ignored after valid HMAC");
+  }
   return { ok: true };
 }
 

@@ -8,6 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
+import { transitionOrder } from "../_shared/order-transition.ts";
 
 type MpStatus = "pending" | "in_process" | "approved" | "rejected" | "cancelled" | "refunded" | "charged_back";
 type LocalStatus = "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED";
@@ -100,6 +101,37 @@ async function cancelPayment(token: string, paymentId: string) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body?.message || `MP error ${res.status}`);
   return body;
+}
+
+async function syncOrderStatusFromPayment(orderId: string, status: LocalStatus, source: string, rawStatus?: string | null) {
+  const target: Record<LocalStatus, string | null> = {
+    APPROVED: "pago",
+    REJECTED: "falha_pagamento",
+    CANCELLED: "falha_pagamento",
+    EXPIRED: "falha_pagamento",
+    PENDING: null,
+    PROCESSING: null,
+  };
+  const to = target[status];
+  if (!to) return;
+  const correlationId = `${source}:${orderId}:${crypto.randomUUID()}`;
+  const tr = await transitionOrder({
+    orderId,
+    to,
+    reason: `mp:${status.toLowerCase()}`,
+    actorType: "webhook",
+    service: source,
+    correlationId,
+    metadata: { mp_status: rawStatus ?? status, fallback: "payment_intent_status" },
+  });
+  if (!tr.ok) {
+    console.warn("[mp-payment-intent] order transition rejected", {
+      orderId,
+      correlationId,
+      to,
+      reason: tr.reason ?? tr.error,
+    });
+  }
 }
 
 Deno.serve(async (req) => {
@@ -262,6 +294,8 @@ Deno.serve(async (req) => {
         return json({ error: "order_payment_persist_failed" }, { status: 500 });
       }
 
+      await syncOrderStatusFromPayment(orderId, status, "mp-payment-intent:create", mp?.status ?? null);
+
       // Também popula `payments` (mesmo schema que Stripe) para consistência cross-gateway.
       const { error: payErr } = await sb.from("payments").upsert({
         order_id: orderId,
@@ -304,6 +338,7 @@ Deno.serve(async (req) => {
       }
 
       await sb.from("order_payment").update({ status: finalStatus }).eq("order_id", orderId);
+      await syncOrderStatusFromPayment(orderId, finalStatus, "mp-payment-intent:status", mp?.status ?? null);
       return json({ status: finalStatus, payment_id: existing.payment_id, raw_status: mp?.status });
     }
 
