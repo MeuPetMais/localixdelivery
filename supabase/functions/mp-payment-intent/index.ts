@@ -90,7 +90,6 @@ async function createPixPayment(token: string, params: {
     throw new Error(msg);
   }
   return resBody;
-  return body;
 }
 
 async function getPayment(token: string, paymentId: string) {
