@@ -180,8 +180,9 @@ Deno.serve(async (req) => {
     const { data: op } = await sb
       .from("order_payment")
       .select("order_id, orders:order_id(id, restaurant_id)")
-      .eq("provider_payment_id", resourceId)
-      .maybeSingle();
+        .eq("payment_id", resourceId)
+        .maybeSingle();
+
 
     let orderId: string | null = op?.order_id ?? null;
     let restaurantId: string | null = (op as any)?.orders?.restaurant_id ?? null;
@@ -226,13 +227,51 @@ Deno.serve(async (req) => {
     }
 
     const amount = Number(mp.transaction_amount ?? 0) || 0;
+    const ticketUrl = mp?.point_of_interaction?.transaction_data?.ticket_url
+      ?? mp?.transaction_details?.external_resource_url
+      ?? null;
+    const qr = mp?.point_of_interaction?.transaction_data ?? {};
 
-    await sb.from("order_payment").update({
+    // order_payment — upsert (garante linha mesmo se checkout não criou)
+    const { data: opUp, error: opErr } = await sb.from("order_payment").upsert({
+      order_id: orderId,
+      restaurant_id: restaurantId!,
+      provider: "mercado_pago",
+      payment_method: mp?.payment_type_id === "credit_card" ? "credit_card" : "pix",
       status: local,
       transaction_amount: amount,
-      provider_payment_id: String(mp.id),
+      payment_id: String(mp.id),
+      payment_intent: String(mp.id),
+      external_reference: mp?.external_reference ?? orderId,
+      payment_url: ticketUrl,
+      qr_code: qr.qr_code ?? null,
+      qr_code_base64: qr.qr_code_base64 ?? null,
       updated_at: new Date().toISOString(),
-    }).eq("order_id", orderId);
+    }, { onConflict: "order_id" }).select("id");
+    if (opErr || !opUp || opUp.length === 0) {
+      console.error("[mp-webhook] order_payment upsert failed", { orderId, error: opErr?.message, rows: opUp?.length ?? 0 });
+    }
+
+    // payments — mesma estrutura que Stripe (cross-gateway).
+    const { error: payErr } = await sb.from("payments").upsert({
+      order_id: orderId,
+      restaurant_id: restaurantId!,
+      provider: "mercado_pago",
+      external_id: String(mp.id),
+      method: mp?.payment_type_id === "credit_card" ? "card" : "pix",
+      status: local.toLowerCase(),
+      amount,
+      currency: mp?.currency_id ?? "BRL",
+      qr_code: qr.qr_code ?? null,
+      qr_code_base64: qr.qr_code_base64 ?? null,
+      ticket_url: ticketUrl,
+      payer_email: mp?.payer?.email ?? null,
+      paid_at: local === "APPROVED" ? (mp?.date_approved ?? new Date().toISOString()) : null,
+      raw: mp,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "provider,external_id" });
+    if (payErr) console.error("[mp-webhook] payments upsert failed", { orderId, mpId: String(mp.id), error: payErr.message });
+
 
     // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
     const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;

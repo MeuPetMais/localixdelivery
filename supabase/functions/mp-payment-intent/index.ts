@@ -133,13 +133,19 @@ Deno.serve(async (req) => {
     if (action === "create") {
       // Cartão: estrutura pronta, integração fica para próximo prompt
       if (method !== "pix") {
-        await sb.from("order_payment").update({
+        const { data: upd, error: upErr } = await sb.from("order_payment").upsert({
+          order_id: orderId,
+          restaurant_id: order.restaurant_id,
           provider: "mercado_pago",
           payment_method: method,
           status: "PENDING",
           transaction_amount: order.total,
           last_error: null,
-        }).eq("order_id", orderId);
+        }, { onConflict: "order_id" }).select("id");
+        if (upErr || !upd || upd.length === 0) {
+          console.error("[mp-payment-intent] order_payment upsert failed (card)", { orderId, error: upErr?.message, rows: upd?.length ?? 0 });
+          return json({ error: "order_payment_persist_failed" }, { status: 500 });
+        }
         return json({
           pending: true,
           message: "Cartão será implementado em etapa futura",
@@ -153,6 +159,23 @@ Deno.serve(async (req) => {
       if (!payerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payerEmail)) {
         return json({ error: "payer_email_required" }, { status: 400 });
       }
+
+      // Garante linha em order_payment ANTES de chamar o MP.
+      const { data: preUp, error: preErr } = await sb.from("order_payment").upsert({
+        order_id: orderId,
+        restaurant_id: order.restaurant_id,
+        provider: "mercado_pago",
+        payment_method: "pix",
+        status: "PENDING",
+        transaction_amount: order.total,
+        external_reference: order.id,
+        last_error: null,
+      }, { onConflict: "order_id" }).select("id");
+      if (preErr || !preUp || preUp.length === 0) {
+        console.error("[mp-payment-intent] order_payment pre-upsert failed", { orderId, error: preErr?.message, rows: preUp?.length ?? 0 });
+        return json({ error: "order_payment_persist_failed" }, { status: 500 });
+      }
+
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       let mp;
       try {
@@ -173,8 +196,13 @@ Deno.serve(async (req) => {
 
       const qr = mp?.point_of_interaction?.transaction_data ?? {};
       const status = mapStatus(mp?.status);
+      const ticketUrl = mp?.point_of_interaction?.transaction_data?.ticket_url
+        ?? mp?.transaction_details?.external_resource_url
+        ?? null;
 
-      await sb.from("order_payment").update({
+      const { data: postUp, error: postErr } = await sb.from("order_payment").upsert({
+        order_id: orderId,
+        restaurant_id: order.restaurant_id,
         provider: "mercado_pago",
         payment_method: "pix",
         payment_id: String(mp.id),
@@ -185,21 +213,43 @@ Deno.serve(async (req) => {
         expiration_date: mp?.date_of_expiration ?? expiration,
         qr_code: qr.qr_code ?? null,
         qr_code_base64: qr.qr_code_base64 ?? null,
-        payment_url: mp?.point_of_interaction?.transaction_data?.ticket_url
-          ?? mp?.transaction_details?.external_resource_url
-          ?? null,
+        payment_url: ticketUrl,
         last_error: null,
-      }).eq("order_id", orderId);
+      }, { onConflict: "order_id" }).select("id");
+
+      if (postErr || !postUp || postUp.length === 0) {
+        console.error("[mp-payment-intent] order_payment post-upsert failed", { orderId, mpId: String(mp.id), error: postErr?.message, rows: postUp?.length ?? 0 });
+        return json({ error: "order_payment_persist_failed" }, { status: 500 });
+      }
+
+      // Também popula `payments` (mesmo schema que Stripe) para consistência cross-gateway.
+      const { error: payErr } = await sb.from("payments").upsert({
+        order_id: orderId,
+        restaurant_id: order.restaurant_id,
+        provider: "mercado_pago",
+        external_id: String(mp.id),
+        method: "pix",
+        status: status.toLowerCase(),
+        amount: Number(mp?.transaction_amount ?? order.total),
+        currency: mp?.currency_id ?? "BRL",
+        qr_code: qr.qr_code ?? null,
+        qr_code_base64: qr.qr_code_base64 ?? null,
+        ticket_url: ticketUrl,
+        payer_email: payerEmail,
+        raw: mp,
+      }, { onConflict: "provider,external_id" });
+      if (payErr) console.error("[mp-payment-intent] payments upsert failed", { orderId, error: payErr.message });
 
       return json({
         payment_id: String(mp.id),
         status,
         qr_code: qr.qr_code ?? null,
         qr_code_base64: qr.qr_code_base64 ?? null,
-        payment_url: mp?.point_of_interaction?.transaction_data?.ticket_url ?? null,
+        payment_url: ticketUrl,
         expiration_date: mp?.date_of_expiration ?? expiration,
       });
     }
+
 
     // ---------- STATUS ----------
     if (action === "status") {
