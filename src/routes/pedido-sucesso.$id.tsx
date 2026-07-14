@@ -216,7 +216,7 @@ function SuccessPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-success/5 via-background to-muted/30">
-      {showPaidOverlay && (
+      {showPaidOverlay && !isOfflinePaymentMethod(order?.payment_method) && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur-sm px-4 animate-in fade-in">
           <Card className="w-full max-w-sm p-6 text-center shadow-2xl">
             <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
