@@ -2,6 +2,7 @@ import { OPERATIONS_COLUMNS } from "@/lib/operations";
 import type { OperationsOrderCard } from "@/lib/operations";
 import { columnForState } from "@/lib/operations";
 import { cn } from "@/lib/utils";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 interface Props {
   cards: OperationsOrderCard[];
