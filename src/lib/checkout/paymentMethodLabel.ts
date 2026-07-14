@@ -4,26 +4,62 @@
 const LABELS: Record<string, string> = {
   pix: "Pix",
   credit_card: "Cartão Online",
+  credit: "Cartão Online",
+  debit_card: "Cartão Online",
+  debit: "Cartão Online",
   card_on_delivery: "💳 Cartão na entrega",
+  "cartao na entrega": "💳 Cartão na entrega",
+  "cartão na entrega": "💳 Cartão na entrega",
   cash: "💵 Dinheiro",
+  dinheiro: "💵 Dinheiro",
+  especie: "💵 Dinheiro",
+  "espécie": "💵 Dinheiro",
   meal_voucher: "🍽️ Vale Alimentação / Refeição",
+  food_voucher: "🍽️ Vale Alimentação / Refeição",
+  vr: "🍽️ Vale Alimentação / Refeição",
+  va: "🍽️ Vale Alimentação / Refeição",
+  "vale refeicao": "🍽️ Vale Alimentação / Refeição",
+  "vale refeição": "🍽️ Vale Alimentação / Refeição",
+  "vale alimentacao": "🍽️ Vale Alimentação / Refeição",
+  "vale alimentação": "🍽️ Vale Alimentação / Refeição",
   google_pay: "Google Pay",
   apple_pay: "Apple Pay",
 };
 
+function normalizeMethodKey(method: string): string {
+  return String(method).trim().toLowerCase();
+}
+
 export function paymentMethodLabel(method?: string | null): string {
   if (!method) return "—";
-  const key = String(method).toLowerCase();
+  const key = normalizeMethodKey(method);
   return LABELS[key] ?? method;
 }
 
 // Métodos pagos fora do app (na entrega).
-const OFFLINE_METHODS = new Set(["cash", "card_on_delivery", "meal_voucher"]);
+const OFFLINE_KEYS = new Set([
+  "cash",
+  "dinheiro",
+  "especie",
+  "espécie",
+  "card_on_delivery",
+  "cartao na entrega",
+  "cartão na entrega",
+  "meal_voucher",
+  "food_voucher",
+  "vr",
+  "va",
+  "vale refeicao",
+  "vale refeição",
+  "vale alimentacao",
+  "vale alimentação",
+]);
 
 export function isOfflinePaymentMethod(method?: string | null): boolean {
   if (!method) return false;
-  return OFFLINE_METHODS.has(String(method).toLowerCase());
+  return OFFLINE_KEYS.has(normalizeMethodKey(method));
 }
+
 
 /**
  * Mensagem de notificação exibida ao cliente quando o pedido entra em
