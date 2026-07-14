@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { ReviewForm } from "@/components/ReviewForm";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
