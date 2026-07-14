@@ -55,10 +55,11 @@ type Ctx = {
 
 const OrdersRealtimeContext = createContext<Ctx | null>(null);
 
-const PENDING_STATUSES = new Set(["novo", "aguardando_confirmacao"]);
+const PENDING_STATUSES = new Set(["pago", "novo", "aguardando_confirmacao"]);
 
 const STATUS_TO_SOUND: Record<string, OrderSoundKey> = {
   novo: "new",
+  pago: "new",
   aguardando_confirmacao: "new",
   em_preparo: "preparing",
   pronto: "out_for_delivery",
@@ -106,7 +107,7 @@ export function OrdersRealtimeProvider({
       await transition({
         data: {
           orderId: latest.id,
-          to: "em_preparo",
+          to: latest.status === "pago" ? "aceito" : "em_preparo",
           actorType: "restaurant",
         },
       });
@@ -125,7 +126,7 @@ export function OrdersRealtimeProvider({
         .from("orders")
         .select("id, order_number, customer_name, total, payment_method, status, created_at")
         .eq("restaurant_id", restaurantId)
-        .in("status", ["novo", "aguardando_confirmacao"])
+        .in("status", ["pago", "novo", "aguardando_confirmacao"])
         .order("created_at", { ascending: true });
       if (!active) return;
       const rows = ((data ?? []) as PendingOrder[]).map((o) => ({

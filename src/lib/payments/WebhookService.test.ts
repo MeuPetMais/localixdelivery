@@ -74,7 +74,7 @@ describe("handleWebhook - fluxos", () => {
     expect(out.ok).toBe(true);
     expect(out.status).toBe("APPROVED");
     expect(out.eventName).toBe("PaymentApproved");
-    expect(deps.updateOrder).toHaveBeenCalledWith("order-xyz", { status: "novo" });
+    expect(deps.updateOrder).toHaveBeenCalledWith("order-xyz", { status: "pago" });
     expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "PAYMENT_APPROVED", amount: 50 }));
     expect(published[0]?.name).toBe("PaymentApproved");
   });
