@@ -242,7 +242,10 @@ function SuccessPage() {
           </Card>
         </div>
       )}
-      <main className={`mx-auto max-w-md px-4 py-8 ${order?.status === "aguardando_pagamento" ? "pb-40" : "pb-24"}`}>
+      <main
+        className={`mx-auto max-w-md px-4 py-8 ${order?.status === "aguardando_pagamento" ? "pb-44" : "pb-24"}`}
+        style={order?.status === "aguardando_pagamento" ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" } : undefined}
+      >
         <div className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
             <CheckCircle2 className="h-10 w-10" />
@@ -462,8 +465,8 @@ function SuccessPage() {
 
       {order?.status === "aguardando_pagamento" && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          className="fixed inset-x-0 z-50 border-t border-border/60 bg-background/95 shadow-[0_-4px_20px_rgba(0,0,0,0.10)] backdrop-blur supports-[backdrop-filter]:bg-background/85"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
         >
           <div className="mx-auto max-w-md px-4 py-3">
             <Button

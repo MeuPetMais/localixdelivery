@@ -145,7 +145,10 @@ function TrackOrder() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl space-y-4 px-4 py-5">
+      <main
+        className={`mx-auto max-w-2xl space-y-4 px-4 py-5 ${order.status === "aguardando_pagamento" ? "pb-44" : "pb-24"}`}
+        style={order.status === "aguardando_pagamento" ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" } : undefined}
+      >
         {/* Timeline */}
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
@@ -233,18 +236,6 @@ function TrackOrder() {
           </Button>
         </div>
 
-        {order.status === "aguardando_pagamento" && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setCancelOpen(true)}
-            disabled={cancelling}
-          >
-            Cancelar pedido
-          </Button>
-        )}
-
         <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -290,6 +281,26 @@ function TrackOrder() {
           </AlertDialogContent>
         </AlertDialog>
       </main>
+
+      {order.status === "aguardando_pagamento" && (
+        <div
+          className="fixed inset-x-0 z-50 border-t border-border/60 bg-background/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.10)] backdrop-blur supports-[backdrop-filter]:bg-background/85"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto max-w-2xl">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+              Cancelar pedido
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
