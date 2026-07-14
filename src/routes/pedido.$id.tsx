@@ -15,6 +15,7 @@ import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, Check
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 
 
