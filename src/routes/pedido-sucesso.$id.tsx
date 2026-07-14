@@ -83,6 +83,7 @@ function SuccessPage() {
     return () => clearTimeout(t);
   }, [showPaidOverlay, countdown]);
 
+  useEffect(() => {
     let mounted = true;
     async function load() {
       const res = await fetchOrder({ data: { id } });
