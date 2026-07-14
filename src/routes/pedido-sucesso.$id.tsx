@@ -396,17 +396,6 @@ function SuccessPage() {
           <Button variant="ghost" size="sm" onClick={shareOrder}>
             <Share2 className="mr-1.5 h-4 w-4" /> Compartilhar pedido
           </Button>
-          {order?.status === "aguardando_pagamento" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setCancelOpen(true)}
-              disabled={cancelling}
-            >
-              Cancelar pedido
-            </Button>
-          )}
         </div>
 
         <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
