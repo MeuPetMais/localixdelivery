@@ -2,15 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getPublicOrderById, cancelOrderByCustomer } from "@/lib/public-orders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { brl } from "@/lib/format";
 import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+
 
 
 export const Route = createFileRoute("/pedido/$id")({
@@ -54,10 +59,14 @@ function TrackOrder() {
   const navigate = useNavigate();
   const { restaurantPath } = useCustomerNavigation();
   const fetchOrder = useServerFn(getPublicOrderById);
+  const cancelOrderFn = useServerFn(cancelOrderByCustomer);
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const lastStatusRef = useRef<string | null>(null);
+
 
   useEffect(() => {
     let mounted = true;
@@ -223,10 +232,68 @@ function TrackOrder() {
             <Store className="mr-1.5 h-4 w-4" /> Meus pedidos
           </Button>
         </div>
+
+        {order.status === "aguardando_pagamento" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setCancelOpen(true)}
+            disabled={cancelling}
+          >
+            Cancelar pedido
+          </Button>
+        )}
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será necessário realizar um novo pedido caso queira comprar novamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelling}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setCancelling(true);
+                  try {
+                    await cancelOrderFn({ data: { orderId: id } });
+                    try {
+                      const slug = restaurant?.slug;
+                      if (slug) {
+                        window.sessionStorage.removeItem(`cart:${slug}`);
+                        window.sessionStorage.removeItem(`pending-order:${slug}`);
+                        window.sessionStorage.removeItem(`repeat:${slug}`);
+                      }
+                      window.sessionStorage.removeItem(`wa-url:${id}`);
+                    } catch {}
+                    setOrder((prev) => prev ? { ...prev, status: "cancelado" } : prev);
+                    toast.success("Pedido cancelado com sucesso");
+                    setCancelOpen(false);
+                    navigate({ to: "/meus-pedidos" });
+                  } catch (err: any) {
+                    toast.error(err?.message ?? "Não foi possível cancelar o pedido");
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                Sim, cancelar pedido
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
 }
+
 
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span>{value}</span></div>;
@@ -240,5 +307,6 @@ function InfoRow({ Icon, label, value }: { Icon: any; label: string; value: stri
   );
 }
 function labelOf(s: string) {
-  return ({ novo: "Recebido", em_preparo: "Em Preparo", saiu_para_entrega: "Saiu para Entrega", entregue: "Entregue", cancelado: "Cancelado" } as any)[s] ?? s;
+  return ({ aguardando_pagamento: "Aguardando Pagamento", novo: "Recebido", em_preparo: "Em Preparo", saiu_para_entrega: "Saiu para Entrega", entregue: "Entregue", cancelado: "Cancelado" } as any)[s] ?? s;
 }
+
