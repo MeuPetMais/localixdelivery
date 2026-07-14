@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getPublicOrderById, cancelOrderByCustomer } from "@/lib/public-orders.functions";
 import { getPaymentIntentStatus } from "@/lib/payments/PaymentIntentService";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +46,7 @@ function SuccessPage() {
   const navigate = useNavigate();
   const fetchOrder = useServerFn(getPublicOrderById);
   const syncPaymentStatus = useServerFn(getPaymentIntentStatus);
+  const cancelOrderFn = useServerFn(cancelOrderByCustomer);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
   const { user } = useCustomerAuth();
@@ -49,6 +54,8 @@ function SuccessPage() {
   const [waUrl, setWaUrl] = useState<string | null>(null);
   const [showPaidOverlay, setShowPaidOverlay] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -389,7 +396,65 @@ function SuccessPage() {
           <Button variant="ghost" size="sm" onClick={shareOrder}>
             <Share2 className="mr-1.5 h-4 w-4" /> Compartilhar pedido
           </Button>
+          {order?.status === "aguardando_pagamento" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              Cancelar pedido
+            </Button>
+          )}
         </div>
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será necessário realizar um novo pedido caso queira comprar novamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelling}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setCancelling(true);
+                  try {
+                    await cancelOrderFn({ data: { orderId: id } });
+                    // Limpa carrinho e marcadores de pedido pendente.
+                    try {
+                      const slug = restaurant?.slug;
+                      if (slug) {
+                        window.sessionStorage.removeItem(`cart:${slug}`);
+                        window.sessionStorage.removeItem(`pending-order:${slug}`);
+                        window.sessionStorage.removeItem(`repeat:${slug}`);
+                        window.sessionStorage.removeItem(`wa-url:${id}`);
+                      }
+                    } catch {}
+                    setOrder((prev: any) => prev ? { ...prev, status: "cancelado" } : prev);
+                    toast.success("Pedido cancelado com sucesso");
+                    setCancelOpen(false);
+                    navigate({ to: "/meus-pedidos" });
+                  } catch (err: any) {
+                    toast.error(err?.message ?? "Não foi possível cancelar o pedido");
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                Sim, cancelar pedido
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         {/* Post-delivery review */}
         {isDelivered && restaurant && (

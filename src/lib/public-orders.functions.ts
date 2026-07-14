@@ -43,4 +43,74 @@ export const getMyOrders = createServerFn({ method: "GET" })
     return { orders: list, restaurants };
   });
 
+// Cancelamento pelo cliente enquanto o pedido está aguardando pagamento.
+// - Só permite quando status = 'aguardando_pagamento'.
+// - Cancela o payment intent no provider (MP) e transiciona a ordem para 'cancelado'.
+export const cancelOrderByCustomer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: ordErr } = await supabaseAdmin
+      .from("orders")
+      .select("id, status, restaurant_id")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (ordErr) throw new Error(ordErr.message);
+    if (!order) throw new Error("Pedido não encontrado");
+    if (order.status !== "aguardando_pagamento") {
+      throw new Error(
+        order.status === "cancelado"
+          ? "Pedido já foi cancelado"
+          : "Este pedido não pode mais ser cancelado",
+      );
+    }
+
+    // 1) Cancela o payment intent no provider (idempotente — ignora erros do provider).
+    try {
+      await supabaseAdmin.functions.invoke("mp-payment-intent", {
+        body: { action: "cancel", order_id: data.orderId },
+      });
+    } catch (e) {
+      console.warn("[cancelOrderByCustomer] provider cancel failed", e);
+    }
+
+    // 2) Transiciona a ordem de forma atômica (CAS).
+    const { data: tr, error: trErr } = await supabaseAdmin.rpc("order_apply_transition", {
+      _order_id: data.orderId,
+      _expected_from: "aguardando_pagamento",
+      _next_status: "cancelado",
+      _reason: "customer_cancelled_before_payment",
+      _actor_type: "customer",
+      _actor_id: null as unknown as string,
+      _metadata: { source: "customer_ui" },
+    } as never);
+    if (trErr) throw new Error(trErr.message);
+    const result = tr as unknown as { ok: boolean; reason?: string; current?: string };
+    if (!result?.ok) {
+      // Estado mudou entre a leitura e a transição (ex.: webhook aprovou).
+      throw new Error(
+        result?.reason === "STATE_MISMATCH"
+          ? "Este pedido não pode mais ser cancelado (status alterado)"
+          : (result?.reason ?? "Falha ao cancelar o pedido"),
+      );
+    }
+
+    // 3) Garante order_payment.CANCELLED (a Edge já faz, mas reforçamos para
+    //    o caso raro em que o provider não retornou 200).
+    await supabaseAdmin
+      .from("order_payment")
+      .update({ status: "CANCELLED", last_error: "Cancelled by customer before payment" })
+      .eq("order_id", data.orderId)
+      .neq("status", "APPROVED");
+    await supabaseAdmin
+      .from("payments")
+      .update({ status: "cancelled" })
+      .eq("order_id", data.orderId)
+      .neq("status", "approved");
+
+    return { ok: true as const, restaurant_id: order.restaurant_id };
+  });
+
+
 
