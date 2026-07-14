@@ -46,6 +46,7 @@ function SuccessPage() {
   const navigate = useNavigate();
   const fetchOrder = useServerFn(getPublicOrderById);
   const syncPaymentStatus = useServerFn(getPaymentIntentStatus);
+  const cancelOrderFn = useServerFn(cancelOrderByCustomer);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
   const { user } = useCustomerAuth();
@@ -53,6 +54,8 @@ function SuccessPage() {
   const [waUrl, setWaUrl] = useState<string | null>(null);
   const [showPaidOverlay, setShowPaidOverlay] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
