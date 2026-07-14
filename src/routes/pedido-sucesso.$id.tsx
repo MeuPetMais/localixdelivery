@@ -47,6 +47,8 @@ function SuccessPage() {
   const { user } = useCustomerAuth();
   const { rememberRestaurantRoute, prepareLoginRedirect } = useCustomerNavigation();
   const [waUrl, setWaUrl] = useState<string | null>(null);
+  const [showPaidOverlay, setShowPaidOverlay] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -58,7 +60,28 @@ function SuccessPage() {
         if (k && k.startsWith("pending-order:")) window.sessionStorage.removeItem(k);
       }
     } catch {}
+    // Detecta retorno do Mercado Pago (?paid=1) e mostra overlay de confirmação.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("paid") === "1") setShowPaidOverlay(true);
+    } catch {}
   }, [id]);
+
+  // Countdown do overlay de retorno do pagamento.
+  useEffect(() => {
+    if (!showPaidOverlay) return;
+    if (countdown <= 0) {
+      setShowPaidOverlay(false);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("paid");
+        window.history.replaceState({}, "", url.toString());
+      } catch {}
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [showPaidOverlay, countdown]);
 
   useEffect(() => {
     let mounted = true;
@@ -183,6 +206,35 @@ function SuccessPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-success/5 via-background to-muted/30">
+      {showPaidOverlay && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur-sm px-4 animate-in fade-in">
+          <Card className="w-full max-w-sm p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
+              <CheckCircle2 className="h-14 w-14" />
+            </div>
+            <h2 className="font-display text-2xl font-extrabold">Pagamento confirmado com sucesso!</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Recebemos seu pagamento. Seu pedido já foi enviado ao restaurante e está aguardando confirmação.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Caso o aplicativo não seja aberto automaticamente, toque no botão abaixo.
+            </p>
+            <Button
+              size="lg"
+              className="mt-5 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                setShowPaidOverlay(false);
+                navigate({ to: "/meus-pedidos" });
+              }}
+            >
+              Voltar para o Localix
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Você será redirecionado automaticamente em {countdown} segundo{countdown === 1 ? "" : "s"}...
+            </p>
+          </Card>
+        </div>
+      )}
       <main className="mx-auto max-w-md px-4 py-8 pb-24">
         <div className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
