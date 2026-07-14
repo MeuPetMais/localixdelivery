@@ -242,7 +242,7 @@ function SuccessPage() {
           </Card>
         </div>
       )}
-      <main className="mx-auto max-w-md px-4 py-8 pb-24">
+      <main className={`mx-auto max-w-md px-4 py-8 ${order?.status === "aguardando_pagamento" ? "pb-40" : "pb-24"}`}>
         <div className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
             <CheckCircle2 className="h-10 w-10" />
@@ -396,17 +396,6 @@ function SuccessPage() {
           <Button variant="ghost" size="sm" onClick={shareOrder}>
             <Share2 className="mr-1.5 h-4 w-4" /> Compartilhar pedido
           </Button>
-          {order?.status === "aguardando_pagamento" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setCancelOpen(true)}
-              disabled={cancelling}
-            >
-              Cancelar pedido
-            </Button>
-          )}
         </div>
 
         <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
@@ -470,6 +459,26 @@ function SuccessPage() {
         )}
 
       </main>
+
+      {order?.status === "aguardando_pagamento" && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="mx-auto max-w-md px-4 py-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+              Cancelar pedido
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
