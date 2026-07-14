@@ -69,6 +69,8 @@ function SuccessPage() {
       }
     } catch {}
     // Detecta retorno do Mercado Pago (?paid=1) e mostra overlay de confirmação.
+    // Apenas para pagamentos online — offline (dinheiro, cartão na entrega, vale)
+    // nunca passam pelo gateway e não devem exibir "Pagamento confirmado".
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("paid") === "1") setShowPaidOverlay(true);
