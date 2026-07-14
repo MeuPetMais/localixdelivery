@@ -60,9 +60,29 @@ function SuccessPage() {
         if (k && k.startsWith("pending-order:")) window.sessionStorage.removeItem(k);
       }
     } catch {}
+    // Detecta retorno do Mercado Pago (?paid=1) e mostra overlay de confirmação.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("paid") === "1") setShowPaidOverlay(true);
+    } catch {}
   }, [id]);
 
+  // Countdown do overlay de retorno do pagamento.
   useEffect(() => {
+    if (!showPaidOverlay) return;
+    if (countdown <= 0) {
+      setShowPaidOverlay(false);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("paid");
+        window.history.replaceState({}, "", url.toString());
+      } catch {}
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [showPaidOverlay, countdown]);
+
     let mounted = true;
     async function load() {
       const res = await fetchOrder({ data: { id } });
