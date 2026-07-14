@@ -96,7 +96,22 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       throw e;
     }
 
-    // 4) Criar pedido em status "aguardando_pagamento"
+    // 4) Status inicial depende do meio de pagamento:
+    //    - Online (pix, credit_card, google_pay, apple_pay) → "aguardando_pagamento"
+    //      até o gateway confirmar.
+    //    - Offline (cash, meal_voucher / cartão na entrega) → "pago" (pago fora
+    //      do app, já entra na fila de aceite do restaurante).
+    const ONLINE_METHODS: readonly CheckoutMethod[] = [
+      "pix",
+      "credit_card",
+      "google_pay",
+      "apple_pay",
+    ];
+    const isOnline = ONLINE_METHODS.includes(data.paymentMethod);
+    const initialStatus: "aguardando_pagamento" | "pago" = isOnline
+      ? "aguardando_pagamento"
+      : "pago";
+
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -110,7 +125,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         total: pricing.customerTotal,
         discount: pricing.couponDiscount,
         loyalty_discount: data.loyaltyDiscount || 0,
-        status: "aguardando_pagamento",
+        status: initialStatus,
       })
       .select("id, order_number")
       .single();
@@ -146,7 +161,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     return {
       orderId: order.id,
       orderNumber: order.order_number,
-      status: "aguardando_pagamento" as const,
+      status: initialStatus,
       pricing,
     };
   });
