@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -229,7 +230,7 @@ function KitchenPage() {
                       ))}
                     </ul>
                     <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{o.payment_method ?? "—"}</span>
+                      <span>{paymentMethodLabel(o.payment_method)}</span>
                       <strong className="text-foreground">{brl(Number(o.total))}</strong>
                     </div>
                     <div className="flex gap-2">

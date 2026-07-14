@@ -66,7 +66,7 @@ function PrintSettingsPage() {
       address_complement: "Ap 42",
       address_neighborhood: "Centro",
       order_type: "delivery",
-      payment_method: "Dinheiro",
+      payment_method: "cash",
       change_for: 100,
       delivery_fee: 7,
       coupon_code: "BEMVINDO10",

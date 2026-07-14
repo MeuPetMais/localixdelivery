@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -821,7 +822,7 @@ function OrderCard({
           <p className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3 w-3 shrink-0" /> <span className="truncate">{o.address}</span></p>
         )}
         {o.payment_method && (
-          <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3 shrink-0" /> {o.payment_method}</p>
+          <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3 shrink-0" /> {paymentMethodLabel(o.payment_method)}</p>
         )}
       </div>
 
@@ -925,7 +926,7 @@ function OrderDetailsDrawer({
                 <section className="rounded-lg border p-3">
                   <h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">Pagamento</h3>
                   <p className="flex items-center gap-1.5">
-                    <CreditCard className="h-4 w-4" /> {order.payment_method}
+                    <CreditCard className="h-4 w-4" /> {paymentMethodLabel(order.payment_method)}
                   </p>
                 </section>
               )}
