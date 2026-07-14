@@ -2,15 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getPublicOrderById, cancelOrderByCustomer } from "@/lib/public-orders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { brl } from "@/lib/format";
 import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+
 
 
 export const Route = createFileRoute("/pedido/$id")({
