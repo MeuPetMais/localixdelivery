@@ -2,6 +2,7 @@ import { OPERATIONS_COLUMNS } from "@/lib/operations";
 import type { OperationsOrderCard } from "@/lib/operations";
 import { columnForState } from "@/lib/operations";
 import { cn } from "@/lib/utils";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 interface Props {
   cards: OperationsOrderCard[];
@@ -44,7 +45,7 @@ export function OrdersBoard({ cards, onCardClick }: Props) {
                     <p className="mt-1 truncate text-sm">{c.customerName}</p>
                     <p className="truncate text-xs text-muted-foreground">{c.itemsSummary}</p>
                     <div className="mt-2 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
-                      <span>{c.paymentMethod}</span>
+                      <span>{paymentMethodLabel(c.paymentMethod)}</span>
                       <span>{c.deliveryMode}</span>
                       <span>{c.priority}</span>
                     </div>

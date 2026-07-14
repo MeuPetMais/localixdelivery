@@ -15,6 +15,7 @@ import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, Check
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 
 
@@ -213,7 +214,7 @@ function TrackOrder() {
           <InfoRow Icon={User} label="Cliente" value={order.customer_name} />
           <InfoRow Icon={Phone} label="Telefone" value={order.customer_phone} />
           <InfoRow Icon={MapPin} label="Endereço" value={order.address} />
-          <InfoRow Icon={CreditCard} label="Pagamento" value={order.payment_method} />
+          <InfoRow Icon={CreditCard} label="Pagamento" value={paymentMethodLabel(order.payment_method)} />
           <InfoRow Icon={Clock} label="Pedido em" value={new Date(order.created_at).toLocaleString("pt-BR")} />
         </Card>
 

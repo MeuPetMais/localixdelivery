@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { ReviewForm } from "@/components/ReviewForm";
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
@@ -375,7 +376,7 @@ function SuccessPage() {
           </div>
           <div className="mt-3 grid gap-1 text-xs text-muted-foreground">
             <p className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3 w-3" /> {order.address}</p>
-            <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3" /> {order.payment_method}</p>
+            <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3" /> {paymentMethodLabel(order.payment_method)}</p>
           </div>
         </Card>
 

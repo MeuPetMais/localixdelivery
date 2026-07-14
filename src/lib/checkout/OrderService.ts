@@ -14,6 +14,7 @@ import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-midd
 const CHECKOUT_METHODS = [
   "pix",
   "credit_card",
+  "card_on_delivery",
   "cash",
   "meal_voucher",
   "google_pay",
@@ -25,6 +26,7 @@ export type CheckoutMethod = (typeof CHECKOUT_METHODS)[number];
 const PRICING_METHOD_MAP: Record<CheckoutMethod, PaymentMethod> = {
   pix: "pix",
   credit_card: "credit_card",
+  card_on_delivery: "credit_card",
   cash: "cash",
   meal_voucher: "credit_card",
   google_pay: "credit_card",
