@@ -316,7 +316,9 @@ function SuccessPage() {
                 Você ganhará <b className="text-primary">+{estimatedEarn} pontos</b>{" "}
                 {earnOn === "delivered"
                   ? "quando este pedido for entregue."
-                  : "após a confirmação do pagamento."}
+                  : isOfflinePaymentMethod(order?.payment_method)
+                    ? "quando o restaurante aceitar o pedido."
+                    : "após a confirmação do pagamento."}
               </p>
             </div>
           </Card>
