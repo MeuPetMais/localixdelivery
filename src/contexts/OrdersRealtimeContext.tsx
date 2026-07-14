@@ -217,7 +217,7 @@ export function OrdersRealtimeProvider({
             toast(
               `🔔 Novo pedido #${row.order_number ?? ""}`,
               {
-                description: `${row.customer_name} · ${brl(Number(row.total))}${row.payment_method ? ` · ${row.payment_method}` : ""}`,
+                description: `${row.customer_name} · ${brl(Number(row.total))}${row.payment_method ? ` · ${paymentMethodLabel(row.payment_method)}` : ""}`,
                 duration: 8000,
                 action: {
                   label: "Ver pedido",

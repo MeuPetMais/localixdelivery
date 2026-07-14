@@ -399,7 +399,7 @@ export async function renderCustomerReceipt(o: PrintableOrder, paper: PaperSize)
     ${disc ? `<div class="row"><span>Cupom ${o.coupon_code ? esc(o.coupon_code) : ""}</span><span>- ${brl(disc)}</span></div>` : ""}
     <hr class="thick"/>
     <div class="row total"><span>TOTAL</span><span>${brl(o.total)}</span></div>
-    <div class="row"><span>Pagamento</span><span class="b">${esc(o.payment_method || "-")}</span></div>
+    <div class="row"><span>Pagamento</span><span class="b">${esc(paymentMethodLabel(o.payment_method))}</span></div>
     ${changeLine}
     <hr class="sep"/>
     ${o.notes ? `<div class="b">Obs: ${esc(o.notes)}</div><hr class="sep"/>` : ""}
