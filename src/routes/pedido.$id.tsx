@@ -59,10 +59,14 @@ function TrackOrder() {
   const navigate = useNavigate();
   const { restaurantPath } = useCustomerNavigation();
   const fetchOrder = useServerFn(getPublicOrderById);
+  const cancelOrderFn = useServerFn(cancelOrderByCustomer);
   const [order, setOrder] = useState<Order | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const lastStatusRef = useRef<string | null>(null);
+
 
   useEffect(() => {
     let mounted = true;
