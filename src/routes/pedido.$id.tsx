@@ -15,7 +15,7 @@ import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, Check
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
-import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
+import { paymentMethodLabel, orderReceivedNotification } from "@/lib/checkout/paymentMethodLabel";
 
 
 
@@ -78,7 +78,12 @@ function TrackOrder() {
         const next = (res?.order ?? null) as Order | null;
         if (!next) { if (initial) setLoading(false); return; }
         if (lastStatusRef.current && lastStatusRef.current !== next.status) {
-          toast.success(`Status atualizado: ${labelOf(next.status)}`);
+          if (next.status === "pago") {
+            const { title, description } = orderReceivedNotification(next.payment_method);
+            toast.success(title, { description });
+          } else {
+            toast.success(`Status atualizado: ${labelOf(next.status)}`);
+          }
         }
         lastStatusRef.current = next.status;
         setOrder(next);
