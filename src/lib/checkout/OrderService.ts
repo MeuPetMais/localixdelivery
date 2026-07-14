@@ -3,7 +3,7 @@
 // REGRAS:
 // - Todos os cálculos vêm do PricingEngine. Nunca calcular no frontend.
 // - Não integra Mercado Pago, não cria Payment Intent, não faz Split.
-// - Registro de pagamento sempre começa em PENDING.
+// - Pagamento online começa em PENDING; pagamento na entrega já fica APPROVED.
 // - Snapshot financeiro é imutável (uma linha por pedido).
 
 import { createServerFn } from "@tanstack/react-start";
