@@ -307,5 +307,6 @@ function InfoRow({ Icon, label, value }: { Icon: any; label: string; value: stri
   );
 }
 function labelOf(s: string) {
-  return ({ novo: "Recebido", em_preparo: "Em Preparo", saiu_para_entrega: "Saiu para Entrega", entregue: "Entregue", cancelado: "Cancelado" } as any)[s] ?? s;
+  return ({ aguardando_pagamento: "Aguardando Pagamento", novo: "Recebido", em_preparo: "Em Preparo", saiu_para_entrega: "Saiu para Entrega", entregue: "Entregue", cancelado: "Cancelado" } as any)[s] ?? s;
 }
+
