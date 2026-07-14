@@ -34,7 +34,7 @@ type Order = {
 type Col = { key: Order["status"]; title: string; emoji: string; accent: string };
 
 const COLUMNS: Col[] = [
-  { key: "novo",              title: "Novos",      emoji: "🆕", accent: "bg-red-500/10 border-red-500/30" },
+  { key: "aceito",            title: "Aceitos",    emoji: "🆕", accent: "bg-red-500/10 border-red-500/30" },
   { key: "em_preparo",        title: "Preparando", emoji: "👨‍🍳", accent: "bg-amber-500/10 border-amber-500/30" },
   { key: "pronto",            title: "Pronto",     emoji: "✅", accent: "bg-emerald-500/10 border-emerald-500/30" },
   { key: "saiu_para_entrega", title: "Entrega",    emoji: "🛵", accent: "bg-blue-500/10 border-blue-500/30" },
@@ -42,7 +42,7 @@ const COLUMNS: Col[] = [
 ];
 
 const NEXT_STATUS: Record<string, string> = {
-  novo: "em_preparo",
+  aceito: "em_preparo",
   em_preparo: "pronto",
   pronto: "saiu_para_entrega",
   saiu_para_entrega: "entregue",
@@ -74,7 +74,7 @@ function KitchenPage() {
         .from("orders")
         .select("id, order_number, customer_name, items, total, status, payment_method, created_at")
         .eq("restaurant_id", restaurant!.id)
-        .in("status", ["novo", "em_preparo", "pronto", "saiu_para_entrega"])
+        .in("status", ["aceito", "em_preparo", "pronto", "saiu_para_entrega"])
         .order("created_at", { ascending: true })
         .limit(200);
       return (data ?? []) as Order[];
@@ -106,7 +106,7 @@ function KitchenPage() {
 
   const etaMinutes = useMemo(() => {
     return computeEtaMinutes({
-      queueCount: grouped["novo"]?.length ?? 0,
+      queueCount: grouped["aceito"]?.length ?? 0,
       preparingCount: grouped["em_preparo"]?.length ?? 0,
       cooks: 1,
       avgPrepMinutes: 20,
@@ -235,13 +235,13 @@ function KitchenPage() {
                     <div className="flex gap-2">
                       {NEXT_STATUS[o.status] && (
                         <Button size="sm" className="flex-1" onClick={() => advance(o)}>
-                          {o.status === "novo" && (<><Utensils className="mr-1 h-4 w-4" /> Preparar</>)}
+                          {o.status === "aceito" && (<><Utensils className="mr-1 h-4 w-4" /> Preparar</>)}
                           {o.status === "em_preparo" && (<><CheckCircle2 className="mr-1 h-4 w-4" /> Pronto</>)}
                           {o.status === "pronto" && (<><Bike className="mr-1 h-4 w-4" /> Saiu</>)}
                           {o.status === "saiu_para_entrega" && (<><CheckCircle2 className="mr-1 h-4 w-4" /> Entregue</>)}
                         </Button>
                       )}
-                      {o.status === "novo" && (
+                      {o.status === "aceito" && (
                         <Button size="sm" variant="ghost" onClick={() => cancel(o)}>
                           <X className="h-4 w-4" />
                         </Button>

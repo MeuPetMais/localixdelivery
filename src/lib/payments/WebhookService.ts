@@ -222,7 +222,7 @@ export async function handleWebhook(
     });
 
     if (local === "APPROVED") {
-      await deps.updateOrder(link.orderId, { status: "novo" });
+      await deps.updateOrder(link.orderId, { status: "pago" });
       await deps.recordLedger({
         orderId: link.orderId,
         restaurantId: link.restaurantId,

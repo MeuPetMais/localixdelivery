@@ -40,7 +40,14 @@ type Order = {
 };
 type RestaurantInfo = { id: string; name: string; slug: string; logo_url: string | null };
 
-const ACTIVE_STATUSES = new Set(["novo", "em_preparo", "saiu_para_entrega"]);
+const ACTIVE_STATUSES = new Set([
+  "aguardando_pagamento",
+  "pago",
+  "aceito",
+  "em_preparo",
+  "pronto",
+  "saiu_para_entrega",
+]);
 
 function MyOrders() {
   const navigate = useNavigate();
@@ -280,8 +287,11 @@ function ActiveOrderCard({
   onTrack: () => void;
 }) {
   const statusInfo: Record<string, { label: string; pct: number }> = {
-    novo: { label: "Pedido recebido", pct: 25 },
+    aguardando_pagamento: { label: "Aguardando pagamento", pct: 15 },
+    pago: { label: "Aguardando aceite", pct: 25 },
+    aceito: { label: "Pedido aceito", pct: 40 },
     em_preparo: { label: "Preparando seu pedido", pct: 60 },
+    pronto: { label: "Pedido pronto", pct: 80 },
     saiu_para_entrega: { label: "Saiu para entrega", pct: 90 },
   };
   const info = statusInfo[order.status] ?? { label: order.status, pct: 50 };
@@ -390,7 +400,11 @@ function EmptyState({ onExplore }: { onExplore: () => void }) {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     novo: { label: "Recebido", cls: "bg-primary/10 text-primary border-primary/30" },
+    aguardando_pagamento: { label: "Aguardando pagamento", cls: "bg-slate-500/10 text-slate-700 border-slate-500/30" },
+    pago: { label: "Aguardando aceite", cls: "bg-primary/10 text-primary border-primary/30" },
+    aceito: { label: "Aceito", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
     em_preparo: { label: "Em Preparo", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
+    pronto: { label: "Pronto", cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30" },
     saiu_para_entrega: { label: "Saiu p/ Entrega", cls: "bg-blue-500/10 text-blue-700 border-blue-500/30" },
     entregue: { label: "Entregue", cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" },
     cancelado: { label: "Cancelado", cls: "bg-destructive/10 text-destructive border-destructive/30" },

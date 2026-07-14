@@ -8,6 +8,7 @@ export interface RegisterPendingOrderPaymentInput {
   orderId: string;
   restaurantId: string;
   paymentMethod: string;
+  status?: "PENDING" | "APPROVED";
   provider?: string;
   externalReference?: string;
 }
@@ -18,7 +19,7 @@ export async function registerPendingOrderPayment(input: RegisterPendingOrderPay
     restaurant_id: input.restaurantId,
     provider: input.provider ?? "mercado_pago",
     payment_method: input.paymentMethod,
-    status: "PENDING",
+    status: input.status ?? "PENDING",
     external_reference: input.externalReference ?? input.orderId,
   });
   if (error) throw new Error(`Falha no pagamento: ${error.message}`);

@@ -1200,7 +1200,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         }
       }
 
-      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
+      toast.success(`Pedido #${res.orderNumber ?? ""} enviado ao restaurante`);
       onClose();
       onCreated(res.orderId);
     } catch (e: any) {
