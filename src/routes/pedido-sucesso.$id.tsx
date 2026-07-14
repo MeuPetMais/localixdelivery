@@ -242,7 +242,7 @@ function SuccessPage() {
           </Card>
         </div>
       )}
-      <main className="mx-auto max-w-md px-4 py-8 pb-24">
+      <main className={`mx-auto max-w-md px-4 py-8 ${order?.status === "aguardando_pagamento" ? "pb-40" : "pb-24"}`}>
         <div className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
             <CheckCircle2 className="h-10 w-10" />
