@@ -459,6 +459,26 @@ function SuccessPage() {
         )}
 
       </main>
+
+      {order?.status === "aguardando_pagamento" && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="mx-auto max-w-md px-4 py-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+              Cancelar pedido
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
