@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicOrderById } from "@/lib/public-orders.functions";
+import { getPublicOrderById, cancelOrderByCustomer } from "@/lib/public-orders.functions";
 import { getPaymentIntentStatus } from "@/lib/payments/PaymentIntentService";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
