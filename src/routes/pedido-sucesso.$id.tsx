@@ -47,6 +47,8 @@ function SuccessPage() {
   const { user } = useCustomerAuth();
   const { rememberRestaurantRoute, prepareLoginRedirect } = useCustomerNavigation();
   const [waUrl, setWaUrl] = useState<string | null>(null);
+  const [showPaidOverlay, setShowPaidOverlay] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
