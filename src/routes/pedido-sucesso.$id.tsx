@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { ReviewForm } from "@/components/ReviewForm";
-import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
+import { paymentMethodLabel, isOfflinePaymentMethod } from "@/lib/checkout/paymentMethodLabel";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
@@ -69,6 +69,8 @@ function SuccessPage() {
       }
     } catch {}
     // Detecta retorno do Mercado Pago (?paid=1) e mostra overlay de confirmação.
+    // Apenas para pagamentos online — offline (dinheiro, cartão na entrega, vale)
+    // nunca passam pelo gateway e não devem exibir "Pagamento confirmado".
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("paid") === "1") setShowPaidOverlay(true);
@@ -214,7 +216,7 @@ function SuccessPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-success/5 via-background to-muted/30">
-      {showPaidOverlay && (
+      {showPaidOverlay && !isOfflinePaymentMethod(order?.payment_method) && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur-sm px-4 animate-in fade-in">
           <Card className="w-full max-w-sm p-6 text-center shadow-2xl">
             <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
@@ -314,7 +316,9 @@ function SuccessPage() {
                 Você ganhará <b className="text-primary">+{estimatedEarn} pontos</b>{" "}
                 {earnOn === "delivered"
                   ? "quando este pedido for entregue."
-                  : "após a confirmação do pagamento."}
+                  : isOfflinePaymentMethod(order?.payment_method)
+                    ? "quando o restaurante aceitar o pedido."
+                    : "após a confirmação do pagamento."}
               </p>
             </div>
           </Card>
