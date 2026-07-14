@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 import {
   createContext,
   useCallback,
