@@ -964,7 +964,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
   const BASE_METHODS: PayOption[] = [
     { id: "cash", label: "Dinheiro", method: "cash" },
-    { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
+    { id: "card_delivery", label: "Cartão na entrega", method: "card_on_delivery" },
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
   ];
   const { data: readiness } = useQuery({
