@@ -396,7 +396,65 @@ function SuccessPage() {
           <Button variant="ghost" size="sm" onClick={shareOrder}>
             <Share2 className="mr-1.5 h-4 w-4" /> Compartilhar pedido
           </Button>
+          {order?.status === "aguardando_pagamento" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelling}
+            >
+              Cancelar pedido
+            </Button>
+          )}
         </div>
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será necessário realizar um novo pedido caso queira comprar novamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelling}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setCancelling(true);
+                  try {
+                    await cancelOrderFn({ data: { orderId: id } });
+                    // Limpa carrinho e marcadores de pedido pendente.
+                    try {
+                      const slug = restaurant?.slug;
+                      if (slug) {
+                        window.sessionStorage.removeItem(`cart:${slug}`);
+                        window.sessionStorage.removeItem(`pending-order:${slug}`);
+                        window.sessionStorage.removeItem(`repeat:${slug}`);
+                        window.sessionStorage.removeItem(`wa-url:${id}`);
+                      }
+                    } catch {}
+                    setOrder((prev: any) => prev ? { ...prev, status: "cancelado" } : prev);
+                    toast.success("Pedido cancelado com sucesso");
+                    setCancelOpen(false);
+                    navigate({ to: "/meus-pedidos" });
+                  } catch (err: any) {
+                    toast.error(err?.message ?? "Não foi possível cancelar o pedido");
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                Sim, cancelar pedido
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         {/* Post-delivery review */}
         {isDelivered && restaurant && (
