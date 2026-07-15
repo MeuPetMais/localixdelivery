@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     // Carrega pedido + pagamento
     const { data: order, error: ordErr } = await sb
       .from("orders")
-      .select("id, restaurant_id, order_number, total, customer_name, customer_phone")
+      .select("id, restaurant_id, order_number, total, customer_name, customer_phone, items")
       .eq("id", orderId)
       .maybeSingle();
     if (ordErr) throw ordErr;
