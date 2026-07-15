@@ -91,6 +91,65 @@ async function createPixPayment(token: string, params: {
   }
   return resBody;
 }
+async function createCardPreference(token: string, params: {
+  amount: number;
+  orderNumber: string | number;
+  externalReference: string;
+  items: Array<{ title: string; quantity: number; unit_price: number }>;
+  payerEmail?: string | null;
+  payerName?: string | null;
+  notificationUrl: string;
+  successUrl: string;
+  failureUrl: string;
+  pendingUrl: string;
+}) {
+  const body: Record<string, unknown> = {
+    external_reference: params.externalReference,
+    statement_descriptor: "LOCALIX",
+    items: params.items.length > 0 ? params.items : [{
+      title: `Pedido #${params.orderNumber}`,
+      quantity: 1,
+      currency_id: "BRL",
+      unit_price: Number(params.amount.toFixed(2)),
+    }],
+    notification_url: params.notificationUrl,
+    back_urls: {
+      success: params.successUrl,
+      failure: params.failureUrl,
+      pending: params.pendingUrl,
+    },
+    auto_return: "approved",
+    payment_methods: {
+      excluded_payment_types: [{ id: "ticket" }, { id: "atm" }, { id: "bank_transfer" }],
+      excluded_payment_methods: [{ id: "pix" }, { id: "bolbradesco" }],
+      installments: 12,
+    },
+    binary_mode: false,
+  };
+  // Ensure currency_id on items
+  (body.items as any[]).forEach((it) => { if (!it.currency_id) it.currency_id = "BRL"; });
+
+  if (params.payerEmail) {
+    body.payer = { email: params.payerEmail, name: params.payerName ?? undefined };
+  }
+
+  const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+      "X-Idempotency-Key": crypto.randomUUID(),
+    },
+    body: JSON.stringify(body),
+  });
+  const resBody = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = resBody?.message || resBody?.error || `MP error ${res.status}`;
+    throw new Error(msg);
+  }
+  return resBody;
+}
+
 
 async function getPayment(token: string, paymentId: string) {
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
