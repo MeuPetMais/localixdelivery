@@ -91,13 +91,27 @@ async function createPixPayment(token: string, params: {
   }
   return resBody;
 }
+type MpPayer = {
+  email?: string;
+  name?: string;
+  surname?: string;
+  identification?: { type: string; number: string };
+  phone?: { area_code: string; number: string };
+  address?: {
+    zip_code?: string;
+    street_name?: string;
+    street_number?: string;
+    city?: string;
+    state?: string;
+  };
+};
+
 async function createCardPreference(token: string, params: {
   amount: number;
   orderNumber: string | number;
   externalReference: string;
   items: Array<{ title: string; quantity: number; unit_price: number }>;
-  payerEmail?: string | null;
-  payerName?: string | null;
+  payer?: MpPayer | null;
   notificationUrl: string;
   successUrl: string;
   failureUrl: string;
@@ -129,9 +143,10 @@ async function createCardPreference(token: string, params: {
   // Ensure currency_id on items
   (body.items as any[]).forEach((it) => { if (!it.currency_id) it.currency_id = "BRL"; });
 
-  if (params.payerEmail) {
-    body.payer = { email: params.payerEmail, name: params.payerName ?? undefined };
+  if (params.payer && Object.keys(params.payer).length > 0) {
+    body.payer = params.payer;
   }
+
 
   const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
