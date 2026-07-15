@@ -294,7 +294,93 @@ Deno.serve(async (req) => {
           }))
           .filter((it) => it.unit_price > 0 && Number.isFinite(it.unit_price));
 
-        const payerEmail = String(payload?.payer_email ?? "").trim().toLowerCase();
+        // --- Payer enriquecido (somente campos disponíveis; nada de objeto vazio) ---
+        const payloadEmail = String(payload?.payer_email ?? "").trim().toLowerCase();
+
+        // Busca dados do cliente (email real + endereço padrão) quando disponível.
+        let custEmail: string | null = null;
+        let custPhone: string | null = order.customer_phone ?? null;
+        let custAddress: any = null;
+        if (order.customer_id) {
+          const { data: prof } = await sb
+            .from("customer_profiles")
+            .select("email, phone, whatsapp")
+            .eq("id", order.customer_id)
+            .maybeSingle();
+          custEmail = prof?.email ?? null;
+          custPhone = custPhone || prof?.phone || prof?.whatsapp || null;
+          const { data: addr } = await sb
+            .from("customer_addresses")
+            .select("cep, street, number, city, state")
+            .eq("customer_id", order.customer_id)
+            .order("is_default", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          custAddress = addr ?? null;
+        }
+        if (!custEmail) {
+          const { data: cust } = await sb
+            .from("customers")
+            .select("email, phone")
+            .eq("restaurant_id", order.restaurant_id)
+            .eq("phone", order.customer_phone ?? "")
+            .maybeSingle();
+          custEmail = cust?.email ?? null;
+          custPhone = custPhone || cust?.phone || null;
+        }
+
+        // Prioridade do e-mail: cadastrado > informado no checkout > sintético.
+        const finalEmail = (custEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(custEmail))
+          ? custEmail
+          : (payloadEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payloadEmail) ? payloadEmail : null);
+
+        // Split nome/sobrenome.
+        const fullName = String(order.customer_name ?? "").trim().replace(/\s+/g, " ");
+        const parts = fullName ? fullName.split(" ") : [];
+        const firstName = parts[0] ?? "";
+        const lastName = parts.slice(1).join(" ");
+
+        // CPF só se veio no payload (não temos coluna própria).
+        const rawCpf = String(payload?.payer_cpf ?? "").replace(/\D/g, "");
+        const cpf = rawCpf.length === 11 ? rawCpf : "";
+
+        // Telefone: preferir do payload; fallback para o telefone do cliente.
+        const rawPhone = String(payload?.payer_phone ?? custPhone ?? "").replace(/\D/g, "");
+        let phoneObj: { area_code: string; number: string } | undefined;
+        if (rawPhone.length >= 10) {
+          // formato BR: primeiros 2 dígitos = DDD (ignora prefixo 55 se presente)
+          const local = rawPhone.startsWith("55") && rawPhone.length > 11 ? rawPhone.slice(2) : rawPhone;
+          if (local.length >= 10) {
+            phoneObj = { area_code: local.slice(0, 2), number: local.slice(2) };
+          }
+        }
+
+        // Endereço estruturado (payload > custAddress).
+        const payloadAddr = payload?.payer_address ?? null;
+        const addrSrc = payloadAddr && typeof payloadAddr === "object" ? payloadAddr : custAddress;
+        let addressObj: MpPayer["address"] | undefined;
+        if (addrSrc) {
+          const zip = String(addrSrc.zip_code ?? addrSrc.cep ?? "").replace(/\D/g, "");
+          const street = String(addrSrc.street_name ?? addrSrc.street ?? "").trim();
+          const number = String(addrSrc.street_number ?? addrSrc.number ?? "").trim();
+          const city = String(addrSrc.city ?? "").trim();
+          const state = String(addrSrc.state ?? "").trim();
+          const partial: Record<string, string> = {};
+          if (zip) partial.zip_code = zip;
+          if (street) partial.street_name = street;
+          if (number) partial.street_number = number;
+          if (city) partial.city = city;
+          if (state) partial.state = state;
+          if (Object.keys(partial).length > 0) addressObj = partial as MpPayer["address"];
+        }
+
+        const payer: MpPayer = {};
+        if (finalEmail) payer.email = finalEmail;
+        if (firstName) payer.name = firstName;
+        if (lastName) payer.surname = lastName;
+        if (cpf) payer.identification = { type: "CPF", number: cpf };
+        if (phoneObj) payer.phone = phoneObj;
+        if (addressObj) payer.address = addressObj;
 
         console.log("[mp-payment-intent] creating card preference", {
           order_id: orderId,
@@ -302,6 +388,7 @@ Deno.serve(async (req) => {
           notification_url: notificationUrl,
           items_count: items.length,
           amount: Number(order.total),
+          payer_fields: Object.keys(payer),
         });
 
         // 5) Cria a Preference no Checkout Pro.
@@ -312,13 +399,13 @@ Deno.serve(async (req) => {
             orderNumber: order.order_number ?? order.id,
             externalReference: order.id,
             items,
-            payerEmail: payerEmail || null,
-            payerName: order.customer_name ?? null,
+            payer: Object.keys(payer).length > 0 ? payer : null,
             notificationUrl,
             successUrl,
             failureUrl: cancelUrl,
             pendingUrl: cancelUrl,
           });
+
         } catch (e) {
           const msg = String((e as Error).message ?? e);
           console.error("[mp-payment-intent] preference create failed", { orderId, error: msg });
