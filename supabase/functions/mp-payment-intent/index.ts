@@ -233,28 +233,119 @@ Deno.serve(async (req) => {
 
     // ---------- CREATE ----------
     if (action === "create") {
-      // Cartão: estrutura pronta, integração fica para próximo prompt
+      // Cartão Online — Mercado Pago Checkout Pro (Preference + redirect).
       if (method !== "pix") {
-        const { data: upd, error: upErr } = await sb.from("order_payment").upsert({
+        // 1) Garante linha em order_payment ANTES de chamar o MP.
+        const { data: preUp, error: preErr } = await sb.from("order_payment").upsert({
           order_id: orderId,
           restaurant_id: order.restaurant_id,
           provider: "mercado_pago",
-          payment_method: method,
+          payment_method: "credit_card",
           status: "PENDING",
           transaction_amount: order.total,
+          external_reference: order.id,
           last_error: null,
         }, { onConflict: "order_id" }).select("id");
-        if (upErr || !upd || upd.length === 0) {
-          console.error("[mp-payment-intent] order_payment upsert failed (card)", { orderId, error: upErr?.message, rows: upd?.length ?? 0 });
+        if (preErr || !preUp || preUp.length === 0) {
+          console.error("[mp-payment-intent] order_payment pre-upsert failed (card)", { orderId, error: preErr?.message, rows: preUp?.length ?? 0 });
           return json({ error: "order_payment_persist_failed" }, { status: 500 });
         }
-        return json({
-          pending: true,
-          message: "Cartão será implementado em etapa futura",
-          payment_id: null,
+
+        // 2) notification_url — mesma do PIX, compatível com webhook existente.
+        const notificationUrl = (Deno.env.get("MP_NOTIFICATION_URL") ?? "https://app.rngdigital.com.br/api/public/mp/webhook").trim();
+        if (!/^https:\/\/[^\s]+\/api\/public\/mp\/webhook$/.test(notificationUrl)) {
+          console.error("[mp-payment-intent] notification_url inválida (card)", { orderId, notificationUrl });
+          await sb.from("order_payment").update({ status: "PENDING", last_error: "notification_url_invalid" }).eq("order_id", orderId);
+          return json({ error: "notification_url_invalid" }, { status: 500 });
+        }
+
+        // 3) back_urls — auto_return exige HTTPS válido em success.
+        const successUrl = String(payload?.success_url ?? "").trim();
+        const cancelUrl = String(payload?.cancel_url ?? "").trim();
+        if (!/^https:\/\/[^\s]+$/.test(successUrl) || !/^https:\/\/[^\s]+$/.test(cancelUrl)) {
+          console.error("[mp-payment-intent] back_urls inválidas (card)", { orderId, successUrl, cancelUrl });
+          await sb.from("order_payment").update({ status: "PENDING", last_error: "back_urls_invalid" }).eq("order_id", orderId);
+          return json({ error: "back_urls_invalid" }, { status: 400 });
+        }
+
+        // 4) Itens reais do pedido.
+        const rawItems = Array.isArray((order as any).items) ? (order as any).items as any[] : [];
+        const items = rawItems
+          .map((it) => ({
+            title: String(it?.name ?? it?.title ?? "Item").slice(0, 250),
+            quantity: Math.max(1, Number(it?.qty ?? it?.quantity ?? 1)),
+            currency_id: "BRL",
+            unit_price: Number(Number(it?.price ?? it?.unit_price ?? 0).toFixed(2)),
+          }))
+          .filter((it) => it.unit_price > 0 && Number.isFinite(it.unit_price));
+
+        const payerEmail = String(payload?.payer_email ?? "").trim().toLowerCase();
+
+        console.log("[mp-payment-intent] creating card preference", {
+          order_id: orderId,
+          external_reference: order.id,
+          notification_url: notificationUrl,
+          items_count: items.length,
+          amount: Number(order.total),
+        });
+
+        // 5) Cria a Preference no Checkout Pro.
+        let pref;
+        try {
+          pref = await createCardPreference(token, {
+            amount: Number(order.total),
+            orderNumber: order.order_number ?? order.id,
+            externalReference: order.id,
+            items,
+            payerEmail: payerEmail || null,
+            payerName: order.customer_name ?? null,
+            notificationUrl,
+            successUrl,
+            failureUrl: cancelUrl,
+            pendingUrl: cancelUrl,
+          });
+        } catch (e) {
+          const msg = String((e as Error).message ?? e);
+          console.error("[mp-payment-intent] preference create failed", { orderId, error: msg });
+          await sb.from("order_payment").update({ status: "PENDING", last_error: msg }).eq("order_id", orderId);
+          return json({ error: msg }, { status: 502 });
+        }
+
+        // 6) init_point (produção) ou sandbox_init_point (sandbox).
+        const paymentUrl: string | null = pref?.init_point ?? pref?.sandbox_init_point ?? null;
+        if (!paymentUrl) {
+          console.error("[mp-payment-intent] preference sem init_point", { orderId, pref_id: pref?.id });
+          await sb.from("order_payment").update({ status: "PENDING", last_error: "preference_missing_init_point" }).eq("order_id", orderId);
+          return json({ error: "preference_missing_init_point" }, { status: 502 });
+        }
+
+        // 7) Persiste preference_id e URL (compatível com webhook: lookup por external_reference).
+        const { error: postErr } = await sb.from("order_payment").upsert({
+          order_id: orderId,
+          restaurant_id: order.restaurant_id,
+          provider: "mercado_pago",
+          payment_method: "credit_card",
+          payment_id: String(pref.id),
+          external_reference: order.id,
           status: "PENDING",
+          transaction_amount: Number(order.total),
+          payment_url: paymentUrl,
+          last_error: null,
+        }, { onConflict: "order_id" }).select("id");
+        if (postErr) {
+          console.error("[mp-payment-intent] order_payment post-upsert failed (card)", { orderId, error: postErr.message });
+          return json({ error: "order_payment_persist_failed" }, { status: 500 });
+        }
+
+        return json({
+          pending: false,
+          payment_id: String(pref.id),
+          status: "PENDING",
+          payment_url: paymentUrl,
         });
       }
+
+
 
       // PIX — requer payer_email real; sem fallback fictício.
       const payerEmail = String(payload?.payer_email ?? "").trim().toLowerCase();
