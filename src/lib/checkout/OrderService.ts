@@ -104,7 +104,7 @@ const ONLINE_PAYMENT_METHODS: CheckoutMethod[] = [
 
 const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
   ? "aguardando_pagamento"
-  : "aguardando_aceite"; 
+  : "novo";
     // 4) Criar pedido em status "aguardando_pagamento"
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
@@ -119,7 +119,7 @@ const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
         total: pricing.customerTotal,
         discount: pricing.couponDiscount,
         loyalty_discount: data.loyaltyDiscount || 0,
-        status: "initialStatus",
+        status: initialStatus,
       })
       .select("id, order_number")
       .single();
@@ -153,10 +153,11 @@ const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
     });
 
     return {
-      orderId: order.id,
-      orderNumber: order.order_number,
-      status: "initialStatus" as const,
-      pricing,
+    orderId: order.id,
+    orderNumber: order.order_number,
+    status: initialStatus,
+    pricing,
+    
     };
   });
 
