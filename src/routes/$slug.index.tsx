@@ -1116,13 +1116,26 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     return null;
   }
 
-  async function confirmOrder() {
+  async function confirmOrder ()
+   { 
+    toast.error("CHECKOUT V3");
     if (!name.trim() || !phone.trim()) { toast.error("Preencha nome e telefone"); return; }
     const fullAddress = buildAddressString();
     if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
     if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
-
+alert(
+  JSON.stringify(
+    {
+      paymentId,
+      selectedPayment,
+      method: selectedPayment.method,
+      label: selectedPayment.label,
+    },
+    null,
+    
+  )
+);
     setSubmitting(true);
     try {
       const res = await create({
