@@ -413,6 +413,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     // Scenario detection
     const emptySlug = !slug || !slug.trim();
     const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    console.log("===== TESTE OFFLINE =====");
+console.log("navigator.onLine =", navigator.onLine);
+console.log("offline =", offline);
     const anyErr = error as any;
     const isNetworkError =
       offline ||
@@ -474,15 +477,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
 
   const effectiveOpen = status.isOpen;
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line no-console
-    console.log("[status:public]", {
-      manualStatus: status.manualStatus,
-      isOpen: status.isOpen,
-      todaySchedule: restaurant?.opening_hours ?? null,
-      computedStatus: status.reason,
-    });
-  }
 
 
   return (
@@ -604,7 +598,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               key={b.tab}
               to="/$slug/sobre"
               params={{ slug }}
-              search={{ tab: b.tab }}
+              search={{
+  tab: b.tab as "info" | "pagamentos" | "avaliacoes" | "horarios",
+}}
               className="group flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 shadow-elegant transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-premium"
             >
               <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -964,7 +960,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
   const BASE_METHODS: PayOption[] = [
     { id: "cash", label: "Dinheiro", method: "cash" },
-    { id: "card_delivery", label: "Cartão na entrega", method: "card_on_delivery" },
+    { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
   ];
   const { data: readiness } = useQuery({
@@ -1200,7 +1196,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         }
       }
 
-      toast.success(`Pedido #${res.orderNumber ?? ""} enviado ao restaurante`);
+      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
       onClose();
       onCreated(res.orderId);
     } catch (e: any) {

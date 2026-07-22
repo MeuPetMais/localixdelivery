@@ -3,7 +3,7 @@
 // REGRAS:
 // - Todos os cálculos vêm do PricingEngine. Nunca calcular no frontend.
 // - Não integra Mercado Pago, não cria Payment Intent, não faz Split.
-// - Pagamento online começa em PENDING; pagamento na entrega já fica APPROVED.
+// - Registro de pagamento sempre começa em PENDING.
 // - Snapshot financeiro é imutável (uma linha por pedido).
 
 import { createServerFn } from "@tanstack/react-start";
@@ -14,7 +14,6 @@ import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-midd
 const CHECKOUT_METHODS = [
   "pix",
   "credit_card",
-  "card_on_delivery",
   "cash",
   "meal_voucher",
   "google_pay",
@@ -23,6 +22,15 @@ const CHECKOUT_METHODS = [
 export type CheckoutMethod = (typeof CHECKOUT_METHODS)[number];
 
 // Métodos suportados pelo PricingEngine (subset do checkout).
+const PRICING_METHOD_MAP: Record<CheckoutMethod, PaymentMethod> = {
+  pix: "pix",
+  credit_card: "credit_card",
+  cash: "cash",
+  meal_voucher: "credit_card",
+  google_pay: "credit_card",
+  apple_pay: "credit_card",
+};
+
 const itemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -55,15 +63,6 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const pricingMethodMap: Record<CheckoutMethod, PaymentMethod> = {
-      pix: "pix",
-      credit_card: "credit_card",
-      card_on_delivery: "credit_card",
-      cash: "cash",
-      meal_voucher: "credit_card",
-      google_pay: "credit_card",
-      apple_pay: "credit_card",
-    };
 
     // 1) Validar restaurante ativo + conectado
     const { data: rest, error: restErr } = await supabaseAdmin
@@ -87,7 +86,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         couponDiscount: data.couponDiscount,
         cashback: data.cashback,
         loyaltyDiscount: data.loyaltyDiscount,
-        paymentMethod: pricingMethodMap[data.paymentMethod],
+        paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
         provider: "mercado_pago" as ProviderId,
         restaurantId: rest.id,
         minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
@@ -96,22 +95,17 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       if (e instanceof PricingError) throw new Error(e.message);
       throw e;
     }
+const ONLINE_PAYMENT_METHODS: CheckoutMethod[] = [
+  "pix",
+  "credit_card",
+  "google_pay",
+  "apple_pay",
+];
 
-    // 4) Status inicial depende do meio de pagamento:
-    //    - Online (pix, credit_card, google_pay, apple_pay) → "aguardando_pagamento"
-    //      até o gateway confirmar.
-    //    - Offline (cash, meal_voucher / cartão na entrega) → "pago" (pago fora
-    //      do app, já entra na fila de aceite do restaurante).
-    const isOnline =
-      data.paymentMethod === "pix" ||
-      data.paymentMethod === "credit_card" ||
-      data.paymentMethod === "google_pay" ||
-      data.paymentMethod === "apple_pay";
-    const initialStatus: "aguardando_pagamento" | "pago" = isOnline
-      ? "aguardando_pagamento"
-      : "pago";
-    const paymentRecordStatus = isOnline ? "PENDING" : "APPROVED";
-
+const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
+  ? "aguardando_pagamento"
+  : "aguardando_aceite"; 
+    // 4) Criar pedido em status "aguardando_pagamento"
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -125,7 +119,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         total: pricing.customerTotal,
         discount: pricing.couponDiscount,
         loyalty_discount: data.loyaltyDiscount || 0,
-        status: initialStatus,
+        status: "initialStatus",
       })
       .select("id, order_number")
       .single();
@@ -156,13 +150,12 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       orderId: order.id,
       restaurantId: rest.id,
       paymentMethod: data.paymentMethod,
-      status: paymentRecordStatus,
     });
 
     return {
       orderId: order.id,
       orderNumber: order.order_number,
-      status: initialStatus,
+      status: "initialStatus" as const,
       pricing,
     };
   });
@@ -181,15 +174,6 @@ export const previewCheckoutPricing = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const pricingMethodMap: Record<CheckoutMethod, PaymentMethod> = {
-      pix: "pix",
-      credit_card: "credit_card",
-      card_on_delivery: "credit_card",
-      cash: "cash",
-      meal_voucher: "credit_card",
-      google_pay: "credit_card",
-      apple_pay: "credit_card",
-    };
     try {
       const pricing = await PricingEngine.calculateOrderPricing({
         subtotal: data.subtotal,
@@ -198,7 +182,7 @@ export const previewCheckoutPricing = createServerFn({ method: "POST" })
         cashback: data.cashback,
         loyaltyDiscount: data.loyaltyDiscount,
         paymentMethod: data.paymentMethod
-          ? pricingMethodMap[data.paymentMethod]
+          ? PRICING_METHOD_MAP[data.paymentMethod]
           : "pix",
       });
       return { ok: true as const, pricing };

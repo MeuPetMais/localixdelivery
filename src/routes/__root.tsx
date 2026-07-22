@@ -27,6 +27,7 @@ import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
 import { CustomerNotificationsProvider } from "@/contexts/CustomerNotificationsContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -76,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Localix Delivery — Pedidos direto pelo WhatsApp" },
       { name: "description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
       { property: "og:title", content: "Localix Delivery — Pedidos direto pelo WhatsApp" },
@@ -150,6 +151,7 @@ function RootComponent() {
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
           <CustomerNotificationsProvider>
+        
             <Outlet />
             <CustomerBottomNav />
           </CustomerNotificationsProvider>
