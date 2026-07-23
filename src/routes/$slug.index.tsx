@@ -1077,7 +1077,7 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
         subtotal,
         deliveryFee: fee,
         couponDiscount: discount,
-        paymentMethod: selectedPayment.method,
+        paymentMethod: selectedPayment.id as CheckoutMethod,
       },
     })
       .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
@@ -1143,7 +1143,7 @@ alert(
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
-          paymentMethod: selectedPayment.method,
+          paymentMethod: selectedPayment.id as CheckoutMethod,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
           couponDiscount: discount,

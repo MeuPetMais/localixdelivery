@@ -42,6 +42,7 @@ const OFFLINE_KEYS = new Set([
   "dinheiro",
   "especie",
   "espécie",
+  "card_delivery",
   "card_on_delivery",
   "cartao na entrega",
   "cartão na entrega",
