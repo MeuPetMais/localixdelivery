@@ -216,8 +216,18 @@ const TERMINAL_STATUSES: OrderStatus[] = [
   "chargeback",
 ];
 
-function columnOf(status: string): ColumnKey {
-  return STATUS_TO_COLUMN[status as OrderStatus] ?? "pending_payment";
+function columnOf(order: Order): ColumnKey {
+  const status = order.status as OrderStatus;
+
+  if (status === "novo") {
+  const method = (order.payment_method ?? "").toLowerCase().trim();
+
+  if (method === "cash" || method === "dinheiro" || method === "especie") {
+    return "paid";
+  }
+}
+
+  return STATUS_TO_COLUMN[status] ?? "pending_payment";
 }
 
 function normalizePhone(p?: string | null) {
@@ -375,7 +385,12 @@ function OrdersPage() {
       cancelled: [],
     };
     for (const o of filtered) {
-      const col = columnOf(o.status);
+      console.log({
+  pedido: o.order_number,
+  status: o.status,
+  payment_method: o.payment_method,
+});
+      const col = columnOf(o);
       g[col].push(o);
     }
     const asc = (a: Order, b: Order) =>
@@ -488,7 +503,7 @@ function OrdersPage() {
     if (!id) return;
     const current = (orders ?? []).find((o) => o.id === id);
     if (!current) return;
-    if (columnOf(current.status) === col) return;
+    if (columnOf(current) === col) return;
     // Estado canônico da coluna alvo — o Orchestrator/RPC valida a transição
     // e rejeita se não estiver em ALLOWED_TRANSITIONS.
     const target = COLUMNS.find((c) => c.key === col)?.primaryState;

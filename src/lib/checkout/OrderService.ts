@@ -10,6 +10,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import PricingEngine, { PricingError, type PaymentMethod, type ProviderId } from "@/lib/payments/PricingEngine";
 import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
+import { isOfflinePaymentMethod } from "./paymentMethodLabel";
 
 const CHECKOUT_METHODS = [
   "pix",
@@ -102,9 +103,16 @@ const ONLINE_PAYMENT_METHODS: CheckoutMethod[] = [
   "apple_pay",
 ];
 
-const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
-  ? "aguardando_pagamento"
-  : "novo";
+const initialStatus = isOfflinePaymentMethod(data.paymentMethod)
+  ? "pago"
+  : "aguardando_pagamento";
+
+  console.log("========== CHECKOUT DEBUG ==========");
+console.log({
+  paymentMethod: data.paymentMethod,
+  initialStatus,
+});
+
     // 4) Criar pedido em status "aguardando_pagamento"
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
@@ -121,9 +129,16 @@ const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
         loyalty_discount: data.loyaltyDiscount || 0,
         status: initialStatus,
       })
-      .select("id, order_number")
+      .select("id, order_number, payment_method, status")
       .single();
     if (ordErr) throw new Error(`Falha ao criar pedido: ${ordErr.message}`);
+
+    console.log("========== ORDER CREATED ==========");
+console.log({
+  id: order.id,
+  paymentMethod: order.payment_method,
+  status: order.status,
+});
 
     // 5) Snapshot financeiro (imutável)
     const { error: snapErr } = await supabaseAdmin.from("order_pricing_snapshot").insert({
@@ -144,12 +159,18 @@ const initialStatus = ONLINE_PAYMENT_METHODS.includes(data.paymentMethod)
     });
     if (snapErr) throw new Error(`Falha no snapshot: ${snapErr.message}`);
 
+    const paymentRecordStatus = isOfflinePaymentMethod(data.paymentMethod)
+  ? "APPROVED"
+  : "PENDING";
+
     // 6) Registro de pagamento (PENDING) — via Payment Domain (nenhum SQL local).
     const { registerPendingOrderPayment } = await import("@/lib/payments/orderPayment.server");
+
     await registerPendingOrderPayment({
       orderId: order.id,
       restaurantId: rest.id,
       paymentMethod: data.paymentMethod,
+      status: paymentRecordStatus,
     });
 
     return {
