@@ -9,7 +9,8 @@ import {
   randomBase64Url,
 } from "../_shared/crypto.ts";
 
-const REDIRECT_URI = "https://app.rngdigital.com.br/api/public/mp/callback";
+const REDIRECT_URI =
+  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
 Deno.serve(async (req) => {

@@ -7,7 +7,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 
-const REDIRECT_URI = "https://app.rngdigital.com.br/api/public/mp/callback";
+const REDIRECT_URI =
+  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
 Deno.serve(async (req) => {
@@ -36,16 +37,6 @@ Deno.serve(async (req) => {
     const mpClientSecret = Deno.env.get("MP_CLIENT_SECRET") || Deno.env.get("MP_ACCESS_TOKEN");
     if (!appId || !mpClientSecret) return jsonErr("MP_APP_ID/MP_CLIENT_SECRET não configurados", 500);
 
-    console.log("[mp-oauth-callback][pre-exchange]", {
-      state_found: !!st,
-      code_verifier_found: !!st?.code_verifier,
-      code_present: !!code,
-      code_length: code?.length ?? 0,
-      redirect_uri: REDIRECT_URI,
-      client_id: appId,
-      client_secret_present: !!mpClientSecret,
-      client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
-    });
 
     // Troca do authorization_code por access_token do lojista.
     const tokenRes = await fetch(MP_TOKEN_URL, {
@@ -68,41 +59,35 @@ Deno.serve(async (req) => {
     let tokenJson: any = {};
     try { tokenJson = JSON.parse(rawBody); } catch { tokenJson = { raw: rawBody }; }
 
-    console.log("[mp-oauth-callback][mp-response]", {
-      http_status: tokenRes.status,
-      ok: tokenRes.ok,
-      body: rawBody,
-    });
+    console.error("MP TOKEN RESPONSE");
+console.error(rawBody);
 
     if (!tokenRes.ok) {
-      console.error("[mp-oauth-callback] MP error", {
-        status: tokenRes.status,
-        body: rawBody,
-        redirect_uri: REDIRECT_URI,
-        client_id: appId,
-        client_secret_present: !!mpClientSecret,
-        client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
-        code_verifier_found: !!st?.code_verifier,
-        state_found: !!st,
-        code_present: !!code,
-      });
-      await admin.from("payment_logs").insert({
-        restaurant_id: st.restaurant_id,
-        level: "error",
-        message: "MP OAuth token exchange failed",
-        data: {
-          http_status: tokenRes.status,
-          body: tokenJson,
-          redirect_uri: REDIRECT_URI,
-          client_id: appId,
-          client_secret_present: !!mpClientSecret,
-          client_secret_source: Deno.env.get("MP_CLIENT_SECRET") ? "MP_CLIENT_SECRET" : "MP_ACCESS_TOKEN_FALLBACK",
-          code_verifier_found: !!st?.code_verifier,
-        },
-      });
-      return redirect("/pagamentos?mp=error&reason=exchange_failed");
-    }
+  console.error("MP TOKEN ERROR", tokenRes.status);
+  console.error(rawBody);
 
+  await admin.from("payment_logs").insert({
+    restaurant_id: st.restaurant_id,
+    level: "error",
+    message: "MP OAuth token exchange failed",
+    data: {
+      http_status: tokenRes.status,
+      body: tokenJson,
+      raw: rawBody,
+      redirect_uri: REDIRECT_URI,
+      client_id: appId,
+      code_verifier_found: !!st.code_verifier,
+    },
+  });
+
+  return new Response(rawBody, {
+    status: tokenRes.status,
+    headers: {
+      "content-type": "application/json",
+      ...corsHeaders,
+    },
+  });
+}
 
     const expiresAt = tokenJson.expires_in
       ? new Date(Date.now() + Number(tokenJson.expires_in) * 1000).toISOString()
@@ -136,7 +121,7 @@ Deno.serve(async (req) => {
 });
 
 function redirect(path: string) {
-  const base = "https://app.rngdigital.com.br";
+  const base = Deno.env.get("APP_URL") ?? "https://localixdelivery.rngdigital.com.br";
   const to = path.startsWith("http") ? path : base + path;
   return new Response(null, { status: 302, headers: { location: to, ...corsHeaders } });
 }

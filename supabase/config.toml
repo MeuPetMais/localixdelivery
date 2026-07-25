@@ -1,1 +1,3 @@
 project_id = "mvkfrwxgneqzvoabkaws"
+[functions.mp-oauth-callback]
+verify_jwt = false

@@ -975,6 +975,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     queryFn: () => PaymentService.getPrimaryProvider(restaurant.id),
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+  console.log("========== PAYMENT DEBUG ==========");
+  console.log("Restaurant:", restaurant.id);
+  console.log("Readiness:", readiness);
+  console.log("Primary Provider:", primaryProviderId);
+}, [restaurant.id, readiness, primaryProviderId]);
+
   const gateway = getGatewayDisplay(primaryProviderId);
   const paymentOptions: PayOption[] = readiness?.ready
     ? [
