@@ -29,6 +29,12 @@ export const MercadoPagoReadiness = {
       .eq("restaurant_id", restaurantId)
       .maybeSingle();
 
+
+console.log("MP READINESS");
+console.log("restaurantId:", restaurantId);
+console.log("error:", error);
+console.log("data:", data);
+
     if (error || !data) {
       return {
         provider: "mercado_pago",
