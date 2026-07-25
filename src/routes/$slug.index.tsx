@@ -14,7 +14,7 @@ import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
 import { PaymentService } from "@/lib/payments/PaymentService";
-import { PaymentsReadinessService } from "@/lib/billing/PaymentsReadinessService";
+import MercadoPagoReadinessService from "@/lib/payments/MercadoPagoReadiness";
 import { getGatewayDisplay } from "@/lib/payments/gatewayDisplay";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -966,7 +966,8 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   const { data: readiness } = useQuery({
     queryKey: ["payments-readiness", restaurant.id],
     enabled: !!restaurant?.id,
-    queryFn: () => PaymentsReadinessService.isReadyForPayments(restaurant.id),
+    queryFn: () =>
+    MercadoPagoReadinessService.isReadyForPayments(restaurant.id),
     staleTime: 60_000,
   });
   const { data: primaryProviderId } = useQuery({
@@ -995,7 +996,7 @@ console.log("Primary Provider:", primaryProviderId);
         ...BASE_METHODS,
       ]
     : BASE_METHODS;
-    
+
 console.log("Payment Options:", paymentOptions);
 
   const [paymentId, setPaymentId] = useState<string>("pix");
