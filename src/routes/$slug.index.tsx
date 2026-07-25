@@ -976,12 +976,17 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     staleTime: 60_000,
   });
 
-  useEffect(() => {
   console.log("========== PAYMENT DEBUG ==========");
-  console.log("Restaurant:", restaurant.id);
-  console.log("Readiness:", readiness);
-  console.log("Primary Provider:", primaryProviderId);
-}, [restaurant.id, readiness, primaryProviderId]);
+console.log("Restaurant:", restaurant.id);
+
+console.log("Ready:", readiness?.ready);
+console.log("Status:", readiness?.status);
+console.log("Reasons:", readiness?.reasons);
+console.log("AccountId:", readiness?.accountId);
+
+console.log("Primary Provider:", primaryProviderId);
+
+console.log("Payment Options:", paymentOptions);
 
   const gateway = getGatewayDisplay(primaryProviderId);
   const paymentOptions: PayOption[] = readiness?.ready
