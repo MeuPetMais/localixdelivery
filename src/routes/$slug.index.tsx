@@ -14,7 +14,7 @@ import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
 import { PaymentService } from "@/lib/payments/PaymentService";
-import MercadoPagoReadinessService from "@/lib/payments/MercadoPagoReadiness";
+import  MercadoPagoReadinessService from "@/lib/payments/MercadoPagoReadiness";
 import { getGatewayDisplay } from "@/lib/payments/gatewayDisplay";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -964,12 +964,12 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
   ];
   const { data: readiness } = useQuery({
-    queryKey: ["payments-readiness", restaurant.id],
-    enabled: !!restaurant?.id,
-    queryFn: () =>
-    MercadoPagoReadinessService.isReadyForPayments(restaurant.id),
-    staleTime: 60_000,
-  });
+  queryKey: ["payments-readiness", restaurant.id],
+  enabled: !!restaurant?.id,
+  queryFn: () => MercadoPagoReadiness.get(restaurant.id),
+  staleTime: 60000,
+});
+
   const { data: primaryProviderId } = useQuery({
     queryKey: ["primary-provider", restaurant.id],
     enabled: !!restaurant?.id,
@@ -977,15 +977,17 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     staleTime: 60_000,
   });
 
-  console.log("========== PAYMENT DEBUG ==========");
+  console.log("========= PAYMENT DEBUG =========");
 console.log("Restaurant:", restaurant.id);
-
+console.log("Readiness:", readiness);
 console.log("Ready:", readiness?.ready);
-console.log("Status:", readiness?.status);
-console.log("Reasons:", readiness?.reasons);
+console.log("Connected:", readiness?.connected);
+console.log("Provider:", readiness?.provider);
 console.log("AccountId:", readiness?.accountId);
-
+console.log("Methods:", readiness?.methods);
+console.log("Reasons:", readiness?.reasons);
 console.log("Primary Provider:", primaryProviderId);
+console.log("Payment Options:", paymentOptions);
 
 
   const gateway = getGatewayDisplay(primaryProviderId);
