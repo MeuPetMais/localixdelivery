@@ -986,7 +986,6 @@ console.log("AccountId:", readiness?.accountId);
 
 console.log("Primary Provider:", primaryProviderId);
 
-console.log("Payment Options:", paymentOptions);
 
   const gateway = getGatewayDisplay(primaryProviderId);
   const paymentOptions: PayOption[] = readiness?.ready
@@ -996,6 +995,8 @@ console.log("Payment Options:", paymentOptions);
         ...BASE_METHODS,
       ]
     : BASE_METHODS;
+    
+console.log("Payment Options:", paymentOptions);
 
   const [paymentId, setPaymentId] = useState<string>("pix");
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
