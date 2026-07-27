@@ -75,7 +75,7 @@ function ResetPasswordPage() {
     if (slug) {
       navigate({ to: "/$slug", params: { slug }, replace: true });
     } else {
-      navigate({ to: "/auth", replace: true });
+      navigate({ to: "/auth", replace: true, search: { mode: undefined } as { mode: string | undefined } });
     }
   }
 
@@ -100,7 +100,7 @@ function ResetPasswordPage() {
                 <h1 className="font-display text-2xl font-extrabold">Link indisponível</h1>
                 <p className="mt-2 text-sm text-muted-foreground">{tokenError}</p>
               </div>
-              <Button className="h-11 w-full" onClick={() => navigate({ to: "/auth", replace: true })}>
+              <Button className="h-11 w-full" onClick={() => navigate({ to: "/auth", replace: true, search: { mode: undefined } as { mode: string | undefined } })}>
                 Voltar para login
               </Button>
             </div>

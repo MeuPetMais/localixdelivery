@@ -16,7 +16,7 @@ export interface MercadoPagoReadiness {
 
 export const MercadoPagoReadiness = {
   async get(restaurantId: string): Promise<MercadoPagoReadiness> {
-    throw new Error("TESTE MERCADO PAGO");
+    
 
     const { data, error } = await supabase
       .from("mercado_pago_accounts")

@@ -88,10 +88,10 @@ function Header() {
           <a href="#beneficios" className="hover:text-foreground">Benefícios</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }}>
             <Button variant="ghost" size="sm">Entrar</Button>
           </Link>
-          <Link to="/auth">
+          <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }}>
             <Button size="sm">Cadastrar grátis</Button>
           </Link>
         </div>
@@ -122,7 +122,7 @@ function Hero() {
             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> Sem taxas de adesão durante o período de validação</li>
           </ul>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/auth">
+            <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }}>
               <Button size="lg" className="shadow-glow">
                 Cadastrar meu estabelecimento gratuitamente <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -343,7 +343,7 @@ function FinalCTA() {
           durante o período de validação da plataforma. Acompanhe a evolução da Localix e tenha acesso antecipado às
           próximas novidades.
         </p>
-        <Link to="/auth" className="inline-block">
+        <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }} className="inline-block">
           <Button size="lg" className="mt-8 shadow-glow">
             Quero cadastrar meu estabelecimento gratuitamente <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
