@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -118,16 +117,25 @@ function CustomerAuthPage() {
       setLoading(null);
       return;
     }
-    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/entrar" });
-    if (result.error) {
-      toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
-      setLoading(null);
-      return;
-    }
-    if (result.redirected) return;
-    goNext();
-  }
+    const { error } = await supabase.auth.signInWithOAuth({
+  provider,
+  options: {
+    redirectTo: window.location.origin + "/entrar",
+  },
+});
 
+if (error) {
+  toast.error(
+    `Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`
+  );
+  setLoading(null);
+  return;
+}
+
+// O Supabase faz o redirecionamento automaticamente.
+// Se não houve erro, não execute goNext().
+return;
+ }
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");

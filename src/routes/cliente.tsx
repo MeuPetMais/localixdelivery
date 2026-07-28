@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 import { getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Button } from "@/components/ui/button";
@@ -76,19 +75,28 @@ function AuthView() {
     prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
   }
 
-  async function handleOAuth(provider: "google" | "apple") {
-    setLoading(provider);
-    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + "/entrar",
-    });
-    if (result.error) {
-      toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
-      setLoading(null);
-      return;
-    }
-    if (result.redirected) return;
+ async function handleOAuth(provider: "google" | "apple") {
+  setLoading(provider);
+
+  prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: window.location.origin + "/entrar",
+    },
+  });
+
+  if (error) {
+    toast.error(
+      `Não foi possível entrar com ${
+        provider === "google" ? "Google" : "Apple"
+      }`
+    );
+    setLoading(null);
+    return;
   }
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40">
