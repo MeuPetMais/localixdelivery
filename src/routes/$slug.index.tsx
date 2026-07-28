@@ -953,6 +953,8 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   onCreated: (orderId: string, options?: { navigate?: boolean }) => void;
 }) {
   const { user } = useCustomerAuth();
+  console.log("AUTH USER:", user);
+console.log("IS GUEST:", !user);
   const qc = useQueryClient();
 
   const [name, setName] = useState("");
@@ -981,23 +983,35 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
 
   const gateway = getGatewayDisplay(primaryProviderId);
 
-const paymentOptions: PayOption[] = readiness?.ready
-  ? [
-      {
-        id: "pix",
-        label: gateway.pix,
-        method: "pix",
-        online: true,
-      },
-      {
-        id: "card_online",
-        label: `${gateway.card} Online`,
-        method: "credit_card",
-        online: true,
-      },
-      ...BASE_METHODS,
-    ]
-  : BASE_METHODS;
+const paymentOptions: PayOption[] = (
+  readiness?.ready
+    ? [
+        {
+          id: "pix",
+          label: gateway.pix,
+          method: "pix",
+          online: true,
+        },
+        {
+          id: "card_online",
+          label: `${gateway.card} Online`,
+          method: "credit_card",
+          online: true,
+        },
+        ...BASE_METHODS,
+      ]
+    : BASE_METHODS
+).filter((option) => {
+  console.log("USER =", user);
+  console.log("OPTION =", option.id, "ONLINE =", option.online);
+
+  if (!user && option.online) {
+    console.log("REMOVIDA:", option.id);
+    return false;
+  }
+
+  return true;
+});
 
 console.log("========= PAYMENT DEBUG =========");
 console.log("Restaurant:", restaurant.id);
@@ -1011,7 +1025,9 @@ console.log("Reasons:", readiness?.reasons);
 console.log("Primary Provider:", primaryProviderId);
 console.log("Payment Options:", paymentOptions);
 
-  const [paymentId, setPaymentId] = useState<string>("pix");
+  const [paymentId, setPaymentId] = useState<string>(
+  paymentOptions[0]?.id ?? "cash"
+);
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
