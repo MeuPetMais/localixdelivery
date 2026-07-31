@@ -111,18 +111,29 @@ async function verifySignature(opts: {
 }
 
 async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string | null> {
+  console.log("[mp-webhook] getAccessTokenForOrder restaurant_id", restaurantId);
   if (restaurantId) {
     const { data } = await sb
       .from("mercado_pago_accounts")
       .select("access_token, connected")
       .eq("restaurant_id", restaurantId)
       .maybeSingle();
+    console.log("[mp-webhook] mercado_pago_accounts row_found", Boolean(data));
+    console.log("[mp-webhook] mercado_pago_accounts connected", data?.connected ?? null);
+    console.log("[mp-webhook] mercado_pago_accounts access_token_exists", Boolean(data?.access_token));
     if (data?.connected && data.access_token) {
-      const tok = await decryptToken(data.access_token);
-      if (tok) return tok;
+      try {
+        const tok = await decryptToken(data.access_token);
+        console.log("[mp-webhook] decryptToken result", tok ? "success" : "null");
+        if (tok) return tok;
+      } catch (err) {
+        console.error("[mp-webhook] decryptToken error", err instanceof Error ? err.message : String(err));
+      }
     }
   }
-  return Deno.env.get("MP_ACCESS_TOKEN") ?? null;
+  const fallbackToken = Deno.env.get("MP_ACCESS_TOKEN") ?? null;
+  console.log("[mp-webhook] fallback MP_ACCESS_TOKEN", Boolean(fallbackToken));
+  return fallbackToken;
 }
 
 async function fetchMpPayment(token: string, paymentId: string) {

@@ -116,8 +116,23 @@ export async function transitionOrder(req: OrderTransitionRequest): Promise<Orde
   const url = Deno.env.get("INTERNAL_TRANSITION_URL") ?? DEFAULT_URL;
   const bearer = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const secret = Deno.env.get("INTERNAL_TRANSITION_HMAC_SECRET");
-  if (!bearer || !secret) {
+  if (!bearer) {
     return { ok: false, error: "internal_transition_not_configured" };
+  }
+
+  if (!secret) {
+    console.warn(
+      "[order-transition] INTERNAL_TRANSITION_HMAC_SECRET missing; using direct RPC fallback",
+      {
+        orderId: req.orderId,
+        to: req.to,
+      },
+    );
+
+    return await transitionOrderDirect(
+      req,
+      "internal_transition_not_configured",
+    );
   }
   const body = JSON.stringify(req);
   const signature = await hmacHex(secret, body);

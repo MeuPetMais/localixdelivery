@@ -267,7 +267,8 @@ Deno.serve(async (req) => {
         }
 
         // 2) notification_url — mesma do PIX, compatível com webhook existente.
-        const notificationUrl = (Deno.env.get("MP_NOTIFICATION_URL") ?? "https://app.rngdigital.com.br/api/public/mp/webhook").trim();
+        const notificationUrl =
+  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
         if (!/^https:\/\/[^\s]+\/api\/public\/mp\/webhook$/.test(notificationUrl)) {
           console.error("[mp-payment-intent] notification_url inválida (card)", { orderId, notificationUrl });
           await sb.from("order_payment").update({ status: "PENDING", last_error: "notification_url_invalid" }).eq("order_id", orderId);
@@ -475,14 +476,26 @@ Deno.serve(async (req) => {
       const callbackUrl = String(payload?.success_url ?? "").trim();
 
       // notification_url — obrigatório para receber webhook do MP.
-      const notificationUrl = (Deno.env.get("MP_NOTIFICATION_URL") ?? "https://app.rngdigital.com.br/api/public/mp/webhook").trim();
-      if (!/^https:\/\/[^\s]+\/api\/public\/mp\/webhook$/.test(notificationUrl)) {
-        console.error("[mp-payment-intent] notification_url inválida", { orderId, notificationUrl });
+      const notificationUrl =
+  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
+
+console.log("[mp-payment-intent] creating pix", {
+  ...
+});
+        console.error("[mp-payment-intent] notification_url inválida", { 
+          orderId, 
+          notificationUrl,
+         });
+
         await sb.from("order_payment").update({
           status: "PENDING",
           last_error: "notification_url_invalid",
         }).eq("order_id", orderId);
-        return json({ error: "notification_url_invalid" }, { status: 500 });
+
+        return json(
+          { error: "notification_url_invalid" }, 
+          { status: 500 }
+        );
       }
 
       console.log("[mp-payment-intent] creating pix", {
