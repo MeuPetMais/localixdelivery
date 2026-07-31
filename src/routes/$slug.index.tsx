@@ -1013,7 +1013,7 @@ const paymentOptions: PayOption[] = (
   return true;
 });
 
-console.log("========= PAYMENT DEBUG =========");
+console.log("LOCALIX BUILD 28/07 17:30");
 console.log("Restaurant:", restaurant.id);
 console.log("Readiness:", readiness);
 console.log("Ready:", readiness?.ready);
@@ -1120,7 +1120,7 @@ console.log("Payment Options:", paymentOptions);
         subtotal,
         deliveryFee: fee,
         couponDiscount: discount,
-        paymentMethod: selectedPayment.id as CheckoutMethod,
+        paymentMethod: selectedPayment.method,
       },
     })
       .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
@@ -1186,7 +1186,7 @@ alert(
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
-          paymentMethod: selectedPayment.id as CheckoutMethod,
+          paymentMethod: selectedPayment.method,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
           couponDiscount: discount,
