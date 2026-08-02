@@ -30,9 +30,13 @@ export const registerDriverPending = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     // Autoriza o dono do restaurante
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
     const { data: rest } = await context.supabase
       .from("restaurants").select("id, owner_id").eq("id", data.restaurantId).maybeSingle();
-    if (!rest || rest.owner_id !== context.userId) {
+    if (!rest || (!isAdmin && rest.owner_id !== context.userId)) {
       throw new Error("Sem permissão para gerenciar este restaurante");
     }
 
