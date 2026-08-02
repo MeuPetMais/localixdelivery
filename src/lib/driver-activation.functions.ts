@@ -31,18 +31,14 @@ export const registerDriverPending = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Autoriza admin primeiro; owners continuam validados pelo client autenticado/RLS.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    console.log("[registerDriverPending] PASSO 1 - antes supabaseAdmin.rpc(has_role)");
     const { data: isAdmin, error: adminErr } = await supabaseAdmin.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    console.log("[registerDriverPending] PASSO 1 OK", adminErr);
     if (adminErr) throw new Error(adminErr.message);
     if (!isAdmin) {
-      console.log("[registerDriverPending] PASSO 2 - antes context.supabase.from(restaurants)");
       const { data: rest, error: restErr } = await context.supabase
         .from("restaurants").select("owner_id").eq("id", data.restaurantId).maybeSingle();
-      console.log("[registerDriverPending] PASSO 2 OK", restErr);
       if (restErr) throw new Error(restErr.message);
       if (rest?.owner_id !== context.userId) {
         throw new Error("Sem permissão para gerenciar este restaurante");
@@ -52,19 +48,16 @@ export const registerDriverPending = createServerFn({ method: "POST" })
     // Evita duplicidade dentro do mesmo restaurante
     const cpfDigits = digits(data.cpf);
     const phoneDigits = digits(data.phone);
-    console.log("[registerDriverPending] PASSO 3 - antes supabaseAdmin.from(delivery_drivers).select");
-    const { data: dup, error: dupErr } = await supabaseAdmin
+    const { data: dup } = await supabaseAdmin
       .from("delivery_drivers")
       .select("id, status, cpf, phone")
       .eq("restaurant_id", data.restaurantId);
-    console.log("[registerDriverPending] PASSO 3 OK", dupErr);
     if ((dup ?? []).some((r: any) =>
       digits(r.cpf) === cpfDigits || digits(r.phone) === phoneDigits,
     )) {
       throw new Error("Já existe um entregador com esse CPF ou telefone neste restaurante.");
     }
 
-    console.log("[registerDriverPending] PASSO 4 - antes supabaseAdmin.from(delivery_drivers).insert");
     const { data: driver, error } = await supabaseAdmin
       .from("delivery_drivers")
       .insert({
@@ -80,11 +73,9 @@ export const registerDriverPending = createServerFn({ method: "POST" })
         status: "aguardando_ativacao" as any,
       })
       .select().single();
-    console.log("[registerDriverPending] PASSO 4 OK", error);
     if (error) throw new Error(error.message);
 
-    console.log("[registerDriverPending] PASSO 5 - antes supabaseAdmin.from(delivery_driver_audit).insert");
-    const auditResult = await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
+    await (supabaseAdmin.from("delivery_driver_audit") as any).insert({
       actor_id: context.userId,
       restaurant_id: data.restaurantId,
       driver_id: driver.id,
@@ -92,7 +83,6 @@ export const registerDriverPending = createServerFn({ method: "POST" })
       before: null,
       after: driver,
     });
-    console.log("[registerDriverPending] PASSO 5 OK", auditResult.error);
 
     return driver;
   });
