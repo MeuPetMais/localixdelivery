@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { diagnoseSupabaseAdmin } from "@/lib/supabase-admin-diagnostic.functions";
 
-export const Route = createFileRoute("/admin/supabase-diagnostic")({
+export const Route = createFileRoute("/_authenticated/supabase-diagnostic")({
   component: SupabaseDiagnosticPage,
 });
 
