@@ -33,6 +33,14 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  console.log("[Supabase Admin Env]", {
+    url: SUPABASE_URL,
+    serviceRoleExists: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+    serviceRoleLength: SUPABASE_SERVICE_ROLE_KEY?.length ?? 0,
+    serviceRoleFirst8: SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8) ?? null,
+    serviceRoleLast8: SUPABASE_SERVICE_ROLE_KEY?.slice(-8) ?? null,
+  });
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
