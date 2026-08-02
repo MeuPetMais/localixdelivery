@@ -29,18 +29,21 @@ export const registerDriverPending = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    // Autoriza o dono do restaurante
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+    // Autoriza admin primeiro; owners continuam validados pelo client autenticado/RLS.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: isAdmin, error: adminErr } = await supabaseAdmin.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    const { data: rest } = await context.supabase
-      .from("restaurants").select("id, owner_id").eq("id", data.restaurantId).maybeSingle();
-    if (!rest || (!isAdmin && rest.owner_id !== context.userId)) {
-      throw new Error("Sem permissão para gerenciar este restaurante");
+    if (adminErr) throw new Error(adminErr.message);
+    if (!isAdmin) {
+      const { data: rest, error: restErr } = await context.supabase
+        .from("restaurants").select("owner_id").eq("id", data.restaurantId).maybeSingle();
+      if (restErr) throw new Error(restErr.message);
+      if (rest?.owner_id !== context.userId) {
+        throw new Error("Sem permissão para gerenciar este restaurante");
+      }
     }
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Evita duplicidade dentro do mesmo restaurante
     const cpfDigits = digits(data.cpf);
