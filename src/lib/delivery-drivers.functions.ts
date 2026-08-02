@@ -39,7 +39,20 @@ export const listDrivers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ restaurantId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertOwner(context.supabase, context.userId, data.restaurantId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: isAdmin, error: adminErr } = await supabaseAdmin.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (adminErr) throw new Error(adminErr.message);
+    if (!isAdmin) {
+      const { data: rest, error: restErr } = await context.supabase
+        .from("restaurants").select("owner_id").eq("id", data.restaurantId).maybeSingle();
+      if (restErr) throw new Error(restErr.message);
+      if (rest?.owner_id !== context.userId) {
+        throw new Error("Sem permissão para gerenciar este restaurante");
+      }
+    }
     const { data: rows, error } = await context.supabase
       .from("delivery_drivers")
       .select("*")
