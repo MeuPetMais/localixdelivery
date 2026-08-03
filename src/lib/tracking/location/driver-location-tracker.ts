@@ -1,8 +1,5 @@
-import {
-  DRIVER_LOCATION_POLICIES,
-  type DriverLocationMode,
-  type DriverLocationSample,
-} from "./driver-location.types";
+import { DRIVER_LOCATION_POLICIES } from "./driver-location.types";
+import type { DriverLocationMode, DriverLocationSample } from "./driver-location.types";
 
 type GeoPosition = {
   coords: {
