@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { setMyPresence } from "@/lib/delivery-drivers.functions";
 import {
-  getDriverDashboard, enterQueue, leaveQueue,
+  getDriverDashboard, enterQueue, leaveQueue, finishReturnToQueue,
 } from "@/lib/driver-dashboard.functions";
 import {
   collectDelivery, departDelivery, deliverDelivery,
@@ -59,6 +59,7 @@ function DriverWallet() {
   const fetchDash = useServerFn(getDriverDashboard);
   const enter = useServerFn(enterQueue);
   const leave = useServerFn(leaveQueue);
+  const finishReturn = useServerFn(finishReturnToQueue);
   const presence = useServerFn(setMyPresence);
   const doCollect = useServerFn(collectDelivery);
   const doDepart = useServerFn(departDelivery);
@@ -129,6 +130,11 @@ function DriverWallet() {
     onSuccess: () => { toast.success("Você saiu da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const finishReturnMut = useMutation({
+    mutationFn: () => finishReturn({}),
+    onSuccess: () => { toast.success("Retorno concluído — você voltou ao fim da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   // RC6.6 — "Retirar pedido" = coletar + partir (tracking iniciado) em uma ação só.
   const pickupMut = useMutation({
     mutationFn: async (input: { id: string; status: string }) => {
@@ -146,7 +152,7 @@ function DriverWallet() {
   const deliverMut = useMutation({
     mutationFn: (id: string) => doDeliver({ data: { assignmentId: id } }),
     onSuccess: () => {
-      toast.success("Entrega concluída — de volta à fila 🎉");
+      toast.success("Entrega concluída — retorne ao restaurante");
       qc.invalidateQueries({ queryKey: ["driver-wallet"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -190,9 +196,10 @@ function DriverWallet() {
             onOpenGoals={() => setGoalsOpen(true)}
             onEnter={() => enterMut.mutate()}
             onLeave={() => leaveMut.mutate()}
+            onFinishReturn={() => finishReturnMut.mutate()}
             onPickup={(id, status) => pickupMut.mutate({ id, status })}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending}
+            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending || finishReturnMut.isPending}
           />
         )}
         {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />}
@@ -295,6 +302,7 @@ function HomeTab(props: {
   onOpenGoals: () => void;
   onEnter: () => void;
   onLeave: () => void;
+  onFinishReturn: () => void;
   onPickup: (id: string, status: string) => void;
   onDeliver: (id: string) => void;
   busy?: boolean;
@@ -318,6 +326,9 @@ function HomeTab(props: {
   const nextMin = (q as any).nextDepartureMin as number | null | undefined;
   const avgMin = Math.round(dash.stats.avgAssignToDelivered || 0);
   const canOperate = driver.status === "ativo";
+  const isReturning = presence === "retornando";
+  const nextDriverName = (q as any).nextDriverName as string | null | undefined;
+  const estimatedWaitMinutes = (q as any).estimatedWaitMinutes as number | null | undefined;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-500">
@@ -355,7 +366,9 @@ function HomeTab(props: {
           </div>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          {q.length} motoboy(s) na fila
+          {q.length} motoboy(s) aguardando
+          {nextDriverName ? ` · Próximo: ${nextDriverName}` : ""}
+          {estimatedWaitMinutes != null ? ` · Espera aprox.: ${estimatedWaitMinutes}min` : ""}
         </p>
       </Card>
 
@@ -385,7 +398,16 @@ function HomeTab(props: {
 
       {/* Botão principal — Entrar/Sair da fila */}
       <div>
-        {q.inQueue ? (
+        {isReturning ? (
+          <Button
+            size="lg"
+            className="h-14 w-full rounded-2xl text-base font-semibold"
+            onClick={props.onFinishReturn}
+            disabled={props.busy || !canOperate || !driver.online}
+          >
+            Cheguei ao restaurante <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        ) : q.inQueue ? (
           <Button
             size="lg"
             variant="outline"
@@ -408,6 +430,11 @@ function HomeTab(props: {
         {!driver.online && (
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
             Fique online para entrar na fila.
+          </p>
+        )}
+        {driver.online && !q.inQueue && !isReturning && !hasActive && (
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            Você ainda não entrou na fila deste restaurante.
           </p>
         )}
       </div>

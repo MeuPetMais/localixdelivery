@@ -64,7 +64,9 @@ type Driver = {
   online: boolean;
   operational_status?: DriverOperationalStatus;
   queue_position?: number | null;
+  queue_entered_at?: string | null;
   has_active_assignment?: boolean;
+  active_assignment_status?: string | null;
   last_lat: number | null; last_lng: number | null; last_seen_at: string | null;
   created_at?: string;
 };
@@ -396,7 +398,6 @@ function DriverCard({
 }) {
 
   const meta = PRESENCE_META[presence];
-  const online = driver.online;
   const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
   const lastSeen = driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—";
 
@@ -437,10 +438,13 @@ function DriverCard({
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-          <MiniStat label="Entrega atual" value={driver.has_active_assignment ? "Ativa" : "—"} />
-          <MiniStat label={online ? "Online há" : "Visto"} value={lastSeen} />
+          <MiniStat label="Entrega atual" value={driver.active_assignment_status ?? "—"} />
+          <MiniStat label="Última atualização" value={lastSeen} />
           <MiniStat label="Posição fila" value={driver.queue_position ? `#${driver.queue_position}` : "—"} />
         </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Entrada na fila: {driver.queue_entered_at ? new Date(driver.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}
+        </p>
 
         {driver.last_lat != null && driver.last_lng != null && (
           <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">

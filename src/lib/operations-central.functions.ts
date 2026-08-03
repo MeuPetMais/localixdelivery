@@ -33,6 +33,7 @@ type DriverRow = {
 export type CentralDriver = DriverRow & {
   group: CentralGroup;
   queue_position: number | null;
+  queue_entered_at: string | null;
   active_order_number: number | null;
   active_customer: string | null;
   active_since: string | null; // assigned_at
@@ -120,6 +121,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
         ...d,
         group,
         queue_position: q?.status === "AGUARDANDO" ? q.position : null,
+        queue_entered_at: q?.status === "AGUARDANDO" ? q.entered_at : null,
         active_order_number: order?.order_number ?? null,
         active_customer: order?.customer_name ?? null,
         active_since: a?.assigned_at ?? null,

@@ -184,13 +184,32 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       .from("delivery_queue")
       .select("driver_id, position, status, entered_at")
       .eq("restaurant_id", driver.restaurant_id)
-      .eq("status", "AGUARDANDO")
+      .in("status", ["AGUARDANDO", "RETORNANDO", "EM_ENTREGA"])
       .order("position", { ascending: true });
 
     const myEntry = queueRows?.find((q) => q.driver_id === driver.id);
-    const queueLength = queueRows?.length ?? 0;
-    const myPosition = myEntry?.position ?? null;
-    const waitingSince = myEntry?.entered_at ?? null;
+    const waitingRows = (queueRows ?? []).filter((q) => q.status === "AGUARDANDO");
+    const queueLength = waitingRows.length;
+    const nextEntry = waitingRows[0] ?? null;
+    const myPosition = myEntry?.status === "AGUARDANDO" ? myEntry.position : null;
+    const waitingSince = myEntry?.status === "AGUARDANDO" ? myEntry.entered_at : null;
+    const estimatedWaitMinutes =
+      myPosition && restaurant?.avg_pickup_minutes
+        ? Math.max(1, (myPosition - 1) * restaurant.avg_pickup_minutes)
+        : null;
+    let nextDriverName: string | null = null;
+    if (nextEntry?.driver_id) {
+      if (nextEntry.driver_id === driver.id) {
+        nextDriverName = "Você";
+      } else {
+        const { data: nextDriver } = await supabase
+          .from("delivery_drivers")
+          .select("name")
+          .eq("id", nextEntry.driver_id)
+          .maybeSingle();
+        nextDriverName = nextDriver?.name ?? null;
+      }
+    }
 
     const { data: shiftRows } = await supabase
       .from("driver_shifts")
@@ -205,10 +224,12 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     let queueStatus: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "OFFLINE" = "OFFLINE";
     if (active && (active.status === "COLETANDO" || active.status === "EM_ROTA" || active.status === "ATRIBUIDO")) {
       queueStatus = "EM_ENTREGA";
-    } else if (myEntry) {
+    } else if (myEntry?.status === "RETORNANDO") {
+      queueStatus = "RETORNANDO";
+    } else if (myEntry?.status === "AGUARDANDO") {
       queueStatus = "AGUARDANDO";
     } else if (driver.online) {
-      queueStatus = "RETORNANDO";
+      queueStatus = "OFFLINE";
     }
 
     // Ranking do restaurante — todos os motoboys, hoje
@@ -291,8 +312,11 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       queue: {
         position: myPosition,
         length: queueLength,
-        inQueue: !!myEntry,
+        inQueue: myEntry?.status === "AGUARDANDO",
         waitingSince,
+        nextDriverName,
+        isNext: nextEntry?.driver_id === driver.id,
+        estimatedWaitMinutes,
         status: queueStatus,
         nextDepartureMin: myPosition
           ? Math.max(1, myPosition * (restaurant?.avg_pickup_minutes ?? 4))
@@ -382,6 +406,35 @@ export const leaveQueue = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const finishReturnToQueue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: driver } = await context.supabase
+      .from("delivery_drivers")
+      .select("id, restaurant_id, status, online")
+      .eq("owner_id", context.userId)
+      .maybeSingle();
+    if (!driver) throw new Error("Motoboy não encontrado");
+    if (driver.status !== "ativo") throw new Error("Cadastro não está ativo");
+    if (!driver.online) throw new Error("Fique online para voltar à fila");
+
+    const { data: active } = await context.supabase
+      .from("delivery_assignments")
+      .select("id")
+      .eq("driver_id", driver.id)
+      .in("status", ["ATRIBUIDO", "COLETANDO", "EM_ROTA"])
+      .limit(1);
+    if ((active ?? []).length > 0) throw new Error("Entrega ainda em andamento");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: id, error } = await supabaseAdmin.rpc("queue_return", {
+      _restaurant_id: driver.restaurant_id,
+      _driver_id: driver.id,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true, queue_id: id as string };
   });
 
 export const _driverDashboardSchema = z.object({});

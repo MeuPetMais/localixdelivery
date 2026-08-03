@@ -126,11 +126,10 @@ async function buildOrchestrator() {
           _actor_id: null as unknown as string,
           _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },
         });
-        // Retorna motoboy ao final da fila
-        await supabaseAdmin.rpc("queue_return", {
-
+        // Entrega concluida: motoboy entra em retorno; a volta a fila ocorre ao finalizar o retorno.
+        await supabaseAdmin.rpc("queue_start_return" as never, {
           _restaurant_id: a.restaurant_id, _driver_id: a.driver_id,
-        });
+        } as never);
       },
     }),
   };
@@ -152,10 +151,20 @@ export const assignDelivery = createServerFn({ method: "POST" })
 
     const { data: driver } = await supabaseAdmin
       .from("delivery_drivers")
-      .select("id, restaurant_id, status")
+      .select("id, restaurant_id, status, online")
       .eq("id", data.driverId).maybeSingle();
     if (!driver || driver.restaurant_id !== order.restaurant_id) throw new Error("DRIVER_NOT_FOUND");
     if (driver.status !== "ativo") throw new Error("DRIVER_INACTIVE");
+    if (!driver.online) throw new Error("DRIVER_OFFLINE");
+
+    const { data: queueEntry } = await supabaseAdmin
+      .from("delivery_queue")
+      .select("id")
+      .eq("restaurant_id", order.restaurant_id)
+      .eq("driver_id", data.driverId)
+      .eq("status", "AGUARDANDO")
+      .maybeSingle();
+    if (!queueEntry) throw new Error("DRIVER_NOT_IN_QUEUE");
 
     const correlationId = crypto.randomUUID();
     const { data: created, error: insErr } = await supabaseAdmin

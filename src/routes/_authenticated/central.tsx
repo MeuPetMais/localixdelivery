@@ -187,10 +187,16 @@ function DriverRow({ d }: { d: CentralDriver }) {
         </p>
       </div>
       {d.group === "na_fila" && d.queue_position != null && (
-        <Badge variant="secondary">#{d.queue_position}</Badge>
+        <Badge variant="secondary">
+          #{d.queue_position}
+          {d.queue_entered_at ? ` · ${new Date(d.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+        </Badge>
       )}
       {d.group === "em_entrega" && d.active_since && (
         <Badge variant="outline">{minutesSince(d.active_since)}min</Badge>
+      )}
+      {d.group !== "na_fila" && d.last_seen_at && (
+        <Badge variant="outline">{minutesSince(d.last_seen_at)}min</Badge>
       )}
     </li>
   );

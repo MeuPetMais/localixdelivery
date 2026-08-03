@@ -71,6 +71,19 @@ export const queueDequeueForAssignment = createServerFn({ method: "POST" })
     return { ok: ok as boolean };
   });
 
+export const queueStartReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RestDriverInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwnerOrDriver(context.supabase, context.userId, data.restaurantId, data.driverId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ok, error } = await supabaseAdmin.rpc("queue_start_return" as never, {
+      _restaurant_id: data.restaurantId, _driver_id: data.driverId,
+    } as never);
+    if (error) throw new Error(error.message);
+    return { ok: ok as boolean };
+  });
+
 export const queueReturnAfterDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => RestDriverInput.parse(d))

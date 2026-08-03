@@ -83,7 +83,7 @@ export const listDrivers = createServerFn({ method: "GET" })
     ]);
 
     const queueByDriver = new Map((queueRows ?? []).map((q: any) => [q.driver_id, q]));
-    const activeDriverIds = new Set((activeRows ?? []).map((a: any) => a.driver_id));
+    const activeByDriver = new Map((activeRows ?? []).map((a: any) => [a.driver_id, a]));
     const shiftByDriver = new Map((shiftRows ?? []).map((s: any) => [s.driver_id, s]));
 
     return drivers.map((driver: any) => {
@@ -93,16 +93,18 @@ export const listDrivers = createServerFn({ method: "GET" })
         ...driver,
         queue_status: queue?.status ?? null,
         queue_position: queue?.status === "AGUARDANDO" ? queue.position : null,
+        queue_entered_at: queue?.status === "AGUARDANDO" ? queue.entered_at : null,
         shift_status: shift?.status ?? null,
         shift_current_state: shift?.current_state ?? null,
-        has_active_assignment: activeDriverIds.has(driver.id),
+        has_active_assignment: activeByDriver.has(driver.id),
+        active_assignment_status: (activeByDriver.get(driver.id) as any)?.status ?? null,
         operational_status: getDriverOperationalStatus({
           driverStatus: driver.status,
           online: driver.online,
           shiftStatus: shift?.status,
           shiftCurrentState: shift?.current_state,
           queueStatus: queue?.status,
-          hasActiveAssignment: activeDriverIds.has(driver.id),
+          hasActiveAssignment: activeByDriver.has(driver.id),
         }),
       };
     });
