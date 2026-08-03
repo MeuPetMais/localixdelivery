@@ -66,6 +66,15 @@ type Order = {
   updated_at?: string | null;
 };
 
+type DeliveryAssignmentSummary = {
+  id: string;
+  order_id: string;
+  driver_id: string;
+  status: string;
+  assigned_at: string | null;
+  driver_name: string | null;
+};
+
 
 // RC4.4 — Modelo Kanban baseado nos 14 estados oficiais do OrderStateMachine.
 // Cada coluna representa uma etapa operacional e agrega um ou mais estados.
@@ -215,6 +224,7 @@ const TERMINAL_STATUSES: OrderStatus[] = [
   "reembolsado",
   "chargeback",
 ];
+const ACTIVE_ASSIGNMENT_STATUSES = ["ATRIBUIDO", "COLETANDO", "EM_ROTA"];
 
 function columnOf(order: Order): ColumnKey {
   const status = order.status as OrderStatus;
@@ -255,6 +265,10 @@ const ACTIVE_COLUMNS: ColumnKey[] = ["paid", "preparing", "ready", "delivering"]
 
 function minutesSince(iso: string, nowMs: number) {
   return Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 60000));
+}
+
+function dispatchHref(orderId: string) {
+  return `/entregas?order_id=${encodeURIComponent(orderId)}`;
 }
 
 /** Urgency tone based on wait time (only meaningful for active orders). */
@@ -325,6 +339,38 @@ function OrdersPage() {
     refetchOnWindowFocus: false,
   });
 
+  const { data: assignments } = useQuery({
+    enabled: !!restaurant?.id,
+    queryKey: ["orders-delivery-assignments", restaurant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_assignments")
+        .select("id, order_id, driver_id, status, assigned_at, delivery_drivers(name)")
+        .eq("restaurant_id", restaurant.id)
+        .in("status", ACTIVE_ASSIGNMENT_STATUSES)
+        .order("assigned_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((row: any): DeliveryAssignmentSummary => ({
+        id: row.id,
+        order_id: row.order_id,
+        driver_id: row.driver_id,
+        status: row.status,
+        assigned_at: row.assigned_at,
+        driver_name: row.delivery_drivers?.name ?? null,
+      }));
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const assignmentByOrderId = useMemo(() => {
+    const map = new Map<string, DeliveryAssignmentSummary>();
+    for (const assignment of assignments ?? []) {
+      if (!map.has(assignment.order_id)) map.set(assignment.order_id, assignment);
+    }
+    return map;
+  }, [assignments]);
+
   async function updateStatus(id: string, status: OrderStatus) {
     // Optimista — sem invalidateQueries (Realtime confirma via cache patch).
     const keyPrefix = ["orders", restaurant.id];
@@ -334,8 +380,13 @@ function OrdersPage() {
     );
     try {
       await transitionOrderStatus({ data: { orderId: id, to: status } });
+      if (status === "pronto") {
+        qc.invalidateQueries({ queryKey: ["orders-delivery-assignments", restaurant.id] });
+      }
     } catch (err) {
-      toast.error("Não foi possível atualizar");
+      const message = err instanceof Error ? err.message : String(err);
+      const display = message.includes(":") ? message.split(":").slice(1).join(":") : "Nao foi possivel atualizar";
+      toast.error(display || "Nao foi possivel atualizar");
       snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
       console.error("[orders] transition failed", err);
     }
@@ -385,11 +436,6 @@ function OrdersPage() {
       cancelled: [],
     };
     for (const o of filtered) {
-      console.log({
-  pedido: o.order_number,
-  status: o.status,
-  payment_method: o.payment_method,
-});
       const col = columnOf(o);
       g[col].push(o);
     }
@@ -449,6 +495,10 @@ function OrdersPage() {
       const to = map[e.key.toLowerCase()];
       if (!to) return;
       e.preventDefault();
+      if (detailOrder.address && (to === "saiu_para_entrega" || to === "entregue")) {
+        window.location.href = dispatchHref(detailOrder.id);
+        return;
+      }
       updateStatus(detailOrder.id, to);
       setDetailOrder({ ...detailOrder, status: to });
       toast.success(`Pedido #${detailOrder.order_number ?? ""} → ${to.replace(/_/g, " ")}`);
@@ -646,17 +696,19 @@ function OrdersPage() {
                   {list.map((o) => {
                     const next = NEXT_BY_STATUS[o.status as OrderStatus];
                     const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                    const shouldUseDeliveryCenter = !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
                     return (
                       <OrderCard
                         key={o.id}
                         order={o}
+                        assignment={assignmentByOrderId.get(o.id) ?? null}
                         accent={col.accent}
                         nowMs={nowMs}
                         isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
                         onDragStart={(e) => onDragStart(e, o.id)}
-                        onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
-                        advanceLabel={next?.label}
-                        AdvanceIcon={next?.icon}
+                        onAdvance={next && !shouldUseDeliveryCenter ? () => updateStatus(o.id, next.to) : undefined}
+                        advanceLabel={shouldUseDeliveryCenter ? undefined : next?.label}
+                        AdvanceIcon={shouldUseDeliveryCenter ? undefined : next?.icon}
                         onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
                         onPrint={() => printOrder(o)}
                         onWhatsapp={() => whatsappOrder(o)}
@@ -700,17 +752,19 @@ function OrdersPage() {
                 {list.map((o) => {
                   const next = NEXT_BY_STATUS[o.status as OrderStatus];
                   const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
+                  const shouldUseDeliveryCenter = !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
                   return (
                     <OrderCard
                       key={o.id}
                       order={o}
+                      assignment={assignmentByOrderId.get(o.id) ?? null}
                       accent={col.accent}
                       nowMs={nowMs}
                       isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
                       onDragStart={() => {}}
-                      onAdvance={next ? () => updateStatus(o.id, next.to) : undefined}
-                      advanceLabel={next?.label}
-                      AdvanceIcon={next?.icon}
+                      onAdvance={next && !shouldUseDeliveryCenter ? () => updateStatus(o.id, next.to) : undefined}
+                      advanceLabel={shouldUseDeliveryCenter ? undefined : next?.label}
+                      AdvanceIcon={shouldUseDeliveryCenter ? undefined : next?.icon}
                       onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
                       onPrint={() => printOrder(o)}
                       onWhatsapp={() => whatsappOrder(o)}
@@ -755,6 +809,7 @@ function OrdersPage() {
 
 function OrderCard({
   order: o,
+  assignment,
   accent,
   nowMs,
   isActiveStatus,
@@ -770,6 +825,7 @@ function OrderCard({
   onOpen,
 }: {
   order: Order;
+  assignment: DeliveryAssignmentSummary | null;
   accent: string;
   nowMs: number;
   isActiveStatus: boolean;
@@ -789,6 +845,9 @@ function OrderCard({
   const mins = minutesSince(o.created_at, nowMs);
   const tone = isActiveStatus ? urgencyTone(mins) : null;
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const isDelivery = !!o.address;
+  const needsDispatch = isDelivery && o.status === "pronto" && !assignment;
+  const hasDeliveryFlowAction = isDelivery && (o.status === "pronto" || o.status === "saiu_para_entrega");
   return (
     <Card
       draggable
@@ -841,6 +900,19 @@ function OrderCard({
         )}
       </div>
 
+      {isDelivery && o.status === "pronto" && (
+        <div className={`rounded-md border p-2 text-xs ${needsDispatch ? "border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "bg-muted/50"}`}>
+          {assignment ? (
+            <div className="space-y-1">
+              <p className="font-semibold">Motoboy: {assignment.driver_name ?? "Designado"}</p>
+              <p className="text-muted-foreground">Entrega: {assignment.status}</p>
+            </div>
+          ) : (
+            <p className="font-semibold">Motoboy ainda não designado</p>
+          )}
+        </div>
+      )}
+
       <ul className="rounded-md bg-muted/60 p-2 text-xs">
         {items.map((it, i) => (
           <li key={i} className="flex justify-between gap-2">
@@ -858,6 +930,14 @@ function OrderCard({
       )}
 
       <div className="grid grid-cols-2 gap-1.5 pt-1" onClick={stop}>
+        {hasDeliveryFlowAction && (
+          <Button asChild size="sm" className="col-span-2 h-8 gap-1 text-xs">
+            <a href={dispatchHref(o.id)} onClick={stop}>
+              <Bike className="h-3.5 w-3.5" />
+              {needsDispatch ? "Despachar entrega" : "Acompanhar entrega"}
+            </a>
+          </Button>
+        )}
         {onAdvance && (
           <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={(e) => { stop(e); onAdvance(); }}>
             {AdvanceIcon ? <AdvanceIcon className="h-3.5 w-3.5" /> : null}

@@ -31,7 +31,7 @@ export const NAVIGATION: NavigationItem[] = [
     children: [
       { id: "orders", label: "Pedidos", to: "/orders", workspace: "operation" },
       { id: "kitchen", label: "Painel da Cozinha", to: "/kitchen", workspace: "operation", requiredRoles: ["OWNER", "MANAGER", "KITCHEN"] },
-      { id: "delivery", label: "Delivery", to: "/orders", workspace: "operation", requiredRoles: ["OWNER", "MANAGER", "DELIVERY", "STAFF"] },
+      { id: "delivery", label: "Delivery", to: "/entregas", workspace: "operation", requiredRoles: ["OWNER", "MANAGER", "DELIVERY", "STAFF"] },
       { id: "central", label: "Central Operacional", to: "/central", workspace: "operation", requiredRoles: ["OWNER", "MANAGER"] },
       { id: "drivers", label: "Motoboys", to: "/motoboys", workspace: "operation", requiredRoles: ["OWNER", "MANAGER"] },
     ],

@@ -106,12 +106,16 @@ async function buildOrchestrator() {
         });
       },
       onCollected: async (a) => {
+        // Coleta confirmada no Assignment Domain. A saida para rota ocorre em EM_ROTA.
+        void a;
+      },
+      onDeparted: async (a) => {
         // Order Domain: saiu_para_entrega
         await supabaseAdmin.rpc("order_apply_transition", {
           _order_id: a.order_id,
           _expected_from: "pronto",
           _next_status: "saiu_para_entrega",
-          _reason: "Motoboy coletou o pedido",
+          _reason: "Motoboy iniciou a rota",
           _actor_type: "courier",
           _actor_id: null as unknown as string,
           _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },

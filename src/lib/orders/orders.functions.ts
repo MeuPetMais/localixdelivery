@@ -8,6 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ORDER_STATES, type OrderState } from "./OrderStateMachine";
 import { createOrchestrator, type OrderSnapshot } from "./OrderOrchestrator";
 import type { OrderActorType } from "./OrderPermissions";
+import { validateDirectDeliveryStatusTransition } from "./delivery-transition-guard";
 
 const ActorSchema = z.enum([
   "customer",
@@ -35,7 +36,7 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
     // Verifica se o chamador é dono do restaurante do pedido OU admin.
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")
-      .select("id, restaurant_id, status")
+      .select("id, restaurant_id, status, address")
       .eq("id", data.orderId)
       .maybeSingle();
     if (orderErr) throw new Error(orderErr.message);
@@ -55,6 +56,25 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
         .eq("id", order.restaurant_id!)
         .maybeSingle();
       if (!rest || rest.owner_id !== userId) throw new Error("FORBIDDEN");
+    }
+
+    if (data.to === "saiu_para_entrega" || data.to === "entregue") {
+      const { data: assignment, error: assignmentErr } = await supabaseAdmin
+        .from("delivery_assignments")
+        .select("id, status")
+        .eq("order_id", data.orderId)
+        .in("status", ["ATRIBUIDO", "COLETANDO", "EM_ROTA"])
+        .maybeSingle();
+      if (assignmentErr) throw new Error(assignmentErr.message);
+
+      const guard = validateDirectDeliveryStatusTransition({
+        order,
+        nextStatus: data.to,
+        assignment,
+      });
+      if (!guard.ok) {
+        throw new Error(`${guard.code}:${guard.message}`);
+      }
     }
 
     const orchestrator = createOrchestrator({

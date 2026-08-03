@@ -16,7 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { listDrivers } from "@/lib/delivery-drivers.functions";
 import { queueList } from "@/lib/delivery-queue.functions";
 import {
-  listAssignments, assignDelivery, deliverDelivery, listAutoAssignmentAudit,
+  listAssignments, assignDelivery, collectDelivery, departDelivery, deliverDelivery,
+  cancelDelivery, listAutoAssignmentAudit,
 } from "@/lib/delivery-assignment.functions";
 import { brl } from "@/lib/format";
 
@@ -197,6 +198,13 @@ function EntregasPage() {
   const [pickDriverId, setPickDriverId] = useState<string | null>(null);
   const [choosingOther, setChoosingOther] = useState(false);
 
+  const invalidateDeliveryQueries = () => {
+    qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
+    qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
+    qc.invalidateQueries({ queryKey: ["ops-entregas-orders", rid] });
+    qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
+  };
+
   const assignMut = useMutation({
     mutationFn: async (input: { orderId: string; driverId: string }) => {
       const runner = useServerFnRef.current;
@@ -205,27 +213,51 @@ function EntregasPage() {
     onSuccess: () => {
       toast.success("Entrega despachada");
       setDispatchOrder(null); setPickDriverId(null); setChoosingOther(false);
-      qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-orders", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
+      invalidateDeliveryQueries();
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao despachar"),
   });
   const assignRunner = useServerFn(assignDelivery);
   const useServerFnRef = useMemoRef(assignRunner);
 
+  const collectRunner = useServerFn(collectDelivery);
+  const collectMut = useMutation({
+    mutationFn: async (assignmentId: string) => collectRunner({ data: { assignmentId } }),
+    onSuccess: () => {
+      toast.success("Coleta confirmada");
+      invalidateDeliveryQueries();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao confirmar coleta"),
+  });
+
+  const departRunner = useServerFn(departDelivery);
+  const departMut = useMutation({
+    mutationFn: async (assignmentId: string) => departRunner({ data: { assignmentId } }),
+    onSuccess: () => {
+      toast.success("Rota iniciada");
+      invalidateDeliveryQueries();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar rota"),
+  });
+
   const deliverRunner = useServerFn(deliverDelivery);
   const deliverMut = useMutation({
     mutationFn: async (assignmentId: string) => deliverRunner({ data: { assignmentId } }),
     onSuccess: () => {
       toast.success("Entrega concluída");
-      qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-orders", rid] });
-      qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
+      invalidateDeliveryQueries();
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao concluir"),
+  });
+
+  const cancelRunner = useServerFn(cancelDelivery);
+  const cancelMut = useMutation({
+    mutationFn: async (assignmentId: string) => cancelRunner({ data: { assignmentId, reason: "Cancelamento administrativo" } }),
+    onSuccess: () => {
+      toast.success("Atribuicao cancelada");
+      invalidateDeliveryQueries();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao cancelar atribuicao"),
   });
 
   function openDispatch(order: Order) {
@@ -374,14 +406,36 @@ function EntregasPage() {
                         <Badge variant="outline" className="mt-1 text-[10px]">{a.status}</Badge>
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={deliverMut.isPending}
-                          onClick={() => deliverMut.mutate(a.id)}
-                        >
-                          Concluir
-                        </Button>
+                        {a.status === "ATRIBUIDO" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={collectMut.isPending}
+                            onClick={() => collectMut.mutate(a.id)}
+                          >
+                            Coletar
+                          </Button>
+                        )}
+                        {a.status === "COLETANDO" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={departMut.isPending}
+                            onClick={() => departMut.mutate(a.id)}
+                          >
+                            Iniciar rota
+                          </Button>
+                        )}
+                        {a.status === "EM_ROTA" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={deliverMut.isPending}
+                            onClick={() => deliverMut.mutate(a.id)}
+                          >
+                            Concluir
+                          </Button>
+                        )}
                         {o && availableQueue.length > 0 && (
                           <Button
                             size="sm"
@@ -390,6 +444,16 @@ function EntregasPage() {
                             onClick={() => openDispatch(o)}
                           >
                             Redistribuir
+                          </Button>
+                        )}
+                        {a.status !== "EM_ROTA" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={cancelMut.isPending}
+                            onClick={() => cancelMut.mutate(a.id)}
+                          >
+                            Cancelar
                           </Button>
                         )}
                       </div>

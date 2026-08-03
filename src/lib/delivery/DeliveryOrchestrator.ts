@@ -37,6 +37,7 @@ export interface OrchestratorDeps {
     metadata: Record<string, unknown>;
   }) => Promise<{ ok: boolean; reason?: string; current?: string }>;
   onCollected?: (a: AssignmentSnapshot) => Promise<void>;
+  onDeparted?: (a: AssignmentSnapshot) => Promise<void>;
   onDelivered?: (a: AssignmentSnapshot) => Promise<void>;
   onAssigned?: (a: AssignmentSnapshot) => Promise<void>;
   onCancelled?: (a: AssignmentSnapshot) => Promise<void>;
@@ -94,6 +95,7 @@ export function createDeliveryOrchestrator(deps: OrchestratorDeps) {
 
     if (input.to === "ATRIBUIDO" && deps.onAssigned) await deps.onAssigned(next);
     if (input.to === "COLETANDO" && deps.onCollected) await deps.onCollected(next);
+    if (input.to === "EM_ROTA" && deps.onDeparted) await deps.onDeparted(next);
     if (input.to === "ENTREGUE" && deps.onDelivered) await deps.onDelivered(next);
     if (input.to === "CANCELADO" && deps.onCancelled) await deps.onCancelled(next);
 
