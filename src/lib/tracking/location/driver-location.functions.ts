@@ -1,7 +1,6 @@
-// Driver Location — Server functions (RC5.3.b).
-// Persistem apenas ÚLTIMA POSIÇÃO + CONFIDENCE no tracking_snapshots.
-// Nunca gravam histórico coordenada-a-coordenada (contra manifesto).
-// RLS reforça: motoboy só escreve o próprio driver_id.
+// Driver Location server functions.
+// Persists only current operational position and active-delivery snapshot.
+// Coordinates are never written to application logs.
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -17,7 +16,7 @@ const LocationSampleSchema = z.object({
   speed: z.number().nullable().optional(),
   accuracy: z.number().nullable().optional(),
   captured_at: z.string(),
-  correlation_id: z.string().optional(),
+  correlation_id: z.string().uuid().optional(),
   confidence: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
 });
 
@@ -28,30 +27,47 @@ const IngestInput = z.object({
 export const ingestDriverLocations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => IngestInput.parse(data))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let accepted = 0;
     let skipped = 0;
+    const reasons: Record<string, number> = {};
 
-    for (const s of data.samples) {
-      // Só permite o próprio driver_id (RLS reforça também).
-      if (s.driver_id !== userId) { skipped++; continue; }
-      if (!s.assignment_id) { skipped++; continue; }
+    for (const sample of data.samples) {
+      if (!sample.restaurant_id) {
+        skipped++;
+        reasons.MISSING_RESTAURANT = (reasons.MISSING_RESTAURANT ?? 0) + 1;
+        continue;
+      }
 
-      const { error } = await supabase
-        .from("tracking_snapshots")
-        .update({
-          last_lat: s.lat,
-          last_lng: s.lng,
-          last_heading: s.heading ?? null,
-          last_speed: s.speed ?? null,
-          last_seen_at: s.captured_at,
-          confidence: s.confidence ?? "MEDIUM",
-        })
-        .eq("assignment_id", s.assignment_id)
-        .eq("driver_id", s.driver_id);
-      if (error) { console.error("[ingestDriverLocations]", error.message); skipped++; }
-      else accepted++;
+      const { data: result, error } = await supabaseAdmin.rpc("upsert_driver_operational_location" as never, {
+        _driver_id: sample.driver_id,
+        _restaurant_id: sample.restaurant_id,
+        _assignment_id: sample.assignment_id ?? null,
+        _lat: sample.lat,
+        _lng: sample.lng,
+        _accuracy: sample.accuracy ?? null,
+        _heading: sample.heading ?? null,
+        _speed: sample.speed ?? null,
+        _device_captured_at: sample.captured_at,
+        _correlation_id: sample.correlation_id ?? crypto.randomUUID(),
+      } as never);
+
+      if (error) {
+        skipped++;
+        reasons.RPC_ERROR = (reasons.RPC_ERROR ?? 0) + 1;
+        continue;
+      }
+
+      const payload = result as unknown as { ok?: boolean; reason?: string } | null;
+      if (payload?.ok) {
+        accepted++;
+      } else {
+        skipped++;
+        const reason = payload?.reason ?? "UNKNOWN";
+        reasons[reason] = (reasons[reason] ?? 0) + 1;
+      }
     }
-    return { accepted, skipped };
+
+    return { accepted, skipped, reasons };
   });

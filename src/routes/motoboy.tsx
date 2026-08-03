@@ -37,6 +37,7 @@ import {
   getDriverOperationalStatus,
   type DriverOperationalStatus,
 } from "@/lib/driver-operational-status";
+import { useDriverLocationTracking } from "@/lib/tracking/location/use-driver-location-tracking";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -85,6 +86,7 @@ function DriverWallet() {
   const dash = dashQ.data;
   const driver = dash?.driver;
   const restaurantId = driver?.restaurant_id ?? null;
+  const operationalStatus = (dash as any)?.operationalStatus as DriverOperationalStatus | undefined;
 
   const [goals, setGoals] = useState<DriverGoals>(DEFAULT_GOALS);
   useEffect(() => {
@@ -105,20 +107,18 @@ function DriverWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [restaurantId, driver?.id, qc]);
 
-  useEffect(() => {
-    if (!driver?.online) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    const send = () => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => presence({ data: { online: true, lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000 },
-      );
+  const locationCtx = useMemo(() => {
+    if (!driver?.id || !restaurantId) return null;
+    return {
+      driverId: driver.id,
+      restaurantId,
+      assignmentId: dash?.active?.assignment?.id ?? null,
+      online: !!driver.online,
+      paused: operationalStatus === "pausa",
+      delivering: !!dash?.active,
     };
-    send();
-    const t = setInterval(send, 30000);
-    return () => clearInterval(t);
-  }, [driver?.online, presence]);
+  }, [driver?.id, driver?.online, restaurantId, dash?.active, operationalStatus]);
+  const locationTracking = useDriverLocationTracking(locationCtx);
 
   const enterMut = useMutation({
     mutationFn: () => enter({}),
@@ -160,17 +160,8 @@ function DriverWallet() {
 
   const toggleOnline = async () => {
     if (!driver) return;
-    if (!driver.online && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => presence({ data: { online: true, lat: pos.coords.latitude, lng: pos.coords.longitude } })
-          .then(() => qc.invalidateQueries({ queryKey: ["driver-wallet"] })),
-        () => presence({ data: { online: true } })
-          .then(() => qc.invalidateQueries({ queryKey: ["driver-wallet"] })),
-      );
-    } else {
-      await presence({ data: { online: !driver.online } });
-      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
-    }
+    await presence({ data: { online: !driver.online } });
+    qc.invalidateQueries({ queryKey: ["driver-wallet"] });
   };
 
   if (session === null || dashQ.isLoading) return <ScreenSkeleton />;
@@ -188,6 +179,8 @@ function DriverWallet() {
           online={!!driver.online}
           onToggle={toggleOnline}
         />
+
+        <LocationNotice status={locationTracking.status} online={!!driver.online} />
 
         {tab === "home" && (
           <HomeTab
@@ -276,6 +269,29 @@ export function derivePresenceStatus(input: {
     queueStatus: input.queueStatus,
     hasActiveAssignment: input.hasActive,
   });
+}
+
+function LocationNotice(props: { status: "idle" | "tracking" | "permission_denied" | "unsupported"; online: boolean }) {
+  if (!props.online) return null;
+  if (props.status === "permission_denied") {
+    return (
+      <Card className="mb-4 rounded-2xl border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+        Permissao de localizacao negada. Ative a localizacao do navegador para atualizar sua posicao operacional.
+      </Card>
+    );
+  }
+  if (props.status === "unsupported") {
+    return (
+      <Card className="mb-4 rounded-2xl border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+        Este navegador nao oferece localizacao em tempo real. O restante do app continua funcionando.
+      </Card>
+    );
+  }
+  return (
+    <Card className="mb-4 rounded-2xl border-none bg-muted/50 p-3 text-xs text-muted-foreground">
+      A localizacao e usada durante sua disponibilidade e entregas para organizacao da operacao do restaurante.
+    </Card>
+  );
 }
 
 function StatusPill(props: { status: DriverPresenceStatus }) {

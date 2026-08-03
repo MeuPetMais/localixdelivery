@@ -68,6 +68,9 @@ type Driver = {
   has_active_assignment?: boolean;
   active_assignment_status?: string | null;
   last_lat: number | null; last_lng: number | null; last_seen_at: string | null;
+  last_accuracy?: number | null;
+  last_location_server_at?: string | null;
+  location_confidence?: "HIGH" | "MEDIUM" | "LOW" | null;
   created_at?: string;
 };
 
@@ -446,11 +449,7 @@ function DriverCard({
           Entrada na fila: {driver.queue_entered_at ? new Date(driver.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}
         </p>
 
-        {driver.last_lat != null && driver.last_lng != null && (
-          <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <MapPin className="h-3 w-3" /> {driver.last_lat.toFixed(3)}, {driver.last_lng.toFixed(3)}
-          </p>
-        )}
+        <DriverLocationSummary driver={driver} />
 
         {driver.status === "aguardando_ativacao" && (
           <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
@@ -515,6 +514,37 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-lg bg-muted/50 py-1.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function DriverLocationSummary({ driver }: { driver: Driver }) {
+  if (driver.last_lat == null || driver.last_lng == null) {
+    return <p className="text-[11px] text-muted-foreground">Sem localizacao recente.</p>;
+  }
+  const updatedAt = driver.last_location_server_at ?? driver.last_seen_at;
+  const accuracy = driver.last_accuracy != null ? Math.round(driver.last_accuracy) : null;
+  const label = accuracy == null
+    ? "Localizacao aproximada"
+    : accuracy <= 30
+      ? "Localizacao precisa"
+      : "Localizacao aproximada";
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${driver.last_lat},${driver.last_lng}`;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1">
+        <MapPin className="h-3 w-3" /> {label}
+      </span>
+      {updatedAt && <span>Atualizado {relativeTime(updatedAt)}</span>}
+      {accuracy != null && <span>Precisao {accuracy}m</span>}
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+        className="h-7 rounded-full px-2 text-[11px]"
+      >
+        <a href={mapsUrl} target="_blank" rel="noreferrer">Ver no mapa</a>
+      </Button>
     </div>
   );
 }
@@ -1244,12 +1274,9 @@ function DetailsDialog({
             <Info k="Veículo" v={`${VEHICLE_LABEL[driver.vehicle_type]}${driver.vehicle_plate ? ` • ${driver.vehicle_plate}` : ""}`} />
             <Info k="Última atividade" v={driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—"} />
           </dl>
-          {driver.last_lat != null && driver.last_lng != null && (
-            <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <MapPin className="mr-1 inline h-3.5 w-3.5" />
-              Última posição: {driver.last_lat.toFixed(5)}, {driver.last_lng.toFixed(5)}
-            </div>
-          )}
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <DriverLocationSummary driver={driver} />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
