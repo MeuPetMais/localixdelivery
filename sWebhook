@@ -1,0 +1,38 @@
+[35mdocs/ARCHITECTURE_BASELINE.md[m[36m:[m- **[1;31mWebhookService[m** — valida assinatura HMAC + processa eventos (testado).
+[35mdocs/BILLING_AUDIT_REPORT.md[m[36m:[m  PricingEngine, ReconciliationService, SplitService, [1;31mWebhookService[m,
+[35mdocs/CHECKOUT_INFRASTRUCTURE.md[m[36m:[m- `Stripe[1;31mWebhookService[m.onPaymentEvent(...)` — canal único para o
+[35mdocs/CHECKOUT_STRIPE_REPORT.md[m[36m:[m- `src/lib/stripe/Stripe[1;31mWebhookService[m.ts` — ganha canal
+[35mdocs/CHECKOUT_STRIPE_REPORT.md[m[36m:[m- Ponte `Stripe[1;31mWebhookService[m.onPaymentEvent(...)`
+[35mdocs/DOMAIN_MANIFEST_PAYMENT.md[m[36m:[m  `PaymentIntentService`, `[1;31mWebhookService[m`, `EventBus`.
+[35mdocs/STRIPE_CONNECT_ARCHITECTURE.md[m[36m:[m    ├── Stripe[1;31mWebhookService[m ────► Edge Function stripe-webhook (futuro)
+[35mdocs/STRIPE_DOMAIN_REPORT.md[m[36m:[m- `src/lib/stripe/Stripe[1;31mWebhookService[m.ts`
+[35msrc/lib/inventory/InventoryFoundation.README.md[m[36m:[m[1;31mWebhookService[m, FinancialLedger, ReconciliationService, SplitService,
+[35msrc/lib/orders/OrderOrchestrator.README.md[m[36m:[mEste módulo foi entregue **sem alterar** [1;31mWebhookService[m, SplitService,
+[35msrc/lib/orders/OrderOrchestrator.README.md[m[36m:[m- [1;31mWebhookService[m: em `payment.approved`, invocar
+[35msrc/lib/payments/ReconciliationService.ts[m[36m:[m * OrderService, PricingEngine or [1;31mWebhookService[m state. It only inserts rows
+[35msrc/lib/payments/SplitService.ts[m[36m:[m * OrderService, PaymentIntent, [1;31mWebhookService[m, ReconciliationService.
+[35msrc/lib/payments/WebhookService.test.ts[m[36m:[mimport { handleWebhook, mapStatus, eventNameFromStatus, verifyMpSignature, type WebhookDeps } from "./[1;31mWebhookService[m";
+[35msrc/lib/payments/WebhookService.test.ts[m[36m:[mdescribe("[1;31mWebhookService[m - núcleo", () => {
+[35msrc/lib/payments/WebhookService.ts[m[36m:[m// [1;31mWebhookService[m — processamento de eventos do Mercado Pago.
+[35msrc/lib/payments/reconciliation.functions.ts[m[36m:[m * [1;31mWebhookService[m; aqui apenas comparamos o que já temos armazenado).
+[35msrc/lib/stripe/STRIPE_DOMAIN.md[m[36m:[m| `Stripe[1;31mWebhookService[m` | Parse + dispatch de eventos Stripe |
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[mimport { Stripe[1;31mWebhookService[m } from "./Stripe[1;31mWebhookService[m";
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[mdescribe("Stripe[1;31mWebhookService[m — ponte com Payment Domain", () => {
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m  beforeEach(() => Stripe[1;31mWebhookService[m._resetPaymentHandlers());
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    Stripe[1;31mWebhookService[m.onPaymentEvent((name, payload) => {
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    const evt = Stripe[1;31mWebhookService[m.parse({
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    await Stripe[1;31mWebhookService[m.dispatch(evt);
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    Stripe[1;31mWebhookService[m.onPaymentEvent(() => {
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    const evt = Stripe[1;31mWebhookService[m.parse({
+[35msrc/lib/stripe/StripeCheckout.test.ts[m[36m:[m    await expect(Stripe[1;31mWebhookService[m.dispatch(evt)).resolves.toBeUndefined();
+[35msrc/lib/stripe/StripeDomain.test.ts[m[36m:[mimport { Stripe[1;31mWebhookService[m } from "./Stripe[1;31mWebhookService[m";
+[35msrc/lib/stripe/StripeDomain.test.ts[m[36m:[mdescribe("Stripe[1;31mWebhookService[m + EventBus", () => {
+[35msrc/lib/stripe/StripeDomain.test.ts[m[36m:[m    const evt = Stripe[1;31mWebhookService[m.parse({
+[35msrc/lib/stripe/StripeDomain.test.ts[m[36m:[m    await Stripe[1;31mWebhookService[m.dispatch(evt, "rest-1");
+[35msrc/lib/stripe/StripePaymentEventMapper.ts[m[36m:[m//   Stripe webhook → Stripe[1;31mWebhookService[m.parse
+[35msrc/lib/stripe/StripeService.ts[m[36m:[mimport { Stripe[1;31mWebhookService[m } from "./Stripe[1;31mWebhookService[m";
+[35msrc/lib/stripe/StripeService.ts[m[36m:[m  webhooks: Stripe[1;31mWebhookService[m,
+[35msrc/lib/stripe/StripeWebhookService.ts[m[36m:[mexport const Stripe[1;31mWebhookService[m = {
+[35msrc/lib/stripe/StripeWebhookService.ts[m[36m:[m          console.error("[Stripe[1;31mWebhookService[m] payment handler falhou", domainEvent.name, err);
+[35msrc/lib/stripe/StripeWebhookService.ts[m[36m:[mexport default Stripe[1;31mWebhookService[m;
+[35msrc/lib/tenant/TenantConfigurationService.README.md[m[36m:[mPaymentIntent, [1;31mWebhookService[m, FinancialLedger, ReconciliationService,

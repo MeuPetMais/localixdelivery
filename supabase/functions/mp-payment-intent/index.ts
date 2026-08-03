@@ -243,6 +243,11 @@ Deno.serve(async (req) => {
       .eq("order_id", orderId)
       .maybeSingle();
 
+    console.log("[mp-payment-intent] payload.payment_method:", payload?.payment_method);
+    console.log("[mp-payment-intent] existing.payment_method:", existing?.payment_method);
+    console.log("[mp-payment-intent] payload:", payload);
+    console.log("[mp-payment-intent] existing:", existing);
+    console.log("[mp-payment-intent] method escolhido:", String(payload?.payment_method ?? existing?.payment_method ?? "pix").toLowerCase());
     const method = String(payload?.payment_method ?? existing?.payment_method ?? "pix").toLowerCase();
     const token = await getAccessToken(sb, order.restaurant_id);
 
@@ -269,11 +274,7 @@ Deno.serve(async (req) => {
         // 2) notification_url — mesma do PIX, compatível com webhook existente.
         const notificationUrl =
   "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
-        if (!/^https:\/\/[^\s]+\/api\/public\/mp\/webhook$/.test(notificationUrl)) {
-          console.error("[mp-payment-intent] notification_url inválida (card)", { orderId, notificationUrl });
-          await sb.from("order_payment").update({ status: "PENDING", last_error: "notification_url_invalid" }).eq("order_id", orderId);
-          return json({ error: "notification_url_invalid" }, { status: 500 });
-        }
+       
 
         // 3) back_urls — auto_return exige HTTPS válido em success.
         const successUrl = String(payload?.success_url ?? "").trim();
@@ -475,38 +476,19 @@ Deno.serve(async (req) => {
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       const callbackUrl = String(payload?.success_url ?? "").trim();
 
-      // notification_url — obrigatório para receber webhook do MP.
-      const notificationUrl =
+     // notification_url — obrigatório para receber webhook do MP.
+const notificationUrl =
   "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
 
 console.log("[mp-payment-intent] creating pix", {
-  ...
+  restaurant_id: order.restaurant_id,
+  order_id: orderId,
+  external_reference: order.id,
+  notification_url: notificationUrl,
+  callback_url: /^https:\/\/[^\s]+$/.test(callbackUrl) ? callbackUrl : null,
+  payment_method: "pix",
+  transaction_amount: Number(order.total),
 });
-        console.error("[mp-payment-intent] notification_url inválida", { 
-          orderId, 
-          notificationUrl,
-         });
-
-        await sb.from("order_payment").update({
-          status: "PENDING",
-          last_error: "notification_url_invalid",
-        }).eq("order_id", orderId);
-
-        return json(
-          { error: "notification_url_invalid" }, 
-          { status: 500 }
-        );
-      }
-
-      console.log("[mp-payment-intent] creating pix", {
-        restaurant_id: order.restaurant_id,
-        order_id: orderId,
-        external_reference: order.id,
-        notification_url: notificationUrl,
-          callback_url: /^https:\/\/[^\s]+$/.test(callbackUrl) ? callbackUrl : null,
-        payment_method: "pix",
-        transaction_amount: Number(order.total),
-      });
 
       let mp;
       try {

@@ -7,7 +7,7 @@
 /** URL de download do app (APK durante piloto; Play Store após publicação). */
 export const APP_DOWNLOAD_URL: string =
   (import.meta.env.VITE_DRIVER_APP_DOWNLOAD_URL as string | undefined) ??
-  "https://app.rngdigital.com.br/downloads/localix-entregador.apk";
+  "https://localixdelivery.rngdigital.com.br/downloads/localix-entregador.apk";
 
 /** Deep link para abrir o app instalado (Android intent scheme opcional). */
 export const APP_OPEN_URL: string =

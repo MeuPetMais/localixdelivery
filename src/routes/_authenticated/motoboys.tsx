@@ -37,6 +37,7 @@ import {
   buildWhatsAppUrl, buildInviteMessage,
   DRIVER_ACTIVATION_URL,
 } from "@/lib/driver-invite";
+import { getDriverActivationUrl } from "@/lib/driver-invite.functions";
 
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
@@ -115,8 +116,15 @@ function DriversPage() {
   const create = useServerFn(registerDriverPending);
   const update = useServerFn(updateDriver);
   const remove = useServerFn(deleteDriver);
+  const getActivationUrl = useServerFn(getDriverActivationUrl);
 
   const queryKey = ["delivery-drivers", restaurant.id] as const;
+  const { data: driverActivationUrl = DRIVER_ACTIVATION_URL } = useQuery({
+    queryKey: ["driver-activation-url"],
+    queryFn: () => getActivationUrl(),
+    staleTime: Infinity,
+    retry: false,
+  });
   const { data: drivers = [], isLoading, error: listError } = useQuery({
     queryKey,
     queryFn: () => list({ data: { restaurantId: restaurant.id } }),
@@ -285,6 +293,7 @@ function DriversPage() {
               driver={d}
               presence={d._presence}
               restaurantName={restaurant.name}
+              activationUrl={driverActivationUrl}
               onView={() => setViewing(d)}
               onEdit={() => setEditing(d)}
               onToggle={() =>
@@ -309,6 +318,7 @@ function DriversPage() {
           onClose={() => setCreating(false)}
           restaurantId={restaurant.id}
           restaurantName={restaurant.name}
+          activationUrl={driverActivationUrl}
           onSubmit={async (form) => {
             await createMut.mutateAsync({ ...form, restaurantId: restaurant.id });
           }}
@@ -368,9 +378,9 @@ function StatCard({
 }
 
 function DriverCard({
-  driver, presence, restaurantName, onView, onEdit, onToggle, onDelete,
+  driver, presence, restaurantName, activationUrl, onView, onEdit, onToggle, onDelete,
 }: {
-  driver: Driver; presence: PresenceState; restaurantName: string;
+  driver: Driver; presence: PresenceState; restaurantName: string; activationUrl: string;
   onView: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void;
 }) {
 
@@ -443,6 +453,7 @@ function DriverCard({
                     phone: driver.phone ?? "",
                     driverName: driver.name,
                     restaurantName,
+                    activationUrl,
                   });
                   window.open(url, "_blank", "noopener,noreferrer");
                 }}
@@ -453,7 +464,7 @@ function DriverCard({
                 size="sm" variant="outline"
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(DRIVER_ACTIVATION_URL);
+                    await navigator.clipboard.writeText(activationUrl);
                     toast.success("Link copiado");
                   } catch { toast.error("Não foi possível copiar"); }
                 }}
@@ -557,9 +568,9 @@ const emptyForm: WizardForm = {
 };
 
 function WizardDialog({
-  open, onClose, restaurantId, restaurantName, onSubmit,
+  open, onClose, restaurantId, restaurantName, activationUrl, onSubmit,
 }: {
-  open: boolean; onClose: () => void; restaurantId: string; restaurantName: string;
+  open: boolean; onClose: () => void; restaurantId: string; restaurantName: string; activationUrl: string;
   onSubmit: (data: {
     name: string; phone: string; cpf: string;
     vehicleType: Vehicle; vehiclePlate: string | null;
@@ -640,6 +651,7 @@ function WizardDialog({
               driverName={f.name.trim()}
               driverPhone={f.phone.trim()}
               restaurantName={restaurantName}
+              activationUrl={activationUrl}
             />
           )}
         </div>
@@ -990,18 +1002,18 @@ function UploadTile({
 }
 
 function StepSuccess({
-  driverName, driverPhone, restaurantName,
+  driverName, driverPhone, restaurantName, activationUrl,
 }: {
-  driverName: string; driverPhone: string; restaurantName: string;
+  driverName: string; driverPhone: string; restaurantName: string; activationUrl: string;
 }) {
   const waUrl = buildWhatsAppUrl({
-    phone: driverPhone, driverName, restaurantName,
+    phone: driverPhone, driverName, restaurantName, activationUrl,
   });
-  const inviteMessage = buildInviteMessage({ driverName, restaurantName });
+  const inviteMessage = buildInviteMessage({ driverName, restaurantName, activationUrl });
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(DRIVER_ACTIVATION_URL);
+      await navigator.clipboard.writeText(activationUrl);
       toast.success("Link copiado");
     } catch { toast.error("Não foi possível copiar"); }
   };
@@ -1012,7 +1024,7 @@ function StepSuccess({
         await (navigator as any).share({
           title: "Localix Entregador",
           text: inviteMessage,
-          url: DRIVER_ACTIVATION_URL,
+          url: activationUrl,
         });
       } catch { /* usuário cancelou */ }
     } else {
@@ -1089,7 +1101,7 @@ function StepSuccess({
                   <Copy className="mr-1 h-4 w-4" /> Copiar link
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Copia {DRIVER_ACTIVATION_URL}</TooltipContent>
+              <TooltipContent>Copia {activationUrl}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SupabaseRawFetchTempRouteImport } from './routes/supabase-raw-fetch-temp'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MotoboyRouteImport } from './routes/motoboy'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
@@ -50,6 +51,7 @@ import { Route as AdminAprovacoesRouteImport } from './routes/admin.aprovacoes'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
+import { Route as AuthenticatedSupabaseDiagnosticRouteImport } from './routes/_authenticated/supabase-diagnostic'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
@@ -81,6 +83,11 @@ import { Route as ApiPublicOrdersTransitionRouteImport } from './routes/api/publ
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
+const SupabaseRawFetchTempRoute = SupabaseRawFetchTempRouteImport.update({
+  id: '/supabase-raw-fetch-temp',
+  path: '/supabase-raw-fetch-temp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
@@ -285,6 +292,12 @@ const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
   path: '/suppliers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSupabaseDiagnosticRoute =
+  AuthenticatedSupabaseDiagnosticRouteImport.update({
+    id: '/supabase-diagnostic',
+    path: '/supabase-diagnostic',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -458,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -485,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supabase-diagnostic': typeof AuthenticatedSupabaseDiagnosticRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
@@ -528,6 +543,7 @@ export interface FileRoutesByTo {
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -555,6 +571,7 @@ export interface FileRoutesByTo {
   '/promotions': typeof AuthenticatedPromotionsRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supabase-diagnostic': typeof AuthenticatedSupabaseDiagnosticRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/support': typeof AuthenticatedSupportRoute
   '/units': typeof AuthenticatedUnitsRoute
@@ -602,6 +619,7 @@ export interface FileRoutesById {
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -629,6 +647,7 @@ export interface FileRoutesById {
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/supabase-diagnostic': typeof AuthenticatedSupabaseDiagnosticRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
@@ -676,6 +695,7 @@ export interface FileRouteTypes {
     | '/meus-pedidos'
     | '/motoboy'
     | '/redefinir-senha'
+    | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -703,6 +723,7 @@ export interface FileRouteTypes {
     | '/promotions'
     | '/reviews'
     | '/settings'
+    | '/supabase-diagnostic'
     | '/suppliers'
     | '/support'
     | '/units'
@@ -746,6 +767,7 @@ export interface FileRouteTypes {
     | '/meus-pedidos'
     | '/motoboy'
     | '/redefinir-senha'
+    | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -773,6 +795,7 @@ export interface FileRouteTypes {
     | '/promotions'
     | '/reviews'
     | '/settings'
+    | '/supabase-diagnostic'
     | '/suppliers'
     | '/support'
     | '/units'
@@ -819,6 +842,7 @@ export interface FileRouteTypes {
     | '/meus-pedidos'
     | '/motoboy'
     | '/redefinir-senha'
+    | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/_authenticated/ai'
@@ -846,6 +870,7 @@ export interface FileRouteTypes {
     | '/_authenticated/promotions'
     | '/_authenticated/reviews'
     | '/_authenticated/settings'
+    | '/_authenticated/supabase-diagnostic'
     | '/_authenticated/suppliers'
     | '/_authenticated/support'
     | '/_authenticated/units'
@@ -893,6 +918,7 @@ export interface RootRouteChildren {
   MeusPedidosRoute: typeof MeusPedidosRoute
   MotoboyRoute: typeof MotoboyRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
   AdminLoginRoute: typeof AdminLoginRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
   EntregadorEntrarRoute: typeof EntregadorEntrarRoute
@@ -908,6 +934,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/supabase-raw-fetch-temp': {
+      id: '/supabase-raw-fetch-temp'
+      path: '/supabase-raw-fetch-temp'
+      fullPath: '/supabase-raw-fetch-temp'
+      preLoaderRoute: typeof SupabaseRawFetchTempRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redefinir-senha': {
       id: '/redefinir-senha'
       path: '/redefinir-senha'
@@ -1195,6 +1228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuppliersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/supabase-diagnostic': {
+      id: '/_authenticated/supabase-diagnostic'
+      path: '/supabase-diagnostic'
+      fullPath: '/supabase-diagnostic'
+      preLoaderRoute: typeof AuthenticatedSupabaseDiagnosticRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -1434,6 +1474,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSupabaseDiagnosticRoute: typeof AuthenticatedSupabaseDiagnosticRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedUnitsRoute: typeof AuthenticatedUnitsRoute
@@ -1465,6 +1506,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSupabaseDiagnosticRoute: AuthenticatedSupabaseDiagnosticRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedUnitsRoute: AuthenticatedUnitsRoute,
@@ -1537,6 +1579,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusPedidosRoute: MeusPedidosRoute,
   MotoboyRoute: MotoboyRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,
   AdminLoginRoute: AdminLoginRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
   EntregadorEntrarRoute: EntregadorEntrarRoute,
