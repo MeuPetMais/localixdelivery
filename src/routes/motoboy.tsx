@@ -17,9 +17,8 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { setMyPresence } from "@/lib/delivery-drivers.functions";
 import {
-  getDriverDashboard, enterQueue, leaveQueue, finishReturnToQueue,
+  getDriverDashboard, enterQueue, leaveQueue, finishReturnToQueue, setDriverAvailability,
 } from "@/lib/driver-dashboard.functions";
 import {
   collectDelivery, departDelivery, deliverDelivery,
@@ -61,7 +60,7 @@ function DriverWallet() {
   const enter = useServerFn(enterQueue);
   const leave = useServerFn(leaveQueue);
   const finishReturn = useServerFn(finishReturnToQueue);
-  const presence = useServerFn(setMyPresence);
+  const availability = useServerFn(setDriverAvailability);
   const doCollect = useServerFn(collectDelivery);
   const doDepart = useServerFn(departDelivery);
   const doDeliver = useServerFn(deliverDelivery);
@@ -136,6 +135,20 @@ function DriverWallet() {
     onError: (e: Error) => toast.error(e.message),
   });
   // RC6.6 — "Retirar pedido" = coletar + partir (tracking iniciado) em uma ação só.
+  const availabilityMut = useMutation({
+    mutationFn: (online: boolean) => availability({ data: { online } }),
+    onSuccess: (result) => {
+      if (result?.online && result?.in_queue) {
+        toast.success("VocÃª entrou na fila");
+      } else if (result?.online) {
+        toast.success("VocÃª ficou online");
+      } else {
+        toast.success("VocÃª ficou offline");
+      }
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const pickupMut = useMutation({
     mutationFn: async (input: { id: string; status: string }) => {
       if (input.status === "ATRIBUIDO") {
@@ -160,8 +173,7 @@ function DriverWallet() {
 
   const toggleOnline = async () => {
     if (!driver) return;
-    await presence({ data: { online: !driver.online } });
-    qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    availabilityMut.mutate(!driver.online);
   };
 
   if (session === null || dashQ.isLoading) return <ScreenSkeleton />;
@@ -178,6 +190,7 @@ function DriverWallet() {
           photo={driver.photo_url}
           online={!!driver.online}
           onToggle={toggleOnline}
+          busy={availabilityMut.isPending}
         />
 
         <LocationNotice status={locationTracking.status} online={!!driver.online} />
@@ -192,7 +205,7 @@ function DriverWallet() {
             onFinishReturn={() => finishReturnMut.mutate()}
             onPickup={(id, status) => pickupMut.mutate({ id, status })}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending || finishReturnMut.isPending}
+            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending || finishReturnMut.isPending || availabilityMut.isPending}
           />
         )}
         {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />}
@@ -223,7 +236,7 @@ function DriverWallet() {
 /* ---------- Top ---------- */
 
 function TopBar(props: {
-  name: string; photo: string | null; online: boolean; onToggle: () => void;
+  name: string; photo: string | null; online: boolean; onToggle: () => void; busy?: boolean;
 }) {
   return (
     <div className="mb-6 flex items-center gap-3">
@@ -241,7 +254,7 @@ function TopBar(props: {
         <p className="text-xs text-muted-foreground">Olá,</p>
         <p className="truncate font-display text-lg font-extrabold leading-tight">{props.name.split(" ")[0]}</p>
       </div>
-      <Button size="sm" variant={props.online ? "outline" : "default"} className="rounded-full" onClick={props.onToggle}>
+      <Button size="sm" variant={props.online ? "outline" : "default"} className="rounded-full" onClick={props.onToggle} disabled={props.busy}>
         {props.online ? "Online" : "Ficar online"}
       </Button>
     </div>
@@ -343,6 +356,7 @@ function HomeTab(props: {
   const avgMin = Math.round(dash.stats.avgAssignToDelivered || 0);
   const canOperate = driver.status === "ativo";
   const isReturning = presence === "retornando";
+  const showQueueRecovery = driver.online && !q.inQueue && !isReturning && !hasActive;
   const nextDriverName = (q as any).nextDriverName as string | null | undefined;
   const estimatedWaitMinutes = (q as any).estimatedWaitMinutes as number | null | undefined;
 
@@ -433,15 +447,20 @@ function HomeTab(props: {
           >
             Sair da fila
           </Button>
-        ) : (
+        ) : showQueueRecovery ? (
           <Button
             size="lg"
+            variant="outline"
             className="h-14 w-full rounded-2xl text-base font-semibold"
             onClick={props.onEnter}
-            disabled={props.busy || !canOperate || !driver.online}
+            disabled={props.busy || !canOperate}
           >
-            Entrar na fila <ArrowRight className="ml-2 h-4 w-4" />
+            Reentrar na fila <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+        ) : (
+          <div className="rounded-2xl bg-muted/50 px-4 py-3 text-center text-sm text-muted-foreground">
+            {hasActive ? "Entrega ativa vinculada." : "Fique online para entrar automaticamente na fila."}
+          </div>
         )}
         {!driver.online && (
           <p className="mt-2 text-center text-[11px] text-muted-foreground">

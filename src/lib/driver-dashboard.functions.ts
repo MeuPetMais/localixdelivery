@@ -391,6 +391,32 @@ export const enterQueue = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const setDriverAvailability = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      online: z.boolean(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin.rpc("driver_set_availability" as never, {
+      _owner_id: context.userId,
+      _online: data.online,
+    } as never);
+    if (error) throw new Error(error.message);
+    return result as {
+      ok: boolean;
+      online: boolean;
+      in_queue: boolean;
+      queue_id?: string;
+      queue_status?: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "INATIVO";
+      position?: number | null;
+      entered_at?: string | null;
+      state?: string;
+    };
+  });
+
 export const leaveQueue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
