@@ -63,6 +63,7 @@ export class DriverLocationTracker {
   private watchId: number | null = null;
   private context: DriverLocationTrackerContext | null = null;
   private lastSent: { lat: number; lng: number; at: number } | null = null;
+  private watchMode: DriverLocationMode | null = null;
 
   constructor(private readonly deps: DriverLocationTrackerDeps) {}
 
@@ -72,6 +73,9 @@ export class DriverLocationTracker {
     if (!ctx || mode === "offline" || mode === "paused") {
       this.stop();
       return;
+    }
+    if (this.watchId != null && this.watchMode !== mode) {
+      this.stop();
     }
     this.start();
   }
@@ -84,7 +88,8 @@ export class DriverLocationTracker {
       this.deps.onUnsupported?.();
       return;
     }
-    const policy = DRIVER_LOCATION_POLICIES[resolveLocationMode(ctx)];
+    const mode = resolveLocationMode(ctx);
+    const policy = DRIVER_LOCATION_POLICIES[mode];
     this.watchId = geolocation.watchPosition(
       (position) => void this.handlePosition(position),
       (error) => {
@@ -96,12 +101,14 @@ export class DriverLocationTracker {
         timeout: policy.mode === "delivery" ? 10_000 : 20_000,
       },
     );
+    this.watchMode = mode;
   }
 
   stop() {
     if (this.watchId == null) return;
     this.deps.geolocation?.clearWatch(this.watchId);
     this.watchId = null;
+    this.watchMode = null;
   }
 
   async handlePosition(position: GeoPosition) {

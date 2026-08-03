@@ -32,13 +32,10 @@ export const getCustomerTracking = createServerFn({ method: "POST" })
     if (snap?.driver_id) {
       const { data: driver } = await supabaseAdmin
         .from("delivery_drivers")
-        .select("name, full_name")
+        .select("name")
         .eq("id", snap.driver_id)
         .maybeSingle();
-      const raw =
-        (driver as { name?: string | null; full_name?: string | null } | null)?.full_name ??
-        (driver as { name?: string | null } | null)?.name ??
-        null;
+      const raw = (driver as { name?: string | null } | null)?.name ?? null;
       driverName = raw ? String(raw).trim().split(/\s+/)[0] : null;
     }
 

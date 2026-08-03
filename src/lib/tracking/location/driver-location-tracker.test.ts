@@ -108,6 +108,22 @@ describe("DriverLocationTracker", () => {
     expect(upload).toHaveBeenCalledTimes(2);
   });
 
+  it("reinicia watchPosition ao mudar de disponivel para entrega", () => {
+    const geo = makeGeo();
+    const tracker = new DriverLocationTracker({ geolocation: geo.geo, upload: vi.fn() });
+
+    tracker.update(base);
+    tracker.update({ ...base, assignmentId: "assign_1", delivering: true });
+
+    expect(geo.clearWatch).toHaveBeenCalledWith(7);
+    expect(geo.geo.watchPosition).toHaveBeenCalledTimes(2);
+    expect(geo.geo.watchPosition).toHaveBeenLastCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+      expect.objectContaining({ enableHighAccuracy: true, maximumAge: 15_000, timeout: 10_000 }),
+    );
+  });
+
   it("pausa suspende atualizacoes", () => {
     const geo = makeGeo();
     const tracker = new DriverLocationTracker({ geolocation: geo.geo, upload: vi.fn() });
