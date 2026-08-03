@@ -2,6 +2,7 @@
 // TODA mudança em orders.status vinda do frontend passa por aqui.
 // Persistência via supabaseAdmin (autor já verificado por requireSupabaseAuth).
 import { createServerFn } from "@tanstack/react-start";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ORDER_STATES, type OrderState } from "./OrderStateMachine";
@@ -98,6 +99,24 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
 
     if (!result.ok) {
       throw new Error(`TRANSITION_REJECTED:${result.reason ?? "UNKNOWN"}`);
+    }
+    if (result.to === "pronto" && order.restaurant_id) {
+      const correlationId = randomUUID();
+      const { error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
+        _order_id: data.orderId,
+        _reason: "ORDER_READY",
+        _correlation_id: correlationId,
+        _forced_driver_id: null,
+        _actor_id: userId,
+      } as never);
+      if (assignErr) {
+        console.error("[orders.transitionOrderStatus] auto assignment failed", {
+          orderId: data.orderId,
+          restaurantId: order.restaurant_id,
+          message: assignErr.message,
+          correlationId,
+        });
+      }
     }
     return result;
   });

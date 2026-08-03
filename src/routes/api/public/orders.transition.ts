@@ -129,6 +129,22 @@ export const Route = createFileRoute("/api/public/orders/transition")({
             },
             metadata: parsed.metadata,
           });
+          if (result.ok && result.to === "pronto") {
+            const { error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
+              _order_id: parsed.orderId,
+              _reason: "ORDER_READY",
+              _correlation_id: correlationId,
+              _forced_driver_id: null,
+              _actor_id: null,
+            } as never);
+            if (assignErr) {
+              console.error("[internal.orders.transition] auto assignment failed", {
+                orderId: parsed.orderId,
+                correlationId,
+                message: assignErr.message,
+              });
+            }
+          }
           const status = result.ok ? 200 : 409;
           return new Response(JSON.stringify({ ...result, correlationId }), {
             status,

@@ -22,6 +22,7 @@ const AssignInput = z.object({
 });
 
 const CancelInput = IdInput.extend({ reason: z.string().max(500).optional() });
+const RestaurantInput = z.object({ restaurantId: z.string().uuid() });
 
 async function requireOwnerOrAdmin(
   supabase: any,
@@ -167,31 +168,26 @@ export const assignDelivery = createServerFn({ method: "POST" })
     if (!queueEntry) throw new Error("DRIVER_NOT_IN_QUEUE");
 
     const correlationId = crypto.randomUUID();
-    const { data: created, error: insErr } = await supabaseAdmin
-      .from("delivery_assignments")
-      .insert({
-        order_id: data.orderId,
-        restaurant_id: order.restaurant_id,
-        driver_id: data.driverId,
-        status: "PENDENTE",
-        assigned_by: context.userId,
-        estimated_minutes: data.estimatedMinutes ?? null,
-        distance_km: data.distanceKm ?? null,
-        correlation_id: correlationId,
-      })
-      .select("id, order_id, restaurant_id, driver_id, status, correlation_id")
-      .single();
-    if (insErr) throw new Error(insErr.message);
-
-    const { orchestrator } = await buildOrchestrator();
-    const res = await orchestrator.transition({
-      assignmentId: created.id,
-      to: "ATRIBUIDO",
-      audit: { actor, actorId: context.userId, correlationId },
-      metadata: { estimated_minutes: data.estimatedMinutes, distance_km: data.distanceKm },
-    });
-    if (!res.ok) throw new Error(`ASSIGN_FAILED:${res.reason}`);
-    return { ok: true, assignmentId: created.id, correlationId };
+    const { data: assigned, error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
+      _order_id: data.orderId,
+      _reason: actor === "admin" ? "ADMIN_REASSIGN" : "ADMIN_ASSIGN",
+      _correlation_id: correlationId,
+      _forced_driver_id: data.driverId,
+      _actor_id: context.userId,
+    } as never);
+    if (assignErr) throw new Error(assignErr.message);
+    const res = assigned as unknown as {
+      ok?: boolean;
+      reason?: string;
+      assignment_id?: string;
+      correlation_id?: string;
+    } | null;
+    if (!res?.ok) throw new Error(`ASSIGN_FAILED:${res?.reason ?? "UNKNOWN"}`);
+    return {
+      ok: true,
+      assignmentId: res.assignment_id,
+      correlationId: res.correlation_id ?? correlationId,
+    };
   });
 
 // -------- collectDelivery --------
@@ -306,6 +302,29 @@ export const listAssignments = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (data.status) q = q.eq("status", data.status);
     const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+// -------- listAutoAssignmentAudit --------
+export const listAutoAssignmentAudit = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RestaurantInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rest } = await context.supabase
+      .from("restaurants")
+      .select("owner_id")
+      .eq("id", data.restaurantId)
+      .maybeSingle();
+    if (rest?.owner_id !== context.userId) throw new Error("FORBIDDEN");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("delivery_auto_assignment_audit" as never)
+      .select("order_id, assignment_id, driver_id, reason, previous_queue_position, correlation_id, created_at, metadata")
+      .eq("restaurant_id", data.restaurantId)
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (error) throw new Error(error.message);
     return rows ?? [];
   });

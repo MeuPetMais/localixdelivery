@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listDrivers } from "@/lib/delivery-drivers.functions";
 import { queueList } from "@/lib/delivery-queue.functions";
 import {
-  listAssignments, assignDelivery, deliverDelivery,
+  listAssignments, assignDelivery, deliverDelivery, listAutoAssignmentAudit,
 } from "@/lib/delivery-assignment.functions";
 import { brl } from "@/lib/format";
 
@@ -45,6 +45,11 @@ type Assignment = {
   id: string; order_id: string; driver_id: string; status: string;
   assigned_at: string | null; distance_km: number | null;
   estimated_minutes: number | null;
+};
+type AssignmentIssue = {
+  order_id: string | null;
+  reason: string;
+  created_at: string;
 };
 
 function minutesSince(iso: string): number {
@@ -102,6 +107,16 @@ function EntregasPage() {
     },
   });
 
+  const auditFn = useServerFn(listAutoAssignmentAudit);
+  const auditQ = useQuery({
+    queryKey: ["ops-entregas-auto-audit", rid],
+    enabled: !!rid,
+    queryFn: async (): Promise<AssignmentIssue[]> => {
+      const rows = await auditFn({ data: { restaurantId: rid! } });
+      return (rows ?? []) as AssignmentIssue[];
+    },
+  });
+
   // Realtime — invalida caches ao mudar dados
   useEffect(() => {
     if (!rid) return;
@@ -110,6 +125,7 @@ function EntregasPage() {
       qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-drivers", rid] });
+      qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
     };
     const ch = supabase
       .channel(`ops-entregas-${rid}`)
@@ -132,12 +148,22 @@ function EntregasPage() {
   const drivers = driversQ.data ?? [];
   const queue = queueQ.data ?? [];
   const assignments = assignQ.data ?? [];
+  const auditRows = auditQ.data ?? [];
 
   const driverById = useMemo(() => new Map(drivers.map((d) => [d.id, d])), [drivers]);
   const orderById = useMemo(() => new Map(orders.map((o) => [o.id, o])), [orders]);
+  const latestIssueByOrder = useMemo(() => {
+    const map = new Map<string, AssignmentIssue>();
+    for (const row of auditRows) {
+      if (!row.order_id || map.has(row.order_id)) continue;
+      map.set(row.order_id, row);
+    }
+    return map;
+  }, [auditRows]);
 
-  const readyOrders = orders.filter((o) => o.status === "pronto");
   const inFlight = assignments.filter((a) => ["ATRIBUIDO", "COLETANDO", "EM_ROTA"].includes(a.status));
+  const assignedOrderIds = new Set(inFlight.map((a) => a.order_id));
+  const readyOrders = orders.filter((o) => o.status === "pronto" && !assignedOrderIds.has(o.id));
   const delivered = assignments.filter((a) => a.status === "ENTREGUE");
   const availableQueue = queue
     .filter((q) => q.status === "AGUARDANDO")
@@ -182,6 +208,7 @@ function EntregasPage() {
       qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-orders", rid] });
+      qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao despachar"),
   });
@@ -196,6 +223,7 @@ function EntregasPage() {
       qc.invalidateQueries({ queryKey: ["ops-entregas-assignments", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-queue", rid] });
       qc.invalidateQueries({ queryKey: ["ops-entregas-orders", rid] });
+      qc.invalidateQueries({ queryKey: ["ops-entregas-auto-audit", rid] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao concluir"),
   });
@@ -267,6 +295,11 @@ function EntregasPage() {
                       <p className="mt-1 text-xs text-muted-foreground">
                         {brl(o.total)} • {minutesSince(o.created_at)}min aguardando
                       </p>
+                      {latestIssueByOrder.get(o.id)?.reason === "NO_DRIVER_AVAILABLE" && (
+                        <p className="mt-1 text-xs text-amber-700">
+                          Aguardando entregador: nenhum motoboy disponivel na fila.
+                        </p>
+                      )}
                     </div>
                     <Button
                       size="sm"
@@ -340,14 +373,26 @@ function EntregasPage() {
                         </p>
                         <Badge variant="outline" className="mt-1 text-[10px]">{a.status}</Badge>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={deliverMut.isPending}
-                        onClick={() => deliverMut.mutate(a.id)}
-                      >
-                        Concluir
-                      </Button>
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={deliverMut.isPending}
+                          onClick={() => deliverMut.mutate(a.id)}
+                        >
+                          Concluir
+                        </Button>
+                        {o && availableQueue.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={assignMut.isPending}
+                            onClick={() => openDispatch(o)}
+                          >
+                            Redistribuir
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
