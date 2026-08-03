@@ -18,6 +18,13 @@ export const CHECKOUT_METHODS = [
 
 export type CheckoutMethod = (typeof CHECKOUT_METHODS)[number];
 
+export type CheckoutPaymentOption = {
+  id: string;
+  label: string;
+  method: CheckoutMethod;
+  online?: boolean;
+};
+
 const PRICING_METHOD_MAP: Record<CheckoutMethod, PaymentMethod> = {
   pix: "pix",
   credit_card: "credit_card",
@@ -37,5 +44,18 @@ export function resolveCheckoutPayment(inputMethod: CheckoutMethod) {
     pricingMethod: PRICING_METHOD_MAP[paymentMethod],
     initialStatus: initialOrderStatusForPaymentMethod(paymentMethod),
     paymentRecordStatus: isOfflinePaymentMethod(paymentMethod) ? "APPROVED" : "PENDING",
+  } as const;
+}
+
+export function buildCheckoutPaymentPayload(selectedOption: CheckoutPaymentOption) {
+  return {
+    selectedOption: {
+      id: selectedOption.id,
+      label: selectedOption.label,
+      method: selectedOption.method,
+      online: selectedOption.online === true,
+    },
+    selectedPaymentMethod: selectedOption.method,
+    payloadPaymentMethod: selectedOption.method,
   } as const;
 }

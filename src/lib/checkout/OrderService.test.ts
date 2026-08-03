@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computePricing, DEFAULT_PRICING_SETTINGS, PricingError } from "@/lib/payments/PricingEngine";
-import { resolveCheckoutPayment } from "./checkout-payment";
+import { buildCheckoutPaymentPayload, resolveCheckoutPayment } from "./checkout-payment";
 import { paymentMethodLabel } from "./paymentMethodLabel";
 
 // Checkout — testes puros de regras financeiras usadas pelo OrderService.
@@ -69,6 +69,20 @@ describe("Checkout — validações e snapshot", () => {
       pricingMethod: "cash",
       initialStatus: "pago",
       paymentRecordStatus: "APPROVED",
+    });
+  });
+
+  it("checkout envia card_on_delivery quando usuario escolhe Cartao na entrega", () => {
+    const routeOption = {
+      id: "card_on_delivery",
+      label: "Cartão na entrega",
+      method: "card_on_delivery" as const,
+    };
+
+    expect(buildCheckoutPaymentPayload(routeOption)).toMatchObject({
+      selectedOption: routeOption,
+      selectedPaymentMethod: "card_on_delivery",
+      payloadPaymentMethod: "card_on_delivery",
     });
   });
 

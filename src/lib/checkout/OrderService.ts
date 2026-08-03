@@ -58,6 +58,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     if (!rest.active) throw new Error("Restaurante inativo");
 
     const paymentDecision = resolveCheckoutPayment(data.paymentMethod);
+    console.log("[order-payment-debug]", {
+      receivedPaymentMethod: data.paymentMethod,
+      paymentDecision,
+    });
 
     // 2) Subtotal a partir dos itens (nunca do frontend)
     const subtotal = data.items.reduce((s, i) => s + i.price * i.qty, 0);

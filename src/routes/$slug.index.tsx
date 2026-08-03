@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
+import { buildCheckoutPaymentPayload, type CheckoutPaymentOption } from "@/lib/checkout/checkout-payment";
+import { normalizeOrderPaymentMethod } from "@/lib/checkout/paymentMethodLabel";
 import { PaymentService } from "@/lib/payments/PaymentService";
 import MercadoPagoReadiness from "@/lib/payments/MercadoPagoReadiness";
 import { getGatewayDisplay } from "@/lib/payments/gatewayDisplay";
@@ -953,16 +955,14 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
   onCreated: (orderId: string, options?: { navigate?: boolean }) => void;
 }) {
   const { user } = useCustomerAuth();
-  console.log("AUTH USER:", user);
-console.log("IS GUEST:", !user);
   const qc = useQueryClient();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  type PayOption = { id: string; label: string; method: CheckoutMethod; online?: boolean };
+  type PayOption = CheckoutPaymentOption;
   const BASE_METHODS: PayOption[] = [
     { id: "cash", label: "Dinheiro", method: "cash" },
-    { id: "card_delivery", label: "Cartão na entrega", method: "credit_card" },
+    { id: "card_on_delivery", label: "Cartão na entrega", method: "card_on_delivery" },
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
   ];
   const readiness = {
@@ -1002,28 +1002,12 @@ const paymentOptions: PayOption[] = (
       ]
     : BASE_METHODS
 ).filter((option) => {
-  console.log("USER =", user);
-  console.log("OPTION =", option.id, "ONLINE =", option.online);
-
   if (!user && option.online) {
-    console.log("REMOVIDA:", option.id);
     return false;
   }
 
   return true;
 });
-
-console.log("LOCALIX BUILD 28/07 17:30");
-console.log("Restaurant:", restaurant.id);
-console.log("Readiness:", readiness);
-console.log("Ready:", readiness?.ready);
-console.log("Connected:", readiness?.connected);
-console.log("Provider:", readiness?.provider);
-console.log("AccountId:", readiness?.accountId);
-console.log("Methods:", readiness?.methods);
-console.log("Reasons:", readiness?.reasons);
-console.log("Primary Provider:", primaryProviderId);
-console.log("Payment Options:", paymentOptions);
 
   const [paymentId, setPaymentId] = useState<string>(
   paymentOptions[0]?.id ?? "cash"
@@ -1086,7 +1070,13 @@ console.log("Payment Options:", paymentOptions);
     if (!name) setName(profile?.full_name || meta.full_name || meta.name || "");
     if (!phone) setPhone(profile?.phone || profile?.whatsapp || "");
     if (profile?.last_payment_method) {
-      const match = paymentOptions.find((p) => p.label === profile.last_payment_method || p.id === profile.last_payment_method);
+      const savedMethod = normalizeOrderPaymentMethod(profile.last_payment_method);
+      const match = paymentOptions.find((p) =>
+        p.label === profile.last_payment_method ||
+        p.id === profile.last_payment_method ||
+        p.id === savedMethod ||
+        p.method === savedMethod
+      );
       if (match) setPaymentId(match.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1161,32 +1151,22 @@ console.log("Payment Options:", paymentOptions);
 
   async function confirmOrder ()
    { 
-    toast.error("CHECKOUT V3");
     if (!name.trim() || !phone.trim()) { toast.error("Preencha nome e telefone"); return; }
     const fullAddress = buildAddressString();
     if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
     if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
-alert(
-  JSON.stringify(
-    {
-      paymentId,
-      selectedPayment,
-      method: selectedPayment.method,
-      label: selectedPayment.label,
-    },
-    null,
-    
-  )
-);
     setSubmitting(true);
     try {
+      const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
+      console.log("[checkout-payment-debug]", paymentPayload);
+
       const res = await create({
         data: {
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
           items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
-          paymentMethod: selectedPayment.method,
+          paymentMethod: paymentPayload.payloadPaymentMethod,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
           couponDiscount: discount,
@@ -1252,7 +1232,11 @@ alert(
         }
       }
 
-      toast.success(`Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`);
+      toast.success(
+        selectedPayment.online
+          ? `Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`
+          : `Pedido #${res.orderNumber ?? ""} enviado ao restaurante`,
+      );
       onClose();
       onCreated(res.orderId);
     } catch (e: any) {
