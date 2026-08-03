@@ -1,0 +1,406 @@
+warning: in the working copy of 'src/lib/delivery-drivers.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/CustomerTrackingView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.builder.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/location/driver-location.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/OperationsDeliveryDetail.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/operations-tracking.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/operations-tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/tracking.mapper.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/lib/delivery-drivers.functions.ts b/src/lib/delivery-drivers.functions.ts[m
+[1mindex 3626c45..5bb7556 100644[m
+[1m--- a/src/lib/delivery-drivers.functions.ts[m
+[1m+++ b/src/lib/delivery-drivers.functions.ts[m
+[36m@@ -244,8 +244,6 @@[m [mexport const setMyPresence = createServerFn({ method: "POST" })[m
+   .inputValidator((d: unknown) =>[m
+     z.object({[m
+       online: z.boolean(),[m
+[31m-      lat: z.number().optional(),[m
+[31m-      lng: z.number().optional(),[m
+     }).parse(d),[m
+   )[m
+   .handler(async ({ data, context }) => {[m
+[36m@@ -254,10 +252,6 @@[m [mexport const setMyPresence = createServerFn({ method: "POST" })[m
+       online: data.online,[m
+       last_seen_at: new Date().toISOString(),[m
+     };[m
+[31m-    if (data.online && typeof data.lat === "number" && typeof data.lng === "number") {[m
+[31m-      patch.last_lat = data.lat;[m
+[31m-      patch.last_lng = data.lng;[m
+[31m-    }[m
+     // O motoboy não possui mais permissão UPDATE via RLS (RC5.1.3).[m
+     // Escopo garantido por owner_id = usuário autenticado no middleware.[m
+     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");[m
+[36m@@ -274,7 +268,7 @@[m [mexport const setMyPresence = createServerFn({ method: "POST" })[m
+         driver_id: row.id,[m
+         action: "PRESENCE",[m
+         before: null,[m
+[31m-        after: { online: data.online, last_lat: (patch.last_lat as number | undefined) ?? null, last_lng: (patch.last_lng as number | undefined) ?? null },[m
+[32m+[m[32m        after: { online: data.online },[m
+       });[m
+     }[m
+     return row;[m
+[1mdiff --git a/src/lib/tracking/customer/CustomerTrackingView.tsx b/src/lib/tracking/customer/CustomerTrackingView.tsx[m
+[1mindex a7d55ac..8f4785d 100644[m
+[1m--- a/src/lib/tracking/customer/CustomerTrackingView.tsx[m
+[1m+++ b/src/lib/tracking/customer/CustomerTrackingView.tsx[m
+[36m@@ -75,6 +75,20 @@[m [mexport function CustomerTrackingView({ orderId, className }: CustomerTrackingVie[m
+         <p className="mb-4 text-sm font-medium text-foreground">{view.eta_label}</p>[m
+       )}[m
+ [m
+[32m+[m[32m      {view.driver_location && !isCancelled && ([m
+[32m+[m[32m        <div className="mb-4 overflow-hidden rounded-lg border bg-card">[m
+[32m+[m[32m          <iframe[m
+[32m+[m[32m            title="Localizacao aproximada do entregador"[m
+[32m+[m[32m            src={customerMapSrc(view.driver_location.lat, view.driver_location.lng)}[m
+[32m+[m[32m            className="h-44 w-full border-0"[m
+[32m+[m[32m            loading="lazy"[m
+[32m+[m[32m          />[m
+[32m+[m[32m          <p className="border-t px-3 py-2 text-xs text-muted-foreground">[m
+[32m+[m[32m            Localizacao aproximada do entregador. Atualizado em {new Date(view.driver_location.updated_at).toLocaleTimeString()}.[m
+[32m+[m[32m          </p>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      )}[m
+[32m+[m
+       {!isCancelled && <CustomerTrackingTimeline step={view.step} />}[m
+ [m
+       <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">[m
+[36m@@ -88,3 +102,9 @@[m [mexport function CustomerTrackingView({ orderId, className }: CustomerTrackingVie[m
+     </Card>[m
+   );[m
+ }[m
+[32m+[m
+[32m+[m[32mfunction customerMapSrc(lat: number, lng: number): string {[m
+[32m+[m[32m  const d = 0.015;[m
+[32m+[m[32m  const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;[m
+[32m+[m[32m  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/lib/tracking/customer/customer-tracking.builder.ts b/src/lib/tracking/customer/customer-tracking.builder.ts[m
+[1mindex 4ac9012..3e5fe52 100644[m
+[1m--- a/src/lib/tracking/customer/customer-tracking.builder.ts[m
+[1m+++ b/src/lib/tracking/customer/customer-tracking.builder.ts[m
+[36m@@ -36,5 +36,6 @@[m [mexport function buildCustomerView(orderId: string, input: CustomerTrackingInput)[m
+     message: CustomerTrackingMessageService.messageFor(step, { driver_name: input.driver_name }),[m
+     updated_at: input.updated_at ?? new Date().toISOString(),[m
+     has_tracking: input.tracking_status !== null,[m
+[32m+[m[32m    driver_location: showEta ? input.driver_location ?? null : null,[m
+   };[m
+ }[m
+[1mdiff --git a/src/lib/tracking/customer/customer-tracking.functions.ts b/src/lib/tracking/customer/customer-tracking.functions.ts[m
+[1mindex c24ac18..410e7ae 100644[m
+[1m--- a/src/lib/tracking/customer/customer-tracking.functions.ts[m
+[1m+++ b/src/lib/tracking/customer/customer-tracking.functions.ts[m
+[36m@@ -1,5 +1,6 @@[m
+[31m-// Customer Tracking — Server function pública (sem auth).[m
+[31m-// Retorna apenas dados seguros para o cliente: nunca lat/lng/wallet/fila.[m
+[32m+[m[32m// Customer Tracking public server function.[m
+[32m+[m[32m// Returns customer-safe tracking data. Coordinates are approximate and only[m
+[32m+[m[32m// included while the linked order has an active delivery.[m
+ [m
+ import { createServerFn } from "@tanstack/react-start";[m
+ import { z } from "zod";[m
+[36m@@ -7,9 +8,10 @@[m [mimport { buildCustomerView } from "./customer-tracking.builder";[m
+ import type { CustomerTrackingView } from "./customer-tracking.types";[m
+ [m
+ const Input = z.object({ orderId: z.string().uuid() });[m
+[32m+[m[32mconst CUSTOMER_LOCATION_STATES = ["ATRIBUIDO", "COLETANDO", "EM_ROTA", "PROXIMO_AO_DESTINO"];[m
+ [m
+ export const getCustomerTracking = createServerFn({ method: "POST" })[m
+[31m-  .inputValidator((d) => Input.parse(d))[m
+[32m+[m[32m  .inputValidator((data) => Input.parse(data))[m
+   .handler(async ({ data }): Promise<CustomerTrackingView | null> => {[m
+     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");[m
+ [m
+[36m@@ -22,7 +24,7 @@[m [mexport const getCustomerTracking = createServerFn({ method: "POST" })[m
+ [m
+     const { data: snap } = await supabaseAdmin[m
+       .from("tracking_snapshots")[m
+[31m-      .select("status, eta_seconds, driver_id, updated_at")[m
+[32m+[m[32m      .select("status, eta_seconds, driver_id, updated_at, last_lat, last_lng, last_accuracy, last_seen_at")[m
+       .eq("order_id", data.orderId)[m
+       .maybeSingle();[m
+ [m
+[36m@@ -30,19 +32,33 @@[m [mexport const getCustomerTracking = createServerFn({ method: "POST" })[m
+     if (snap?.driver_id) {[m
+       const { data: driver } = await supabaseAdmin[m
+         .from("delivery_drivers")[m
+[31m-        .select("full_name")[m
+[32m+[m[32m        .select("name, full_name")[m
+         .eq("id", snap.driver_id)[m
+         .maybeSingle();[m
+[31m-      const raw = (driver as { full_name?: string | null } | null)?.full_name ?? null;[m
+[31m-      // Só primeiro nome — privacidade.[m
+[32m+[m[32m      const raw =[m
+[32m+[m[32m        (driver as { name?: string | null; full_name?: string | null } | null)?.full_name ??[m
+[32m+[m[32m        (driver as { name?: string | null } | null)?.name ??[m
+[32m+[m[32m        null;[m
+       driverName = raw ? String(raw).trim().split(/\s+/)[0] : null;[m
+     }[m
+ [m
+[32m+[m[32m    const activeForCustomer = CUSTOMER_LOCATION_STATES.includes(String(snap?.status ?? ""));[m
+[32m+[m[32m    const driverLocation =[m
+[32m+[m[32m      activeForCustomer && snap?.last_lat != null && snap?.last_lng != null[m
+[32m+[m[32m        ? {[m
+[32m+[m[32m            lat: Number(Number(snap.last_lat).toFixed(3)),[m
+[32m+[m[32m            lng: Number(Number(snap.last_lng).toFixed(3)),[m
+[32m+[m[32m            accuracy_m: snap.last_accuracy == null ? null : Math.round(Number(snap.last_accuracy)),[m
+[32m+[m[32m            updated_at: (snap.last_seen_at as string | null) ?? (snap.updated_at as string),[m
+[32m+[m[32m          }[m
+[32m+[m[32m        : null;[m
+[32m+[m
+     return buildCustomerView(data.orderId, {[m
+       order_status: String(order.status),[m
+       tracking_status: (snap?.status as any) ?? null,[m
+       eta_seconds: snap?.eta_seconds == null ? null : Number(snap.eta_seconds),[m
+       driver_name: driverName,[m
+[32m+[m[32m      driver_location: driverLocation,[m
+       updated_at: (snap?.updated_at as string | null) ?? (order.updated_at as string | null),[m
+     });[m
+   });[m
+[1mdiff --git a/src/lib/tracking/customer/customer-tracking.types.ts b/src/lib/tracking/customer/customer-tracking.types.ts[m
+[1mindex dc36f6c..f3e8174 100644[m
+[1m--- a/src/lib/tracking/customer/customer-tracking.types.ts[m
+[1m+++ b/src/lib/tracking/customer/customer-tracking.types.ts[m
+[36m@@ -23,6 +23,12 @@[m [mexport interface CustomerTrackingView {[m
+   message: string; // Mensagem humanizada[m
+   updated_at: string; // ISO[m
+   has_tracking: boolean;[m
+[32m+[m[32m  driver_location: {[m
+[32m+[m[32m    lat: number;[m
+[32m+[m[32m    lng: number;[m
+[32m+[m[32m    accuracy_m: number | null;[m
+[32m+[m[32m    updated_at: string;[m
+[32m+[m[32m  } | null;[m
+ }[m
+ [m
+ export interface CustomerTrackingInput {[m
+[36m@@ -30,5 +36,6 @@[m [mexport interface CustomerTrackingInput {[m
+   tracking_status: TrackingStatus | null;[m
+   eta_seconds: number | null;[m
+   driver_name: string | null;[m
+[32m+[m[32m  driver_location?: CustomerTrackingView["driver_location"];[m
+   updated_at: string | null;[m
+ }[m
+[1mdiff --git a/src/lib/tracking/location/driver-location.types.ts b/src/lib/tracking/location/driver-location.types.ts[m
+[1mindex 27936ff..2cc7864 100644[m
+[1m--- a/src/lib/tracking/location/driver-location.types.ts[m
+[1m+++ b/src/lib/tracking/location/driver-location.types.ts[m
+[36m@@ -17,6 +17,22 @@[m [mexport interface DriverLocationSample {[m
+   source?: "gps" | "manual" | "sync";[m
+ }[m
+ [m
+[32m+[m[32mexport type DriverLocationMode = "offline" | "available" | "delivery" | "paused";[m
+[32m+[m
+[32m+[m[32mexport interface DriverLocationPolicy {[m
+[32m+[m[32m  mode: DriverLocationMode;[m
+[32m+[m[32m  minIntervalMs: number;[m
+[32m+[m[32m  minDistanceMeters: number;[m
+[32m+[m[32m  enableHighAccuracy: boolean;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport const DRIVER_LOCATION_POLICIES: Record<DriverLocationMode, DriverLocationPolicy> = {[m
+[32m+[m[32m  offline: { mode: "offline", minIntervalMs: 0, minDistanceMeters: Infinity, enableHighAccuracy: false },[m
+[32m+[m[32m  paused: { mode: "paused", minIntervalMs: 5 * 60_000, minDistanceMeters: 500, enableHighAccuracy: false },[m
+[32m+[m[32m  available: { mode: "available", minIntervalMs: 60_000, minDistanceMeters: 100, enableHighAccuracy: false },[m
+[32m+[m[32m  delivery: { mode: "delivery", minIntervalMs: 15_000, minDistanceMeters: 25, enableHighAccuracy: true },[m
+[32m+[m[32m};[m
+[32m+[m
+ export interface DriverLocationEvaluation {[m
+   sample: DriverLocationSample;[m
+   confidence: DriverLocationConfidence;[m
+[1mdiff --git a/src/lib/tracking/operations/OperationsDeliveryDetail.tsx b/src/lib/tracking/operations/OperationsDeliveryDetail.tsx[m
+[1mindex a9c800a..f85ac00 100644[m
+[1m--- a/src/lib/tracking/operations/OperationsDeliveryDetail.tsx[m
+[1m+++ b/src/lib/tracking/operations/OperationsDeliveryDetail.tsx[m
+[36m@@ -1,31 +1,67 @@[m
+[31m-// Detalhe da entrega — read-only. Nunca permite alterar estados.[m
+[32m+[m[32m// Delivery detail is read-only. It never changes delivery state.[m
+ [m
+ import type { OperationsDetail } from "./operations-tracking.types";[m
+ [m
+[32m+[m[32mfunction mapEmbed(lat: number, lng: number): string {[m
+[32m+[m[32m  const d = 0.02;[m
+[32m+[m[32m  const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;[m
+[32m+[m[32m  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;[m
+[32m+[m[32m}[m
+[32m+[m
+ export function OperationsDeliveryDetail({ detail }: { detail: OperationsDetail }) {[m
+   const s = detail.snapshot;[m
+[32m+[m[32m  const hasDriverPoint = s.last_lat != null && s.last_lng != null;[m
+[32m+[m
+   return ([m
+     <div className="space-y-3">[m
+       <div className="rounded-lg border bg-card p-3 text-sm">[m
+[31m-        <p className="font-medium">Pedido {s.order_id.slice(0, 8)}</p>[m
+[32m+[m[32m        <p className="font-medium">[m
+[32m+[m[32m          Pedido {detail.order?.order_number ? `#${detail.order.order_number}` : s.order_id.slice(0, 8)}[m
+[32m+[m[32m        </p>[m
+         <p className="text-xs text-muted-foreground">[m
+[31m-          Status: {s.status} • ETA: {s.eta_seconds != null ? Math.round(s.eta_seconds / 60) + "min" : "—"} • Confiança: {s.confidence}[m
+[32m+[m[32m          Status: {s.status} | ETA: {s.eta_seconds != null ? Math.round(s.eta_seconds / 60) + "min" : "-"} | Confianca: {s.confidence}[m
+         </p>[m
+         <p className="text-xs text-muted-foreground">[m
+[31m-          Última atualização: {s.last_seen_at ? new Date(s.last_seen_at).toLocaleTimeString() : "—"}[m
+[32m+[m[32m          Ultima atualizacao: {s.last_seen_at ? new Date(s.last_seen_at).toLocaleTimeString() : "-"}[m
+         </p>[m
+[32m+[m[32m        {s.last_accuracy != null && ([m
+[32m+[m[32m          <p className="text-xs text-muted-foreground">Precisao: {Math.round(s.last_accuracy)}m</p>[m
+[32m+[m[32m        )}[m
+       </div>[m
+[32m+[m
+[32m+[m[32m      <div className="overflow-hidden rounded-lg border bg-card">[m
+[32m+[m[32m        {hasDriverPoint ? ([m
+[32m+[m[32m          <iframe[m
+[32m+[m[32m            title="Mapa da entrega"[m
+[32m+[m[32m            src={mapEmbed(s.last_lat!, s.last_lng!)}[m
+[32m+[m[32m            className="h-64 w-full border-0"[m
+[32m+[m[32m            loading="lazy"[m
+[32m+[m[32m          />[m
+[32m+[m[32m        ) : ([m
+[32m+[m[32m          <div className="grid h-40 place-items-center text-xs text-muted-foreground">[m
+[32m+[m[32m            Sem localizacao recente do motoboy.[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        )}[m
+[32m+[m[32m        <div className="grid gap-1 border-t p-3 text-xs text-muted-foreground">[m
+[32m+[m[32m          <span>Restaurante: {detail.restaurant?.address ?? detail.restaurant?.name ?? "Nao informado"}</span>[m
+[32m+[m[32m          <span>Destino: {detail.order?.address ?? "Nao informado"}</span>[m
+[32m+[m[32m          <span>Motoboy: {hasDriverPoint ? "localizacao recebida" : "sem sinal recente"}</span>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+       <div>[m
+         <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Timeline</h4>[m
+         <ol className="space-y-1.5">[m
+[31m-          {detail.timeline.map((e) => ([m
+[31m-            <li key={e.id} className="flex gap-2 text-sm">[m
+[32m+[m[32m          {detail.timeline.map((event) => ([m
+[32m+[m[32m            <li key={event.id} className="flex gap-2 text-sm">[m
+               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />[m
+               <div className="min-w-0">[m
+[31m-                <p className="font-medium">{e.event}</p>[m
+[32m+[m[32m                <p className="font-medium">{event.event}</p>[m
+                 <p className="text-xs text-muted-foreground">[m
+[31m-                  {new Date(e.created_at).toLocaleTimeString()} • {e.actor}[m
+[31m-                  {e.previous_status && e.current_status ? ` • ${e.previous_status} → ${e.current_status}` : ""}[m
+[32m+[m[32m                  {new Date(event.created_at).toLocaleTimeString()} | {event.actor}[m
+[32m+[m[32m                  {event.previous_status && event.current_status[m
+[32m+[m[32m                    ? ` | ${event.previous_status} -> ${event.current_status}`[m
+[32m+[m[32m                    : ""}[m
+                 </p>[m
+               </div>[m
+             </li>[m
+[1mdiff --git a/src/lib/tracking/operations/operations-tracking.functions.ts b/src/lib/tracking/operations/operations-tracking.functions.ts[m
+[1mindex 91ad308..8ab2887 100644[m
+[1m--- a/src/lib/tracking/operations/operations-tracking.functions.ts[m
+[1m+++ b/src/lib/tracking/operations/operations-tracking.functions.ts[m
+[36m@@ -76,6 +76,9 @@[m [mexport const getOperationsDashboard = createServerFn({ method: "GET" })[m
+         neighborhood: extractNeighborhood(o?.address ?? null),[m
+         driver_id: s.driver_id, driver_name: d?.name ?? "—",[m
+         status: s.status, eta_seconds: s.eta_seconds, confidence: s.confidence as TrackingConfidence,[m
+[32m+[m[32m        last_lat: s.last_lat,[m
+[32m+[m[32m        last_lng: s.last_lng,[m
+[32m+[m[32m        last_accuracy: (s as any).last_accuracy == null ? null : Number((s as any).last_accuracy),[m
+         last_seen_at: s.last_seen_at, started_at: s.created_at,[m
+         minutes_since_start: minutes, is_delayed: minutes >= 30,[m
+       };[m
+[36m@@ -127,9 +130,36 @@[m [mexport const getOperationsDetail = createServerFn({ method: "GET" })[m
+     if (snapRes.error) throw new Error(snapRes.error.message);[m
+     if (tlRes.error) throw new Error(tlRes.error.message);[m
+     if (!snapRes.data) return null;[m
+[32m+[m[32m    const snap = toSnapshot(snapRes.data as Record<string, unknown>);[m
+[32m+[m[32m    const [orderRes, restaurantRes] = await Promise.all([[m
+[32m+[m[32m      context.supabase[m
+[32m+[m[32m        .from("orders")[m
+[32m+[m[32m        .select("address, order_number")[m
+[32m+[m[32m        .eq("id", snap.order_id)[m
+[32m+[m[32m        .maybeSingle(),[m
+[32m+[m[32m      context.supabase[m
+[32m+[m[32m        .from("restaurants")[m
+[32m+[m[32m        .select("name, address, latitude, longitude")[m
+[32m+[m[32m        .eq("id", snap.restaurant_id)[m
+[32m+[m[32m        .maybeSingle(),[m
+[32m+[m[32m    ]);[m
+     return {[m
+[31m-      snapshot: toSnapshot(snapRes.data as Record<string, unknown>),[m
+[32m+[m[32m      snapshot: snap,[m
+       timeline: (tlRes.data ?? []).map((r) => toTimelineEntry(r as Record<string, unknown>)),[m
+[32m+[m[32m      order: orderRes.data[m
+[32m+[m[32m        ? {[m
+[32m+[m[32m            address: (orderRes.data as any).address ?? null,[m
+[32m+[m[32m            order_number: (orderRes.data as any).order_number ?? null,[m
+[32m+[m[32m          }[m
+[32m+[m[32m        : null,[m
+[32m+[m[32m      restaurant: restaurantRes.data[m
+[32m+[m[32m        ? {[m
+[32m+[m[32m            name: (restaurantRes.data as any).name ?? null,[m
+[32m+[m[32m            address: (restaurantRes.data as any).address ?? null,[m
+[32m+[m[32m            lat: (restaurantRes.data as any).latitude == null ? null : Number((restaurantRes.data as any).latitude),[m
+[32m+[m[32m            lng: (restaurantRes.data as any).longitude == null ? null : Number((restaurantRes.data as any).longitude),[m
+[32m+[m[32m          }[m
+[32m+[m[32m        : null,[m
+     };[m
+   });[m
+ [m
+[1mdiff --git a/src/lib/tracking/operations/operations-tracking.types.ts b/src/lib/tracking/operations/operations-tracking.types.ts[m
+[1mindex 3413ee4..f81f714 100644[m
+[1m--- a/src/lib/tracking/operations/operations-tracking.types.ts[m
+[1m+++ b/src/lib/tracking/operations/operations-tracking.types.ts[m
+[36m@@ -39,6 +39,9 @@[m [mexport interface OperationsActiveDelivery {[m
+   status: TrackingStatus;[m
+   eta_seconds: number | null;[m
+   confidence: TrackingConfidence;[m
+[32m+[m[32m  last_lat: number | null;[m
+[32m+[m[32m  last_lng: number | null;[m
+[32m+[m[32m  last_accuracy: number | null;[m
+   last_seen_at: string | null;[m
+   started_at: string;[m
+   minutes_since_start: number;[m
+[36m@@ -96,6 +99,8 @@[m [mexport interface OperationsDashboardData {[m
+ export interface OperationsDetail {[m
+   snapshot: TrackingSnapshot;[m
+   timeline: TrackingTimelineEntry[];[m
+[32m+[m[32m  restaurant: { name: string | null; address: string | null; lat: number | null; lng: number | null } | null;[m
+[32m+[m[32m  order: { address: string | null; order_number: number | null } | null;[m
+ }[m
+ [m
+ export interface OperationsFilters {[m
+[1mdiff --git a/src/lib/tracking/tracking.mapper.ts b/src/lib/tracking/tracking.mapper.ts[m
+[1mindex 840b5d4..ca710ab 100644[m
+[1m--- a/src/lib/tracking/tracking.mapper.ts[m
+[1m+++ b/src/lib/tracking/tracking.mapper.ts[m
+[36m@@ -19,7 +19,10 @@[m [mexport function toSnapshot(row: Row): TrackingSnapshot {[m
+     last_lng: row.last_lng == null ? null : Number(row.last_lng),[m
+     last_speed: row.last_speed == null ? null : Number(row.last_speed),[m
+     last_heading: row.last_heading == null ? null : Number(row.last_heading),[m
+[32m+[m[32m    last_accuracy: row.last_accuracy == null ? null : Number(row.last_accuracy),[m
+     last_seen_at: (row.last_seen_at as string | null) ?? null,[m
+[32m+[m[32m    device_captured_at: (row.device_captured_at as string | null) ?? null,[m
+[32m+[m[32m    server_received_at: (row.server_received_at as string | null) ?? null,[m
+     metadata: (row.metadata as Record<string, unknown>) ?? {},[m
+     correlation_id: String(row.correlation_id),[m
+     created_at: String(row.created_at),[m
+[1mdiff --git a/src/lib/tracking/tracking.types.ts b/src/lib/tracking/tracking.types.ts[m
+[1mindex 81d996e..4ae0999 100644[m
+[1m--- a/src/lib/tracking/tracking.types.ts[m
+[1m+++ b/src/lib/tracking/tracking.types.ts[m
+[36m@@ -31,7 +31,10 @@[m [mexport interface TrackingSnapshot {[m
+   last_lng: number | null;[m
+   last_speed: number | null;[m
+   last_heading: number | null;[m
+[32m+[m[32m  last_accuracy: number | null;[m
+   last_seen_at: string | null;[m
+[32m+[m[32m  device_captured_at?: string | null;[m
+[32m+[m[32m  server_received_at?: string | null;[m
+   metadata: Record<string, any>;[m
+   correlation_id: string;[m
+   created_at: string;[m
+[36m@@ -73,6 +76,7 @@[m [mexport interface TrackingSnapshotPatch {[m
+   last_lng?: number | null;[m
+   last_speed?: number | null;[m
+   last_heading?: number | null;[m
+[32m+[m[32m  last_accuracy?: number | null;[m
+   last_seen_at?: string | null;[m
+   metadata?: Record<string, unknown>;[m
+ }[m

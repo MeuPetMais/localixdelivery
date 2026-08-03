@@ -36,5 +36,6 @@ export function buildCustomerView(orderId: string, input: CustomerTrackingInput)
     message: CustomerTrackingMessageService.messageFor(step, { driver_name: input.driver_name }),
     updated_at: input.updated_at ?? new Date().toISOString(),
     has_tracking: input.tracking_status !== null,
+    driver_location: showEta ? input.driver_location ?? null : null,
   };
 }

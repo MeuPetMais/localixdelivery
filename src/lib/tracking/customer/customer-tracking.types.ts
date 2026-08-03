@@ -23,6 +23,12 @@ export interface CustomerTrackingView {
   message: string; // Mensagem humanizada
   updated_at: string; // ISO
   has_tracking: boolean;
+  driver_location: {
+    lat: number;
+    lng: number;
+    accuracy_m: number | null;
+    updated_at: string;
+  } | null;
 }
 
 export interface CustomerTrackingInput {
@@ -30,5 +36,6 @@ export interface CustomerTrackingInput {
   tracking_status: TrackingStatus | null;
   eta_seconds: number | null;
   driver_name: string | null;
+  driver_location?: CustomerTrackingView["driver_location"];
   updated_at: string | null;
 }

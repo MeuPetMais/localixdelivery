@@ -76,6 +76,9 @@ export const getOperationsDashboard = createServerFn({ method: "GET" })
         neighborhood: extractNeighborhood(o?.address ?? null),
         driver_id: s.driver_id, driver_name: d?.name ?? "—",
         status: s.status, eta_seconds: s.eta_seconds, confidence: s.confidence as TrackingConfidence,
+        last_lat: s.last_lat,
+        last_lng: s.last_lng,
+        last_accuracy: (s as any).last_accuracy == null ? null : Number((s as any).last_accuracy),
         last_seen_at: s.last_seen_at, started_at: s.created_at,
         minutes_since_start: minutes, is_delayed: minutes >= 30,
       };
@@ -127,9 +130,36 @@ export const getOperationsDetail = createServerFn({ method: "GET" })
     if (snapRes.error) throw new Error(snapRes.error.message);
     if (tlRes.error) throw new Error(tlRes.error.message);
     if (!snapRes.data) return null;
+    const snap = toSnapshot(snapRes.data as Record<string, unknown>);
+    const [orderRes, restaurantRes] = await Promise.all([
+      context.supabase
+        .from("orders")
+        .select("address, order_number")
+        .eq("id", snap.order_id)
+        .maybeSingle(),
+      context.supabase
+        .from("restaurants")
+        .select("name, address, latitude, longitude")
+        .eq("id", snap.restaurant_id)
+        .maybeSingle(),
+    ]);
     return {
-      snapshot: toSnapshot(snapRes.data as Record<string, unknown>),
+      snapshot: snap,
       timeline: (tlRes.data ?? []).map((r) => toTimelineEntry(r as Record<string, unknown>)),
+      order: orderRes.data
+        ? {
+            address: (orderRes.data as any).address ?? null,
+            order_number: (orderRes.data as any).order_number ?? null,
+          }
+        : null,
+      restaurant: restaurantRes.data
+        ? {
+            name: (restaurantRes.data as any).name ?? null,
+            address: (restaurantRes.data as any).address ?? null,
+            lat: (restaurantRes.data as any).latitude == null ? null : Number((restaurantRes.data as any).latitude),
+            lng: (restaurantRes.data as any).longitude == null ? null : Number((restaurantRes.data as any).longitude),
+          }
+        : null,
     };
   });
 

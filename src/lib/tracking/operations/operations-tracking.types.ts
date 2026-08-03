@@ -39,6 +39,9 @@ export interface OperationsActiveDelivery {
   status: TrackingStatus;
   eta_seconds: number | null;
   confidence: TrackingConfidence;
+  last_lat: number | null;
+  last_lng: number | null;
+  last_accuracy: number | null;
   last_seen_at: string | null;
   started_at: string;
   minutes_since_start: number;
@@ -96,6 +99,8 @@ export interface OperationsDashboardData {
 export interface OperationsDetail {
   snapshot: TrackingSnapshot;
   timeline: TrackingTimelineEntry[];
+  restaurant: { name: string | null; address: string | null; lat: number | null; lng: number | null } | null;
+  order: { address: string | null; order_number: number | null } | null;
 }
 
 export interface OperationsFilters {

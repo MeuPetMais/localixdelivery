@@ -1,0 +1,22 @@
+warning: in the working copy of 'src/lib/delivery-drivers.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/CustomerTrackingView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.builder.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/customer/customer-tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/location/driver-location.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/OperationsDeliveryDetail.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/operations-tracking.functions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/operations/operations-tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/tracking.mapper.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/tracking/tracking.types.ts', LF will be replaced by CRLF the next time Git touches it
+src/lib/delivery-drivers.functions.ts
+src/lib/tracking/customer/CustomerTrackingView.tsx
+src/lib/tracking/customer/customer-tracking.builder.ts
+src/lib/tracking/customer/customer-tracking.functions.ts
+src/lib/tracking/customer/customer-tracking.types.ts
+src/lib/tracking/location/driver-location.types.ts
+src/lib/tracking/operations/OperationsDeliveryDetail.tsx
+src/lib/tracking/operations/operations-tracking.functions.ts
+src/lib/tracking/operations/operations-tracking.types.ts
+src/lib/tracking/tracking.mapper.ts
+src/lib/tracking/tracking.types.ts

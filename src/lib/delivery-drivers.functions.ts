@@ -244,8 +244,6 @@ export const setMyPresence = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       online: z.boolean(),
-      lat: z.number().optional(),
-      lng: z.number().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -254,10 +252,6 @@ export const setMyPresence = createServerFn({ method: "POST" })
       online: data.online,
       last_seen_at: new Date().toISOString(),
     };
-    if (data.online && typeof data.lat === "number" && typeof data.lng === "number") {
-      patch.last_lat = data.lat;
-      patch.last_lng = data.lng;
-    }
     // O motoboy não possui mais permissão UPDATE via RLS (RC5.1.3).
     // Escopo garantido por owner_id = usuário autenticado no middleware.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -274,7 +268,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
         driver_id: row.id,
         action: "PRESENCE",
         before: null,
-        after: { online: data.online, last_lat: (patch.last_lat as number | undefined) ?? null, last_lng: (patch.last_lng as number | undefined) ?? null },
+        after: { online: data.online },
       });
     }
     return row;

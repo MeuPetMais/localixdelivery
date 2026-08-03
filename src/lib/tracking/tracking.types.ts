@@ -31,7 +31,10 @@ export interface TrackingSnapshot {
   last_lng: number | null;
   last_speed: number | null;
   last_heading: number | null;
+  last_accuracy: number | null;
   last_seen_at: string | null;
+  device_captured_at?: string | null;
+  server_received_at?: string | null;
   metadata: Record<string, any>;
   correlation_id: string;
   created_at: string;
@@ -73,6 +76,7 @@ export interface TrackingSnapshotPatch {
   last_lng?: number | null;
   last_speed?: number | null;
   last_heading?: number | null;
+  last_accuracy?: number | null;
   last_seen_at?: string | null;
   metadata?: Record<string, unknown>;
 }

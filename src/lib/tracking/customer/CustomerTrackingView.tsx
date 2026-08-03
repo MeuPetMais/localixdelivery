@@ -75,6 +75,20 @@ export function CustomerTrackingView({ orderId, className }: CustomerTrackingVie
         <p className="mb-4 text-sm font-medium text-foreground">{view.eta_label}</p>
       )}
 
+      {view.driver_location && !isCancelled && (
+        <div className="mb-4 overflow-hidden rounded-lg border bg-card">
+          <iframe
+            title="Localizacao aproximada do entregador"
+            src={customerMapSrc(view.driver_location.lat, view.driver_location.lng)}
+            className="h-44 w-full border-0"
+            loading="lazy"
+          />
+          <p className="border-t px-3 py-2 text-xs text-muted-foreground">
+            Localizacao aproximada do entregador. Atualizado em {new Date(view.driver_location.updated_at).toLocaleTimeString()}.
+          </p>
+        </div>
+      )}
+
       {!isCancelled && <CustomerTrackingTimeline step={view.step} />}
 
       <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
@@ -87,4 +101,10 @@ export function CustomerTrackingView({ orderId, className }: CustomerTrackingVie
       </div>
     </Card>
   );
+}
+
+function customerMapSrc(lat: number, lng: number): string {
+  const d = 0.015;
+  const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
 }

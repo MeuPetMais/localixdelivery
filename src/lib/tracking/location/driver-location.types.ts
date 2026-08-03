@@ -17,6 +17,22 @@ export interface DriverLocationSample {
   source?: "gps" | "manual" | "sync";
 }
 
+export type DriverLocationMode = "offline" | "available" | "delivery" | "paused";
+
+export interface DriverLocationPolicy {
+  mode: DriverLocationMode;
+  minIntervalMs: number;
+  minDistanceMeters: number;
+  enableHighAccuracy: boolean;
+}
+
+export const DRIVER_LOCATION_POLICIES: Record<DriverLocationMode, DriverLocationPolicy> = {
+  offline: { mode: "offline", minIntervalMs: 0, minDistanceMeters: Infinity, enableHighAccuracy: false },
+  paused: { mode: "paused", minIntervalMs: 5 * 60_000, minDistanceMeters: 500, enableHighAccuracy: false },
+  available: { mode: "available", minIntervalMs: 60_000, minDistanceMeters: 100, enableHighAccuracy: false },
+  delivery: { mode: "delivery", minIntervalMs: 15_000, minDistanceMeters: 25, enableHighAccuracy: true },
+};
+
 export interface DriverLocationEvaluation {
   sample: DriverLocationSample;
   confidence: DriverLocationConfidence;
