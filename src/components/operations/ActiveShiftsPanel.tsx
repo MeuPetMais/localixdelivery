@@ -7,6 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fmtMinutes } from "@/lib/delivery/DriverShiftService";
+import {
+  DRIVER_OPERATIONAL_STATUS_LABEL,
+  getDriverOperationalStatus,
+} from "@/lib/driver-operational-status";
 
 export function ActiveShiftsPanel() {
   const qc = useQueryClient();
@@ -44,6 +48,11 @@ export function ActiveShiftsPanel() {
               (s.waiting_minutes ?? 0) +
               (s.delivery_minutes ?? 0) +
               (s.return_minutes ?? 0);
+            const status = getDriverOperationalStatus({
+              online: s.status !== "FINALIZADO",
+              shiftStatus: s.status,
+              shiftCurrentState: s.current_state,
+            });
             return (
               <li key={s.id} className="flex items-center justify-between rounded-xl border p-3">
                 <div className="flex items-center gap-3">
@@ -60,8 +69,7 @@ export function ActiveShiftsPanel() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Badge>{s.current_state}</Badge>
-                  {s.status === "PAUSADO" ? <Badge variant="outline">Pausado</Badge> : null}
+                  <Badge>{DRIVER_OPERATIONAL_STATUS_LABEL[status]}</Badge>
                 </div>
               </li>
             );

@@ -1,22 +1,24 @@
-// RC6.4 — Modal de instalação PWA do App do Entregador.
-// Um único componente reutilizável para o prompt automático (após login)
-// e para o botão fixo em Configurações → Instalar aplicativo.
+// RC6.4 - Modal de instalacao PWA do App do Entregador.
 
 import { useEffect, useState } from "react";
-import { Download, Share, Plus, Info } from "lucide-react";
+import { CheckCircle2, Download, Info, Plus, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  markInstallDismissed, useDriverPwaInstall, wasInstallDismissed,
+  markInstallDismissed,
+  useDriverPwaInstall,
+  wasInstallDismissed,
 } from "@/lib/pwa-driver";
 
 type Props = {
-  /** Abre automaticamente quando `beforeinstallprompt` chegar. */
   auto?: boolean;
-  /** Controle externo (para botão fixo). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
@@ -26,19 +28,17 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = typeof open === "boolean";
   const isOpen = isControlled ? open! : internalOpen;
-  const setOpen = (v: boolean) => {
-    if (isControlled) onOpenChange?.(v);
-    else setInternalOpen(v);
+  const setOpen = (value: boolean) => {
+    if (isControlled) onOpenChange?.(value);
+    else setInternalOpen(value);
   };
 
   useEffect(() => {
     if (!auto || isControlled) return;
-    if (pwa.isStandalone) return;
+    if (pwa.availability === "installed") return;
     if (wasInstallDismissed()) return;
-    if (pwa.canPrompt) setInternalOpen(true);
-  }, [auto, isControlled, pwa.canPrompt, pwa.isStandalone]);
-
-  if (pwa.isStandalone && !isOpen) return null;
+    if (pwa.availability === "available") setInternalOpen(true);
+  }, [auto, isControlled, pwa.availability]);
 
   async function handleInstall() {
     const outcome = await pwa.promptInstall();
@@ -64,7 +64,14 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        {pwa.isIOS && !pwa.canPrompt && (
+        {pwa.availability === "installed" && (
+          <div className="flex items-start gap-2 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>O Localix Entregador já está instalado.</span>
+          </div>
+        )}
+
+        {pwa.isIOS && pwa.availability === "manual" && (
           <div className="rounded-2xl bg-muted/60 p-4 text-sm">
             <p className="font-semibold">No iPhone / iPad (Safari):</p>
             <ol className="mt-2 space-y-2 text-muted-foreground">
@@ -80,18 +87,28 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
           </div>
         )}
 
-        {!pwa.canPrompt && !pwa.isIOS && (
+        {!pwa.isIOS && pwa.availability === "manual" && (
           <div className="flex items-start gap-2 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Seu navegador não suporta instalação do aplicativo. Tente pelo
+              Abra o menu ⋮ do Chrome e toque em Adicionar à tela inicial ou
+              Instalar aplicativo.
+            </span>
+          </div>
+        )}
+
+        {pwa.availability === "unsupported" && (
+          <div className="flex items-start gap-2 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              A instalação não está disponível neste navegador. Tente pelo
               Chrome, Edge ou Samsung Internet.
             </span>
           </div>
         )}
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          {pwa.canPrompt && (
+          {pwa.availability === "available" && (
             <Button className="w-full rounded-2xl" onClick={handleInstall}>
               <Download className="mr-2 h-4 w-4" /> Instalar
             </Button>
@@ -105,12 +122,19 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
   );
 }
 
-/** Botão fixo para as configurações. Some se já instalado ou sem suporte. */
 export function PwaInstallButton() {
   const pwa = useDriverPwaInstall();
   const [open, setOpen] = useState(false);
-  if (pwa.isStandalone) return null;
-  if (!pwa.isSupported && !pwa.canPrompt) return null;
+
+  if (pwa.availability === "installed") {
+    return (
+      <div className="flex items-start gap-2 rounded-2xl bg-emerald-500/10 p-3 text-sm text-emerald-700">
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>O Localix Entregador já está instalado.</span>
+      </div>
+    );
+  }
+
   return (
     <>
       <Button

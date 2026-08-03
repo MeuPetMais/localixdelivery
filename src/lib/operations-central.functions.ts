@@ -57,7 +57,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
     const sb = context.supabase;
     const rid = data.restaurantId;
 
-    const [{ data: drivers }, { data: queueRows }, { data: assigns }] = await Promise.all([
+    const [{ data: drivers }, { data: queueRows }, { data: assigns }, { data: shifts }] = await Promise.all([
       sb.from("delivery_drivers")
         .select("id, name, phone, photo_url, vehicle_type, vehicle_plate, status, online, last_seen_at")
         .eq("restaurant_id", rid),
@@ -70,6 +70,10 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
         .eq("restaurant_id", rid)
         .gte("assigned_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
         .order("assigned_at", { ascending: false }),
+      sb.from("driver_shifts")
+        .select("driver_id, status, current_state")
+        .eq("restaurant_id", rid)
+        .neq("status", "FINALIZADO"),
     ]);
 
     const dl = (drivers ?? []) as DriverRow[];
@@ -101,12 +105,17 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
 
     const queueByDriver = new Map<string, typeof ql[number]>();
     for (const q of ql) queueByDriver.set(q.driver_id, q);
+    const shiftByDriver = new Map<string, { driver_id: string; status: string; current_state: string }>();
+    for (const s of (shifts ?? []) as { driver_id: string; status: string; current_state: string }[]) {
+      shiftByDriver.set(s.driver_id, s);
+    }
 
     const enriched: CentralDriver[] = dl.map((d) => {
       const q = queueByDriver.get(d.id);
       const a = activeByDriver.get(d.id);
+      const shift = shiftByDriver.get(d.id);
       const order = a?.order_id ? orders[a.order_id] : undefined;
-      const group = classifyDriver(d, q, a);
+      const group = classifyDriver(d, q, a, shift);
       return {
         ...d,
         group,
@@ -135,7 +144,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
     const metrics: CentralMetrics = {
       avgTotalMinutes,
       avgReturnMinutes,
-      queueLength: counts.fila ?? 0,
+      queueLength: counts.na_fila ?? 0,
       delivering: counts.em_entrega ?? 0,
       returning: counts.retornando ?? 0,
       paused: counts.pausa ?? 0,
@@ -145,7 +154,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
 
     // Sort inside each group: fila by position asc, others by name
     enriched.sort((a, b) => {
-      if (a.group === "fila" && b.group === "fila") {
+      if (a.group === "na_fila" && b.group === "na_fila") {
         return (a.queue_position ?? 999) - (b.queue_position ?? 999);
       }
       return a.name.localeCompare(b.name);

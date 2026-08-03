@@ -121,8 +121,11 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
+    const isDriverAppRoute = pathname.startsWith("/motoboy") || pathname.startsWith("/entregador");
+    if (isDriverAppRoute) return;
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => registration.unregister());
@@ -131,7 +134,7 @@ function RootComponent() {
     if ("caches" in window && import.meta.env.DEV) {
       caches.keys().then((keys) => keys.forEach((key) => caches.delete(key))).catch(() => {});
     }
-  }, []);
+  }, [pathname]);
 
 
   useEffect(() => {

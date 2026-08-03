@@ -38,6 +38,10 @@ import {
   DRIVER_ACTIVATION_URL,
 } from "@/lib/driver-invite";
 import { getDriverActivationUrl } from "@/lib/driver-invite.functions";
+import {
+  DRIVER_OPERATIONAL_STATUS_LABEL,
+  type DriverOperationalStatus,
+} from "@/lib/driver-operational-status";
 
 
 export const Route = createFileRoute("/_authenticated/motoboys")({
@@ -58,6 +62,9 @@ type Driver = {
   vehicle_plate: string | null;
   status: DriverStatus;
   online: boolean;
+  operational_status?: DriverOperationalStatus;
+  queue_position?: number | null;
+  has_active_assignment?: boolean;
   last_lat: number | null; last_lng: number | null; last_seen_at: string | null;
   created_at?: string;
 };
@@ -71,29 +78,20 @@ function VehicleIcon({ v, className }: { v: Vehicle; className?: string }) {
   return <Icon className={className ?? "h-4 w-4"} />;
 }
 
-/* ============ STATUS =============
- * 🟢 Online 🔵 Em entrega 🟡 Retornando 🟠 Pausa ⚪ Offline 🔴 Inativo 🟡 Aguardando ativação
- */
-type PresenceState =
-  | "online" | "delivering" | "returning" | "paused"
-  | "offline" | "inactive" | "awaiting_activation";
+/* ============ STATUS ============= */
+type PresenceState = DriverOperationalStatus;
 
 function derivePresence(d: Driver): PresenceState {
-  if (d.status === "aguardando_ativacao") return "awaiting_activation";
-  if (d.status === "inativo") return "inactive";
-  if (d.status === "afastado") return "paused";
-  if (d.online) return "online";
-  return "offline";
+  return d.operational_status ?? "offline";
 }
 
 const PRESENCE_META: Record<PresenceState, { label: string; dot: string; text: string; bg: string; ring: string }> = {
-  online:              { label: "Online",              dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
-  delivering:          { label: "Em entrega",          dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-400",         bg: "bg-sky-500/10",     ring: "ring-sky-500/30" },
-  returning:           { label: "Retornando",          dot: "bg-amber-400",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/10",   ring: "ring-amber-400/30" },
-  paused:              { label: "Pausa",               dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-400",   bg: "bg-orange-500/10",  ring: "ring-orange-500/30" },
-  offline:             { label: "Offline",             dot: "bg-muted-foreground/50", text: "text-muted-foreground",          bg: "bg-muted",          ring: "ring-border" },
-  inactive:            { label: "Inativo",             dot: "bg-red-500",     text: "text-red-700 dark:text-red-400",         bg: "bg-red-500/10",     ring: "ring-red-500/30" },
-  awaiting_activation: { label: "Aguardando ativação", dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-400",     bg: "bg-amber-400/15",   ring: "ring-amber-400/40" },
+  disponivel: { label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel, dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
+  na_fila: { label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila, dot: "bg-blue-500", text: "text-blue-700 dark:text-blue-400", bg: "bg-blue-500/10", ring: "ring-blue-500/30" },
+  em_entrega: { label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega, dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-400", bg: "bg-sky-500/10", ring: "ring-sky-500/30" },
+  retornando: { label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando, dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-400", bg: "bg-amber-400/10", ring: "ring-amber-400/30" },
+  pausa: { label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa, dot: "bg-orange-500", text: "text-orange-700 dark:text-orange-400", bg: "bg-orange-500/10", ring: "ring-orange-500/30" },
+  offline: { label: DRIVER_OPERATIONAL_STATUS_LABEL.offline, dot: "bg-muted-foreground/50", text: "text-muted-foreground", bg: "bg-muted", ring: "ring-border" },
 };
 
 
@@ -147,6 +145,18 @@ function DriversPage() {
         { event: "*", schema: "public", table: "delivery_drivers", filter: `restaurant_id=eq.${restaurant.id}` },
         () => qc.invalidateQueries({ queryKey }),
       )
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "delivery_queue", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => qc.invalidateQueries({ queryKey }),
+      )
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "delivery_assignments", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => qc.invalidateQueries({ queryKey }),
+      )
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "driver_shifts", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => qc.invalidateQueries({ queryKey }),
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [restaurant.id, qc]);
@@ -174,13 +184,13 @@ function DriversPage() {
 
   const stats = useMemo(() => {
     const total = enriched.length;
-    const online = enriched.filter((d) => d._presence === "online").length;
-    const delivering = enriched.filter((d) => d._presence === "delivering").length;
-    const returning = enriched.filter((d) => d._presence === "returning").length;
-    const paused = enriched.filter((d) => d._presence === "paused").length;
-    const offline = enriched.filter((d) => d._presence === "offline" || d._presence === "inactive").length;
-    const awaiting = enriched.filter((d) => d._presence === "awaiting_activation").length;
-    return { total, online, delivering, returning, paused, offline, awaiting };
+    const available = enriched.filter((d) => d._presence === "disponivel").length;
+    const inQueue = enriched.filter((d) => d._presence === "na_fila").length;
+    const delivering = enriched.filter((d) => d._presence === "em_entrega").length;
+    const returning = enriched.filter((d) => d._presence === "retornando").length;
+    const paused = enriched.filter((d) => d._presence === "pausa").length;
+    const offline = enriched.filter((d) => d._presence === "offline").length;
+    return { total, available, inQueue, delivering, returning, paused, offline };
   }, [enriched]);
 
 
@@ -234,10 +244,11 @@ function DriversPage() {
       {/* STATS */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard icon={Users} label="Cadastrados" value={stats.total} />
-        <StatCard icon={Clock} label="Aguardando" value={stats.awaiting} tone="amber" />
-        <StatCard icon={Wifi} label="Online" value={stats.online} tone="emerald" />
+        <StatCard icon={Wifi} label="Disponível" value={stats.available} tone="emerald" />
+        <StatCard icon={Clock} label="Na fila" value={stats.inQueue} tone="primary" />
         <StatCard icon={Package} label="Em entrega" value={stats.delivering} tone="sky" />
         <StatCard icon={ArrowLeft} label="Retornando" value={stats.returning} tone="amber" />
+        <StatCard icon={Clock} label="Pausa" value={stats.paused} tone="orange" />
         <StatCard icon={ShieldCheck} label="Offline" value={stats.offline} tone="muted" />
       </section>
 
@@ -256,11 +267,11 @@ function DriversPage() {
         <div className="-mx-1 flex gap-1 overflow-x-auto pb-1 sm:mx-0">
           {([
             ["all", "Todos"],
-            ["awaiting_activation", "Aguardando ativação"],
-            ["online", "Online"],
-            ["delivering", "Em entrega"],
-            ["returning", "Retornando"],
-            ["paused", "Pausa"],
+            ["disponivel", "Disponível"],
+            ["na_fila", "Na fila"],
+            ["em_entrega", "Em entrega"],
+            ["retornando", "Retornando"],
+            ["pausa", "Pausa"],
             ["offline", "Offline"],
           ] as const).map(([id, label]) => (
 
@@ -385,7 +396,7 @@ function DriverCard({
 }) {
 
   const meta = PRESENCE_META[presence];
-  const online = presence === "online" || presence === "delivering" || presence === "returning";
+  const online = driver.online;
   const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
   const lastSeen = driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—";
 
@@ -426,9 +437,9 @@ function DriverCard({
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-          <MiniStat label="Entrega atual" value="—" />
+          <MiniStat label="Entrega atual" value={driver.has_active_assignment ? "Ativa" : "—"} />
           <MiniStat label={online ? "Online há" : "Visto"} value={lastSeen} />
-          <MiniStat label="Posição fila" value="—" />
+          <MiniStat label="Posição fila" value={driver.queue_position ? `#${driver.queue_position}` : "—"} />
         </div>
 
         {driver.last_lat != null && driver.last_lng != null && (
@@ -437,7 +448,7 @@ function DriverCard({
           </p>
         )}
 
-        {presence === "awaiting_activation" && (
+        {driver.status === "aguardando_ativacao" && (
           <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
             <p className="font-semibold text-amber-700 dark:text-amber-400">
               Cadastro concluído. Conta ainda não ativada.

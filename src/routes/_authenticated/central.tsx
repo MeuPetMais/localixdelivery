@@ -24,14 +24,15 @@ export const Route = createFileRoute("/_authenticated/central")({
 });
 
 const GROUP_META: Record<CentralGroup, { label: string; icon: React.ReactNode; tone: string; ring: string }> = {
-  fila:        { label: "Fila",        icon: <Users className="h-4 w-4" />,       tone: "text-emerald-700 bg-emerald-500/10",   ring: "ring-emerald-500/30" },
+  disponivel:  { label: "Disponível",  icon: <Activity className="h-4 w-4" />,    tone: "text-emerald-700 bg-emerald-500/10",   ring: "ring-emerald-500/30" },
+  na_fila:     { label: "Na fila",      icon: <Users className="h-4 w-4" />,       tone: "text-blue-700 bg-blue-500/10",         ring: "ring-blue-500/30" },
   em_entrega:  { label: "Em entrega",  icon: <Package className="h-4 w-4" />,     tone: "text-sky-700 bg-sky-500/10",           ring: "ring-sky-500/30" },
   retornando:  { label: "Retornando",  icon: <RotateCcw className="h-4 w-4" />,   tone: "text-amber-700 bg-amber-400/10",       ring: "ring-amber-400/30" },
   pausa:       { label: "Pausa",       icon: <PauseCircle className="h-4 w-4" />, tone: "text-orange-700 bg-orange-500/10",     ring: "ring-orange-500/30" },
   offline:     { label: "Offline",     icon: <WifiOff className="h-4 w-4" />,     tone: "text-muted-foreground bg-muted",        ring: "ring-border" },
 };
 
-const GROUP_ORDER: CentralGroup[] = ["fila", "em_entrega", "retornando", "pausa", "offline"];
+const GROUP_ORDER: CentralGroup[] = ["disponivel", "na_fila", "em_entrega", "retornando", "pausa", "offline"];
 
 function CentralPage() {
   const restaurant = useRestaurant();
@@ -61,6 +62,9 @@ function CentralPage() {
       .on("postgres_changes",
         { event: "*", schema: "public", table: "delivery_drivers", filter: `restaurant_id=eq.${restaurant.id}` },
         invalidate)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "driver_shifts", filter: `restaurant_id=eq.${restaurant.id}` },
+        invalidate)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [restaurant.id, qc]);
@@ -69,7 +73,7 @@ function CentralPage() {
   const metrics = data?.metrics;
   const grouped = useMemo(() => {
     const map: Record<CentralGroup, CentralDriver[]> = {
-      fila: [], em_entrega: [], retornando: [], pausa: [], offline: [],
+      disponivel: [], na_fila: [], em_entrega: [], retornando: [], pausa: [], offline: [],
     };
     for (const d of drivers) map[d.group].push(d);
     return map;
@@ -182,7 +186,7 @@ function DriverRow({ d }: { d: CentralDriver }) {
           )}
         </p>
       </div>
-      {d.group === "fila" && d.queue_position != null && (
+      {d.group === "na_fila" && d.queue_position != null && (
         <Badge variant="secondary">#{d.queue_position}</Badge>
       )}
       {d.group === "em_entrega" && d.active_since && (

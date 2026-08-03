@@ -4,6 +4,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getDriverOperationalStatus } from "@/lib/driver-operational-status";
 import { z } from "zod";
 
 const DELIVERY_FEE_BRL = 8; // ganho por entrega (provisório — RC5.3 lê da política)
@@ -191,6 +192,15 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     const myPosition = myEntry?.position ?? null;
     const waitingSince = myEntry?.entered_at ?? null;
 
+    const { data: shiftRows } = await supabase
+      .from("driver_shifts")
+      .select("status, current_state")
+      .eq("driver_id", driver.id)
+      .neq("status", "FINALIZADO")
+      .order("started_at", { ascending: false })
+      .limit(1);
+    const currentShift = shiftRows?.[0] ?? null;
+
     // Status fila derivado
     let queueStatus: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "OFFLINE" = "OFFLINE";
     if (active && (active.status === "COLETANDO" || active.status === "EM_ROTA" || active.status === "ATRIBUIDO")) {
@@ -288,6 +298,14 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
           ? Math.max(1, myPosition * (restaurant?.avg_pickup_minutes ?? 4))
           : null,
       },
+      operationalStatus: getDriverOperationalStatus({
+        driverStatus: driver.status,
+        online: driver.online,
+        shiftStatus: currentShift?.status,
+        shiftCurrentState: currentShift?.current_state,
+        queueStatus: myEntry?.status ?? queueStatus,
+        hasActiveAssignment: !!active,
+      }),
       active: active ? { assignment: active, order: activeOrder } : null,
       earnings: {
         today: sumEarn(today),

@@ -54,6 +54,21 @@ async function requireDriverOwnerOrAdmin(
   throw new Error("FORBIDDEN");
 }
 
+async function requireAssignmentOwnerOrAdmin(
+  supabase: any,
+  admin: any,
+  userId: string,
+  assignment: AssignmentSnapshot,
+): Promise<{ actor: DeliveryActor; actorId: string }> {
+  const { actor } = await requireOwnerOrAdmin(
+    supabase,
+    admin,
+    userId,
+    assignment.restaurant_id,
+  );
+  return { actor, actorId: userId };
+}
+
 async function buildOrchestrator() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return {
@@ -252,7 +267,7 @@ export const cancelDelivery = createServerFn({ method: "POST" })
       .select("id, order_id, restaurant_id, driver_id, status, correlation_id")
       .eq("id", data.assignmentId).maybeSingle();
     if (!existing) throw new Error("ASSIGNMENT_NOT_FOUND");
-    const { actor, actorId } = await requireDriverOwnerOrAdmin(
+    const { actor, actorId } = await requireAssignmentOwnerOrAdmin(
       context.supabase, admin, context.userId, existing as AssignmentSnapshot,
     );
     const res = await orchestrator.transition({

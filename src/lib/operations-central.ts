@@ -1,10 +1,12 @@
 // Pure helpers used by the operations-central server function.
 // Extracted so we can unit test without touching Supabase.
+import { getDriverOperationalStatus } from "./driver-operational-status";
 
-export type CentralGroup = "fila" | "em_entrega" | "retornando" | "pausa" | "offline";
+export type CentralGroup = "disponivel" | "na_fila" | "em_entrega" | "retornando" | "pausa" | "offline";
 
 export type DriverLite = { id: string; status: string; online: boolean };
 export type QueueLite = { driver_id: string; status: string; position: number };
+export type ShiftLite = { driver_id: string; status: string; current_state: string };
 export type AssignmentLite = {
   driver_id: string | null; status: string;
   assigned_at: string | null; delivered_at: string | null;
@@ -16,13 +18,16 @@ export function classifyDriver(
   d: DriverLite,
   queue: QueueLite | undefined,
   activeAssignment: AssignmentLite | undefined,
+  shift?: ShiftLite,
 ): CentralGroup {
-  if (d.status === "afastado") return "pausa";
-  if (activeAssignment && ACTIVE_STATUSES.has(activeAssignment.status)) return "em_entrega";
-  if (queue?.status === "RETORNANDO") return "retornando";
-  if (queue?.status === "AGUARDANDO") return "fila";
-  if (d.online) return "fila";
-  return "offline";
+  return getDriverOperationalStatus({
+    driverStatus: d.status,
+    online: d.online,
+    shiftStatus: shift?.status,
+    shiftCurrentState: shift?.current_state,
+    queueStatus: queue?.status,
+    hasActiveAssignment: !!activeAssignment && ACTIVE_STATUSES.has(activeAssignment.status),
+  });
 }
 
 export function averageMinutes(deltas: number[]): number | null {

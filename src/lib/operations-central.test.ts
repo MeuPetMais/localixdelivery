@@ -12,6 +12,14 @@ describe("classifyDriver", () => {
   it("pausa quando afastado (mesmo online)", () => {
     expect(classifyDriver(drv({ status: "afastado", online: true }), undefined, undefined)).toBe("pausa");
   });
+  it("pausa quando turno esta PAUSADO", () => {
+    expect(classifyDriver(
+      drv({ online: true }),
+      undefined,
+      undefined,
+      { driver_id: "d1", status: "PAUSADO", current_state: "PAUSA" },
+    )).toBe("pausa");
+  });
   it("em_entrega quando há atribuição ativa", () => {
     expect(classifyDriver(drv({ online: true }), undefined, {
       driver_id: "d1", status: "EM_ROTA", assigned_at: null, delivered_at: null,
@@ -21,12 +29,12 @@ describe("classifyDriver", () => {
     expect(classifyDriver(drv({ online: true }), { driver_id: "d1", status: "RETORNANDO", position: 0 }, undefined))
       .toBe("retornando");
   });
-  it("fila quando AGUARDANDO na fila", () => {
+  it("na_fila quando AGUARDANDO na fila", () => {
     expect(classifyDriver(drv({ online: true }), { driver_id: "d1", status: "AGUARDANDO", position: 1 }, undefined))
-      .toBe("fila");
+      .toBe("na_fila");
   });
-  it("fila quando online sem fila explícita", () => {
-    expect(classifyDriver(drv({ online: true }), undefined, undefined)).toBe("fila");
+  it("disponivel quando online sem fila explicita", () => {
+    expect(classifyDriver(drv({ online: true }), undefined, undefined)).toBe("disponivel");
   });
   it("offline quando não online e sem nada", () => {
     expect(classifyDriver(drv({ online: false }), undefined, undefined)).toBe("offline");
@@ -34,7 +42,7 @@ describe("classifyDriver", () => {
   it("ignora atribuição terminada", () => {
     expect(classifyDriver(drv({ online: true }), undefined, {
       driver_id: "d1", status: "ENTREGUE", assigned_at: null, delivered_at: null,
-    })).toBe("fila");
+    })).toBe("disponivel");
   });
 });
 

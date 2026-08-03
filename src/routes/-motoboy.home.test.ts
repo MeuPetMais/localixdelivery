@@ -15,19 +15,22 @@ describe("greetingFor", () => {
 });
 
 describe("derivePresenceStatus", () => {
-  it("PAUSA when offline", () => {
-    expect(derivePresenceStatus({ online: false, queueStatus: "AGUARDANDO", hasActive: false })).toBe("PAUSA");
+  it("offline when not connected", () => {
+    expect(derivePresenceStatus({ online: false, queueStatus: "AGUARDANDO", hasActive: false })).toBe("offline");
   });
-  it("EM_ENTREGA when has active assignment", () => {
-    expect(derivePresenceStatus({ online: true, queueStatus: "AGUARDANDO", hasActive: true })).toBe("EM_ENTREGA");
+  it("em_entrega when has active assignment", () => {
+    expect(derivePresenceStatus({ online: true, queueStatus: "AGUARDANDO", hasActive: true })).toBe("em_entrega");
   });
-  it("EM_ENTREGA when queueStatus is EM_ENTREGA", () => {
-    expect(derivePresenceStatus({ online: true, queueStatus: "EM_ENTREGA", hasActive: false })).toBe("EM_ENTREGA");
+  it("em_entrega when queueStatus is EM_ENTREGA", () => {
+    expect(derivePresenceStatus({ online: true, queueStatus: "EM_ENTREGA", hasActive: false })).toBe("em_entrega");
   });
-  it("RETORNANDO after delivery", () => {
-    expect(derivePresenceStatus({ online: true, queueStatus: "RETORNANDO", hasActive: false })).toBe("RETORNANDO");
+  it("retornando after delivery", () => {
+    expect(derivePresenceStatus({ online: true, queueStatus: "RETORNANDO", hasActive: false })).toBe("retornando");
   });
-  it("DISPONIVEL when online and idle", () => {
-    expect(derivePresenceStatus({ online: true, queueStatus: "AGUARDANDO", hasActive: false })).toBe("DISPONIVEL");
+  it("na_fila when waiting in queue", () => {
+    expect(derivePresenceStatus({ online: true, queueStatus: "AGUARDANDO", hasActive: false })).toBe("na_fila");
+  });
+  it("disponivel when online and not queued yet", () => {
+    expect(derivePresenceStatus({ online: true, queueStatus: "OFFLINE", hasActive: false })).toBe("disponivel");
   });
 });

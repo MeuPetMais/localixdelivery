@@ -32,6 +32,11 @@ import { registerDriverServiceWorker } from "@/lib/pwa-driver";
 import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 import { DriverWalletTab } from "@/components/driver/DriverWalletTab";
 import { DriverProfileTab } from "@/components/driver/DriverProfileTab";
+import {
+  DRIVER_OPERATIONAL_STATUS_LABEL,
+  getDriverOperationalStatus,
+  type DriverOperationalStatus,
+} from "@/lib/driver-operational-status";
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
@@ -252,25 +257,28 @@ export function greetingFor(date = new Date()): "Bom dia" | "Boa tarde" | "Boa n
   return "Boa noite";
 }
 
-export type DriverPresenceStatus = "DISPONIVEL" | "EM_ENTREGA" | "RETORNANDO" | "PAUSA";
+export type DriverPresenceStatus = DriverOperationalStatus;
 
 export function derivePresenceStatus(input: {
   online: boolean;
   queueStatus: string;
   hasActive: boolean;
 }): DriverPresenceStatus {
-  if (!input.online) return "PAUSA";
-  if (input.hasActive || input.queueStatus === "EM_ENTREGA") return "EM_ENTREGA";
-  if (input.queueStatus === "RETORNANDO") return "RETORNANDO";
-  return "DISPONIVEL";
+  return getDriverOperationalStatus({
+    online: input.online,
+    queueStatus: input.queueStatus,
+    hasActiveAssignment: input.hasActive,
+  });
 }
 
 function StatusPill(props: { status: DriverPresenceStatus }) {
   const map: Record<DriverPresenceStatus, { label: string; dot: string; bg: string; fg: string }> = {
-    DISPONIVEL: { label: "Disponível", dot: "bg-emerald-500", bg: "bg-emerald-500/10", fg: "text-emerald-700" },
-    EM_ENTREGA: { label: "Em entrega", dot: "bg-amber-500", bg: "bg-amber-500/10", fg: "text-amber-700" },
-    RETORNANDO: { label: "Retornando", dot: "bg-sky-500", bg: "bg-sky-500/10", fg: "text-sky-700" },
-    PAUSA: { label: "Pausa", dot: "bg-muted-foreground", bg: "bg-muted", fg: "text-muted-foreground" },
+    offline: { label: DRIVER_OPERATIONAL_STATUS_LABEL.offline, dot: "bg-muted-foreground", bg: "bg-muted", fg: "text-muted-foreground" },
+    disponivel: { label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel, dot: "bg-emerald-500", bg: "bg-emerald-500/10", fg: "text-emerald-700" },
+    na_fila: { label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila, dot: "bg-blue-500", bg: "bg-blue-500/10", fg: "text-blue-700" },
+    em_entrega: { label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega, dot: "bg-amber-500", bg: "bg-amber-500/10", fg: "text-amber-700" },
+    retornando: { label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando, dot: "bg-sky-500", bg: "bg-sky-500/10", fg: "text-sky-700" },
+    pausa: { label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa, dot: "bg-orange-500", bg: "bg-orange-500/10", fg: "text-orange-700" },
   };
   const m = map[props.status];
   return (
@@ -297,11 +305,12 @@ function HomeTab(props: {
   const restaurantName = (dash as any).restaurant?.name as string | undefined;
   const firstName = driver.name.split(" ")[0];
   const hasActive = !!dash.active;
-  const presence = derivePresenceStatus({
-    online: !!driver.online,
-    queueStatus: q.status,
-    hasActive,
-  });
+  const presence = ((dash as any).operationalStatus as DriverPresenceStatus | undefined)
+    ?? derivePresenceStatus({
+      online: !!driver.online,
+      queueStatus: q.status,
+      hasActive,
+    });
   const waitMin = q.waitingSince
     ? Math.max(0, Math.round((Date.now() - new Date(q.waitingSince).getTime()) / 60000))
     : 0;

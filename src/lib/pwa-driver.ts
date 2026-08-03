@@ -12,6 +12,12 @@ export type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+export type DriverPwaInstallAvailability =
+  | "available"
+  | "installed"
+  | "manual"
+  | "unsupported";
+
 function isPreviewHost(hostname: string): boolean {
   return (
     hostname.startsWith("id-preview--") ||
@@ -83,11 +89,22 @@ export function isIOSSafari(): boolean {
   return isIOS && isSafari;
 }
 
+export function isChromeAndroid(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent;
+  return /Android/.test(ua) && /Chrome\//.test(ua) && !/EdgA|OPR|SamsungBrowser/.test(ua);
+}
+
 export function isInstallSupported(): boolean {
   if (typeof window === "undefined") return false;
   // Chrome/Edge/Samsung: `BeforeInstallPromptEvent` disponível.
   // Safari iOS: usa "Adicionar à Tela Inicial" manual.
-  return "onbeforeinstallprompt" in window || isIOSSafari();
+  return (
+    isStandaloneDisplay() ||
+    "onbeforeinstallprompt" in window ||
+    isChromeAndroid() ||
+    isIOSSafari()
+  );
 }
 
 export function markInstallDismissed(): void {
@@ -112,6 +129,8 @@ export type PwaInstallState = {
   isStandalone: boolean;
   /** Navegador dá suporte a alguma forma de instalação. */
   isSupported: boolean;
+  availability: DriverPwaInstallAvailability;
+  isServiceWorkerControlled: boolean;
   /** Dispara o prompt nativo. Retorna outcome ou null se indisponível. */
   promptInstall: () => Promise<"accepted" | "dismissed" | null>;
 };
@@ -119,6 +138,9 @@ export type PwaInstallState = {
 export function useDriverPwaInstall(): PwaInstallState {
   const [evt, setEvt] = useState<BeforeInstallPromptEvent | null>(null);
   const [standalone, setStandalone] = useState<boolean>(() => isStandaloneDisplay());
+  const [serviceWorkerControlled, setServiceWorkerControlled] = useState<boolean>(() =>
+    typeof navigator !== "undefined" && !!navigator.serviceWorker?.controller,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -133,12 +155,16 @@ export function useDriverPwaInstall(): PwaInstallState {
     };
     const mq = window.matchMedia?.("(display-mode: standalone)");
     const onModeChange = () => setStandalone(isStandaloneDisplay());
+    const onControllerChange = () => setServiceWorkerControlled(!!navigator.serviceWorker?.controller);
     window.addEventListener("beforeinstallprompt", onBIP);
     window.addEventListener("appinstalled", onInstalled);
+    navigator.serviceWorker?.addEventListener?.("controllerchange", onControllerChange);
     mq?.addEventListener?.("change", onModeChange);
+    setServiceWorkerControlled(!!navigator.serviceWorker?.controller);
     return () => {
       window.removeEventListener("beforeinstallprompt", onBIP);
       window.removeEventListener("appinstalled", onInstalled);
+      navigator.serviceWorker?.removeEventListener?.("controllerchange", onControllerChange);
       mq?.removeEventListener?.("change", onModeChange);
     };
   }, []);
@@ -155,11 +181,23 @@ export function useDriverPwaInstall(): PwaInstallState {
     }
   }, [evt]);
 
+  const supported = isInstallSupported();
+  const canPrompt = !!evt && !standalone;
+  const availability: DriverPwaInstallAvailability = standalone
+    ? "installed"
+    : canPrompt
+      ? "available"
+      : supported
+        ? "manual"
+        : "unsupported";
+
   return {
-    canPrompt: !!evt && !standalone,
+    canPrompt,
     isIOS: isIOSSafari(),
     isStandalone: standalone,
-    isSupported: isInstallSupported(),
+    isSupported: supported,
+    availability,
+    isServiceWorkerControlled: serviceWorkerControlled,
     promptInstall,
   };
 }

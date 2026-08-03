@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getDriverOperationalStatus } from "@/lib/driver-operational-status";
 import { z } from "zod";
 
 const VEHICLES = ["moto", "bicicleta", "carro", "a_pe"] as const;
@@ -59,7 +60,52 @@ export const listDrivers = createServerFn({ method: "GET" })
       .eq("restaurant_id", data.restaurantId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const drivers = rows ?? [];
+    const driverIds = drivers.map((d: any) => d.id);
+    if (driverIds.length === 0) return [];
+
+    const [{ data: queueRows }, { data: activeRows }, { data: shiftRows }] = await Promise.all([
+      context.supabase
+        .from("delivery_queue")
+        .select("driver_id, position, status, entered_at")
+        .eq("restaurant_id", data.restaurantId)
+        .in("status", ["AGUARDANDO", "EM_ENTREGA", "RETORNANDO"]),
+      context.supabase
+        .from("delivery_assignments")
+        .select("driver_id, status")
+        .eq("restaurant_id", data.restaurantId)
+        .in("status", ["ATRIBUIDO", "COLETANDO", "EM_ROTA"]),
+      context.supabase
+        .from("driver_shifts")
+        .select("driver_id, status, current_state")
+        .eq("restaurant_id", data.restaurantId)
+        .neq("status", "FINALIZADO"),
+    ]);
+
+    const queueByDriver = new Map((queueRows ?? []).map((q: any) => [q.driver_id, q]));
+    const activeDriverIds = new Set((activeRows ?? []).map((a: any) => a.driver_id));
+    const shiftByDriver = new Map((shiftRows ?? []).map((s: any) => [s.driver_id, s]));
+
+    return drivers.map((driver: any) => {
+      const queue = queueByDriver.get(driver.id) as any;
+      const shift = shiftByDriver.get(driver.id) as any;
+      return {
+        ...driver,
+        queue_status: queue?.status ?? null,
+        queue_position: queue?.status === "AGUARDANDO" ? queue.position : null,
+        shift_status: shift?.status ?? null,
+        shift_current_state: shift?.current_state ?? null,
+        has_active_assignment: activeDriverIds.has(driver.id),
+        operational_status: getDriverOperationalStatus({
+          driverStatus: driver.status,
+          online: driver.online,
+          shiftStatus: shift?.status,
+          shiftCurrentState: shift?.current_state,
+          queueStatus: queue?.status,
+          hasActiveAssignment: activeDriverIds.has(driver.id),
+        }),
+      };
+    });
   });
 
 export const createDriver = createServerFn({ method: "POST" })
