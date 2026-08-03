@@ -3,37 +3,16 @@
 // REGRAS:
 // - Todos os cálculos vêm do PricingEngine. Nunca calcular no frontend.
 // - Não integra Mercado Pago, não cria Payment Intent, não faz Split.
-// - Registro de pagamento sempre começa em PENDING.
+// - Registro de pagamento online começa em PENDING; pagamento na entrega nasce APPROVED.
 // - Snapshot financeiro é imutável (uma linha por pedido).
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import PricingEngine, { PricingError, type PaymentMethod, type ProviderId } from "@/lib/payments/PricingEngine";
+import PricingEngine, { PricingError, type ProviderId } from "@/lib/payments/PricingEngine";
 import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
-import { isOfflinePaymentMethod } from "./paymentMethodLabel";
+import { CHECKOUT_METHODS, resolveCheckoutPayment } from "./checkout-payment";
 
-const CHECKOUT_METHODS = [
-  "pix",
-  "credit_card",
-  "card_delivery",
-  "cash",
-  "meal_voucher",
-  "google_pay",
-  "apple_pay",
-] as const;
-
-export type CheckoutMethod = (typeof CHECKOUT_METHODS)[number];
-
-// Métodos suportados pelo PricingEngine (subset do checkout).
-const PRICING_METHOD_MAP: Record<CheckoutMethod, PaymentMethod> = {
-  pix: "pix",
-  credit_card: "credit_card",
-  card_delivery: "cash",
-  cash: "cash",
-  meal_voucher: "credit_card",
-  google_pay: "credit_card",
-  apple_pay: "credit_card",
-};
+export type { CheckoutMethod } from "./checkout-payment";
 
 const itemSchema = z.object({
   id: z.string(),
@@ -78,6 +57,8 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     if (!rest) throw new Error("Restaurante não encontrado");
     if (!rest.active) throw new Error("Restaurante inativo");
 
+    const paymentDecision = resolveCheckoutPayment(data.paymentMethod);
+
     // 2) Subtotal a partir dos itens (nunca do frontend)
     const subtotal = data.items.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -90,7 +71,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         couponDiscount: data.couponDiscount,
         cashback: data.cashback,
         loyaltyDiscount: data.loyaltyDiscount,
-        paymentMethod: PRICING_METHOD_MAP[data.paymentMethod],
+        paymentMethod: paymentDecision.pricingMethod,
         provider: "mercado_pago" as ProviderId,
         restaurantId: rest.id,
         minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
@@ -99,24 +80,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       if (e instanceof PricingError) throw new Error(e.message);
       throw e;
     }
-const ONLINE_PAYMENT_METHODS: CheckoutMethod[] = [
-  "pix",
-  "credit_card",
-  "google_pay",
-  "apple_pay",
-];
-
-const initialStatus = isOfflinePaymentMethod(data.paymentMethod)
-  ? "pago"
-  : "aguardando_pagamento";
-
-  console.log("========== CHECKOUT DEBUG ==========");
-console.log({
-  paymentMethod: data.paymentMethod,
-  initialStatus,
-});
-
-    // 4) Criar pedido em status "aguardando_pagamento"
+    // 4) Criar pedido com status inicial definido pelo tipo de pagamento.
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -125,23 +89,16 @@ console.log({
         customer_name: data.customer.name,
         customer_phone: data.customer.phone,
         address: data.customer.address,
-        payment_method: data.paymentMethod,
+        payment_method: paymentDecision.paymentMethod,
         items: data.items,
         total: pricing.customerTotal,
         discount: pricing.couponDiscount,
         loyalty_discount: data.loyaltyDiscount || 0,
-        status: initialStatus,
+        status: paymentDecision.initialStatus,
       })
       .select("id, order_number, payment_method, status")
       .single();
     if (ordErr) throw new Error(`Falha ao criar pedido: ${ordErr.message}`);
-
-    console.log("========== ORDER CREATED ==========");
-console.log({
-  id: order.id,
-  paymentMethod: order.payment_method,
-  status: order.status,
-});
 
     // 5) Snapshot financeiro (imutável)
     const { error: snapErr } = await supabaseAdmin.from("order_pricing_snapshot").insert({
@@ -162,24 +119,20 @@ console.log({
     });
     if (snapErr) throw new Error(`Falha no snapshot: ${snapErr.message}`);
 
-    const paymentRecordStatus = isOfflinePaymentMethod(data.paymentMethod)
-  ? "APPROVED"
-  : "PENDING";
-
-    // 6) Registro de pagamento (PENDING) — via Payment Domain (nenhum SQL local).
+    // 6) Registro de pagamento via Payment Domain (nenhum SQL local).
     const { registerPendingOrderPayment } = await import("@/lib/payments/orderPayment.server");
 
     await registerPendingOrderPayment({
       orderId: order.id,
       restaurantId: rest.id,
-      paymentMethod: data.paymentMethod,
-      status: paymentRecordStatus,
+      paymentMethod: paymentDecision.paymentMethod,
+      status: paymentDecision.paymentRecordStatus,
     });
 
     return {
     orderId: order.id,
     orderNumber: order.order_number,
-    status: initialStatus,
+    status: paymentDecision.initialStatus,
     pricing,
     
     };
@@ -207,7 +160,7 @@ export const previewCheckoutPricing = createServerFn({ method: "POST" })
         cashback: data.cashback,
         loyaltyDiscount: data.loyaltyDiscount,
         paymentMethod: data.paymentMethod
-          ? PRICING_METHOD_MAP[data.paymentMethod]
+          ? resolveCheckoutPayment(data.paymentMethod).pricingMethod
           : "pix",
       });
       return { ok: true as const, pricing };

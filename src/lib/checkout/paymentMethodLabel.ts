@@ -7,6 +7,7 @@ const LABELS: Record<string, string> = {
   credit: "Cartão Online",
   debit_card: "Cartão Online",
   debit: "Cartão Online",
+  card_delivery: "💳 Cartão na entrega",
   card_on_delivery: "💳 Cartão na entrega",
   "cartao na entrega": "💳 Cartão na entrega",
   "cartão na entrega": "💳 Cartão na entrega",
@@ -30,9 +31,39 @@ function normalizeMethodKey(method: string): string {
   return String(method).trim().toLowerCase();
 }
 
+export function normalizeOrderPaymentMethod(method?: string | null): string {
+  const key = normalizeMethodKey(method ?? "");
+  switch (key) {
+    case "card_delivery":
+    case "card_on_delivery":
+    case "cartao na entrega":
+    case "cartão na entrega":
+      return "card_on_delivery";
+    case "credit":
+    case "credit_card":
+    case "debit":
+    case "debit_card":
+      return "credit_card";
+    case "dinheiro":
+    case "especie":
+    case "espécie":
+      return "cash";
+    case "vale refeicao":
+    case "vale refeição":
+    case "vale alimentacao":
+    case "vale alimentação":
+    case "food_voucher":
+    case "vr":
+    case "va":
+      return "meal_voucher";
+    default:
+      return key;
+  }
+}
+
 export function paymentMethodLabel(method?: string | null): string {
   if (!method) return "—";
-  const key = normalizeMethodKey(method);
+  const key = normalizeOrderPaymentMethod(method);
   return LABELS[key] ?? method;
 }
 
@@ -58,7 +89,11 @@ const OFFLINE_KEYS = new Set([
 
 export function isOfflinePaymentMethod(method?: string | null): boolean {
   if (!method) return false;
-  return OFFLINE_KEYS.has(normalizeMethodKey(method));
+  return OFFLINE_KEYS.has(normalizeOrderPaymentMethod(method));
+}
+
+export function initialOrderStatusForPaymentMethod(method?: string | null): "pago" | "aguardando_pagamento" {
+  return isOfflinePaymentMethod(method) ? "pago" : "aguardando_pagamento";
 }
 
 
@@ -73,7 +108,7 @@ export function orderReceivedNotification(method?: string | null): {
   title: string;
   description: string;
 } {
-  const key = String(method ?? "").toLowerCase();
+  const key = normalizeOrderPaymentMethod(method);
   switch (key) {
     case "pix":
     case "credit_card":
