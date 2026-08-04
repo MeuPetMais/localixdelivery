@@ -1,4 +1,6 @@
 // Regras iniciais de PEDIDOS.
+import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { getRestaurantClosedMessage } from "@/lib/restaurant-status-labels";
 import type { BusinessRule } from "../types";
 
 export const RULE_MIN_ORDER: BusinessRule = {
@@ -50,8 +52,23 @@ export const RULE_RESTAURANT_OPEN: BusinessRule = {
   enabled: true,
   category: "ORDER",
   evaluate(ctx) {
-    if (ctx.restaurant?.is_open === false) {
-      return { allowed: false, rule_code: "ORDER_RESTAURANT_CLOSED", severity: "error", reason: "Restaurante fechado." };
+    const status = getRestaurantStatus(
+      {
+        is_open: ctx.restaurant?.is_open,
+        opening_hours: ctx.restaurant?.opening_hours,
+        timeZone: ctx.restaurant?.timeZone ?? ctx.restaurant?.timezone,
+      },
+      ctx.system_time ? new Date(ctx.system_time) : new Date(),
+    );
+
+    if (!status.isOpen) {
+      return {
+        allowed: false,
+        rule_code: "ORDER_RESTAURANT_CLOSED",
+        severity: "error",
+        reason: getRestaurantClosedMessage(status.reason),
+        metadata: { status_reason: status.reason },
+      };
     }
     if (ctx.restaurant?.accepting_orders === false) {
       return { allowed: false, rule_code: "ORDER_NOT_ACCEPTING", severity: "error", reason: "Restaurante não está aceitando pedidos." };

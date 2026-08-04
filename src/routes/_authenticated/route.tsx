@@ -13,6 +13,7 @@ import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
 import { useIsAdmin } from "@/hooks/use-role";
 import { RestaurantDashboardLayout } from "@/components/dashboard/RestaurantDashboardLayout";
 import type { DashboardRole } from "@/lib/dashboard";
+import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -54,6 +55,20 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   // Platform-level admin (isAdmin) is scoped to /admin — it does not grant restaurant-panel roles.
   const role: DashboardRole = restaurant?.owner_id === userId || isAdmin ? "OWNER" : "STAFF";
   const restaurantName = restaurant?.name ?? "Localix";
+  const restaurantStatus = useRestaurantStatus({
+    is_open: restaurant?.is_open,
+    opening_hours: (restaurant as any)?.opening_hours,
+  });
+  const dashboardStatus = restaurant
+    ? {
+        isOpen: restaurantStatus.isOpen,
+        reason: restaurantStatus.reason,
+        acceptingOrders: restaurantStatus.isOpen,
+        vacationMode: false,
+        maintenanceMode: false,
+        deliveryMode: "OWN" as const,
+      }
+    : undefined;
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -71,6 +86,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
       <RestaurantDashboardLayout
         restaurantName={restaurantName}
         role={role}
+        status={dashboardStatus}
         branding={{
           logoUrl: restaurant?.logo_url ?? undefined,
         }}

@@ -1,5 +1,6 @@
 import { Search, Bell, User } from "lucide-react";
 import type { DashboardRestaurantStatus } from "@/lib/dashboard";
+import { getDashboardStatusLabel } from "@/lib/restaurant-status-labels";
 
 interface Props {
   restaurantName: string;
@@ -13,13 +14,15 @@ interface Props {
 export function DashboardHeader({
   restaurantName, status, onSearch, onOpenNotifications, onOpenUserMenu, scheduleLabel,
 }: Props) {
+  const statusLabel = getDashboardStatusLabel(status);
+
   return (
     <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b bg-background px-4 py-2 sm:flex sm:flex-wrap sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         <div className="min-w-0">
           <h1 className="truncate text-base font-bold sm:text-lg">{restaurantName}</h1>
           <p className="truncate text-xs text-muted-foreground">
-            {status?.isOpen ? "Aberto" : "Fechado"}
+            {statusLabel}
             {status?.acceptingOrders ? " • Aceitando pedidos" : ""}
             {scheduleLabel ? ` • ${scheduleLabel}` : ""}
             {status?.deliveryMode ? ` • ${status.deliveryMode}` : ""}

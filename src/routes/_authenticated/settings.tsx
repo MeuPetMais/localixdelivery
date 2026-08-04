@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { slugify } from "@/lib/format";
+import { getScheduleDayBadgeLabel, getScheduleDaySwitchLabel } from "@/lib/restaurant-status-labels";
 
 async function findAvailableSlug(base: string, currentId: string): Promise<string> {
   const safeBase = slugify(base) || "loja";
@@ -1020,12 +1021,12 @@ function SettingsPage() {
                         variant={h.enabled ? "default" : "secondary"}
                         className={h.enabled ? "bg-success/15 text-success border-success/30" : "bg-destructive/10 text-destructive border-destructive/30"}
                       >
-                        {h.enabled ? "🟢 Aberto" : "🔴 Fechado"}
+                        {getScheduleDayBadgeLabel(h.enabled)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground hidden sm:inline">
-                        {h.enabled ? "Aberto" : "Fechado"}
+                        {getScheduleDaySwitchLabel(h.enabled)}
                       </span>
                       <Switch
                         checked={h.enabled}

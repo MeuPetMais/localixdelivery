@@ -10,6 +10,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import PricingEngine, { PricingError, type ProviderId } from "@/lib/payments/PricingEngine";
 import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
+import { getRestaurantStatus } from "@/lib/restaurant-status";
+import { getRestaurantClosedMessage } from "@/lib/restaurant-status-labels";
 import { CHECKOUT_METHODS, resolveCheckoutPayment } from "./checkout-payment";
 
 export type { CheckoutMethod } from "./checkout-payment";
@@ -50,12 +52,19 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     // 1) Validar restaurante ativo + conectado
     const { data: rest, error: restErr } = await supabaseAdmin
       .from("restaurants")
-      .select("id, slug, active, is_open, owner_id, min_order")
+      .select("id, slug, active, is_open, opening_hours, owner_id, min_order")
       .eq("slug", data.restaurantSlug)
       .maybeSingle();
     if (restErr) throw new Error(restErr.message);
     if (!rest) throw new Error("Restaurante não encontrado");
     if (!rest.active) throw new Error("Restaurante inativo");
+    const restaurantStatus = getRestaurantStatus({
+      is_open: rest.is_open,
+      opening_hours: rest.opening_hours as any,
+    });
+    if (!restaurantStatus.isOpen) {
+      throw new Error(getRestaurantClosedMessage(restaurantStatus.reason));
+    }
 
     const paymentDecision = resolveCheckoutPayment(data.paymentMethod);
     console.log("[order-payment-debug]", {

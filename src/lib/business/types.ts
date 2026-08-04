@@ -1,6 +1,8 @@
 // Business Rules Engine — tipos públicos.
 // Puramente estruturais; não contêm I/O.
 
+import type { OpeningHours } from "@/lib/restaurant-status";
+
 export type BusinessRuleCategory =
   | "ORDER"
   | "PAYMENT"
@@ -43,7 +45,9 @@ export interface BusinessRuleContext {
     max_concurrent_orders?: number;
     current_open_orders?: number;
     prep_time_minutes?: number;
-    opening_hours?: Array<{ weekday: number; open: string; close: string }>;
+    opening_hours?: OpeningHours;
+    timezone?: string | null;
+    timeZone?: string | null;
   } | null;
   order?: {
     id?: string | null;

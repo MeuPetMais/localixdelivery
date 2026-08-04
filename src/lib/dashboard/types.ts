@@ -1,3 +1,5 @@
+import type { RestaurantStatus } from "@/lib/restaurant-status";
+
 // Restaurant-scoped roles (RBAC v2).
 // Canonical: OWNER | MANAGER | CASHIER | KITCHEN | DELIVERY | STAFF
 // Legacy aliases kept for backward compatibility during migration:
@@ -62,6 +64,7 @@ export interface DashboardBranding {
 
 export interface DashboardRestaurantStatus {
   isOpen: boolean;
+  reason?: RestaurantStatus["reason"];
   acceptingOrders: boolean;
   vacationMode: boolean;
   maintenanceMode: boolean;
