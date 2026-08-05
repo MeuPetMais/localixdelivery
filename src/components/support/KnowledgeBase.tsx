@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -437,10 +439,30 @@ export function KnowledgeBase() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<CategoryId | "todos">("todos");
   const [feedback, setFeedback] = useState<Record<string, "yes" | "no">>({});
+  const articlesQuery = useQuery({
+    queryKey: ["support-knowledge-published"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("support_articles") as any)
+        .select("id, category, title, content, video_url, position, published, archived")
+        .eq("published", true)
+        .eq("archived", false)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((row: any): Article => ({
+        id: row.id,
+        category: normalizeCategory(row.category),
+        title: row.title,
+        summary: row.content,
+        tags: [row.category],
+        sections: [{ heading: row.category, items: [row.content] }],
+      }));
+    },
+  });
+  const articles = articlesQuery.data ?? [];
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return ARTICLES.filter((a) => {
+    return articles.filter((a) => {
       if (activeCat !== "todos" && a.category !== activeCat) return false;
       if (!q) return true;
       const hay = [
@@ -453,7 +475,7 @@ export function KnowledgeBase() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [query, activeCat]);
+  }, [query, activeCat, articles]);
 
   function rate(id: string, v: "yes" | "no") {
     setFeedback((f) => ({ ...f, [id]: v }));
@@ -467,7 +489,7 @@ export function KnowledgeBase() {
       <div className="mb-3 flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-primary" />
         <h2 className="font-semibold">Base de Conhecimento</h2>
-        <Badge variant="secondary" className="ml-auto">{ARTICLES.length} artigos</Badge>
+        <Badge variant="secondary" className="ml-auto">{articles.length} artigos</Badge>
       </div>
 
       <div className="relative mb-3">
@@ -496,7 +518,11 @@ export function KnowledgeBase() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {articlesQuery.isLoading ? (
+        <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          Carregando artigos...
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Nenhum artigo encontrado. Tente outra busca ou abra um chamado.
         </div>
@@ -612,6 +638,17 @@ export function KnowledgeBase() {
       )}
     </Card>
   );
+}
+
+function normalizeCategory(category: string): CategoryId {
+  const normalized = category
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const known = CATEGORIES.map((item) => item.id);
+  return known.includes(normalized as CategoryId) ? (normalized as CategoryId) : "primeiros-passos";
 }
 
 function CategoryChip({

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useRestaurant } from "@/contexts/RestaurantContext";
@@ -35,6 +36,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { suggestSupportArticles } from "@/lib/support-admin.functions";
+import { sanitizeSupportText } from "@/lib/support-operations";
 
 export const Route = createFileRoute("/_authenticated/support")({
   head: () => ({ meta: [{ title: "Central de Suporte — Localix" }] }),
@@ -66,6 +69,14 @@ type Message = {
   author_type: "cliente" | "suporte";
   body: string | null;
   created_at: string;
+};
+
+type SuggestedArticle = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  video_url?: string | null;
 };
 
 
@@ -341,6 +352,15 @@ function NewTicketDialog({
   const [priority, setPriority] = useState<Priority>("media");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [openedArticle, setOpenedArticle] = useState<SuggestedArticle | null>(null);
+  const suggestFn = useServerFn(suggestSupportArticles);
+  const suggestionQuery = [subject, description].filter(Boolean).join(" ");
+  const suggestions = useQuery({
+    queryKey: ["support-new-ticket-article-suggestions", suggestionQuery],
+    enabled: open && suggestionQuery.trim().length >= 3,
+    queryFn: () => suggestFn({ data: { query: suggestionQuery, limit: 3 } }),
+    retry: false,
+  });
 
   async function submit() {
     if (!subject.trim() || !description.trim()) {
@@ -442,6 +462,37 @@ function NewTicketDialog({
             </p>
           </div>
         </div>
+          {(suggestions.data ?? []).length > 0 && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="mb-2 text-xs font-semibold text-muted-foreground">Artigos que podem ajudar</div>
+              <div className="space-y-2">
+                {(suggestions.data ?? []).map((article: SuggestedArticle) => (
+                  <button
+                    key={article.id}
+                    type="button"
+                    onClick={() => setOpenedArticle(article)}
+                    className="block w-full rounded-md border bg-background p-2 text-left text-sm transition hover:bg-accent"
+                  >
+                    <div className="font-medium">{article.title}</div>
+                    <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{sanitizeSupportText(article.content, 160)}</div>
+                  </button>
+                ))}
+              </div>
+              {openedArticle && (
+                <div className="mt-3 rounded-md border bg-background p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold">{openedArticle.title}</div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{sanitizeSupportText(openedArticle.content, 900)}</div>
+                    </div>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setOpenedArticle(null)}>
+                      Fechar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={saving} className="gap-2">

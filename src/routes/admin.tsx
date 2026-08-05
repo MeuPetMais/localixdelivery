@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin } from "@/hooks/use-role";
-import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck, Settings, ShoppingBag, Percent, UserCheck, FileBarChart, ScrollText, LifeBuoy } from "lucide-react";
+import { useCanAccessAdminSupport } from "@/hooks/use-role";
+import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck, Settings, ShoppingBag, Percent, UserCheck, FileBarChart, ScrollText, LifeBuoy, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
+import { InternalNotificationsBell } from "@/components/admin/InternalNotificationsBell";
 import { clearImpersonation } from "@/lib/admin-mode";
 
 
@@ -29,13 +30,20 @@ function AdminLayout() {
   const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { isAdmin, isLoading } = useIsAdmin(user.id);
+  const { canAccessSupport, roles, isLoading } = useCanAccessAdminSupport(user.id);
+  const isAdmin = roles.includes("admin");
+  const canManageKnowledge = isAdmin || roles.includes("support_manager");
+  const isSupportPath = pathname === "/admin/support" || pathname.startsWith("/admin/support/") || pathname === "/admin/suporte";
+  const isKnowledgePath = pathname === "/admin/knowledge";
+  const isAllowedInternalPath = isSupportPath || (isKnowledgePath && canManageKnowledge);
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) navigate({ to: "/admin/login", replace: true });
+    if (!isLoading && !isAdmin && (!canAccessSupport || !isAllowedInternalPath)) {
+      navigate({ to: canAccessSupport ? "/admin/support" : "/admin/login", replace: true });
+    }
     // Admin never carries impersonation into /admin
-    if (isAdmin) clearImpersonation();
-  }, [isLoading, isAdmin, navigate]);
+    if (isAdmin || canAccessSupport) clearImpersonation();
+  }, [isLoading, isAdmin, canAccessSupport, isAllowedInternalPath, navigate]);
 
 
   async function logout() {
@@ -43,7 +51,7 @@ function AdminLayout() {
     navigate({ to: "/admin/login", replace: true });
   }
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || (!isAdmin && (!canAccessSupport || !isAllowedInternalPath))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -62,9 +70,13 @@ function AdminLayout() {
     { to: "/admin/transacoes", label: "Gestão Financeira", icon: Receipt },
     { to: "/admin/relatorios", label: "Relatórios", icon: FileBarChart },
     { to: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
-    { to: "/admin/suporte", label: "Central de Suporte", icon: LifeBuoy },
+    { to: "/admin/support", label: "Central de Suporte", icon: LifeBuoy },
+    { to: "/admin/knowledge", label: "Base de Conhecimento", icon: BookOpen },
     { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
   ];
+  const visibleNav = isAdmin
+    ? nav
+    : nav.filter((item) => item.to === "/admin/support" || (canManageKnowledge && item.to === "/admin/knowledge"));
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -74,7 +86,7 @@ function AdminLayout() {
           <span>Localix <span className="text-primary">Admin</span></span>
         </div>
         <nav className="space-y-1 p-3">
-          {nav.map(({ to, label, icon: Icon, exact }) => {
+          {visibleNav.map(({ to, label, icon: Icon, exact }) => {
             const active = exact ? pathname === to : (pathname === to || pathname.startsWith(`${to}/`));
             return (
               <Link key={to} to={to} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${active ? "bg-primary/20 text-primary" : "text-slate-300 hover:bg-slate-800"}`}>
@@ -93,7 +105,7 @@ function AdminLayout() {
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/80 px-3 backdrop-blur">
           <div className="flex h-14 flex-1 items-center gap-2 overflow-x-auto lg:hidden">
-            {nav.map(({ to, label, icon: Icon }) => {
+            {visibleNav.map(({ to, label, icon: Icon }) => {
               const active = pathname === to;
               return (
                 <Link key={to} to={to} className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${active ? "bg-primary text-primary-foreground" : "text-slate-300"}`}>
@@ -103,6 +115,7 @@ function AdminLayout() {
             })}
           </div>
           <div className="ml-auto flex h-14 items-center gap-2">
+            <InternalNotificationsBell />
             <EnvSwitcherButton className="text-slate-200" />
           </div>
         </header>

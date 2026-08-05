@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SupportInviteRouteImport } from './routes/support-invite'
 import { Route as SupabaseRawFetchTempRouteImport } from './routes/supabase-raw-fetch-temp'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MotoboyRouteImport } from './routes/motoboy'
@@ -38,10 +39,12 @@ import { Route as EntregadorEntrarRouteImport } from './routes/entregador.entrar
 import { Route as EntregadorAtivarRouteImport } from './routes/entregador.ativar'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminParceirosRouteImport } from './routes/admin.parceiros'
+import { Route as AdminKnowledgeRouteImport } from './routes/admin.knowledge'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminComissoesRouteImport } from './routes/admin.comissoes'
@@ -79,10 +82,18 @@ import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
+import { Route as AdminSupportTeamRouteImport } from './routes/admin.support.team'
+import { Route as AdminSupportReportsRouteImport } from './routes/admin.support.reports'
+import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
 import { Route as ApiPublicOrdersTransitionRouteImport } from './routes/api/public/orders.transition'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
+const SupportInviteRoute = SupportInviteRouteImport.update({
+  id: '/support-invite',
+  path: '/support-invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SupabaseRawFetchTempRoute = SupabaseRawFetchTempRouteImport.update({
   id: '/supabase-raw-fetch-temp',
   path: '/supabase-raw-fetch-temp',
@@ -227,6 +238,11 @@ const AdminTransacoesRoute = AdminTransacoesRouteImport.update({
   path: '/transacoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSuporteRoute = AdminSuporteRouteImport.update({
   id: '/suporte',
   path: '/suporte',
@@ -245,6 +261,11 @@ const AdminPedidosRoute = AdminPedidosRouteImport.update({
 const AdminParceirosRoute = AdminParceirosRouteImport.update({
   id: '/parceiros',
   path: '/parceiros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminKnowledgeRoute = AdminKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
@@ -437,6 +458,21 @@ const SlugMontarRoute = SlugMontarRouteImport.update({
   path: '/montar',
   getParentRoute: () => SlugRoute,
 } as any)
+const AdminSupportTeamRoute = AdminSupportTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminSupportRoute,
+} as any)
+const AdminSupportReportsRoute = AdminSupportReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminSupportRoute,
+} as any)
+const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
+  id: '/$ticketId',
+  path: '/$ticketId',
+  getParentRoute: () => AdminSupportRoute,
+} as any)
 const ApiPublicOrdersTransitionRoute =
   ApiPublicOrdersTransitionRouteImport.update({
     id: '/api/public/orders/transition',
@@ -472,6 +508,7 @@ export interface FileRoutesByFullPath {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
+  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -509,10 +546,12 @@ export interface FileRoutesByFullPath {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/knowledge': typeof AdminKnowledgeRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
@@ -524,6 +563,9 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
+  '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
+  '/admin/support/reports': typeof AdminSupportReportsRoute
+  '/admin/support/team': typeof AdminSupportTeamRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
@@ -544,6 +586,7 @@ export interface FileRoutesByTo {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
+  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -581,10 +624,12 @@ export interface FileRoutesByTo {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/knowledge': typeof AdminKnowledgeRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
@@ -596,6 +641,9 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
   '/entregador': typeof EntregadorIndexRoute
+  '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
+  '/admin/support/reports': typeof AdminSupportReportsRoute
+  '/admin/support/team': typeof AdminSupportTeamRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
@@ -620,6 +668,7 @@ export interface FileRoutesById {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
+  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -657,10 +706,12 @@ export interface FileRoutesById {
   '/admin/comissoes': typeof AdminComissoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/knowledge': typeof AdminKnowledgeRoute
   '/admin/parceiros': typeof AdminParceirosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin_/login': typeof AdminLoginRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
@@ -672,6 +723,9 @@ export interface FileRoutesById {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
+  '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
+  '/admin/support/reports': typeof AdminSupportReportsRoute
+  '/admin/support/team': typeof AdminSupportTeamRoute
   '/api/public/mp/callback': typeof ApiPublicMpCallbackRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/orders/transition': typeof ApiPublicOrdersTransitionRoute
@@ -696,6 +750,7 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
+    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -733,10 +788,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/knowledge'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
+    | '/admin/support'
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
@@ -748,6 +805,9 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
+    | '/admin/support/$ticketId'
+    | '/admin/support/reports'
+    | '/admin/support/team'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
     | '/api/public/orders/transition'
@@ -768,6 +828,7 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
+    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -805,10 +866,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/knowledge'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
+    | '/admin/support'
     | '/admin/transacoes'
     | '/admin/login'
     | '/entregador/ativar'
@@ -820,6 +883,9 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/admin'
     | '/entregador'
+    | '/admin/support/$ticketId'
+    | '/admin/support/reports'
+    | '/admin/support/team'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
     | '/api/public/orders/transition'
@@ -843,6 +909,7 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
+    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/_authenticated/ai'
@@ -880,10 +947,12 @@ export interface FileRouteTypes {
     | '/admin/comissoes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/admin/knowledge'
     | '/admin/parceiros'
     | '/admin/pedidos'
     | '/admin/relatorios'
     | '/admin/suporte'
+    | '/admin/support'
     | '/admin/transacoes'
     | '/admin_/login'
     | '/entregador/ativar'
@@ -895,6 +964,9 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
+    | '/admin/support/$ticketId'
+    | '/admin/support/reports'
+    | '/admin/support/team'
     | '/api/public/mp/callback'
     | '/api/public/mp/webhook'
     | '/api/public/orders/transition'
@@ -919,6 +991,7 @@ export interface RootRouteChildren {
   MotoboyRoute: typeof MotoboyRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
+  SupportInviteRoute: typeof SupportInviteRoute
   AdminLoginRoute: typeof AdminLoginRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
   EntregadorEntrarRoute: typeof EntregadorEntrarRoute
@@ -934,6 +1007,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/support-invite': {
+      id: '/support-invite'
+      path: '/support-invite'
+      fullPath: '/support-invite'
+      preLoaderRoute: typeof SupportInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/supabase-raw-fetch-temp': {
       id: '/supabase-raw-fetch-temp'
       path: '/supabase-raw-fetch-temp'
@@ -1137,6 +1217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTransacoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/suporte': {
       id: '/admin/suporte'
       path: '/suporte'
@@ -1163,6 +1250,13 @@ declare module '@tanstack/react-router' {
       path: '/parceiros'
       fullPath: '/admin/parceiros'
       preLoaderRoute: typeof AdminParceirosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/knowledge': {
+      id: '/admin/knowledge'
+      path: '/knowledge'
+      fullPath: '/admin/knowledge'
+      preLoaderRoute: typeof AdminKnowledgeRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/financeiro': {
@@ -1424,6 +1518,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugMontarRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/admin/support/team': {
+      id: '/admin/support/team'
+      path: '/team'
+      fullPath: '/admin/support/team'
+      preLoaderRoute: typeof AdminSupportTeamRouteImport
+      parentRoute: typeof AdminSupportRoute
+    }
+    '/admin/support/reports': {
+      id: '/admin/support/reports'
+      path: '/reports'
+      fullPath: '/admin/support/reports'
+      preLoaderRoute: typeof AdminSupportReportsRouteImport
+      parentRoute: typeof AdminSupportRoute
+    }
+    '/admin/support/$ticketId': {
+      id: '/admin/support/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/admin/support/$ticketId'
+      preLoaderRoute: typeof AdminSupportTicketIdRouteImport
+      parentRoute: typeof AdminSupportRoute
+    }
     '/api/public/orders/transition': {
       id: '/api/public/orders/transition'
       path: '/api/public/orders/transition'
@@ -1529,6 +1644,22 @@ const SlugRouteChildren: SlugRouteChildren = {
 
 const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
+interface AdminSupportRouteChildren {
+  AdminSupportTicketIdRoute: typeof AdminSupportTicketIdRoute
+  AdminSupportReportsRoute: typeof AdminSupportReportsRoute
+  AdminSupportTeamRoute: typeof AdminSupportTeamRoute
+}
+
+const AdminSupportRouteChildren: AdminSupportRouteChildren = {
+  AdminSupportTicketIdRoute: AdminSupportTicketIdRoute,
+  AdminSupportReportsRoute: AdminSupportReportsRoute,
+  AdminSupportTeamRoute: AdminSupportTeamRoute,
+}
+
+const AdminSupportRouteWithChildren = AdminSupportRoute._addFileChildren(
+  AdminSupportRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminAprovacoesRoute: typeof AdminAprovacoesRoute
   AdminAuditoriaRoute: typeof AdminAuditoriaRoute
@@ -1536,10 +1667,12 @@ interface AdminRouteChildren {
   AdminComissoesRoute: typeof AdminComissoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminKnowledgeRoute: typeof AdminKnowledgeRoute
   AdminParceirosRoute: typeof AdminParceirosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminSuporteRoute: typeof AdminSuporteRoute
+  AdminSupportRoute: typeof AdminSupportRouteWithChildren
   AdminTransacoesRoute: typeof AdminTransacoesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -1551,10 +1684,12 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminComissoesRoute: AdminComissoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminKnowledgeRoute: AdminKnowledgeRoute,
   AdminParceirosRoute: AdminParceirosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminSuporteRoute: AdminSuporteRoute,
+  AdminSupportRoute: AdminSupportRouteWithChildren,
   AdminTransacoesRoute: AdminTransacoesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -1580,6 +1715,7 @@ const rootRouteChildren: RootRouteChildren = {
   MotoboyRoute: MotoboyRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,
+  SupportInviteRoute: SupportInviteRoute,
   AdminLoginRoute: AdminLoginRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
   EntregadorEntrarRoute: EntregadorEntrarRoute,
