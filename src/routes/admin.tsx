@@ -30,9 +30,11 @@ function AdminLayout() {
   const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { canAccessSupport, roles, isLoading } = useCanAccessAdminSupport(user.id);
-  const isAdmin = roles.includes("admin");
-  const canManageKnowledge = isAdmin || roles.includes("support_manager");
+  const { data: supportAccess, isLoading } = useCanAccessAdminSupport(user.id);
+  const canAccessSupport = Boolean(supportAccess?.canAccess);
+  const role = supportAccess?.role ?? null;
+  const isAdmin = role === "admin";
+  const canManageKnowledge = isAdmin || role === "support_manager";
   const isSupportPath = pathname === "/admin/support" || pathname.startsWith("/admin/support/") || pathname === "/admin/suporte";
   const isKnowledgePath = pathname === "/admin/knowledge";
   const isAllowedInternalPath = isSupportPath || (isKnowledgePath && canManageKnowledge);
