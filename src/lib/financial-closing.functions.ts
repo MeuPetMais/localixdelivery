@@ -48,7 +48,7 @@ export const getFinancialClosing = createServerFn({ method: "GET" })
 
     const [{ data: rows }, { data: driversList }] = await Promise.all([
       sb.from("delivery_assignments")
-        .select("driver_id, delivered_at, distance_km")
+        .select("driver_id, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata")
         .eq("restaurant_id", data.restaurantId)
         .eq("status", "ENTREGUE")
         .gte("delivered_at", from.toISOString())

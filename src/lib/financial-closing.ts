@@ -1,12 +1,11 @@
 // RC8.0 — Financeiro: helpers puros para fechamento de entregadores.
 // Não altera Orders/Payments/Delivery/Tracking/Queue/Wallet — apenas agrega.
 
-export const DELIVERY_FEE_BRL = 8;
-export const DELIVERY_KM_BONUS = 1.5;
+import { resolveDriverEarning, type DriverEarningSnapshot } from "./driver-earnings";
 
 export type Period = "today" | "week" | "month" | "custom";
 
-export type DeliveredRow = {
+export type DeliveredRow = DriverEarningSnapshot & {
   driver_id: string | null;
   delivered_at: string | null;
   distance_km: number | null;
@@ -23,7 +22,10 @@ export type DriverEarnings = {
 };
 
 export function earn(r: DeliveredRow): number {
-  return DELIVERY_FEE_BRL + DELIVERY_KM_BONUS * (r.distance_km ?? 0);
+  return resolveDriverEarning({
+    ...r,
+    driver_distance_km: r.driver_distance_km ?? r.distance_km,
+  }).amount;
 }
 
 export function startOfLocalDay(offsetDays = 0, ref = new Date()): Date {

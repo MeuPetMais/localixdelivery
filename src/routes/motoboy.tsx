@@ -27,6 +27,7 @@ import {
   BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals,
   type DriverGoals,
 } from "@/lib/driver-wallet";
+import { resolveDriverEarning } from "@/lib/driver-earnings";
 import { registerDriverServiceWorker } from "@/lib/pwa-driver";
 import { PwaInstallModal, PwaInstallButton } from "@/components/driver/PwaInstallModal";
 import { DriverWalletTab } from "@/components/driver/DriverWalletTab";
@@ -284,6 +285,13 @@ export function derivePresenceStatus(input: {
   });
 }
 
+export function activeDeliveryEarning(assignment: any) {
+  return resolveDriverEarning({
+    ...assignment,
+    driver_distance_km: assignment.driver_distance_km ?? assignment.distance_km,
+  });
+}
+
 function LocationNotice(props: { status: "idle" | "tracking" | "permission_denied" | "unsupported"; online: boolean }) {
   if (!props.online) return null;
   if (props.status === "permission_denied") {
@@ -499,7 +507,7 @@ function ActiveDeliveryCard(props: {
   // RC6.6 — Fluxo simplificado: Novo pedido → Retirar → Em entrega → Entregue → Retornando (auto-fila)
   const isNew = a.status === "ATRIBUIDO";
   const inRoute = a.status === "EM_ROTA" || a.status === "COLETANDO";
-  const deliveryEarn = 8 + 1.5 * (a.distance_km ?? 0);
+  const deliveryEarn = activeDeliveryEarning(a);
 
   const mapsUrl = o?.address
     ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.address)}`
@@ -530,7 +538,10 @@ function ActiveDeliveryCard(props: {
         </div>
         <div className="rounded-xl bg-muted/50 p-2">
           <p className="text-muted-foreground">Valor da entrega</p>
-          <p className="font-semibold text-emerald-600">{BRL(deliveryEarn)}</p>
+          <p className="font-semibold text-emerald-600">{BRL(deliveryEarn.amount)}</p>
+          {deliveryEarn.source === "legacy_fallback" && (
+            <p className="text-[10px] text-muted-foreground">Cálculo legado</p>
+          )}
         </div>
       </div>
 
@@ -702,6 +713,9 @@ function HistoryTab(props: { dash: Dash }) {
                   <p className="truncate text-xs text-muted-foreground">
                     {h.order?.customer_name ?? "—"} · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
                   </p>
+                  {h.earningsSource === "legacy_fallback" && (
+                    <p className="text-[10px] text-muted-foreground">Cálculo legado</p>
+                  )}
                 </div>
                 <p className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}>
                   {h.status === "ENTREGUE" ? `+ ${BRL(h.earnings)}` : "—"}

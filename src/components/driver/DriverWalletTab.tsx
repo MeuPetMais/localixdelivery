@@ -168,6 +168,9 @@ export function DriverWalletTab({ earnings, history }: Props) {
                   <p className="truncate text-xs text-muted-foreground">
                     {dt.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
                   </p>
+                  {h.earningsSource === "legacy_fallback" && (
+                    <p className="text-[10px] text-muted-foreground">Cálculo legado</p>
+                  )}
                 </div>
                 <p className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}>
                   {h.status === "ENTREGUE" ? `+ ${BRL(h.earnings)}` : "—"}

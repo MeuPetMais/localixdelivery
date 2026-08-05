@@ -11,14 +11,24 @@ const drivers = [
 ];
 
 const rows: DeliveredRow[] = [
-  { driver_id: "d1", delivered_at: "2026-07-11T10:00:00Z", distance_km: 2 },
-  { driver_id: "d1", delivered_at: "2026-07-11T11:00:00Z", distance_km: 4 },
-  { driver_id: "d2", delivered_at: "2026-07-11T10:00:00Z", distance_km: 0 },
+  { driver_id: "d1", delivered_at: "2026-07-11T10:00:00Z", distance_km: 2, driver_earning_amount: 11, driver_earning_calculated_at: "2026-07-11T10:00:00Z" },
+  { driver_id: "d1", delivered_at: "2026-07-11T11:00:00Z", distance_km: 4, driver_earning_amount: 14, driver_earning_calculated_at: "2026-07-11T11:00:00Z" },
+  { driver_id: "d2", delivered_at: "2026-07-11T10:00:00Z", distance_km: 0, driver_earning_amount: 8, driver_earning_calculated_at: "2026-07-11T10:00:00Z" },
   { driver_id: null, delivered_at: "2026-07-11T10:00:00Z", distance_km: 5 },
 ];
 
 describe("financial-closing", () => {
-  it("earn = R$8 + R$1.5/km", () => {
+  it("earn usa snapshot persistido", () => {
+    expect(earn({
+      driver_id: "x",
+      delivered_at: null,
+      distance_km: 4,
+      driver_earning_amount: 99,
+      driver_earning_calculated_at: "2026-07-11T10:00:00Z",
+    })).toBe(99);
+  });
+
+  it("assignment legado usa fallback controlado", () => {
     expect(earn({ driver_id: "x", delivered_at: null, distance_km: 4 })).toBe(14);
     expect(earn({ driver_id: "x", delivered_at: null, distance_km: null })).toBe(8);
   });
@@ -29,7 +39,7 @@ describe("financial-closing", () => {
     const joao = r.find((d) => d.driver_id === "d1")!;
     expect(joao.deliveries).toBe(2);
     expect(joao.distance_km).toBe(6);
-    expect(joao.earnings).toBe(8 + 3 + 8 + 6); // 25
+    expect(joao.earnings).toBe(25);
     const pedro = r.find((d) => d.driver_id === "d3")!;
     expect(pedro.deliveries).toBe(0);
   });
@@ -43,7 +53,7 @@ describe("financial-closing", () => {
     const t = totals(aggregateByDriver(rows, drivers));
     expect(t.deliveries).toBe(3);
     expect(t.distance_km).toBe(6);
-    expect(t.earnings).toBe(25 + 8); // João 25 + Carlos 8
+    expect(t.earnings).toBe(33);
   });
 
   it("periodBounds hoje cobre 24h", () => {

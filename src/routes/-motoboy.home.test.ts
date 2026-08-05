@@ -1,6 +1,6 @@
 // RC6.5 — Unit tests for driver Home helpers.
 import { describe, it, expect } from "vitest";
-import { greetingFor, derivePresenceStatus } from "./motoboy";
+import { greetingFor, derivePresenceStatus, activeDeliveryEarning } from "./motoboy";
 
 describe("greetingFor", () => {
   it("returns Bom dia before noon", () => {
@@ -32,5 +32,18 @@ describe("derivePresenceStatus", () => {
   });
   it("disponivel when online and not queued yet", () => {
     expect(derivePresenceStatus({ online: true, queueStatus: "OFFLINE", hasActive: false })).toBe("disponivel");
+  });
+});
+
+describe("activeDeliveryEarning", () => {
+  it("app do motoboy mostra snapshot quando existe", () => {
+    const earning = activeDeliveryEarning({
+      distance_km: 99,
+      driver_distance_km: 2,
+      driver_earning_amount: 10.75,
+      driver_earning_calculated_at: "2026-08-05T10:00:00Z",
+    });
+    expect(earning.amount).toBe(10.75);
+    expect(earning.source).toBe("snapshot");
   });
 });

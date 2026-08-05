@@ -41,6 +41,7 @@ import { getProfileCompletion } from "@/lib/profile-completion";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { slugify } from "@/lib/format";
 import { getScheduleDayBadgeLabel, getScheduleDaySwitchLabel } from "@/lib/restaurant-status-labels";
+import { calculateDriverEarning, DEFAULT_DRIVER_EARNING_SETTINGS } from "@/lib/driver-earnings";
 
 async function findAvailableSlug(base: string, currentId: string): Promise<string> {
   const safeBase = slugify(base) || "loja";
@@ -90,6 +91,12 @@ const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
   acc[d.id] = { open: "18:00", close: "23:00", enabled: true, open2: null, close2: null };
   return acc;
 }, {} as Hours);
+
+function toDecimal(value: string): number | null {
+  if (!value) return null;
+  const parsed = Number(value.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId: string) {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
@@ -185,6 +192,13 @@ function SettingsPage() {
     longitude: "",
     google_maps_url: "",
   });
+  const [driverEarning, setDriverEarning] = useState({
+    base_fee: "8",
+    per_km_fee: "1.5",
+    minimum_fee: "8",
+    maximum_fee: "",
+    is_active: true,
+  });
   const [payments, setPayments] = useState<Record<string, boolean>>({
     cash: true, pix: true, credit: true, debit: false,
     meal_voucher: false, food_voucher: false,
@@ -215,6 +229,26 @@ function SettingsPage() {
     },
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (!restaurant?.id) return;
+    let active = true;
+    (supabase.from("driver_earning_settings") as any)
+      .select("base_fee, per_km_fee, minimum_fee, maximum_fee, is_active")
+      .eq("restaurant_id", restaurant.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active || !data) return;
+        setDriverEarning({
+          base_fee: String(data.base_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.base_fee),
+          per_km_fee: String(data.per_km_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee),
+          minimum_fee: String(data.minimum_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee),
+          maximum_fee: data.maximum_fee == null ? "" : String(data.maximum_fee),
+          is_active: data.is_active ?? true,
+        });
+      });
+    return () => { active = false; };
+  }, [restaurant?.id]);
 
 
   useEffect(() => {
@@ -411,8 +445,25 @@ function SettingsPage() {
       })
       .eq("id", restaurant!.id);
 
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+
+    const driverPolicy = {
+      restaurant_id: restaurant!.id,
+      base_fee: toDecimal(driverEarning.base_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.base_fee,
+      per_km_fee: toDecimal(driverEarning.per_km_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee,
+      minimum_fee: toDecimal(driverEarning.minimum_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee,
+      maximum_fee: toDecimal(driverEarning.maximum_fee),
+      is_active: driverEarning.is_active,
+      updated_at: new Date().toISOString(),
+    };
+    const { error: driverErr } = await (supabase.from("driver_earning_settings") as any)
+      .upsert(driverPolicy, { onConflict: "restaurant_id" });
+
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (driverErr) return toast.error(driverErr.message);
     if (slugAutoAdjusted) {
       setForm((f) => ({ ...f, slug: nextSlug }));
       toast.success(`Perfil atualizado. Nova URL: /${nextSlug}`);
@@ -429,6 +480,22 @@ function SettingsPage() {
     is_open: form.is_open,
     opening_hours: hours,
   });
+  const toPreviewNum = (v: string, fallback: number) => {
+    const n = Number(v.replace(",", "."));
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const previewSettings = {
+    base_fee: toPreviewNum(driverEarning.base_fee, DEFAULT_DRIVER_EARNING_SETTINGS.base_fee),
+    per_km_fee: toPreviewNum(driverEarning.per_km_fee, DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee),
+    minimum_fee: toPreviewNum(driverEarning.minimum_fee, DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee),
+    maximum_fee: driverEarning.maximum_fee.trim()
+      ? toPreviewNum(driverEarning.maximum_fee, DEFAULT_DRIVER_EARNING_SETTINGS.maximum_fee ?? 0)
+      : null,
+  };
+  const driverPreview = [0, 2, 5].map((km) => ({
+    km,
+    amount: calculateDriverEarning(previewSettings, km).amount,
+  }));
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
@@ -711,6 +778,80 @@ function SettingsPage() {
                 onChange={(e) => setForm({ ...form, delivery_radius: e.target.value })}
               />
             </div>
+          </div>
+        </Card>
+
+        {/* SEÇÃO — Remuneração do motoboy */}
+        <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+          <div className="mb-4 flex items-center gap-2">
+            <Bike className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Remuneração do motoboy</h3>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Este valor é a remuneração do motoboy e não altera automaticamente a taxa cobrada do cliente.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Valor base por entrega (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={driverEarning.base_fee}
+                onChange={(e) => setDriverEarning({ ...driverEarning, base_fee: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor por km (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={driverEarning.per_km_fee}
+                onChange={(e) => setDriverEarning({ ...driverEarning, per_km_fee: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor mínimo (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={driverEarning.minimum_fee}
+                onChange={(e) => setDriverEarning({ ...driverEarning, minimum_fee: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor máximo opcional (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="Sem teto"
+                value={driverEarning.maximum_fee}
+                onChange={(e) => setDriverEarning({ ...driverEarning, maximum_fee: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <div>
+              <p className="text-sm font-semibold">Política ativa</p>
+              <p className="text-xs text-muted-foreground">Quando inativa, novas entregas usam a política padrão compatível.</p>
+            </div>
+            <Switch
+              checked={driverEarning.is_active}
+              onCheckedChange={(checked) => setDriverEarning({ ...driverEarning, is_active: checked })}
+            />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {driverPreview.map((p) => (
+              <div key={p.km} className="rounded-xl bg-muted/50 p-3 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.km} km</p>
+                <p className="font-display text-lg font-extrabold">
+                  {p.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </p>
+              </div>
+            ))}
           </div>
         </Card>
 

@@ -6,9 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getDriverOperationalStatus } from "@/lib/driver-operational-status";
 import { z } from "zod";
-
-const DELIVERY_FEE_BRL = 8; // ganho por entrega (provisório — RC5.3 lê da política)
-const DELIVERY_KM_BONUS = 1.5;
+import { resolveDriverEarning } from "./driver-earnings";
 
 function startOfLocalDay(offsetDays = 0): Date {
   const d = new Date();
@@ -34,6 +32,12 @@ function startOfYear(): Date {
 type Row = {
   id: string;
   distance_km: number | null;
+  driver_distance_km?: number | null;
+  driver_earning_amount?: number | null;
+  driver_earning_calculated_at?: string | null;
+  driver_base_fee?: number | null;
+  driver_per_km_fee?: number | null;
+  metadata?: Record<string, any> | null;
   delivered_at: string | null;
   departed_at?: string | null;
   picked_up_at?: string | null;
@@ -45,9 +49,9 @@ type Row = {
 };
 
 function earn(r: Row): number {
-  return DELIVERY_FEE_BRL + DELIVERY_KM_BONUS * (r.distance_km ?? 0);
+  return resolveDriverEarning(r).amount;
 }
-function sumEarn(rows: Row[]): number {
+export function sumDriverEarnings(rows: Row[]): number {
   return rows.reduce((s, r) => s + earn(r), 0);
 }
 function sumKm(rows: Row[]): number {
@@ -131,7 +135,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Todos os entregues do ano (base do dashboard)
     const { data: yearRows } = await supabase
       .from("delivery_assignments")
-      .select("id, status, delivered_at, departed_at, picked_up_at, assigned_at, distance_km, order_id, created_at")
+      .select("id, status, delivered_at, departed_at, picked_up_at, assigned_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at")
       .eq("driver_id", driver.id)
       .eq("status", "ENTREGUE")
       .gte("delivered_at", yearStart)
@@ -155,7 +159,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     const pickMax = (m: Map<string, Row[]>) => {
       let best = { key: "", value: 0, count: 0 };
       for (const [k, arr] of m) {
-        const v = sumEarn(arr);
+        const v = sumDriverEarnings(arr);
         if (v > best.value) best = { key: k, value: v, count: arr.length };
       }
       return best;
@@ -164,7 +168,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Histórico completo (30)
     const { data: history } = await supabase
       .from("delivery_assignments")
-      .select("id, status, delivered_at, distance_km, order_id, created_at")
+      .select("id, status, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at")
       .eq("driver_id", driver.id)
       .in("status", ["ENTREGUE", "CANCELADO"])
       .order("created_at", { ascending: false })
@@ -235,7 +239,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Ranking do restaurante — todos os motoboys, hoje
     const { data: allToday } = await supabase
       .from("delivery_assignments")
-      .select("driver_id, distance_km, delivered_at, picked_up_at, departed_at, assigned_at, id, status")
+      .select("driver_id, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, delivered_at, picked_up_at, departed_at, assigned_at, id, status")
       .eq("restaurant_id", driver.restaurant_id)
       .eq("status", "ENTREGUE")
       .gte("delivered_at", dayStart);
@@ -258,7 +262,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
           id: d.id,
           name: d.name,
           photo_url: d.photo_url,
-          earnings: sumEarn(rows),
+          earnings: sumDriverEarnings(rows),
           deliveries: rows.length,
           avgMinutes: avgMinutes(rows, "assigned_at", "delivered_at"),
         };
@@ -301,7 +305,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       const day = startOfLocalDay(-i);
       const key = day.toISOString().slice(0, 10);
       const arr = byDay.get(key) ?? [];
-      dailySeries.push({ date: key, value: sumEarn(arr), count: arr.length });
+      dailySeries.push({ date: key, value: sumDriverEarnings(arr), count: arr.length });
     }
 
     const avg = (n: number, d: number) => (d > 0 ? n / d : 0);
@@ -332,18 +336,18 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       }),
       active: active ? { assignment: active, order: activeOrder } : null,
       earnings: {
-        today: sumEarn(today),
-        yesterday: sumEarn(yesterday),
-        week: sumEarn(week),
-        month: sumEarn(month),
-        year: sumEarn(year),
+        today: sumDriverEarnings(today),
+        yesterday: sumDriverEarnings(yesterday),
+        week: sumDriverEarnings(week),
+        month: sumDriverEarnings(month),
+        year: sumDriverEarnings(year),
         todayCount: today.length,
         yesterdayCount: yesterday.length,
         weekCount: week.length,
         monthCount: month.length,
         yearCount: year.length,
-        ticketToday: avg(sumEarn(today), today.length),
-        ticketMonth: avg(sumEarn(month), month.length),
+        ticketToday: avg(sumDriverEarnings(today), today.length),
+        ticketMonth: avg(sumDriverEarnings(month), month.length),
         dailyGoal: defaultGoal,
         bestDay,
         bestWeek,
@@ -362,6 +366,7 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       history: (history ?? []).map((h) => ({
         ...h,
         earnings: h.status === "ENTREGUE" ? earn(h as Row) : 0,
+        earningsSource: h.status === "ENTREGUE" ? resolveDriverEarning(h as Row).source : "snapshot",
         order: h.order_id ? orderMap.get(h.order_id) ?? null : null,
       })),
       ranking: {

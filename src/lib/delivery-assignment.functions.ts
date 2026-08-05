@@ -11,6 +11,7 @@ import {
   type DeliveryAssignmentState,
 } from "./delivery/DeliveryAssignmentStateMachine";
 import type { DeliveryActor } from "./delivery/DeliveryAudit";
+import { calculateDriverEarning, DEFAULT_DRIVER_EARNING_SETTINGS } from "./driver-earnings";
 
 const IdInput = z.object({ assignmentId: z.string().uuid() });
 
@@ -171,6 +172,18 @@ export const assignDelivery = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!queueEntry) throw new Error("DRIVER_NOT_IN_QUEUE");
 
+    const { data: rawSettings } = await (supabaseAdmin.from("driver_earning_settings") as any)
+      .select("base_fee, per_km_fee, minimum_fee, maximum_fee, is_active")
+      .eq("restaurant_id", order.restaurant_id)
+      .eq("is_active", true)
+      .maybeSingle();
+    const settings = rawSettings ?? DEFAULT_DRIVER_EARNING_SETTINGS;
+    const earning = calculateDriverEarning(settings, data.distanceKm ?? null);
+    const assignmentMetadata = {
+      driver_earning_source: rawSettings ? "restaurant_settings" : "default_policy",
+      driver_earning_distance_missing: earning.distanceMissing,
+    };
+
     const correlationId = crypto.randomUUID();
     const { data: assigned, error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
       _order_id: data.orderId,
@@ -187,6 +200,28 @@ export const assignDelivery = createServerFn({ method: "POST" })
       correlation_id?: string;
     } | null;
     if (!res?.ok) throw new Error(`ASSIGN_FAILED:${res?.reason ?? "UNKNOWN"}`);
+
+    if (res.assignment_id) {
+      const { data: currentAssignment } = await supabaseAdmin
+        .from("delivery_assignments")
+        .select("metadata")
+        .eq("id", res.assignment_id)
+        .maybeSingle();
+      const { error: snapshotErr } = await (supabaseAdmin.from("delivery_assignments") as any)
+        .update({
+          estimated_minutes: data.estimatedMinutes ?? null,
+          distance_km: data.distanceKm ?? null,
+          driver_base_fee: settings.base_fee,
+          driver_per_km_fee: settings.per_km_fee,
+          driver_distance_km: earning.distanceKm,
+          driver_earning_amount: earning.amount,
+          driver_earning_calculated_at: new Date().toISOString(),
+          metadata: { ...((currentAssignment as any)?.metadata ?? {}), ...assignmentMetadata },
+        })
+        .eq("id", res.assignment_id);
+      if (snapshotErr) throw new Error(snapshotErr.message);
+    }
+
     return {
       ok: true,
       assignmentId: res.assignment_id,
