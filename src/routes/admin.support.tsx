@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -44,6 +44,20 @@ type Filters = {
 };
 
 function AdminSupportPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (!shouldRenderAdminSupportQueue(pathname)) {
+    return <Outlet />;
+  }
+
+  return <AdminSupportQueuePage />;
+}
+
+export function shouldRenderAdminSupportQueue(pathname: string) {
+  return pathname === "/admin/support";
+}
+
+function AdminSupportQueuePage() {
   const queue = useServerFn(getAdminSupportQueue);
   const teamFn = useServerFn(listSupportTeam);
   const queryClient = useQueryClient();
