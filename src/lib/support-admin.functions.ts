@@ -457,14 +457,11 @@ export const takeSupportTicket = createServerFn({ method: "POST" })
     if (beforeError) throw new Error(beforeError.message);
     assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
 
-    const { data: after, error } = await supabaseAdmin
-      .from("support_tickets")
-      .update({ assigned_to: context.userId, status: "em_analise" })
-      .eq("id", data.ticketId)
-      .select("*")
-      .single();
+    const { error } = await (supabaseAdmin as any).rpc("support_admin_take_ticket", {
+      _actor_user_id: context.userId,
+      _ticket_id: data.ticketId,
+    });
     if (error) throw new Error(error.message);
-    await auditSupportTicket({ ticketId: data.ticketId, actorId: context.userId, actorRole: role, action: "ticket.taken", before, after });
     return { ok: true };
   });
 
@@ -495,14 +492,12 @@ export const assignSupportTicket = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: after, error } = await supabaseAdmin
-      .from("support_tickets")
-      .update({ assigned_to: data.assigneeId, status: data.assigneeId ? "em_analise" : before.status })
-      .eq("id", data.ticketId)
-      .select("*")
-      .single();
+    const { error } = await (supabaseAdmin as any).rpc("support_admin_assign_ticket", {
+      _actor_user_id: context.userId,
+      _ticket_id: data.ticketId,
+      _assignee_id: data.assigneeId,
+    });
     if (error) throw new Error(error.message);
-    await auditSupportTicket({ ticketId: data.ticketId, actorId: context.userId, actorRole: role, action: "ticket.assigned", before, after });
     return { ok: true };
   });
 
@@ -528,9 +523,14 @@ export const updateSupportTicketMeta = createServerFn({ method: "POST" })
     const { data: before, error: beforeError } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.ticketId).single();
     if (beforeError) throw new Error(beforeError.message);
     assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
-    const { data: after, error } = await supabaseAdmin.from("support_tickets").update(patch).eq("id", data.ticketId).select("*").single();
+    const { error } = await (supabaseAdmin as any).rpc("support_admin_update_meta", {
+      _actor_user_id: context.userId,
+      _ticket_id: data.ticketId,
+      _priority: (patch.priority as SupportPriority | undefined) ?? null,
+      _category: (patch.category as SupportCategory | undefined) ?? null,
+      _tags: (patch.tags as string[] | undefined) ?? null,
+    });
     if (error) throw new Error(error.message);
-    await auditSupportTicket({ ticketId: data.ticketId, actorId: context.userId, actorRole: role, action: "ticket.meta_changed", before, after });
     return { ok: true };
   });
 
@@ -559,14 +559,12 @@ export const updateSupportTicketStatus = createServerFn({ method: "POST" })
     assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
     if (data.status === "resolvido" && !canResolveTicket(role, before.assigned_to, context.userId)) throw new Error("Forbidden");
 
-    const { data: after, error } = await supabaseAdmin
-      .from("support_tickets")
-      .update({ status: data.status })
-      .eq("id", data.ticketId)
-      .select("*")
-      .single();
+    const { error } = await (supabaseAdmin as any).rpc("support_admin_update_status", {
+      _actor_user_id: context.userId,
+      _ticket_id: data.ticketId,
+      _status: data.status,
+    });
     if (error) throw new Error(error.message);
-    await auditSupportTicket({ ticketId: data.ticketId, actorId: context.userId, actorRole: role, action: `ticket.status.${data.status}`, before, after });
     return { ok: true };
   });
 
@@ -590,34 +588,13 @@ export const sendSupportMessage = createServerFn({ method: "POST" })
     if (ticketError) throw new Error(ticketError.message);
     assertCanAccessTicketCategory({ role, allowedCategories, category: ticket.category as SupportCategory });
 
-    const patch: Record<string, unknown> = {};
-    if (!ticket.assigned_to) patch.assigned_to = context.userId;
-    if (Object.keys(patch).length > 0) {
-      await supabaseAdmin.from("support_tickets").update(patch).eq("id", data.ticketId);
-    }
-
-    const { data: message, error } = await (supabaseAdmin.from("support_messages") as any)
-      .insert({
-        ticket_id: data.ticketId,
-        author_id: context.userId,
-        author_type: "suporte",
-        body: sanitizeSupportText(data.body),
-        internal_note: Boolean(data.internalNote),
-      })
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-    await (supabaseAdmin.from("support_team_members") as any)
-      .update({ last_activity_at: new Date().toISOString() })
-      .eq("user_id", context.userId);
-
-    await auditSupportTicket({
-      ticketId: data.ticketId,
-      actorId: context.userId,
-      actorRole: role,
-      action: data.internalNote ? "ticket.internal_note.created" : "ticket.replied",
-      after: message,
+    const { error } = await (supabaseAdmin as any).rpc("support_admin_prepare_reply", {
+      _actor_user_id: context.userId,
+      _ticket_id: data.ticketId,
+      _body: sanitizeSupportText(data.body),
+      _internal_note: Boolean(data.internalNote),
     });
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

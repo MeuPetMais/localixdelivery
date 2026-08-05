@@ -12,8 +12,10 @@ import {
 
 const migration = "supabase/migrations/20260805150000_support_operations_sla_notifications.sql";
 const finalMigration = "supabase/migrations/20260805160000_support_knowledge_category_scope_and_sla_cron.sql";
+const adminRpcMigration = "supabase/migrations/20260805170000_support_admin_controlled_rpcs.sql";
 const adminKnowledgeRoute = "src/routes/admin.knowledge.tsx";
 const internalBell = "src/components/admin/InternalNotificationsBell.tsx";
+const adminFunctions = "src/lib/support-admin.functions.ts";
 
 describe("support operations domain", () => {
   it("calculates first response and resolution SLA", () => {
@@ -230,5 +232,89 @@ describe("support operations migration contract", () => {
   it("keeps SLA notifications scheduled by a service-role function", () => {
     expect(sql).toContain("enqueue_support_sla_notifications");
     expect(sql).toContain("GRANT EXECUTE ON FUNCTION public.enqueue_support_sla_notifications(timestamptz) TO service_role");
+  });
+});
+
+describe("controlled support admin RPC contract", () => {
+  const sql = readFileSync(adminRpcMigration, "utf8");
+  const functionsSource = readFileSync(adminFunctions, "utf8");
+
+  it("allows admin take through a controlled RPC and audits the actor", () => {
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.support_admin_take_ticket");
+    expect(sql).toContain("_actor_user_id uuid");
+    expect(sql).toContain("_role := public.support_admin_assert_permission(_actor_user_id, 'take'");
+    expect(sql).toContain("SET assigned_to = _actor_user_id");
+    expect(sql).toContain("'ticket.taken'");
+    expect(sql).toContain("actor_id, actor_role, action, before, after");
+  });
+
+  it("routes unassigned replies through the controlled RPC and records first response through triggers", () => {
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.support_admin_prepare_reply");
+    expect(sql).toContain("IF _ticket_before.assigned_to IS NULL THEN");
+    expect(sql).toContain("SET assigned_to = _actor_user_id");
+    expect(sql).toContain("INSERT INTO public.support_messages");
+    expect(sql).toContain("author_type, body, internal_note");
+    expect(functionsSource).toContain('rpc("support_admin_prepare_reply"');
+  });
+
+  it("supports internal notes without bypassing actor validation", () => {
+    expect(sql).toContain("_action := CASE WHEN _internal_note THEN 'internal_note' ELSE 'reply' END");
+    expect(sql).toContain("COALESCE(_internal_note, false)");
+    expect(sql).toContain("'ticket.internal_note.created'");
+  });
+
+  it("blocks agents outside their allowed category and inactive team members", () => {
+    expect(sql).toContain("AND _category = ANY(stm.allowed_categories)");
+    expect(sql).toContain("stm.active = true");
+    expect(sql).toContain("RAISE EXCEPTION 'Forbidden'");
+  });
+
+  it("keeps restaurant users blocked from administrative ticket fields", () => {
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.tg_support_ticket_customer_guard()");
+    expect(sql).toContain("NEW.assigned_to IS DISTINCT FROM OLD.assigned_to");
+    expect(sql).toContain("NEW.priority IS DISTINCT FROM OLD.priority");
+    expect(sql).toContain("RAISE EXCEPTION 'Forbidden support ticket administrative update'");
+  });
+
+  it("denies direct authenticated execution of administrative RPCs", () => {
+    for (const fn of [
+      "support_admin_take_ticket",
+      "support_admin_assign_ticket",
+      "support_admin_update_status",
+      "support_admin_update_meta",
+      "support_admin_prepare_reply",
+    ]) {
+      expect(sql).toContain(`REVOKE ALL ON FUNCTION public.${fn}`);
+      expect(sql).toContain(`TO service_role`);
+    }
+    expect(sql).toContain("FROM PUBLIC, anon, authenticated");
+  });
+
+  it("does not grant generic service-role bypass outside controlled operations", () => {
+    expect(sql).not.toContain("auth.role() = 'service_role'");
+    expect(sql).toContain("current_setting('localix.support_admin_actor', true)");
+    expect(sql).toContain("public.support_admin_context_is_valid()");
+    expect(sql).toContain("PERFORM set_config('localix.support_admin_actor', _actor_user_id::text, true)");
+  });
+
+  it("keeps resolver and reopen status rules in the controlled RPC", () => {
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.support_admin_update_status");
+    expect(sql).toContain("WHEN _status = 'resolvido' THEN 'resolve'");
+    expect(sql).toContain("ELSE 'reopen'");
+    expect(sql).toContain("_assigned_to IS DISTINCT FROM _actor_user_id");
+    expect(functionsSource).toContain('rpc("support_admin_update_status"');
+  });
+
+  it("moves priority and category changes into the controlled RPC", () => {
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.support_admin_update_meta");
+    expect(sql).toContain("'change_priority'");
+    expect(sql).toContain("'change_category'");
+    expect(functionsSource).toContain('rpc("support_admin_update_meta"');
+  });
+
+  it("routes take and assign server functions through controlled RPCs", () => {
+    expect(functionsSource).toContain('rpc("support_admin_take_ticket"');
+    expect(functionsSource).toContain('rpc("support_admin_assign_ticket"');
+    expect(functionsSource).not.toContain('.update({ assigned_to: context.userId, status: "em_analise" })');
   });
 });
