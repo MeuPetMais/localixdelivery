@@ -19,6 +19,7 @@ import { uploadProductImage, deleteProductImage } from "@/lib/image-upload";
 import { Progress } from "@/components/ui/progress";
 import { useRef } from "react";
 import { BuilderConfigurator } from "@/components/BuilderConfigurator";
+import { buildBuilderMetaPayload, parseBuilderCurrencyInput } from "@/lib/builders-currency";
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
@@ -259,7 +260,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
 
   function validate(): string | null {
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
-    if (Number(form.base_price) < 0) return "O Preço Inicial não pode ser negativo.";
+    if (parseBuilderCurrencyInput(form.base_price) < 0) return "O Preço Inicial não pode ser negativo.";
     if (groups.length === 0) return "Adicione ao menos uma etapa antes de salvar.";
     for (const g of groups) {
       const min = Number(g.min_select) || 0;
@@ -276,9 +277,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   async function saveMeta() {
     const err = validate();
     if (err) return toast.error(err);
-    const { error } = await supabase.from("builders").update({
-      name: form.name, emoji: form.emoji, description: form.description, image_url: form.image_url || null, base_price: Number(form.base_price) || 0,
-    }).eq("id", builder.id);
+    const { error } = await supabase.from("builders").update(buildBuilderMetaPayload(form)).eq("id", builder.id);
     if (error) return toast.error(error.message);
     toast.success("Salvo");
   }
@@ -313,7 +312,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     if (data) setGroups((gs) => gs.map((x) => x.id === g.id ? { ...x, builder_options: [...x.builder_options, data] } : x));
   }
   async function saveOption(o: any) {
-    await supabase.from("builder_options").update({ name: o.name, price_delta: Number(o.price_delta) || 0, max_qty: Number(o.max_qty) || 1 }).eq("id", o.id);
+    await supabase.from("builder_options").update({ name: o.name, price_delta: parseBuilderCurrencyInput(o.price_delta), max_qty: Number(o.max_qty) || 1 }).eq("id", o.id);
   }
   async function deleteOption(gid: string, oid: string) {
     await supabase.from("builder_options").delete().eq("id", oid);
@@ -344,7 +343,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           </div>
           <div className="space-y-1.5">
             <Label>Preço Inicial (R$)</Label>
-            <Input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} />
+            <Input type="text" inputMode="decimal" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} />
             <p className="text-xs text-muted-foreground">É o valor inicial do produto antes da escolha dos complementos e personalizações.</p>
           </div>
         </div>
@@ -365,11 +364,11 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
 
         {/* Live price summary */}
         {(() => {
-          const base = Number(form.base_price) || 0;
+          const base = parseBuilderCurrencyInput(form.base_price);
           let minExtra = 0;
           let maxExtra = 0;
           for (const g of groups) {
-            const opts = (g.builder_options ?? []).map((o: any) => Number(o.price_delta) || 0);
+            const opts = (g.builder_options ?? []).map((o: any) => parseBuilderCurrencyInput(o.price_delta));
             if (opts.length === 0) continue;
             const minSel = Number(g.min_select) || 0;
             const maxSel = Number(g.max_select) || 0;
@@ -379,10 +378,10 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             for (let i = 0; i < Math.min(minSel, sortedAsc.length); i++) minExtra += sortedAsc[i];
             // max cost: most expensive maxSel options, considering max_qty
             let taken = 0;
-            for (const o of (g.builder_options ?? []).slice().sort((a: any, b: any) => Number(b.price_delta) - Number(a.price_delta))) {
+            for (const o of (g.builder_options ?? []).slice().sort((a: any, b: any) => parseBuilderCurrencyInput(b.price_delta) - parseBuilderCurrencyInput(a.price_delta))) {
               const q = Math.min(Number(o.max_qty) || 1, maxSel - taken);
               if (q <= 0) break;
-              maxExtra += q * (Number(o.price_delta) || 0);
+              maxExtra += q * parseBuilderCurrencyInput(o.price_delta);
               taken += q;
               if (taken >= maxSel) break;
             }
@@ -478,7 +477,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                     <span></span>
                   </div>
                   {g.builder_options.map((o: any, oi: number) => {
-                    const delta = Number(o.price_delta) || 0;
+                    const delta = parseBuilderCurrencyInput(o.price_delta);
                     return (
                       <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_140px_90px_auto]">
                         <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
@@ -487,8 +486,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                             {delta >= 0 ? "+ R$" : "R$"}
                           </span>
                           <Input
-                            type="number"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             className="pl-12"
                             value={o.price_delta}
                             onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))}
@@ -511,8 +510,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                       <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
                       <div className="space-y-0.5">
                         {g.builder_options.slice(0, 5).map((o: any) => {
-                          const base = Number(form.base_price) || 0;
-                          const delta = Number(o.price_delta) || 0;
+                          const base = parseBuilderCurrencyInput(form.base_price);
+                          const delta = parseBuilderCurrencyInput(o.price_delta);
                           return (
                             <div key={o.id} className="flex justify-between">
                               <span>✔ {o.name || "(sem nome)"} {delta > 0 && <span className="text-muted-foreground">(+{brl(delta)})</span>}</span>
@@ -546,7 +545,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           emoji: form.emoji,
           description: form.description,
           image_url: form.image_url,
-          base_price: Number(form.base_price) || 0,
+          base_price: parseBuilderCurrencyInput(form.base_price),
           builder_groups: groups.map((g: any, i: number) => ({
             id: g.id,
             name: g.name,
@@ -557,7 +556,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             builder_options: (g.builder_options ?? []).map((o: any, j: number) => ({
               id: o.id,
               name: o.name,
-              price_delta: Number(o.price_delta) || 0,
+              price_delta: parseBuilderCurrencyInput(o.price_delta),
               max_qty: Number(o.max_qty) || 1,
               position: o.position ?? j,
             })),
