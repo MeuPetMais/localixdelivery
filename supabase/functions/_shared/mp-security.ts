@@ -110,6 +110,15 @@ function equalsNormalizedUrl(left: string | null, right: string | null): boolean
   return Boolean(left && right && normalizeUrl(left) === normalizeUrl(right));
 }
 
+function getUrlOrigin(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => string | undefined | null }): MpEnvironmentConfig {
   const runtimeEnvironment = parseLocalixEnvironment(cleanEnvValue(env.get("LOCALIX_ENV")));
   if (!runtimeEnvironment) {
@@ -161,11 +170,14 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
   }
 
   if (runtimeEnvironment === "staging") {
-    const productionSupabaseUrl = cleanEnvValue(env.get("PRODUCTION_SUPABASE_URL"));
-    const productionFunctionsBaseUrl = productionSupabaseUrl
-      ? deriveFunctionsBaseUrl(productionSupabaseUrl)
-      : cleanEnvValue(env.get("PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
-    if (equalsNormalizedUrl(functionsBaseUrl, productionFunctionsBaseUrl)) {
+    const currentSupabaseOrigin = getUrlOrigin(supabaseUrl);
+    const productionFunctionsBaseUrl = cleanEnvValue(env.get("PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
+    const productionSupabaseOrigin = getUrlOrigin(productionFunctionsBaseUrl);
+    if (!productionSupabaseOrigin) {
+      return { ok: false, error: "mercadopago_environment_not_configured", reason: "production_supabase_reference_missing" };
+    }
+
+    if (currentSupabaseOrigin && currentSupabaseOrigin === productionSupabaseOrigin) {
       return { ok: false, error: "mercadopago_environment_not_configured", reason: "staging_functions_url_matches_production" };
     }
 

@@ -48,7 +48,7 @@ describe("Mercado Pago security helpers", () => {
       MP_ENVIRONMENT: "sandbox",
       SUPABASE_URL: "https://dnotmvbhuqujvqdtgzav.supabase.co/",
       APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
-      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
       PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
@@ -70,7 +70,7 @@ describe("Mercado Pago security helpers", () => {
       SUPABASE_URL: "https://dnotmvbhuqujvqdtgzav.supabase.co/",
       LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://custom-ref.supabase.co/functions/v1",
       APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
-      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
       PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
@@ -122,7 +122,7 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
       APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
-      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
       PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
@@ -142,7 +142,7 @@ describe("Mercado Pago security helpers", () => {
       MP_ENVIRONMENT: "sandbox",
       SUPABASE_URL: "not a url",
       APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
-      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
     }));
 
     expect(result).toMatchObject({
@@ -197,6 +197,22 @@ describe("Mercado Pago security helpers", () => {
     });
   });
 
+  it("staging bloqueia quando referencia de producao esta ausente", () => {
+    const result = getRequiredMpEnvironmentConfig(env({
+      LOCALIX_ENV: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
+      MP_ENVIRONMENT: "sandbox",
+      SUPABASE_URL: "https://dnotmvbhuqujvqdtgzav.supabase.co",
+      APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+    }));
+
+    expect(result).toEqual({
+      ok: false,
+      error: "mercadopago_environment_not_configured",
+      reason: "production_supabase_reference_missing",
+    });
+  });
+
   it("staging com LOCALIX_SUPABASE_ENVIRONMENT divergente falha antes do fallback", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
@@ -217,9 +233,9 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
-      SUPABASE_URL: "https://prod-ref.supabase.co",
+      SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
       APP_BASE_URL: "https://staging.localix.test",
-      PRODUCTION_SUPABASE_URL: "https://prod-ref.supabase.co",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
     }));
 
     expect(result).toEqual({
