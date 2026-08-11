@@ -1,22 +1,34 @@
-// Mercado Pago — Webhook receiver.
+// Mercado Pago â€” Webhook receiver.
 // Responsabilidades:
 //   1. Aceitar POST rapidamente.
 //   2. Validar assinatura (x-signature) contra MP_WEBHOOK_SECRET.
-//   3. Persistir evento (idempotência por event_id).
+//   3. Persistir evento (idempotÃªncia por event_id).
 //   4. Processar (consulta MP, atualiza order_payment / orders / financial_ledger).
 //   5. Publicar log (payment_webhook_events + payment_event_queue em caso de erro).
 //
-// Nunca expõe tokens; usa access token do restaurante (via external_reference → order → restaurant)
-// ou fallback MP_ACCESS_TOKEN.
+// Nunca expÃµe tokens; usa access token do restaurante (via external_reference â†’ order â†’ restaurant)
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import {
+  getRequiredMpEnvironmentConfig,
+  getRestaurantMpAccessToken,
+  verifyMercadoPagoWebhookSignature,
+} from "../_shared/mp-security.ts";
 
 
 type MpStatus = "approved"|"pending"|"in_process"|"rejected"|"cancelled"|"refunded"|"charged_back"|"expired";
 type LocalStatus = "PENDING"|"PROCESSING"|"APPROVED"|"REJECTED"|"CANCELLED"|"EXPIRED"|"REFUNDED"|"CHARGEBACK";
+type PricingSnapshot = {
+  platform_fee: number;
+  customer_total: number;
+  restaurant_net: number;
+  gateway_fee: number;
+  service_fee_payer: string;
+  realized_platform_revenue: number;
+};
 
 function admin(): SupabaseClient {
   return createClient(
@@ -40,100 +52,13 @@ function mapStatus(s: string | null | undefined): LocalStatus {
   }
 }
 
-/**
- * Validação HMAC oficial do webhook do Mercado Pago.
- *
- * Manifest: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
- *   - `data.id`: preferir o valor vindo da query string (`?data.id=...`),
- *     normalizado em lowercase. Fallback: `data.id` do body.
- *   - `x-request-id`: header `x-request-id`.
- *   - `ts` e `v1`: extraídos do header `x-signature` (`ts=...,v1=...`).
- * Algoritmo: HMAC-SHA256; saída em hex lowercase; comparação constant-time.
- */
-async function verifySignature(opts: {
-  secret: string | null;
-  xSignature: string | null;
-  xRequestId: string | null;
-  dataIdFromQuery: string | null;
-  dataIdFromBody: string | null;
-}): Promise<{
-  ok: boolean;
-  reason?: string;
-  manifest?: string;
-  dataId?: string;
-  ts?: string;
-  calculated?: string;
-  received?: string;
-}> {
-  if (!opts.secret) return { ok: false, reason: "missing_secret" };
-  if (!opts.xSignature) return { ok: false, reason: "missing_x_signature_header" };
-
-  const parts: Record<string, string> = Object.fromEntries(
-    opts.xSignature.split(",").map((p) => {
-      const [k, ...r] = p.trim().split("=");
-      return [k.trim(), r.join("=").trim()];
-    }),
-  );
-  const ts = parts.ts;
-  const v1 = (parts.v1 ?? "").toLowerCase();
-  if (!ts) return { ok: false, reason: "missing_ts_in_x_signature" };
-  if (!v1) return { ok: false, reason: "missing_v1_in_x_signature" };
-
-  const rawDataId = opts.dataIdFromQuery ?? opts.dataIdFromBody ?? "";
-  if (!rawDataId) return { ok: false, reason: "missing_data_id" };
-  const dataId = rawDataId.toLowerCase();
-
-  const requestId = opts.xRequestId ?? "";
-  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(opts.secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(manifest));
-  const hex = [...new Uint8Array(sig)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  if (hex.length !== v1.length) {
-    return { ok: false, reason: "length_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
-  }
-  let diff = 0;
-  for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ v1.charCodeAt(i);
-  if (diff !== 0) {
-    return { ok: false, reason: "hmac_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
-  }
-  return { ok: true, manifest, dataId, ts, calculated: hex, received: v1 };
-}
-
-async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string | null> {
-  console.log("[mp-webhook] getAccessTokenForOrder restaurant_id", restaurantId);
-  if (restaurantId) {
-    const { data } = await sb
-      .from("mercado_pago_accounts")
-      .select("access_token, connected")
-      .eq("restaurant_id", restaurantId)
-      .maybeSingle();
-    console.log("[mp-webhook] mercado_pago_accounts row_found", Boolean(data));
-    console.log("[mp-webhook] mercado_pago_accounts connected", data?.connected ?? null);
-    console.log("[mp-webhook] mercado_pago_accounts access_token_exists", Boolean(data?.access_token));
-    if (data?.connected && data.access_token) {
-      try {
-        const tok = await decryptToken(data.access_token);
-        console.log("[mp-webhook] decryptToken result", tok ? "success" : "null");
-        if (tok) return tok;
-      } catch (err) {
-        console.error("[mp-webhook] decryptToken error", err instanceof Error ? err.message : String(err));
-      }
-    }
-  }
-  const fallbackToken = Deno.env.get("MP_ACCESS_TOKEN") ?? null;
-  console.log("[mp-webhook] fallback MP_ACCESS_TOKEN", Boolean(fallbackToken));
-  return fallbackToken;
+async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string> {
+  console.log("[mp-webhook] getAccessTokenForOrder", {
+    restaurant_id: restaurantId,
+  });
+  const result = await getRestaurantMpAccessToken(sb as any, restaurantId, decryptToken);
+  if (!result.ok) throw new Error(result.error);
+  return result.token;
 }
 
 async function fetchMpPayment(token: string, paymentId: string) {
@@ -144,9 +69,352 @@ async function fetchMpPayment(token: string, paymentId: string) {
   return await res.json();
 }
 
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+async function loadPricingSnapshot(sb: SupabaseClient, orderId: string, restaurantId: string): Promise<PricingSnapshot | null> {
+  const { data, error } = await sb
+    .from("order_pricing_snapshot")
+    .select("platform_fee, customer_total, restaurant_net, gateway_fee, service_fee_payer, realized_platform_revenue, orders!inner(restaurant_id)")
+    .eq("order_id", orderId)
+    .eq("orders.restaurant_id", restaurantId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    platform_fee: Number(data.platform_fee ?? 0),
+    customer_total: Number(data.customer_total ?? 0),
+    restaurant_net: Number(data.restaurant_net ?? 0),
+    gateway_fee: Number(data.gateway_fee ?? 0),
+    service_fee_payer: String(data.service_fee_payer ?? "customer"),
+    realized_platform_revenue: Number(data.realized_platform_revenue ?? 0),
+  };
+}
+
+function extractMarketplaceFee(payment: Record<string, unknown>) {
+  const direct = payment.marketplace_fee ?? payment.application_fee;
+  if (direct !== undefined && direct !== null) {
+    const amount = roundMoney(Number(direct));
+    return Number.isFinite(amount)
+      ? { ok: true as const, amount, source: direct === payment.marketplace_fee ? "marketplace_fee" : "application_fee" }
+      : { ok: false as const, reason: "invalid" };
+  }
+
+  const feeDetails = Array.isArray(payment.fee_details) ? payment.fee_details : [];
+  const detail = feeDetails.find((entry) => {
+    const type = String((entry as { type?: unknown }).type ?? "").toLowerCase();
+    const name = String((entry as { name?: unknown }).name ?? "").toLowerCase();
+    return type.includes("marketplace") || type.includes("application") || name.includes("marketplace") || name.includes("application");
+  }) as { amount?: unknown; type?: unknown; name?: unknown } | undefined;
+  if (!detail) return { ok: false as const, reason: "missing" };
+  const amount = roundMoney(Number(detail.amount));
+  if (!Number.isFinite(amount)) return { ok: false as const, reason: "invalid" };
+  return { ok: true as const, amount, source: String(detail.type ?? detail.name ?? "fee_details") };
+}
+
+function sumRefundedAmount(payment: Record<string, unknown>): number | null {
+  const refunds = Array.isArray(payment.refunds) ? payment.refunds : null;
+  if (refunds) {
+    const total = refunds.reduce((sum, refund) => {
+      const amount = Number((refund as { amount?: unknown }).amount ?? 0);
+      return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    return roundMoney(total);
+  }
+  const transactionDetailsRefunded = (payment.transaction_details as { refunded_amount?: unknown } | undefined)?.refunded_amount;
+  const direct = Number(payment.refunded_amount ?? transactionDetailsRefunded);
+  return Number.isFinite(direct) && direct > 0 ? roundMoney(direct) : null;
+}
+
+function calculateRefundReversal(params: {
+  localStatus: LocalStatus;
+  paymentStatusDetail?: string | null;
+  transactionAmount: number;
+  expectedPlatformFee: number;
+  payment: Record<string, unknown>;
+}) {
+  const statusDetail = String(params.paymentStatusDetail ?? "").toLowerCase();
+  const isFullRefund = params.localStatus === "REFUNDED";
+  const isPartialRefund = statusDetail === "partially_refunded";
+  if (!isFullRefund && !isPartialRefund) return null;
+
+  const transactionAmount = roundMoney(params.transactionAmount);
+  if (!Number.isFinite(transactionAmount) || transactionAmount <= 0) {
+    return { ok: false as const, reason: "invalid_transaction_amount" };
+  }
+  const refundedAmount = isFullRefund ? transactionAmount : sumRefundedAmount(params.payment);
+  if (refundedAmount === null) return { ok: false as const, reason: "refund_amount_missing" };
+  if (!Number.isFinite(refundedAmount) || refundedAmount < 0 || refundedAmount > transactionAmount) {
+    return { ok: false as const, reason: "invalid_refund_amount" };
+  }
+
+  const ratio = Math.min(1, refundedAmount / transactionAmount);
+  const reversedPlatformFee = roundMoney(params.expectedPlatformFee * ratio);
+  return {
+    ok: true as const,
+    reversalStatus: refundedAmount >= transactionAmount ? "FULL" : "PARTIAL",
+    refundedAmount,
+    reversedPlatformFee,
+    realizedPlatformRevenue: Math.max(0, roundMoney(params.expectedPlatformFee - reversedPlatformFee)),
+  };
+}
+
+async function insertLedgerOnce(sb: SupabaseClient, row: {
+  order_id: string;
+  restaurant_id: string | null;
+  provider: string;
+  transaction_type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  reference_type: string;
+  reference_id: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const { data: existing } = await sb
+    .from("financial_ledger")
+    .select("id")
+    .eq("transaction_type", row.transaction_type)
+    .eq("reference_type", row.reference_type)
+    .eq("reference_id", row.reference_id)
+    .maybeSingle();
+  if (existing) return;
+  await sb.from("financial_ledger").insert(row);
+}
+
+async function reconcilePaymentSplit(sb: SupabaseClient, params: {
+  orderId: string;
+  restaurantId: string;
+  paymentId: string;
+  localStatus: LocalStatus;
+  payment: Record<string, unknown>;
+}) {
+  const snapshot = await loadPricingSnapshot(sb, params.orderId, params.restaurantId);
+  if (!snapshot) {
+    await sb.from("payment_split").upsert({
+      order_id: params.orderId,
+      payment_id: params.paymentId,
+      restaurant_id: params.restaurantId,
+      provider: "mercadopago",
+      restaurant_amount: 0,
+      platform_amount: 0,
+      gateway_fee: 0,
+      status: "MANUAL_REVIEW",
+      split_reference: `mp_payment:${params.paymentId}`,
+      error_message: "pricing_snapshot_missing",
+      metadata: {
+        reason: "pricing_snapshot_missing",
+        payment_id: params.paymentId,
+        order_id: params.orderId,
+        restaurant_id: params.restaurantId,
+        checked_at: new Date().toISOString(),
+      },
+    }, { onConflict: "order_id" });
+    return;
+  }
+
+  const expectedPlatformFee = roundMoney(Number(snapshot.platform_fee ?? 0));
+  const baseRow = {
+    order_id: params.orderId,
+    payment_id: params.paymentId,
+    restaurant_id: params.restaurantId,
+    provider: "mercadopago",
+    restaurant_amount: roundMoney(snapshot.restaurant_net),
+    platform_amount: expectedPlatformFee,
+    gateway_fee: roundMoney(snapshot.gateway_fee),
+    split_reference: `mp_payment:${params.paymentId}`,
+  };
+
+  if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING") {
+    await sb.from("payment_split").upsert({
+      ...baseRow,
+      status: "PROCESSING",
+      error_message: null,
+      processed_at: null,
+      metadata: {
+        gateway_status: params.payment.status ?? null,
+        expected_platform_fee: expectedPlatformFee,
+        service_fee_payer: snapshot.service_fee_payer,
+      },
+    }, { onConflict: "order_id" });
+    return;
+  }
+
+  if (params.localStatus === "REJECTED" || params.localStatus === "CANCELLED" || params.localStatus === "EXPIRED") {
+    await sb.from("payment_split").upsert({
+      ...baseRow,
+      status: "FAILED",
+      error_message: `payment_${params.localStatus.toLowerCase()}`,
+      processed_at: new Date().toISOString(),
+      metadata: {
+        gateway_status: params.payment.status ?? null,
+        expected_platform_fee: expectedPlatformFee,
+        service_fee_payer: snapshot.service_fee_payer,
+      },
+    }, { onConflict: "order_id" });
+    return;
+  }
+
+  if (params.localStatus === "CHARGEBACK") {
+    await sb.from("payment_split").upsert({
+      ...baseRow,
+      status: "MANUAL_REVIEW",
+      error_message: "split_chargeback_reconciliation_required",
+      processed_at: null,
+      metadata: {
+        gateway_status: params.payment.status ?? null,
+        gateway_status_detail: params.payment.status_detail ?? null,
+        expected_platform_fee: expectedPlatformFee,
+        service_fee_payer: snapshot.service_fee_payer,
+        reason: "chargeback_dispute_requires_manual_review",
+      },
+    }, { onConflict: "order_id" });
+    return;
+  }
+
+  if (expectedPlatformFee < 0 || expectedPlatformFee >= roundMoney(snapshot.customer_total)) {
+    await sb.from("payment_split").upsert({
+      ...baseRow,
+      status: "MANUAL_REVIEW",
+      error_message: "invalid_platform_fee",
+      processed_at: null,
+      metadata: {
+        expected_platform_fee: expectedPlatformFee,
+        customer_total: roundMoney(snapshot.customer_total),
+        reason: "invalid_platform_fee",
+      },
+    }, { onConflict: "order_id" });
+    return;
+  }
+
+  const refundReversal = calculateRefundReversal({
+    localStatus: params.localStatus,
+    paymentStatusDetail: String(params.payment.status_detail ?? ""),
+    transactionAmount: roundMoney(snapshot.customer_total),
+    expectedPlatformFee,
+    payment: params.payment,
+  });
+  if (refundReversal) {
+    if (!refundReversal.ok) {
+      await sb.from("payment_split").upsert({
+        ...baseRow,
+        status: "MANUAL_REVIEW",
+        error_message: refundReversal.reason,
+        processed_at: null,
+        metadata: {
+          expected_platform_fee: expectedPlatformFee,
+          customer_total: roundMoney(snapshot.customer_total),
+          service_fee_payer: snapshot.service_fee_payer,
+          gateway_status: params.payment.status ?? null,
+          gateway_status_detail: params.payment.status_detail ?? null,
+          reason: refundReversal.reason,
+        },
+      }, { onConflict: "order_id" });
+      return;
+    }
+
+    const previousRealized = roundMoney(Number(snapshot.realized_platform_revenue ?? 0));
+    const nextRealized = refundReversal.realizedPlatformRevenue;
+    const ledgerDelta = roundMoney(nextRealized - previousRealized);
+    await sb.from("payment_split").upsert({
+      ...baseRow,
+      status: "COMPLETED",
+      error_message: null,
+      processed_at: new Date().toISOString(),
+      metadata: {
+        expected_platform_fee: expectedPlatformFee,
+        realized_platform_fee: nextRealized,
+        reversed_platform_fee: refundReversal.reversedPlatformFee,
+        refunded_amount: refundReversal.refundedAmount,
+        reversal_status: refundReversal.reversalStatus,
+        gateway_status: params.payment.status ?? null,
+        gateway_status_detail: params.payment.status_detail ?? null,
+        service_fee_payer: snapshot.service_fee_payer,
+        checked_at: new Date().toISOString(),
+      },
+    }, { onConflict: "order_id" });
+
+    const { error } = await sb
+      .from("order_pricing_snapshot")
+      .update({ realized_platform_revenue: nextRealized })
+      .eq("order_id", params.orderId);
+    if (error) console.error("[mp-webhook] realized platform revenue refund update failed", { orderId: params.orderId, error: error.message });
+
+    if (ledgerDelta < 0) {
+      await insertLedgerOnce(sb, {
+        order_id: params.orderId,
+        restaurant_id: params.restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "PLATFORM_FEE_REVERSAL",
+        amount: ledgerDelta,
+        currency: String(params.payment.currency_id ?? "BRL"),
+        status: "COMPLETED",
+        reference_type: "mp_split_reversal",
+        reference_id: `${params.paymentId}:${refundReversal.reversalStatus}:${refundReversal.refundedAmount}`,
+        description: "Reversao da receita Localix por reembolso Mercado Pago",
+        metadata: {
+          payment_id: params.paymentId,
+          order_id: params.orderId,
+          restaurant_id: params.restaurantId,
+          previous_realized_platform_revenue: previousRealized,
+          realized_platform_revenue: nextRealized,
+          reversed_platform_fee_delta: ledgerDelta,
+          refund_reversal_status: refundReversal.reversalStatus,
+        },
+      });
+    }
+    return;
+  }
+
+  const extraction = expectedPlatformFee === 0
+    ? { ok: true as const, amount: 0, source: "zero_expected" }
+    : extractMarketplaceFee(params.payment);
+  const matches = extraction.ok && Math.abs(extraction.amount - expectedPlatformFee) <= 0.01;
+  const status = matches ? "COMPLETED" : "MANUAL_REVIEW";
+  const errorMessage = matches ? null : extraction.ok ? "marketplace_fee_divergent" : `marketplace_fee_${extraction.reason}`;
+
+  await sb.from("payment_split").upsert({
+    ...baseRow,
+    status,
+    error_message: errorMessage,
+    processed_at: matches ? new Date().toISOString() : null,
+    metadata: {
+      expected_platform_fee: expectedPlatformFee,
+      realized_platform_fee: extraction.ok ? extraction.amount : null,
+      marketplace_fee_source: extraction.ok ? extraction.source : null,
+      payment_id: params.paymentId,
+      order_id: params.orderId,
+      restaurant_id: params.restaurantId,
+      checked_at: new Date().toISOString(),
+      reason: errorMessage,
+    },
+  }, { onConflict: "order_id" });
+
+  if (matches) {
+    const { error } = await sb
+      .from("order_pricing_snapshot")
+      .update({ realized_platform_revenue: extraction.amount })
+      .eq("order_id", params.orderId);
+    if (error) console.error("[mp-webhook] realized platform revenue update failed", { orderId: params.orderId, error: error.message });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, { status: 405 });
+
+  const environmentConfig = getRequiredMpEnvironmentConfig(Deno.env);
+  if (!environmentConfig.ok) {
+    console.error("[mp-webhook] environment not configured", {
+      provider: "mercado_pago",
+      error: environmentConfig.error,
+      reason: environmentConfig.reason,
+      timestamp: new Date().toISOString(),
+    });
+    return json({ ok: false, error: environmentConfig.error }, { status: 500 });
+  }
 
   const sb = admin();
   const rawBody = await req.text();
@@ -163,7 +431,7 @@ Deno.serve(async (req) => {
   const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
 
-  // Persistência com idempotência por (provider, event_id)
+  // PersistÃªncia com idempotÃªncia por (provider, event_id)
   const insertPayload = {
     provider: "mercado_pago",
     event_id: eventId,
@@ -207,7 +475,7 @@ Deno.serve(async (req) => {
   }
 
   // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
-  const sigResult = await verifySignature({
+  const sigResult = await verifyMercadoPagoWebhookSignature({
     secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
     xSignature,
     xRequestId,
@@ -216,38 +484,35 @@ Deno.serve(async (req) => {
   });
 
   console.log("[mp-webhook] signature audit", {
+    environment: environmentConfig.runtimeEnvironment,
+    mp_environment: environmentConfig.mercadoPagoEnvironment,
     ok: sigResult.ok,
     reason: sigResult.reason ?? null,
-    manifest: sigResult.manifest ?? null,
     data_id: sigResult.dataId ?? null,
     data_id_source: dataIdFromQuery ? "query" : dataIdFromBody ? "body" : "none",
     ts: sigResult.ts ?? null,
     x_request_id: xRequestId,
-    calculated_hmac: sigResult.calculated ?? null,
-    received_hmac: sigResult.received ?? null,
-    diverged_field:
-      sigResult.ok
-        ? null
-        : sigResult.reason === "hmac_mismatch" || sigResult.reason === "length_mismatch"
-        ? "v1"
-        : sigResult.reason,
+    diverged_field: sigResult.ok ? null : sigResult.reason,
   });
 
-  // Assinatura inválida NÃO bloqueia o processamento:
-  // o MP emite webhooks assinados com o segredo da conta collector (não do App OAuth),
-  // então HMAC vs MP_WEBHOOK_SECRET diverge estruturalmente em fluxos multi-conta.
-  // Em vez de rejeitar, autenticamos o evento consultando o pagamento na API do MP
-  // com o access token OAuth do próprio restaurante — se o MP confirmar o payment_id,
-  // é prova criptográfica de que o evento é legítimo. Registramos o incidente para
-  // auditoria, mas seguimos o fluxo para não travar o pedido em aguardando_pagamento.
   if (!sigResult.ok) {
-    console.warn("[mp-webhook] signature invalid — falling back to MP API verification", {
+    console.warn("[mp-webhook] signature invalid", {
       reason: sigResult.reason,
       resource_id: resourceId,
     });
     await sb.from("payment_webhook_events").update({
-      error_message: `signature_bypass:${sigResult.reason ?? "unknown"}`,
+      processed: false,
+      error_message: `signature_invalid:${sigResult.reason ?? "unknown"}`,
+      processing_attempts: 1,
     }).eq("id", eventPk);
+    await sb.from("payment_event_queue").insert({
+      event_id: eventPk,
+      status: "pending",
+      retry_count: 0,
+      next_retry: null,
+      last_error: `signature_invalid:${sigResult.reason ?? "unknown"}`,
+    });
+    return json({ ok: false, error: "webhook_signature_invalid" }, { status: 401 });
   }
 
   const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));
@@ -261,7 +526,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Localiza pedido primeiro (para pegar restaurant_id → access token)
+    // Localiza pedido primeiro (para pegar restaurant_id â†’ access token)
     const { data: op } = await sb
       .from("order_payment")
       .select("order_id, orders:order_id(id, restaurant_id)")
@@ -282,8 +547,23 @@ Deno.serve(async (req) => {
       restaurantId = (opRef as any)?.orders?.restaurant_id ?? restaurantId;
     }
 
+    if (!restaurantId) {
+      await sb.from("payment_webhook_events").update({
+        processed: false,
+        error_message: "restaurant_not_identified",
+        processing_attempts: 1,
+      }).eq("id", eventPk);
+      await sb.from("payment_event_queue").insert({
+        event_id: eventPk,
+        status: "pending",
+        retry_count: 0,
+        next_retry: null,
+        last_error: "restaurant_not_identified",
+      });
+      return json({ ok: true, warning: "restaurant_not_identified" });
+    }
+
     const token = await getAccessTokenForOrder(sb, restaurantId);
-    if (!token) throw new Error("no_access_token");
     const mp = await fetchMpPayment(token, resourceId);
     if (!mp) throw new Error("mp_payment_not_found");
 
@@ -317,7 +597,7 @@ Deno.serve(async (req) => {
       ?? null;
     const qr = mp?.point_of_interaction?.transaction_data ?? {};
 
-    // order_payment — upsert (garante linha mesmo se checkout não criou)
+    // order_payment â€” upsert (garante linha mesmo se checkout nÃ£o criou)
     const { data: opUp, error: opErr } = await sb.from("order_payment").upsert({
       order_id: orderId,
       restaurant_id: restaurantId!,
@@ -337,7 +617,7 @@ Deno.serve(async (req) => {
       console.error("[mp-webhook] order_payment upsert failed", { orderId, error: opErr?.message, rows: opUp?.length ?? 0 });
     }
 
-    // payments — mesma estrutura que Stripe (cross-gateway).
+    // payments â€” mesma estrutura que Stripe (cross-gateway).
     const { error: payErr } = await sb.from("payments").upsert({
       order_id: orderId,
       restaurant_id: restaurantId!,
@@ -358,7 +638,7 @@ Deno.serve(async (req) => {
     if (payErr) console.error("[mp-webhook] payments upsert failed", { orderId, mpId: String(mp.id), error: payErr.message });
 
 
-    // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
+    // RC4.2 â€” Mapeamento evento â†’ status do domÃ­nio (via endpoint interno).
     const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;
     const domainTarget: Record<string, string | null> = {
       APPROVED: "pago",
@@ -387,35 +667,35 @@ Deno.serve(async (req) => {
     }
 
     if (local === "APPROVED") {
-      await sb.from("financial_ledger").insert({
+      await insertLedgerOnce(sb, {
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_APPROVED", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
         description: "Pagamento aprovado", metadata: { status_detail: mp.status_detail ?? null, correlation_id: correlationId },
       });
     } else if (local === "PENDING" || local === "PROCESSING") {
-      await sb.from("financial_ledger").insert({
+      await insertLedgerOnce(sb, {
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_PENDING", amount, currency: mp.currency_id ?? "BRL",
         status: "PENDING", reference_type: "mp_payment", reference_id: String(mp.id),
         description: "Pagamento pendente", metadata: { correlation_id: correlationId },
       });
     } else if (local === "REJECTED" || local === "CANCELLED" || local === "EXPIRED") {
-      await sb.from("financial_ledger").insert({
+      await insertLedgerOnce(sb, {
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "PAYMENT_FAILED", amount, currency: mp.currency_id ?? "BRL",
         status: "FAILED", reference_type: "mp_payment", reference_id: String(mp.id),
         description: `Pagamento ${local.toLowerCase()}`, metadata: { correlation_id: correlationId },
       });
     } else if (local === "REFUNDED") {
-      await sb.from("financial_ledger").insert({
+      await insertLedgerOnce(sb, {
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "REFUND", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
         description: "Estorno", metadata: { correlation_id: correlationId },
       });
     } else if (local === "CHARGEBACK") {
-      await sb.from("financial_ledger").insert({
+      await insertLedgerOnce(sb, {
         order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
         transaction_type: "CHARGEBACK", amount, currency: mp.currency_id ?? "BRL",
         status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
@@ -423,6 +703,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    await reconcilePaymentSplit(sb, {
+      orderId,
+      restaurantId: restaurantId!,
+      paymentId: String(mp.id),
+      localStatus: local,
+      payment: mp,
+    });
 
     await sb.from("payment_webhook_events").update({
       processed: true,
@@ -447,6 +734,6 @@ Deno.serve(async (req) => {
       next_retry: nextRetry,
       last_error: msg,
     });
-    return json({ ok: false, error: msg }, { status: 200 }); // 200 para MP não reenviar em loop
+    return json({ ok: false, error: msg }, { status: 200 }); // 200 para MP nÃ£o reenviar em loop
   }
 });

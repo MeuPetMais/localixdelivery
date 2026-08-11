@@ -3108,8 +3108,10 @@ export type Database = {
           platform_fee: number
           platform_revenue: number
           provider: string | null
+          realized_platform_revenue: number
           restaurant_gross: number
           restaurant_net: number
+          service_fee_payer: string
           subtotal: number
         }
         Insert: {
@@ -3127,8 +3129,10 @@ export type Database = {
           platform_fee?: number
           platform_revenue?: number
           provider?: string | null
+          realized_platform_revenue?: number
           restaurant_gross?: number
           restaurant_net?: number
+          service_fee_payer?: string
           subtotal: number
         }
         Update: {
@@ -3146,8 +3150,10 @@ export type Database = {
           platform_fee?: number
           platform_revenue?: number
           provider?: string | null
+          realized_platform_revenue?: number
           restaurant_gross?: number
           restaurant_net?: number
+          service_fee_payer?: string
           subtotal?: number
         }
         Relationships: [
@@ -6370,6 +6376,9 @@ export type Database = {
           minimum_order: number
           payment_timeout_minutes: number
           restaurant_id: string
+          service_fee_change_locked_until: string | null
+          service_fee_last_changed_at: string | null
+          service_fee_payer: string
           updated_at: string
         }
         Insert: {
@@ -6386,6 +6395,9 @@ export type Database = {
           minimum_order?: number
           payment_timeout_minutes?: number
           restaurant_id: string
+          service_fee_change_locked_until?: string | null
+          service_fee_last_changed_at?: string | null
+          service_fee_payer?: string
           updated_at?: string
         }
         Update: {
@@ -6402,6 +6414,9 @@ export type Database = {
           minimum_order?: number
           payment_timeout_minutes?: number
           restaurant_id?: string
+          service_fee_change_locked_until?: string | null
+          service_fee_last_changed_at?: string | null
+          service_fee_payer?: string
           updated_at?: string
         }
         Relationships: []

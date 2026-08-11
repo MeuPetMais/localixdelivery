@@ -2,6 +2,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
+import { getRestaurantMpAccessToken } from "../_shared/mp-security.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -24,22 +25,20 @@ Deno.serve(async (req) => {
 
   const { data: acc } = await sb
     .from("mercado_pago_accounts")
-    .select("access_token, mp_user_id, live_mode, connected")
+    .select("mp_user_id, live_mode, connected")
     .eq("restaurant_id", op.restaurant_id)
     .maybeSingle();
 
-  const token = await decryptToken(acc?.access_token ?? null);
-  const source = token ? "restaurant_oauth" : "fallback_env";
-  const useToken = token ?? Deno.env.get("MP_ACCESS_TOKEN") ?? null;
-  if (!useToken) return json({ error: "no_token" }, { status: 500 });
+  const tokenResult = await getRestaurantMpAccessToken(sb as any, op.restaurant_id, decryptToken);
+  if (!tokenResult.ok) return json({ error: tokenResult.error }, { status: 409 });
 
   const res = await fetch(`https://api.mercadopago.com/checkout/preferences/${prefId}`, {
-    headers: { Authorization: `Bearer ${useToken}` },
+    headers: { Authorization: `Bearer ${tokenResult.token}` },
   });
   const body = await res.json().catch(() => ({}));
   return json({
     http_status: res.status,
-    token_source: source,
+    token_source: "restaurant_oauth",
     restaurant_mp_user_id: acc?.mp_user_id ?? null,
     restaurant_live_mode: acc?.live_mode ?? null,
     preference: body,

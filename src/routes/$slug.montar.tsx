@@ -227,8 +227,18 @@ function BuildYourOwnPage() {
 
     const item = {
       id: `builder:${activeBuilder.id}:${Date.now()}`,
+      kind: "builder" as const,
+      builderId: activeBuilder.id,
       name: `${activeBuilder.emoji ?? ""} ${activeBuilder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim(),
       price: subtotal,
+      selections: groups.flatMap((g) =>
+        Object.entries(sel[g.id] ?? {}).map(([optionId, qty]) => ({
+          groupId: g.id,
+          optionId,
+          qty,
+        })),
+      ),
+      notes: notes.trim() || undefined,
     };
 
     try {

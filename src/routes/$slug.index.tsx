@@ -46,7 +46,16 @@ export const Route = createFileRoute("/$slug/")({
   component: PublicMenu,
 });
 
-type CartItem = { id: string; name: string; price: number; qty: number };
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  kind?: "product" | "builder";
+  builderId?: string;
+  selections?: Array<{ groupId: string; optionId: string; qty: number }>;
+  notes?: string;
+};
 
 function PublicMenu() {
   const { slug } = Route.useParams();
@@ -245,7 +254,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
       if (!raw) return;
-      const item = JSON.parse(raw) as { id: string; name: string; price: number };
+      const item = JSON.parse(raw) as Omit<CartItem, "qty">;
       if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
         setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
         setOpenSheet(true);
@@ -1165,7 +1174,16 @@ const paymentOptions: PayOption[] = (
         data: {
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
-          items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          items: cart.map((c) => ({
+            id: c.id,
+            name: c.name,
+            price: c.price,
+            qty: c.qty,
+            kind: c.kind,
+            builderId: c.builderId,
+            selections: c.selections,
+            notes: c.notes,
+          })),
           paymentMethod: paymentPayload.payloadPaymentMethod,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,

@@ -1,23 +1,24 @@
-// PricingEngine — motor financeiro central da Localix.
+// PricingEngine â€” motor financeiro central da Localix.
 //
-// REGRA DE OURO: nenhum outro módulo (React, Checkout, Carrinho,
+// REGRA DE OURO: nenhum outro mÃ³dulo (React, Checkout, Carrinho,
 // PaymentService, Providers, Edge Functions) pode calcular taxas ou
 // totais. Toda regra financeira passa OBRIGATORIAMENTE por aqui.
 //
-// Este módulo NÃO se comunica com gateways de pagamento — apenas
-// calcula valores a partir de configuração persistida em banco e de
+// Este mÃ³dulo NÃƒO se comunica com gateways de pagamento â€” apenas
+// calcula valores a partir de configuraÃ§Ã£o persistida em banco e de
 // calculadoras de taxa de gateway (estrutura pronta, sem chamadas reais).
 //
-// Documentação completa: ver `PricingEngine.README.md` neste diretório.
+// DocumentaÃ§Ã£o completa: ver `PricingEngine.README.md` neste diretÃ³rio.
 
 import { supabase } from "@/integrations/supabase/client";
 
 // ------------------------------------------------------------
-// Tipos públicos
+// Tipos pÃºblicos
 // ------------------------------------------------------------
 
 export type PaymentMethod = "pix" | "credit_card" | "debit_card" | "cash";
 export type ProviderId = "mercado_pago" | "pagarme" | "asaas" | "stripe";
+export type ServiceFeePayer = "customer" | "restaurant";
 
 export interface PricingInput {
   subtotal: number;
@@ -28,7 +29,8 @@ export interface PricingInput {
   paymentMethod?: PaymentMethod;
   provider?: ProviderId;
   restaurantId?: string;
-  /** Pedido mínimo do restaurante — se definido, sobrepõe o global da plataforma. */
+  serviceFeePayer?: ServiceFeePayer;
+  /** Pedido mÃ­nimo do restaurante â€” se definido, sobrepÃµe o global da plataforma. */
   minimumOrder?: number | null;
 }
 
@@ -43,6 +45,11 @@ export interface PricingResult {
   customerTotal: number;
   restaurantGross: number;
   restaurantNet: number;
+  serviceFeePayer: ServiceFeePayer;
+  expectedPlatformFee: number;
+  expectedPlatformRevenue: number;
+  realizedPlatformRevenue: number;
+  /** Alias compatível com o snapshot: receita esperada, não realizada. */
   platformRevenue: number;
   gatewayRevenue: number;
   estimatedProfit: number;
@@ -56,6 +63,7 @@ export interface PricingSettings {
   default_gateway: ProviderId;
   gateway_enabled: Record<string, boolean>;
   currency: string;
+  service_fee_payer?: ServiceFeePayer;
 }
 
 export class PricingError extends Error {
@@ -70,7 +78,7 @@ export class PricingError extends Error {
 }
 
 // ------------------------------------------------------------
-// Defaults (usados apenas quando não há linha em platform_settings)
+// Defaults (usados apenas quando nÃ£o hÃ¡ linha em platform_settings)
 // ------------------------------------------------------------
 
 export const DEFAULT_PRICING_SETTINGS: PricingSettings = {
@@ -80,10 +88,11 @@ export const DEFAULT_PRICING_SETTINGS: PricingSettings = {
   default_gateway: "mercado_pago",
   gateway_enabled: { mercado_pago: true },
   currency: "BRL",
+  service_fee_payer: "customer",
 };
 
 // ------------------------------------------------------------
-// Gateway fee calculators — estrutura pronta, sem chamadas reais
+// Gateway fee calculators â€” estrutura pronta, sem chamadas reais
 // ------------------------------------------------------------
 
 export interface GatewayFeeInput {
@@ -150,7 +159,7 @@ export async function loadPricingSettings(force = false): Promise<PricingSetting
     .maybeSingle();
 
   if (error) {
-    // Não derruba a aplicação — usa defaults.
+    // NÃ£o derruba a aplicaÃ§Ã£o â€” usa defaults.
     return DEFAULT_PRICING_SETTINGS;
   }
 
@@ -177,19 +186,30 @@ export function clearPricingSettingsCache() {
 }
 
 // ------------------------------------------------------------
-// Cálculo puro (testável) — não toca em banco
+// CÃ¡lculo puro (testÃ¡vel) â€” nÃ£o toca em banco
 // ------------------------------------------------------------
 
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
+function toCents(n: number | null | undefined) {
+  const value = Number(n);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.round(value * 100));
+}
+
+function fromCents(cents: number) {
+  return cents / 100;
+}
+
+function normalizeServiceFeePayer(value: unknown): ServiceFeePayer {
+  return value === "restaurant" ? "restaurant" : "customer";
 }
 
 export function computePricing(input: PricingInput, settings: PricingSettings): PricingResult {
-  const subtotal = Math.max(0, Number(input.subtotal) || 0);
-  const deliveryFee = Math.max(0, Number(input.deliveryFee) || 0);
-  const couponDiscount = Math.max(0, Number(input.couponDiscount) || 0);
-  const cashback = Math.max(0, Number(input.cashback) || 0);
-  const loyaltyDiscount = Math.max(0, Number(input.loyaltyDiscount) || 0);
+  const subtotalCents = toCents(input.subtotal);
+  const deliveryFeeCents = toCents(input.deliveryFee);
+  const couponDiscountCents = toCents(input.couponDiscount);
+  const cashbackCents = toCents(input.cashback);
+  const loyaltyDiscountCents = toCents(input.loyaltyDiscount);
+  const subtotal = fromCents(subtotalCents);
 
   if (subtotal < settings.minimum_order) {
     throw new PricingError(
@@ -199,53 +219,74 @@ export function computePricing(input: PricingInput, settings: PricingSettings): 
     );
   }
 
-  const platformFee =
-    subtotal <= 30 ? settings.platform_fee_until_30 : settings.platform_fee_above_30;
+  const platformFeeCents = toCents(
+    subtotal <= 30 ? settings.platform_fee_until_30 : settings.platform_fee_above_30,
+  );
+  const serviceFeePayer = normalizeServiceFeePayer(
+    input.serviceFeePayer ?? settings.service_fee_payer,
+  );
 
   const providerId: ProviderId = input.provider ?? settings.default_gateway;
-  const gatewayFee = getGatewayCalculator(providerId).calculate({
-    amount: subtotal + deliveryFee,
+  const gatewayFeeCents = toCents(getGatewayCalculator(providerId).calculate({
+    amount: fromCents(subtotalCents + deliveryFeeCents),
     method: input.paymentMethod ?? "pix",
-  });
+  }));
 
-  const totalDiscount = couponDiscount + cashback + loyaltyDiscount;
-  const customerTotal = round2(Math.max(0, subtotal + deliveryFee - totalDiscount));
-  const restaurantGross = round2(subtotal);
-  const restaurantNet = round2(Math.max(0, subtotal - couponDiscount - loyaltyDiscount));
-  const platformRevenue = round2(platformFee);
-  const gatewayRevenue = round2(gatewayFee);
-  const estimatedProfit = round2(platformRevenue - gatewayRevenue);
+  const totalDiscountCents = couponDiscountCents + cashbackCents + loyaltyDiscountCents;
+  const itemsAndDeliveryTotalCents = Math.max(0, subtotalCents + deliveryFeeCents - totalDiscountCents);
+  const customerTotalCents =
+    serviceFeePayer === "customer"
+      ? itemsAndDeliveryTotalCents + platformFeeCents
+      : itemsAndDeliveryTotalCents;
+  const restaurantGrossCents = subtotalCents;
+  const restaurantNetBeforeServiceFeeCents = Math.max(
+    0,
+    subtotalCents - couponDiscountCents - loyaltyDiscountCents,
+  );
+  const restaurantNetCents =
+    serviceFeePayer === "restaurant"
+      ? Math.max(0, restaurantNetBeforeServiceFeeCents - platformFeeCents)
+      : restaurantNetBeforeServiceFeeCents;
+  const expectedPlatformFeeCents = platformFeeCents;
+  const expectedPlatformRevenueCents = platformFeeCents;
+  const realizedPlatformRevenueCents = 0;
+  const gatewayRevenueCents = gatewayFeeCents;
+  const estimatedProfitCents = expectedPlatformRevenueCents - gatewayRevenueCents;
 
   return {
-    subtotal: round2(subtotal),
-    deliveryFee: round2(deliveryFee),
-    platformFee: round2(platformFee),
-    gatewayFee: round2(gatewayFee),
-    couponDiscount: round2(couponDiscount),
-    cashback: round2(cashback),
-    loyaltyDiscount: round2(loyaltyDiscount),
-    customerTotal,
-    restaurantGross,
-    restaurantNet,
-    platformRevenue,
-    gatewayRevenue,
-    estimatedProfit,
+    subtotal: fromCents(subtotalCents),
+    deliveryFee: fromCents(deliveryFeeCents),
+    platformFee: fromCents(platformFeeCents),
+    gatewayFee: fromCents(gatewayFeeCents),
+    couponDiscount: fromCents(couponDiscountCents),
+    cashback: fromCents(cashbackCents),
+    loyaltyDiscount: fromCents(loyaltyDiscountCents),
+    customerTotal: fromCents(customerTotalCents),
+    restaurantGross: fromCents(restaurantGrossCents),
+    restaurantNet: fromCents(restaurantNetCents),
+    serviceFeePayer,
+    expectedPlatformFee: fromCents(expectedPlatformFeeCents),
+    expectedPlatformRevenue: fromCents(expectedPlatformRevenueCents),
+    realizedPlatformRevenue: fromCents(realizedPlatformRevenueCents),
+    platformRevenue: fromCents(expectedPlatformRevenueCents),
+    gatewayRevenue: fromCents(gatewayRevenueCents),
+    estimatedProfit: fromCents(estimatedProfitCents),
     currency: settings.currency,
   };
 }
 
 // ------------------------------------------------------------
-// API pública
+// API pÃºblica
 // ------------------------------------------------------------
 
 export const PricingEngine = {
-  /** Cálculo de pricing de um pedido. Única entrada oficial. */
+  /** CÃ¡lculo de pricing de um pedido. Ãšnica entrada oficial. */
   async calculateOrderPricing(input: PricingInput): Promise<PricingResult> {
     const settings = await loadPricingSettings();
-    // Fonte única da taxa de serviço: PlatformRevenue Domain.
+    // Fonte Ãºnica da taxa de serviÃ§o: PlatformRevenue Domain.
     const { PlatformRevenueService } = await import("@/lib/platform-revenue");
     const fee = await PlatformRevenueService.getCurrentServiceFee(Number(input.subtotal) || 0);
-    // Pedido mínimo: prioriza restaurante, faz fallback para plataforma.
+    // Pedido mÃ­nimo: prioriza restaurante, faz fallback para plataforma.
     const restaurantMin =
       input.minimumOrder != null && Number.isFinite(Number(input.minimumOrder))
         ? Number(input.minimumOrder)
@@ -260,7 +301,7 @@ export const PricingEngine = {
     return computePricing(input, merged);
   },
 
-  /** Verifica se um subtotal atinge o pedido mínimo (sem lançar). */
+  /** Verifica se um subtotal atinge o pedido mÃ­nimo (sem lanÃ§ar). */
   async meetsMinimumOrder(subtotal: number, restaurantMinimum?: number | null): Promise<boolean> {
     const s = await loadPricingSettings();
     const min =

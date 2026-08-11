@@ -5,10 +5,11 @@
 //  - Providers implementam `PaymentProvider`; trocar/adicionar gateway
 //    é uma alteração local, sem tocar no restante do app.
 
-import { paymentsRepo, platformFeesRepo } from "./repositories";
+import { paymentsRepo } from "./repositories";
+import PricingEngine from "./PricingEngine";
 import { getProvider, paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
 import type { CreateCheckoutInput, CreateCheckoutResult, PaymentProvider } from "./providers/PaymentProvider";
-import type { PaymentMethod, PlatformFees } from "./types";
+import type { PaymentMethod } from "./types";
 
 export interface CreatePaymentInput {
   providerId?: string;
@@ -51,19 +52,18 @@ export const PaymentService = {
 
   // ------- Taxas da plataforma -------
   async calcFees(subtotal: number): Promise<FeeBreakdown> {
-    const cfg = (await platformFeesRepo.get()) ?? ({
-      min_order: 20,
-      fee_up_to_30: 0.99,
-      fee_above_30: 1.49,
-      monthly_fee: 0,
-    } as PlatformFees);
-    const platformFee = subtotal <= 30 ? Number(cfg.fee_up_to_30) : Number(cfg.fee_above_30);
-    return {
+    const settings = await PricingEngine.loadSettings();
+    const pricing = await PricingEngine.calculateOrderPricing({
       subtotal,
-      platformFee,
-      total: Number((subtotal + platformFee).toFixed(2)),
-      minOrder: Number(cfg.min_order),
-      meetsMinOrder: subtotal >= Number(cfg.min_order),
+      minimumOrder: 0,
+      serviceFeePayer: "customer",
+    });
+    return {
+      subtotal: pricing.subtotal,
+      platformFee: pricing.platformFee,
+      total: pricing.customerTotal,
+      minOrder: Number(settings.minimum_order),
+      meetsMinOrder: subtotal >= Number(settings.minimum_order),
     };
   },
 

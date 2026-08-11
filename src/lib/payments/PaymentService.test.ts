@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock do supabase client para MercadoPagoProvider/StripeProvider.
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { functions: { invoke: vi.fn() } },
+  supabase: { functions: { invoke: vi.fn() }, from: vi.fn() },
 }));
 
 import { PaymentService } from "./PaymentService";
@@ -14,6 +14,7 @@ import { paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
 import { supabase } from "@/integrations/supabase/client";
 
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
+const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
 
 const baseInput = {
   restaurantId: "r1",
@@ -25,7 +26,32 @@ const baseInput = {
   cancelUrl: "https://app.test/cancel",
 };
 
-beforeEach(() => invoke.mockReset());
+beforeEach(() => {
+  invoke.mockReset();
+  from.mockReset();
+  from.mockImplementation(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        maybeSingle: vi.fn(async () => ({
+          data: {
+            minimum_order: 20,
+            platform_fee_until_30: 0.99,
+            platform_fee_above_30: 0.99,
+            default_gateway: "mercado_pago",
+            gateway_enabled: { mercado_pago: true },
+            currency: "BRL",
+            service_fee_enabled: true,
+            service_fee_type: "TIERED",
+            service_fee_value: 0.99,
+            effective_from: null,
+            effective_until: null,
+          },
+          error: null,
+        })),
+      })),
+    })),
+  }));
+});
 
 describe("PaymentService.createPayment", () => {
   it("default provider é Stripe", () => {
@@ -111,5 +137,18 @@ describe("PaymentService.createPayment", () => {
     await expect(
       PaymentService.createPayment({ ...baseInput, providerId: "inexistente" }),
     ).rejects.toThrow(/desconhecido/i);
+  });
+});
+
+describe("PaymentService.calcFees", () => {
+  it("delega o total do cliente ao PricingEngine", async () => {
+    const r = await PaymentService.calcFees(50);
+    expect(r).toMatchObject({
+      subtotal: 50,
+      platformFee: 0.99,
+      total: 50.99,
+      minOrder: 20,
+      meetsMinOrder: true,
+    });
   });
 });

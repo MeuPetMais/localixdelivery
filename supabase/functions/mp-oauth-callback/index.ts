@@ -1,4 +1,4 @@
-// Callback público do Mercado Pago (chamado pelo próprio MP após autorizar).
+// Callback pÃºblico do Mercado Pago (chamado pelo prÃ³prio MP apÃ³s autorizar).
 // Recebe ?code&state, troca por access_token usando o Client Secret do
 // aplicativo Mercado Pago, cifra e persiste tokens.
 // verify_jwt = false (configurado em supabase/config.toml).
@@ -6,9 +6,11 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
+import {
+  getRequiredMpEnvironmentConfig,
+  getRequiredMpOAuthConfig,
+} from "../_shared/mp-security.ts";
 
-const REDIRECT_URI =
-  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
 Deno.serve(async (req) => {
@@ -19,7 +21,7 @@ Deno.serve(async (req) => {
     const params = req.method === "POST" ? await req.json() : Object.fromEntries(url.searchParams);
     const code = params.code as string | undefined;
     const state = params.state as string | undefined;
-    if (!code || !state) return jsonErr("code e state obrigatórios", 400);
+    if (!code || !state) return jsonErr("code e state obrigatÃ³rios", 400);
 
     const admin = adminClient();
 
@@ -29,13 +31,32 @@ Deno.serve(async (req) => {
       .eq("state", state)
       .eq("provider", "mercado_pago")
       .maybeSingle();
-    if (!st) return jsonErr("state inválido", 400);
-    if (st.used_at) return jsonErr("state já utilizado", 400);
+    if (!st) return jsonErr("state invÃ¡lido", 400);
+    if (st.used_at) return jsonErr("state jÃ¡ utilizado", 400);
     if (new Date(st.expires_at).getTime() < Date.now()) return jsonErr("state expirado", 400);
 
-    const appId = Deno.env.get("MP_APP_ID");
-    const mpClientSecret = Deno.env.get("MP_CLIENT_SECRET") || Deno.env.get("MP_ACCESS_TOKEN");
-    if (!appId || !mpClientSecret) return jsonErr("MP_APP_ID/MP_CLIENT_SECRET não configurados", 500);
+    const environmentConfig = getRequiredMpEnvironmentConfig(Deno.env);
+    if (!environmentConfig.ok) {
+      console.error("[mp-oauth-callback]", {
+        provider: "mercado_pago",
+        restaurant_id: st.restaurant_id,
+        error: environmentConfig.error,
+        reason: environmentConfig.reason,
+        timestamp: new Date().toISOString(),
+      });
+      return jsonErr(environmentConfig.error, 500);
+    }
+
+    const oauthConfig = getRequiredMpOAuthConfig(Deno.env);
+    if (!oauthConfig.ok) {
+      console.error("[mp-oauth-callback]", {
+        provider: "mercado_pago",
+        restaurant_id: st.restaurant_id,
+        error: oauthConfig.error,
+        timestamp: new Date().toISOString(),
+      });
+      return jsonErr(oauthConfig.error, 500);
+    }
 
 
     // Troca do authorization_code por access_token do lojista.
@@ -46,48 +67,57 @@ Deno.serve(async (req) => {
         accept: "application/json",
       },
       body: new URLSearchParams({
-        client_id: appId,
-        client_secret: mpClientSecret,
+        client_id: oauthConfig.appId,
+        client_secret: oauthConfig.clientSecret,
         grant_type: "authorization_code",
         code,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: environmentConfig.oauthRedirectUri,
         code_verifier: st.code_verifier,
       }),
     });
 
     const rawBody = await tokenRes.text();
     let tokenJson: any = {};
-    try { tokenJson = JSON.parse(rawBody); } catch { tokenJson = { raw: rawBody }; }
+    try { tokenJson = JSON.parse(rawBody); } catch { tokenJson = { error: "non_json_response" }; }
 
-    console.error("MP TOKEN RESPONSE");
-console.error(rawBody);
+    console.info("[mp-oauth-callback] token exchange response", {
+      provider: "mercado_pago",
+      restaurant_id: st.restaurant_id,
+      http_status: tokenRes.status,
+      ok: tokenRes.ok,
+      timestamp: new Date().toISOString(),
+    });
 
     if (!tokenRes.ok) {
-  console.error("MP TOKEN ERROR", tokenRes.status);
-  console.error(rawBody);
+      const sanitizedError = sanitizeOAuthError(tokenJson);
+      console.error("[mp-oauth-callback] token exchange failed", {
+        provider: "mercado_pago",
+        restaurant_id: st.restaurant_id,
+        http_status: tokenRes.status,
+        error: sanitizedError,
+        timestamp: new Date().toISOString(),
+      });
 
-  await admin.from("payment_logs").insert({
-    restaurant_id: st.restaurant_id,
-    level: "error",
-    message: "MP OAuth token exchange failed",
-    data: {
-      http_status: tokenRes.status,
-      body: tokenJson,
-      raw: rawBody,
-      redirect_uri: REDIRECT_URI,
-      client_id: appId,
-      code_verifier_found: !!st.code_verifier,
-    },
-  });
+      await admin.from("payment_logs").insert({
+        restaurant_id: st.restaurant_id,
+        level: "error",
+        message: "MP OAuth token exchange failed",
+        data: {
+          http_status: tokenRes.status,
+          error: sanitizedError,
+          redirect_uri: environmentConfig.oauthRedirectUri,
+          code_verifier_found: !!st.code_verifier,
+        },
+      });
 
-  return new Response(rawBody, {
-    status: tokenRes.status,
-    headers: {
-      "content-type": "application/json",
-      ...corsHeaders,
-    },
-  });
-}
+      return new Response(JSON.stringify({ error: "mercadopago_oauth_token_exchange_failed" }), {
+        status: tokenRes.status,
+        headers: {
+          "content-type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
 
     const expiresAt = tokenJson.expires_in
       ? new Date(Date.now() + Number(tokenJson.expires_in) * 1000).toISOString()
@@ -113,15 +143,17 @@ console.error(rawBody);
 
     await admin.from("oauth_states").update({ used_at: new Date().toISOString() }).eq("state", state);
 
-    return redirect(st.redirect_to ?? "/pagamentos?mp=success");
+    return redirect(st.redirect_to ?? "/pagamentos?mp=success", environmentConfig.appBaseUrl);
   } catch (err) {
     console.error("[mp-oauth-callback] error", err);
-    return redirect("/pagamentos?mp=error&reason=internal");
+    const environmentConfig = getRequiredMpEnvironmentConfig(Deno.env);
+    if (!environmentConfig.ok) return jsonErr("mercadopago_environment_not_configured", 500);
+    return redirect("/pagamentos?mp=error&reason=internal", environmentConfig.appBaseUrl);
   }
 });
 
-function redirect(path: string) {
-  const base = Deno.env.get("APP_URL") ?? "https://localixdelivery.rngdigital.com.br";
+function redirect(path: string, appBaseUrl: string) {
+  const base = appBaseUrl;
   const to = path.startsWith("http") ? path : base + path;
   return new Response(null, { status: 302, headers: { location: to, ...corsHeaders } });
 }
@@ -133,9 +165,18 @@ function jsonErr(message: string, status: number) {
   });
 }
 
+function sanitizeOAuthError(obj: Record<string, unknown>) {
+  const clone = sanitize(obj);
+  delete (clone as any).client_secret;
+  delete (clone as any).code;
+  delete (clone as any).authorization_code;
+  return clone;
+}
+
 function sanitize(obj: Record<string, unknown>) {
   const clone = { ...obj };
   delete (clone as any).access_token;
   delete (clone as any).refresh_token;
+  delete (clone as any).raw;
   return clone;
 }

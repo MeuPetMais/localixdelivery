@@ -8,9 +8,8 @@ import {
   pkceChallengeS256,
   randomBase64Url,
 } from "../_shared/crypto.ts";
+import { getRequiredMpEnvironmentConfig } from "../_shared/mp-security.ts";
 
-const REDIRECT_URI =
-  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
 Deno.serve(async (req) => {
@@ -26,6 +25,18 @@ Deno.serve(async (req) => {
     const ctx = await requireOwner(req, restaurantId);
 
     if (action === "start") {
+      const environmentConfig = getRequiredMpEnvironmentConfig(Deno.env);
+      if (!environmentConfig.ok) {
+        console.error("[mp-oauth][start] environment not configured", {
+          provider: "mercado_pago",
+          restaurant_id: restaurantId,
+          error: environmentConfig.error,
+          reason: environmentConfig.reason,
+          timestamp: new Date().toISOString(),
+        });
+        return json({ error: environmentConfig.error }, { status: 500 });
+      }
+
       const appId = Deno.env.get("MP_APP_ID");
       if (!appId) return json({ error: "MP_APP_ID não configurado" }, { status: 500 });
 
@@ -47,15 +58,20 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("client_id", appId);
       authUrl.searchParams.set("response_type", "code");
       authUrl.searchParams.set("platform_id", "mp");
-      authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+      authUrl.searchParams.set("redirect_uri", environmentConfig.oauthRedirectUri);
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("code_challenge", codeChallenge);
       authUrl.searchParams.set("code_challenge_method", "S256");
 
       const _full = authUrl.toString();
-      console.log("[mp-oauth][start] MP_APP_ID:", appId);
-      console.log("[mp-oauth][start] client_id:", appId);
-      console.log("[mp-oauth][start] authorize_url:", _full);
+      console.info("[mp-oauth][start] authorize url created", {
+        provider: "mercado_pago",
+        restaurant_id: restaurantId,
+        environment: environmentConfig.runtimeEnvironment,
+        mp_environment: environmentConfig.mercadoPagoEnvironment,
+        redirect_uri: environmentConfig.oauthRedirectUri,
+        timestamp: new Date().toISOString(),
+      });
       return json({ authorize_url: _full });
     }
 
