@@ -44,7 +44,7 @@ describe("Mercado Pago security helpers", () => {
   it("staging usa URLs de staging para OAuth e webhook", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
-      SUPABASE_ENVIRONMENT: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
       SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1/",
       APP_BASE_URL: "https://staging.localix.test",
@@ -64,7 +64,7 @@ describe("Mercado Pago security helpers", () => {
   it("producao usa URLs de producao com MP production", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "production",
-      SUPABASE_ENVIRONMENT: "production",
+      LOCALIX_SUPABASE_ENVIRONMENT: "production",
       MP_ENVIRONMENT: "production",
       SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
       APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
@@ -82,7 +82,7 @@ describe("Mercado Pago security helpers", () => {
   it("falha fechada quando variavel obrigatoria de ambiente esta ausente", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
-      SUPABASE_ENVIRONMENT: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
       APP_BASE_URL: "https://staging.localix.test",
     }));
@@ -97,7 +97,7 @@ describe("Mercado Pago security helpers", () => {
   it("staging nao aceita MP production", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
-      SUPABASE_ENVIRONMENT: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "production",
       SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1",
       APP_BASE_URL: "https://staging.localix.test",
@@ -113,7 +113,7 @@ describe("Mercado Pago security helpers", () => {
   it("staging nao reutiliza URLs marcadas como producao", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
-      SUPABASE_ENVIRONMENT: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
       SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1/",
       APP_BASE_URL: "https://staging.localix.test",

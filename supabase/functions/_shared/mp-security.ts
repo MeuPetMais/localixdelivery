@@ -110,7 +110,7 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "localix_env_missing_or_invalid" };
   }
 
-  const supabaseEnvironment = parseLocalixEnvironment(cleanEnvValue(env.get("SUPABASE_ENVIRONMENT")));
+  const supabaseEnvironment = parseLocalixEnvironment(cleanEnvValue(env.get("LOCALIX_SUPABASE_ENVIRONMENT")));
   if (!supabaseEnvironment) {
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "supabase_environment_missing_or_invalid" };
   }

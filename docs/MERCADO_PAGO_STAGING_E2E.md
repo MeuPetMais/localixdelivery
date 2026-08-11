@@ -7,7 +7,7 @@ Este roteiro prepara uma validacao financeira controlada sem reutilizar producao
 Cada runtime deve declarar explicitamente:
 
 - `LOCALIX_ENV`: `development`, `staging` ou `production`.
-- `SUPABASE_ENVIRONMENT`: mesmo valor de `LOCALIX_ENV`.
+- `LOCALIX_SUPABASE_ENVIRONMENT`: mesmo valor de `LOCALIX_ENV`.
 - `MP_ENVIRONMENT`: `sandbox` para `development`/`staging`, `production` apenas para producao.
 - `SUPABASE_FUNCTIONS_BASE_URL`: base publica das Edge Functions do ambiente, sem barra final.
 - `APP_BASE_URL`: base publica do frontend do ambiente.
@@ -42,7 +42,7 @@ Nao preencher secrets reais em arquivos versionados.
 - Configurar banco proprio, sem conexao com o banco de producao.
 - Configurar secrets proprios de staging.
 - Definir `SUPABASE_FUNCTIONS_BASE_URL=https://<staging-project-ref>.supabase.co/functions/v1`.
-- Definir `SUPABASE_ENVIRONMENT=staging`.
+- Definir `LOCALIX_SUPABASE_ENVIRONMENT=staging`.
 - Definir `LOCALIX_ENV=staging`.
 - Definir `MP_ENVIRONMENT=sandbox`.
 - Confirmar que `PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL` nao e igual a URL de staging.
