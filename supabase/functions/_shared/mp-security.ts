@@ -132,7 +132,7 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "non_production_requires_mp_sandbox" };
   }
 
-  const functionsBaseUrl = cleanEnvValue(env.get("SUPABASE_FUNCTIONS_BASE_URL"));
+  const functionsBaseUrl = cleanEnvValue(env.get("LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
   if (!functionsBaseUrl || !isValidBaseUrl(functionsBaseUrl, runtimeEnvironment)) {
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "supabase_functions_base_url_missing_or_invalid" };
   }
@@ -143,7 +143,7 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
   }
 
   if (runtimeEnvironment === "staging") {
-    const productionFunctionsBaseUrl = cleanEnvValue(env.get("PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL"));
+    const productionFunctionsBaseUrl = cleanEnvValue(env.get("PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
     if (equalsNormalizedUrl(functionsBaseUrl, productionFunctionsBaseUrl)) {
       return { ok: false, error: "mercadopago_environment_not_configured", reason: "staging_functions_url_matches_production" };
     }

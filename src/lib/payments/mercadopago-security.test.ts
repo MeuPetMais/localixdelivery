@@ -46,9 +46,9 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
-      SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1/",
+      LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1/",
       APP_BASE_URL: "https://staging.localix.test",
-      PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
       PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
@@ -66,7 +66,7 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_ENV: "production",
       LOCALIX_SUPABASE_ENVIRONMENT: "production",
       MP_ENVIRONMENT: "production",
-      SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
+      LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
       APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
@@ -99,7 +99,7 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "production",
-      SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1",
+      LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://staging-ref.supabase.co/functions/v1",
       APP_BASE_URL: "https://staging.localix.test",
     }));
 
@@ -115,9 +115,9 @@ describe("Mercado Pago security helpers", () => {
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
-      SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1/",
+      LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1/",
       APP_BASE_URL: "https://staging.localix.test",
-      PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
+      PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://prod-ref.supabase.co/functions/v1",
     }));
 
     expect(result).toEqual({

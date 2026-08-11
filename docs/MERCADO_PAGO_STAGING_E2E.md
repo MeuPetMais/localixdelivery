@@ -9,12 +9,12 @@ Cada runtime deve declarar explicitamente:
 - `LOCALIX_ENV`: `development`, `staging` ou `production`.
 - `LOCALIX_SUPABASE_ENVIRONMENT`: mesmo valor de `LOCALIX_ENV`.
 - `MP_ENVIRONMENT`: `sandbox` para `development`/`staging`, `production` apenas para producao.
-- `SUPABASE_FUNCTIONS_BASE_URL`: base publica das Edge Functions do ambiente, sem barra final.
+- `LOCALIX_SUPABASE_FUNCTIONS_BASE_URL`: base publica das Edge Functions do ambiente, sem barra final.
 - `APP_BASE_URL`: base publica do frontend do ambiente.
 
 Em `staging`, configure tambem referencias nao secretas de producao:
 
-- `PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL`
+- `PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL`
 - `PRODUCTION_APP_BASE_URL`
 
 Se staging apontar para as referencias de producao, as funcoes Mercado Pago falham fechadas com
@@ -41,11 +41,12 @@ Nao preencher secrets reais em arquivos versionados.
 - Configurar Auth proprio do projeto staging.
 - Configurar banco proprio, sem conexao com o banco de producao.
 - Configurar secrets proprios de staging.
-- Definir `SUPABASE_FUNCTIONS_BASE_URL=https://<staging-project-ref>.supabase.co/functions/v1`.
+- Definir `LOCALIX_SUPABASE_FUNCTIONS_BASE_URL=https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1`.
 - Definir `LOCALIX_SUPABASE_ENVIRONMENT=staging`.
 - Definir `LOCALIX_ENV=staging`.
 - Definir `MP_ENVIRONMENT=sandbox`.
-- Confirmar que `PRODUCTION_SUPABASE_FUNCTIONS_BASE_URL` nao e igual a URL de staging.
+- Definir `PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL=https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1`.
+- Confirmar que `PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL` nao e igual a URL de staging.
 
 ## Checklist Mercado Pago staging/test
 
