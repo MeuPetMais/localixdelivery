@@ -80,6 +80,16 @@ function normalizeUrl(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function resolveFunctionsBaseUrl(env: { get: (key: string) => string | undefined | null }): string | null {
+  const explicitFunctionsBaseUrl = cleanEnvValue(env.get("LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
+  if (explicitFunctionsBaseUrl) return explicitFunctionsBaseUrl;
+
+  const supabaseUrl = cleanEnvValue(env.get("SUPABASE_URL"));
+  if (!supabaseUrl) return null;
+
+  return `${normalizeUrl(supabaseUrl)}/functions/v1`;
+}
+
 function parseLocalixEnvironment(value: string | null): LocalixRuntimeEnvironment | null {
   if (value === "development" || value === "staging" || value === "production") return value;
   return null;
@@ -132,7 +142,7 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "non_production_requires_mp_sandbox" };
   }
 
-  const functionsBaseUrl = cleanEnvValue(env.get("LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
+  const functionsBaseUrl = resolveFunctionsBaseUrl(env);
   if (!functionsBaseUrl || !isValidBaseUrl(functionsBaseUrl, runtimeEnvironment)) {
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "supabase_functions_base_url_missing_or_invalid" };
   }
