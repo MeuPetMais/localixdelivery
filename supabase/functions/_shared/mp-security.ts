@@ -71,6 +71,8 @@ export type MpEnvironmentConfig =
     }
   | { ok: false; error: "mercadopago_environment_not_configured"; reason: string };
 
+const TEMPORARY_STAGING_FUNCTIONS_BASE_URL = "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1";
+
 function cleanEnvValue(value: string | undefined | null): string | null {
   const cleaned = String(value ?? "").trim();
   return cleaned.length > 0 ? cleaned : null;
@@ -137,10 +139,21 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
   }
 
   const supabaseUrl = cleanEnvValue(env.get("SUPABASE_URL"));
-  if (!supabaseUrl || !isValidBaseUrl(supabaseUrl, runtimeEnvironment)) {
+  let functionsBaseUrl: string | null = null;
+  if (supabaseUrl && isValidBaseUrl(supabaseUrl, runtimeEnvironment)) {
+    functionsBaseUrl = deriveFunctionsBaseUrl(supabaseUrl);
+  } else if (
+    runtimeEnvironment === "staging" &&
+    supabaseEnvironment === "staging" &&
+    mercadoPagoEnvironment === "sandbox"
+  ) {
+    // TEMPORARY STAGING FALLBACK — remove before production rollout.
+    functionsBaseUrl = TEMPORARY_STAGING_FUNCTIONS_BASE_URL;
+  }
+
+  if (!functionsBaseUrl) {
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "supabase_functions_base_url_missing_or_invalid" };
   }
-  const functionsBaseUrl = deriveFunctionsBaseUrl(supabaseUrl);
 
   const appBaseUrl = cleanEnvValue(env.get("APP_BASE_URL")) ?? cleanEnvValue(env.get("APP_URL"));
   if (!appBaseUrl || !isValidBaseUrl(appBaseUrl, runtimeEnvironment)) {

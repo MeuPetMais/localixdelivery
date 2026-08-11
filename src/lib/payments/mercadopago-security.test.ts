@@ -116,28 +116,47 @@ describe("Mercado Pago security helpers", () => {
     });
   });
 
-  it("falha fechada quando URL custom e SUPABASE_URL estao ausentes", () => {
+  it("staging sandbox usa fallback temporario quando SUPABASE_URL esta ausente", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
-      APP_BASE_URL: "https://staging.localix.test",
+      APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+      PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
-    expect(result).toEqual({
-      ok: false,
-      error: "mercadopago_environment_not_configured",
-      reason: "supabase_functions_base_url_missing_or_invalid",
+    expect(result).toMatchObject({
+      ok: true,
+      functionsBaseUrl: "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1",
+      oauthRedirectUri: "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1/mp-oauth-callback",
+      webhookUrl: "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1/mp-webhook",
     });
+    expect(JSON.stringify(result)).not.toContain("mvkfrwxgneqzvoabkaws");
   });
 
-  it("SUPABASE_URL invalida falha fechada", () => {
+  it("staging sandbox usa fallback temporario quando SUPABASE_URL e invalida", () => {
     const result = getRequiredMpEnvironmentConfig(env({
       LOCALIX_ENV: "staging",
       LOCALIX_SUPABASE_ENVIRONMENT: "staging",
       MP_ENVIRONMENT: "sandbox",
       SUPABASE_URL: "not a url",
       APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+      PRODUCTION_SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+    }));
+
+    expect(result).toMatchObject({
+      ok: true,
+      functionsBaseUrl: "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1",
+    });
+  });
+
+  it("development nao utiliza fallback temporario de staging", () => {
+    const result = getRequiredMpEnvironmentConfig(env({
+      LOCALIX_ENV: "development",
+      LOCALIX_SUPABASE_ENVIRONMENT: "development",
+      MP_ENVIRONMENT: "sandbox",
+      APP_BASE_URL: "http://localhost:5173",
     }));
 
     expect(result).toEqual({
@@ -147,13 +166,12 @@ describe("Mercado Pago security helpers", () => {
     });
   });
 
-  it("http continua rejeitado em staging tambem via SUPABASE_URL", () => {
+  it("production nunca utiliza fallback temporario de staging", () => {
     const result = getRequiredMpEnvironmentConfig(env({
-      LOCALIX_ENV: "staging",
-      LOCALIX_SUPABASE_ENVIRONMENT: "staging",
-      MP_ENVIRONMENT: "sandbox",
-      SUPABASE_URL: "http://dnotmvbhuqujvqdtgzav.supabase.co",
-      APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+      LOCALIX_ENV: "production",
+      LOCALIX_SUPABASE_ENVIRONMENT: "production",
+      MP_ENVIRONMENT: "production",
+      APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
     }));
 
     expect(result).toEqual({
@@ -176,6 +194,21 @@ describe("Mercado Pago security helpers", () => {
       ok: false,
       error: "mercadopago_environment_not_configured",
       reason: "non_production_requires_mp_sandbox",
+    });
+  });
+
+  it("staging com LOCALIX_SUPABASE_ENVIRONMENT divergente falha antes do fallback", () => {
+    const result = getRequiredMpEnvironmentConfig(env({
+      LOCALIX_ENV: "staging",
+      LOCALIX_SUPABASE_ENVIRONMENT: "production",
+      MP_ENVIRONMENT: "sandbox",
+      APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+    }));
+
+    expect(result).toEqual({
+      ok: false,
+      error: "mercadopago_environment_not_configured",
+      reason: "runtime_supabase_environment_mismatch",
     });
   });
 
