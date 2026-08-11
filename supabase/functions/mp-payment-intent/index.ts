@@ -10,8 +10,10 @@ import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
 import {
+  getMercadoPagoCheckoutProUrl,
   getRequiredMpEnvironmentConfig,
   getRestaurantMpAccessToken,
+  validateMercadoPagoAccountEnvironment,
 } from "../_shared/mp-security.ts";
 
 type MpStatus = "pending" | "in_process" | "approved" | "rejected" | "cancelled" | "refunded" | "charged_back";
@@ -162,6 +164,22 @@ async function getAccessToken(sb: ReturnType<typeof admin>, restaurantId: string
   const result = await getRestaurantMpAccessToken(sb as any, restaurantId, decryptToken);
   if (!result.ok) throw new Error(result.error);
   return result.token;
+}
+
+async function validatePaymentAccountEnvironment(
+  sb: ReturnType<typeof admin>,
+  restaurantId: string,
+  environmentConfig: Extract<ReturnType<typeof getRequiredMpEnvironmentConfig>, { ok: true }>,
+) {
+  const { data, error } = await sb
+    .from("mercado_pago_accounts")
+    .select("live_mode")
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+  if (error) throw error;
+
+  const validation = validateMercadoPagoAccountEnvironment(data, environmentConfig);
+  if (!validation.ok) throw new Error(validation.error);
 }
 
 async function createPixPayment(token: string, params: {
@@ -410,6 +428,7 @@ Deno.serve(async (req) => {
       return json({ error: environmentConfig.error }, { status: 500 });
     }
 
+    await validatePaymentAccountEnvironment(sb, order.restaurant_id, environmentConfig);
     const token = await getAccessToken(sb, order.restaurant_id);
 
     // ---------- CREATE ----------
@@ -590,7 +609,7 @@ Deno.serve(async (req) => {
         }
 
         // 6) init_point (produÃ§Ã£o) ou sandbox_init_point (sandbox).
-        const paymentUrl: string | null = pref?.init_point ?? pref?.sandbox_init_point ?? null;
+        const paymentUrl = getMercadoPagoCheckoutProUrl(pref, environmentConfig);
         if (!paymentUrl) {
           console.error("[mp-payment-intent] preference sem init_point", { orderId, pref_id: pref?.id });
           await sb.from("order_payment").update({ status: "PENDING", last_error: "preference_missing_init_point" }).eq("order_id", orderId);
@@ -891,7 +910,8 @@ Deno.serve(async (req) => {
     if (
       msg === "restaurant_mp_not_connected" ||
       msg === "restaurant_mp_token_invalid" ||
-      msg === "restaurant_mp_token_expired"
+      msg === "restaurant_mp_token_expired" ||
+      msg === "mercadopago_live_account_not_allowed_in_staging"
     ) {
       return json({ error: msg }, { status: 409 });
     }

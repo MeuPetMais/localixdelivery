@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import {
+  getMercadoPagoCheckoutProUrl,
   getRequiredMpEnvironmentConfig,
   getRequiredMpOAuthConfig,
   getRestaurantMpAccessToken,
+  resolveMercadoPagoOAuthLiveMode,
+  validateMercadoPagoAccountEnvironment,
   verifyMercadoPagoWebhookSignature,
 } from "../../../supabase/functions/_shared/mp-security";
 
@@ -38,6 +41,34 @@ async function signWebhook(secret: string, manifest: string) {
   return [...new Uint8Array(sig)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function stagingMpConfig() {
+  const result = getRequiredMpEnvironmentConfig(env({
+    LOCALIX_ENV: "staging",
+    LOCALIX_SUPABASE_ENVIRONMENT: "staging",
+    MP_ENVIRONMENT: "sandbox",
+    SUPABASE_URL: "https://dnotmvbhuqujvqdtgzav.supabase.co",
+    APP_BASE_URL: "https://localixdelivery-staging.vercel.app",
+    PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1",
+    PRODUCTION_APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
+  }));
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error(result.reason);
+  return result;
+}
+
+function productionMpConfig() {
+  const result = getRequiredMpEnvironmentConfig(env({
+    LOCALIX_ENV: "production",
+    LOCALIX_SUPABASE_ENVIRONMENT: "production",
+    MP_ENVIRONMENT: "production",
+    SUPABASE_URL: "https://mvkfrwxgneqzvoabkaws.supabase.co",
+    APP_BASE_URL: "https://localixdelivery.rngdigital.com.br",
+  }));
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error(result.reason);
+  return result;
 }
 
 describe("Mercado Pago security helpers", () => {
@@ -243,6 +274,88 @@ describe("Mercado Pago security helpers", () => {
       error: "mercadopago_environment_not_configured",
       reason: "staging_functions_url_matches_production",
     });
+  });
+
+  it("OAuth rejeita staging sandbox com live_mode=true", () => {
+    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: true }, stagingMpConfig())).toEqual({
+      ok: false,
+      error: "mercadopago_live_account_not_allowed_in_staging",
+    });
+  });
+
+  it("OAuth rejeita staging sandbox com live_mode ausente", () => {
+    expect(resolveMercadoPagoOAuthLiveMode({}, stagingMpConfig())).toEqual({
+      ok: false,
+      error: "mercadopago_live_account_not_allowed_in_staging",
+    });
+  });
+
+  it("OAuth aceita staging sandbox com live_mode=false", () => {
+    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: false }, stagingMpConfig())).toEqual({
+      ok: true,
+      liveMode: false,
+    });
+  });
+
+  it("OAuth aceita production com live_mode=true", () => {
+    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: true }, productionMpConfig())).toEqual({
+      ok: true,
+      liveMode: true,
+    });
+  });
+
+  it("OAuth callback valida live_mode antes de persistir tokens", () => {
+    const callback = readFileSync("supabase/functions/mp-oauth-callback/index.ts", "utf8");
+
+    expect(callback.indexOf("resolveMercadoPagoOAuthLiveMode")).toBeGreaterThan(-1);
+    expect(callback.indexOf("resolveMercadoPagoOAuthLiveMode")).toBeLessThan(
+      callback.indexOf('admin.from("mercado_pago_accounts").upsert'),
+    );
+  });
+
+  it("payment intent bloqueia sandbox com conta live antes de prosseguir para API MP", () => {
+    expect(validateMercadoPagoAccountEnvironment({ live_mode: true }, stagingMpConfig())).toEqual({
+      ok: false,
+      error: "mercadopago_live_account_not_allowed_in_staging",
+    });
+  });
+
+  it("payment intent valida live_mode da conta antes de obter token para chamadas MP", () => {
+    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+    const validationCall = paymentIntent.indexOf("await validatePaymentAccountEnvironment(sb, order.restaurant_id, environmentConfig)");
+
+    expect(validationCall).toBeGreaterThan(-1);
+    expect(validationCall).toBeLessThan(paymentIntent.indexOf("const token = await getAccessToken"));
+    expect(validationCall).toBeGreaterThan(paymentIntent.indexOf("const environmentConfig = getRequiredMpEnvironmentConfig"));
+  });
+
+  it("payment intent permite sandbox com conta test", () => {
+    expect(validateMercadoPagoAccountEnvironment({ live_mode: false }, stagingMpConfig())).toEqual({ ok: true });
+  });
+
+  it("payment intent permite production com conta live", () => {
+    expect(validateMercadoPagoAccountEnvironment({ live_mode: true }, productionMpConfig())).toEqual({ ok: true });
+  });
+
+  it("Checkout Pro em sandbox usa somente sandbox_init_point", () => {
+    expect(getMercadoPagoCheckoutProUrl({
+      init_point: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=live",
+      sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=test",
+    }, stagingMpConfig())).toBe("https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=test");
+  });
+
+  it("Checkout Pro em sandbox nunca usa init_point como fallback", () => {
+    expect(getMercadoPagoCheckoutProUrl({
+      init_point: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=live",
+      sandbox_init_point: null,
+    }, stagingMpConfig())).toBeNull();
+  });
+
+  it("Checkout Pro em production usa init_point", () => {
+    expect(getMercadoPagoCheckoutProUrl({
+      init_point: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=live",
+      sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=test",
+    }, productionMpConfig())).toBe("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=live");
   });
 
   it("nenhum secret Mercado Pago e exposto como VITE_", () => {

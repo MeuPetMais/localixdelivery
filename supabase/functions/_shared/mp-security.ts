@@ -71,6 +71,8 @@ export type MpEnvironmentConfig =
     }
   | { ok: false; error: "mercadopago_environment_not_configured"; reason: string };
 
+export const MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING = "mercadopago_live_account_not_allowed_in_staging";
+
 const TEMPORARY_STAGING_FUNCTIONS_BASE_URL = "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1";
 
 function cleanEnvValue(value: string | undefined | null): string | null {
@@ -208,6 +210,42 @@ export function getRequiredMpOAuthConfig(env: { get: (key: string) => string | u
   if (!clientSecret) return { ok: false, error: "mercadopago_client_secret_missing" };
 
   return { ok: true, appId, clientSecret };
+}
+
+export function resolveMercadoPagoOAuthLiveMode(
+  tokenJson: { live_mode?: unknown },
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): { ok: true; liveMode: boolean } | { ok: false; error: typeof MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING } {
+  if (environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox") {
+    if (tokenJson.live_mode !== false) return { ok: false, error: MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING };
+    return { ok: true, liveMode: false };
+  }
+
+  return { ok: true, liveMode: tokenJson.live_mode === false ? false : true };
+}
+
+export function validateMercadoPagoAccountEnvironment(
+  account: { live_mode?: boolean | null } | null | undefined,
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): { ok: true } | { ok: false; error: typeof MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING } {
+  if (!account) return { ok: true };
+
+  if (environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox") {
+    if (account?.live_mode !== false) return { ok: false, error: MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING };
+  }
+
+  return { ok: true };
+}
+
+export function getMercadoPagoCheckoutProUrl(
+  preference: { init_point?: string | null; sandbox_init_point?: string | null },
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): string | null {
+  if (environmentConfig.mercadoPagoEnvironment === "sandbox") {
+    return preference.sandbox_init_point ?? null;
+  }
+
+  return preference.init_point ?? null;
 }
 
 export type MpSignatureResult = {
