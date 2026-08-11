@@ -80,13 +80,7 @@ function normalizeUrl(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
-function resolveFunctionsBaseUrl(env: { get: (key: string) => string | undefined | null }): string | null {
-  const explicitFunctionsBaseUrl = cleanEnvValue(env.get("LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
-  if (explicitFunctionsBaseUrl) return explicitFunctionsBaseUrl;
-
-  const supabaseUrl = cleanEnvValue(env.get("SUPABASE_URL"));
-  if (!supabaseUrl) return null;
-
+function deriveFunctionsBaseUrl(supabaseUrl: string): string {
   return `${normalizeUrl(supabaseUrl)}/functions/v1`;
 }
 
@@ -142,10 +136,11 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "non_production_requires_mp_sandbox" };
   }
 
-  const functionsBaseUrl = resolveFunctionsBaseUrl(env);
-  if (!functionsBaseUrl || !isValidBaseUrl(functionsBaseUrl, runtimeEnvironment)) {
+  const supabaseUrl = cleanEnvValue(env.get("SUPABASE_URL"));
+  if (!supabaseUrl || !isValidBaseUrl(supabaseUrl, runtimeEnvironment)) {
     return { ok: false, error: "mercadopago_environment_not_configured", reason: "supabase_functions_base_url_missing_or_invalid" };
   }
+  const functionsBaseUrl = deriveFunctionsBaseUrl(supabaseUrl);
 
   const appBaseUrl = cleanEnvValue(env.get("APP_BASE_URL")) ?? cleanEnvValue(env.get("APP_URL"));
   if (!appBaseUrl || !isValidBaseUrl(appBaseUrl, runtimeEnvironment)) {
@@ -153,7 +148,10 @@ export function getRequiredMpEnvironmentConfig(env: { get: (key: string) => stri
   }
 
   if (runtimeEnvironment === "staging") {
-    const productionFunctionsBaseUrl = cleanEnvValue(env.get("PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
+    const productionSupabaseUrl = cleanEnvValue(env.get("PRODUCTION_SUPABASE_URL"));
+    const productionFunctionsBaseUrl = productionSupabaseUrl
+      ? deriveFunctionsBaseUrl(productionSupabaseUrl)
+      : cleanEnvValue(env.get("PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL"));
     if (equalsNormalizedUrl(functionsBaseUrl, productionFunctionsBaseUrl)) {
       return { ok: false, error: "mercadopago_environment_not_configured", reason: "staging_functions_url_matches_production" };
     }
