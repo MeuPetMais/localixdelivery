@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
   getMercadoPagoCheckoutProUrl,
   getRequiredMpEnvironmentConfig,
@@ -56,6 +57,61 @@ function mpReconciliationSource() {
 
 function splitFunctionsSource() {
   return readFileSync("src/lib/payments/split.functions.ts", "utf8");
+}
+
+const canonicalTokenEncryptionKey = "MP_TOKEN_ENC_KEY";
+const legacyTokenEncryptionKey = ["MP", "TOKEN", "ENCRYPTION", "KEY"].join("_");
+
+function withDenoEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
+  const previousDeno = (globalThis as any).Deno;
+  (globalThis as any).Deno = {
+    env: {
+      get: (key: string) => values[key],
+    },
+  };
+  return fn().finally(() => {
+    if (previousDeno === undefined) {
+      delete (globalThis as any).Deno;
+    } else {
+      (globalThis as any).Deno = previousDeno;
+    }
+  });
+}
+
+function repositoryTextFiles(root = "."): string[] {
+  const ignoredDirs = new Set([".git", "node_modules", ".output", "dist", "coverage", ".tanstack"]);
+  const allowedExtensions = new Set([
+    ".env.example",
+    ".md",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".sql",
+  ]);
+  const files: string[] = [];
+
+  function visit(dir: string) {
+    for (const entry of readdirSync(dir)) {
+      if (ignoredDirs.has(entry)) continue;
+      const full = join(dir, entry);
+      const stat = statSync(full);
+      if (stat.isDirectory()) {
+        visit(full);
+        continue;
+      }
+      if (allowedExtensions.has(entry) || [...allowedExtensions].some((ext) => full.endsWith(ext))) {
+        files.push(full);
+      }
+    }
+  }
+
+  visit(root);
+  return files;
 }
 
 async function simulateWebhookSignatureGate(input: {
@@ -737,8 +793,51 @@ describe("Mercado Pago security helpers", () => {
   it("nenhum secret Mercado Pago e exposto como VITE_", () => {
     const example = readFileSync(".env.example", "utf8");
 
-    expect(example).not.toMatch(/VITE_MP_(APP_ID|CLIENT_SECRET|WEBHOOK_SECRET|TOKEN_ENCRYPTION_KEY|ACCESS_TOKEN)/);
+    expect(example).not.toMatch(/VITE_MP_(APP_ID|CLIENT_SECRET|WEBHOOK_SECRET|TOKEN_ENC_KEY|ACCESS_TOKEN)/);
     expect(example).not.toMatch(/VITE_MERCADO_PAGO_(CLIENT_SECRET|WEBHOOK_SECRET|ACCESS_TOKEN)/);
+  });
+
+  it("crypto usa MP_TOKEN_ENC_KEY como nome canonico", () => {
+    const cryptoSource = readFileSync("supabase/functions/_shared/crypto.ts", "utf8");
+
+    expect(cryptoSource).toContain(`Deno.env.get("${canonicalTokenEncryptionKey}")`);
+    expect(cryptoSource).toContain(`${canonicalTokenEncryptionKey} não configurada`);
+    expect(cryptoSource).not.toContain(legacyTokenEncryptionKey);
+  });
+
+  it("crypto criptografa e descriptografa usando somente o nome canonico", async () => {
+    const { encryptToken, decryptToken } = await import("../../../supabase/functions/_shared/crypto");
+
+    await withDenoEnv({ [canonicalTokenEncryptionKey]: "canonical-secret-for-tests" }, async () => {
+      const encrypted = await encryptToken("seller-oauth-token");
+
+      expect(encrypted).toMatch(/^v1:/);
+      expect(encrypted).not.toContain("seller-oauth-token");
+      await expect(decryptToken(encrypted)).resolves.toBe("seller-oauth-token");
+    });
+  });
+
+  it("crypto falha fechado quando MP_TOKEN_ENC_KEY esta ausente", async () => {
+    const { encryptToken } = await import("../../../supabase/functions/_shared/crypto");
+
+    await withDenoEnv({}, async () => {
+      await expect(encryptToken("seller-oauth-token")).rejects.toThrow(`${canonicalTokenEncryptionKey} não configurada`);
+    });
+  });
+
+  it("nome antigo sozinho nao e aceito como fallback de crypto", async () => {
+    const { encryptToken } = await import("../../../supabase/functions/_shared/crypto");
+
+    await withDenoEnv({ [legacyTokenEncryptionKey]: "legacy-secret-for-tests" }, async () => {
+      await expect(encryptToken("seller-oauth-token")).rejects.toThrow(`${canonicalTokenEncryptionKey} não configurada`);
+    });
+  });
+
+  it("repositorio nao contem referencias literais ao nome antigo de criptografia MP", () => {
+    const offenders = repositoryTextFiles()
+      .filter((file) => readFileSync(file, "utf8").includes(legacyTokenEncryptionKey));
+
+    expect(offenders).toEqual([]);
   });
 
   it("usa token do restaurante MP conectado", async () => {

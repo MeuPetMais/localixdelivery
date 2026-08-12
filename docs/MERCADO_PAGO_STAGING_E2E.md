@@ -30,7 +30,7 @@ Configurar somente no runtime server-side/Supabase Edge Functions:
 - `MP_CLIENT_SECRET`
 - `MP_TEST_ACCESS_TOKEN` (somente staging/sandbox para PIX de teste; server-side, nunca `VITE_`)
 - `MP_WEBHOOK_SECRET`
-- `MP_TOKEN_ENCRYPTION_KEY`
+- `MP_TOKEN_ENC_KEY`
 
 Nao preencher secrets reais em arquivos versionados.
 

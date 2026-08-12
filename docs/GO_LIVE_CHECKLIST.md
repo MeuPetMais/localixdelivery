@@ -25,7 +25,7 @@ com qualquer item crítico em ❌.
 Runtime (Edge Functions / server functions), gerenciados via Lovable Cloud:
 
 - [x] `LOVABLE_API_KEY` (auto-provisionado)
-- [x] `MP_APP_ID`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_TOKEN_ENCRYPTION_KEY`
+- [x] `MP_APP_ID`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_TOKEN_ENC_KEY`
 - [x] `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (uso restrito a `*.server.ts`)
 - [x] `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (públicos)
 - [x] Nenhum segredo em `.env` versionado

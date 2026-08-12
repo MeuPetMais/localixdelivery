@@ -154,7 +154,7 @@ Semanal: auditoria de administradores, revisão de `TECHNICAL_DEBT.md`,
 drill de backup em staging, revisão de feature flags.
 
 Mensal: rotação de secrets (`MP_WEBHOOK_SECRET`,
-`MP_TOKEN_ENCRYPTION_KEY`), revisão de RLS de tabelas novas.
+`MP_TOKEN_ENC_KEY`), revisão de RLS de tabelas novas.
 
 ---
 

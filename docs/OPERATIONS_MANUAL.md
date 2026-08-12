@@ -30,7 +30,7 @@ Guia diário de operação da plataforma em produção. Complementa
 
 ## 4. Rotinas mensais
 
-- Rotação preventiva de secrets sensíveis (`MP_WEBHOOK_SECRET`, `MP_TOKEN_ENCRYPTION_KEY`).
+- Rotação preventiva de secrets sensíveis (`MP_WEBHOOK_SECRET`, `MP_TOKEN_ENC_KEY`).
 - Revisão de RLS de novas tabelas.
 - Consolidação de métricas de performance vs SLO.
 

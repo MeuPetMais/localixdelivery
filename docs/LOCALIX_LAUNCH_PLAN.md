@@ -36,7 +36,7 @@ Consolidados de `docs/GO_LIVE_AUDIT.md`, `docs/GO_LIVE_SCORE.md`,
   crítico bloqueando release.
 - **Ambientes.** Preview, Produção e Backend estáveis.
 - **Secrets runtime.** `LOVABLE_API_KEY`, `MP_APP_ID`,
-  `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_TOKEN_ENCRYPTION_KEY`,
+  `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_TOKEN_ENC_KEY`,
   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`,
   `VITE_SUPABASE_PUBLISHABLE_KEY`; nenhum segredo em `.env` versionado.
 - **Banco.** 115 tabelas em `public` com RLS habilitada e GRANT
