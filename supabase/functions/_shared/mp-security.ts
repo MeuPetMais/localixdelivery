@@ -71,7 +71,8 @@ export type MpEnvironmentConfig =
     }
   | { ok: false; error: "mercadopago_environment_not_configured"; reason: string };
 
-export const MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING = "mercadopago_live_account_not_allowed_in_staging";
+export const MP_ACCOUNT_NOT_ALLOWED_IN_STAGING = "mercadopago_account_not_allowed_in_staging";
+export const MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED = "mercadopago_staging_seller_allowlist_not_configured";
 
 const TEMPORARY_STAGING_FUNCTIONS_BASE_URL = "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1";
 
@@ -212,29 +213,64 @@ export function getRequiredMpOAuthConfig(env: { get: (key: string) => string | u
   return { ok: true, appId, clientSecret };
 }
 
-export function resolveMercadoPagoOAuthLiveMode(
-  tokenJson: { live_mode?: unknown },
-  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
-): { ok: true; liveMode: boolean } | { ok: false; error: typeof MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING } {
-  if (environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox") {
-    if (tokenJson.live_mode !== false) return { ok: false, error: MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING };
-    return { ok: true, liveMode: false };
-  }
-
-  return { ok: true, liveMode: tokenJson.live_mode === false ? false : true };
+function parseStagingAllowedSellerIds(env: { get: (key: string) => string | undefined | null }): string[] {
+  return String(env.get("MP_STAGING_ALLOWED_SELLER_IDS") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
-export function validateMercadoPagoAccountEnvironment(
-  account: { live_mode?: boolean | null } | null | undefined,
-  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
-): { ok: true } | { ok: false; error: typeof MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING } {
-  if (!account) return { ok: true };
+function isStagingSandbox(environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>): boolean {
+  return environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox";
+}
 
-  if (environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox") {
-    if (account?.live_mode !== false) return { ok: false, error: MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING };
+function validateStagingSellerId(
+  sellerId: string | null,
+  env: { get: (key: string) => string | undefined | null },
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): { ok: true } | { ok: false; error: typeof MP_ACCOUNT_NOT_ALLOWED_IN_STAGING | typeof MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED } {
+  if (!isStagingSandbox(environmentConfig)) return { ok: true };
+
+  const allowedSellerIds = parseStagingAllowedSellerIds(env);
+  if (allowedSellerIds.length === 0) {
+    return { ok: false, error: MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED };
+  }
+
+  if (!sellerId || !allowedSellerIds.includes(sellerId)) {
+    return { ok: false, error: MP_ACCOUNT_NOT_ALLOWED_IN_STAGING };
   }
 
   return { ok: true };
+}
+
+export function resolveMercadoPagoOAuthAccountEnvironment(
+  tokenJson: { user_id?: unknown; live_mode?: unknown },
+  env: { get: (key: string) => string | undefined | null },
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): {
+  ok: true;
+  mpUserId: string;
+  liveMode: boolean;
+} | { ok: false; error: typeof MP_ACCOUNT_NOT_ALLOWED_IN_STAGING | typeof MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED } {
+  const mpUserId = String(tokenJson.user_id ?? "").trim();
+  const sellerValidation = validateStagingSellerId(mpUserId || null, env, environmentConfig);
+  if (!sellerValidation.ok) return sellerValidation;
+
+  return {
+    ok: true,
+    mpUserId,
+    liveMode: tokenJson.live_mode === false ? false : true,
+  };
+}
+
+export function validateMercadoPagoAccountEnvironment(
+  account: { mp_user_id?: string | null } | null | undefined,
+  env: { get: (key: string) => string | undefined | null },
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>,
+): { ok: true } | { ok: false; error: typeof MP_ACCOUNT_NOT_ALLOWED_IN_STAGING | typeof MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED } {
+  if (!account) return { ok: true };
+
+  return validateStagingSellerId(account.mp_user_id ?? null, env, environmentConfig);
 }
 
 export function getMercadoPagoCheckoutProUrl(

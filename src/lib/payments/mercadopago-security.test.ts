@@ -5,7 +5,7 @@ import {
   getRequiredMpEnvironmentConfig,
   getRequiredMpOAuthConfig,
   getRestaurantMpAccessToken,
-  resolveMercadoPagoOAuthLiveMode,
+  resolveMercadoPagoOAuthAccountEnvironment,
   validateMercadoPagoAccountEnvironment,
   verifyMercadoPagoWebhookSignature,
 } from "../../../supabase/functions/_shared/mp-security";
@@ -276,51 +276,100 @@ describe("Mercado Pago security helpers", () => {
     });
   });
 
-  it("OAuth rejeita staging sandbox com live_mode=true", () => {
-    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: true }, stagingMpConfig())).toEqual({
-      ok: false,
-      error: "mercadopago_live_account_not_allowed_in_staging",
-    });
-  });
-
-  it("OAuth rejeita staging sandbox com live_mode ausente", () => {
-    expect(resolveMercadoPagoOAuthLiveMode({}, stagingMpConfig())).toEqual({
-      ok: false,
-      error: "mercadopago_live_account_not_allowed_in_staging",
-    });
-  });
-
-  it("OAuth aceita staging sandbox com live_mode=false", () => {
-    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: false }, stagingMpConfig())).toEqual({
+  it("OAuth aceita staging sandbox com seller ID permitido", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 3479408788, live_mode: true },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: "3479408788" }),
+      stagingMpConfig(),
+    )).toEqual({
       ok: true,
-      liveMode: false,
-    });
-  });
-
-  it("OAuth aceita production com live_mode=true", () => {
-    expect(resolveMercadoPagoOAuthLiveMode({ live_mode: true }, productionMpConfig())).toEqual({
-      ok: true,
+      mpUserId: "3479408788",
       liveMode: true,
     });
   });
 
-  it("OAuth callback valida live_mode antes de persistir tokens", () => {
+  it("OAuth rejeita staging sandbox com seller ID nao permitido", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 9999999999, live_mode: false },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: "3479408788" }),
+      stagingMpConfig(),
+    )).toEqual({
+      ok: false,
+      error: "mercadopago_account_not_allowed_in_staging",
+    });
+  });
+
+  it("OAuth rejeita staging sandbox com allowlist ausente", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 3479408788, live_mode: false },
+      env({}),
+      stagingMpConfig(),
+    )).toEqual({
+      ok: false,
+      error: "mercadopago_staging_seller_allowlist_not_configured",
+    });
+  });
+
+  it("OAuth rejeita staging sandbox com allowlist vazia", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 3479408788, live_mode: false },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: " , , " }),
+      stagingMpConfig(),
+    )).toEqual({
+      ok: false,
+      error: "mercadopago_staging_seller_allowlist_not_configured",
+    });
+  });
+
+  it("OAuth aceita staging sandbox com varios seller IDs separados por virgula", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 3479408788, live_mode: true },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: "111, 3479408788, 222" }),
+      stagingMpConfig(),
+    )).toMatchObject({ ok: true, mpUserId: "3479408788" });
+  });
+
+  it("OAuth production nao depende da allowlist", () => {
+    expect(resolveMercadoPagoOAuthAccountEnvironment(
+      { user_id: 9999999999, live_mode: true },
+      env({}),
+      productionMpConfig(),
+    )).toEqual({
+      ok: true,
+      mpUserId: "9999999999",
+      liveMode: true,
+    });
+  });
+
+  it("OAuth callback valida seller ID antes de persistir tokens", () => {
     const callback = readFileSync("supabase/functions/mp-oauth-callback/index.ts", "utf8");
 
-    expect(callback.indexOf("resolveMercadoPagoOAuthLiveMode")).toBeGreaterThan(-1);
-    expect(callback.indexOf("resolveMercadoPagoOAuthLiveMode")).toBeLessThan(
+    expect(callback.indexOf("resolveMercadoPagoOAuthAccountEnvironment")).toBeGreaterThan(-1);
+    expect(callback.indexOf("resolveMercadoPagoOAuthAccountEnvironment")).toBeLessThan(
       callback.indexOf('admin.from("mercado_pago_accounts").upsert'),
     );
   });
 
-  it("payment intent bloqueia sandbox com conta live antes de prosseguir para API MP", () => {
-    expect(validateMercadoPagoAccountEnvironment({ live_mode: true }, stagingMpConfig())).toEqual({
+  it("payment intent permite sandbox com seller permitido", () => {
+    expect(validateMercadoPagoAccountEnvironment(
+      { mp_user_id: "3479408788" },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: "3479408788" }),
+      stagingMpConfig(),
+    )).toEqual({ ok: true });
+  });
+
+  it("payment intent bloqueia sandbox com seller nao permitido antes de prosseguir para API MP", () => {
+    expect(validateMercadoPagoAccountEnvironment(
+      { mp_user_id: "9999999999" },
+      env({ MP_STAGING_ALLOWED_SELLER_IDS: "3479408788" }),
+      stagingMpConfig(),
+    )).toEqual({
       ok: false,
-      error: "mercadopago_live_account_not_allowed_in_staging",
+      error: "mercadopago_account_not_allowed_in_staging",
     });
   });
 
-  it("payment intent valida live_mode da conta antes de obter token para chamadas MP", () => {
+  it("payment intent valida seller ID da conta antes de obter token para chamadas MP", () => {
     const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
     const validationCall = paymentIntent.indexOf("await validatePaymentAccountEnvironment(sb, order.restaurant_id, environmentConfig)");
 
@@ -329,12 +378,12 @@ describe("Mercado Pago security helpers", () => {
     expect(validationCall).toBeGreaterThan(paymentIntent.indexOf("const environmentConfig = getRequiredMpEnvironmentConfig"));
   });
 
-  it("payment intent permite sandbox com conta test", () => {
-    expect(validateMercadoPagoAccountEnvironment({ live_mode: false }, stagingMpConfig())).toEqual({ ok: true });
-  });
-
-  it("payment intent permite production com conta live", () => {
-    expect(validateMercadoPagoAccountEnvironment({ live_mode: true }, productionMpConfig())).toEqual({ ok: true });
+  it("payment intent production nao depende da allowlist", () => {
+    expect(validateMercadoPagoAccountEnvironment(
+      { mp_user_id: "9999999999" },
+      env({}),
+      productionMpConfig(),
+    )).toEqual({ ok: true });
   });
 
   it("Checkout Pro em sandbox usa somente sandbox_init_point", () => {

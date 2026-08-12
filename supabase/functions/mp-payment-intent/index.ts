@@ -173,12 +173,12 @@ async function validatePaymentAccountEnvironment(
 ) {
   const { data, error } = await sb
     .from("mercado_pago_accounts")
-    .select("live_mode")
+    .select("mp_user_id")
     .eq("restaurant_id", restaurantId)
     .maybeSingle();
   if (error) throw error;
 
-  const validation = validateMercadoPagoAccountEnvironment(data, environmentConfig);
+  const validation = validateMercadoPagoAccountEnvironment(data, Deno.env, environmentConfig);
   if (!validation.ok) throw new Error(validation.error);
 }
 
@@ -911,7 +911,8 @@ Deno.serve(async (req) => {
       msg === "restaurant_mp_not_connected" ||
       msg === "restaurant_mp_token_invalid" ||
       msg === "restaurant_mp_token_expired" ||
-      msg === "mercadopago_live_account_not_allowed_in_staging"
+      msg === "mercadopago_account_not_allowed_in_staging" ||
+      msg === "mercadopago_staging_seller_allowlist_not_configured"
     ) {
       return json({ error: msg }, { status: 409 });
     }

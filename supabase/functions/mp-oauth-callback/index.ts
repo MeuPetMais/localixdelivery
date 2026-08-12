@@ -7,10 +7,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 import {
-  MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING,
   getRequiredMpEnvironmentConfig,
   getRequiredMpOAuthConfig,
-  resolveMercadoPagoOAuthLiveMode,
+  resolveMercadoPagoOAuthAccountEnvironment,
 } from "../_shared/mp-security.ts";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
@@ -125,26 +124,26 @@ Deno.serve(async (req) => {
       ? new Date(Date.now() + Number(tokenJson.expires_in) * 1000).toISOString()
       : null;
 
-    const liveModeResult = resolveMercadoPagoOAuthLiveMode(tokenJson, environmentConfig);
-    if (!liveModeResult.ok) {
-      console.error("[mp-oauth-callback] live account not allowed in staging", {
+    const accountValidation = resolveMercadoPagoOAuthAccountEnvironment(tokenJson, Deno.env, environmentConfig);
+    if (!accountValidation.ok) {
+      console.error("[mp-oauth-callback] MP account not allowed in staging", {
         provider: "mercado_pago",
         restaurant_id: st.restaurant_id,
-        error: liveModeResult.error,
+        error: accountValidation.error,
         timestamp: new Date().toISOString(),
       });
-      return jsonErr(MP_LIVE_ACCOUNT_NOT_ALLOWED_IN_STAGING, 400);
+      return jsonErr(accountValidation.error, 400);
     }
 
     await admin.from("mercado_pago_accounts").upsert(
       {
         restaurant_id: st.restaurant_id,
-        mp_user_id: String(tokenJson.user_id ?? ""),
+        mp_user_id: accountValidation.mpUserId,
         access_token: await encryptToken(tokenJson.access_token ?? ""),
         refresh_token: await encryptToken(tokenJson.refresh_token ?? ""),
         public_key: await encryptToken(tokenJson.public_key ?? ""),
         scope: tokenJson.scope ?? null,
-        live_mode: liveModeResult.liveMode,
+        live_mode: accountValidation.liveMode,
         connected: true,
         expires_at: expiresAt,
         connected_at: new Date().toISOString(),
