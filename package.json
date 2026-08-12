@@ -7,6 +7,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "mp:test:preflight": "node scripts/mercadopago-controlled-test.mjs preflight",
+    "mp:test:report": "node scripts/mercadopago-controlled-test.mjs report",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
