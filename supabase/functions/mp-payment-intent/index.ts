@@ -26,6 +26,19 @@ type PricingSnapshot = {
   service_fee_payer: string;
 };
 
+class MercadoPagoApiError extends Error {
+  httpStatus: number;
+  body: Record<string, unknown>;
+
+  constructor(httpStatus: number, body: Record<string, unknown>) {
+    const message = String(body?.message || body?.error || `MP error ${httpStatus}`);
+    super(message);
+    this.name = "MercadoPagoApiError";
+    this.httpStatus = httpStatus;
+    this.body = body;
+  }
+}
+
 function mapStatus(s: string | null | undefined): LocalStatus {
   switch ((s ?? "").toLowerCase() as MpStatus) {
     case "approved": return "APPROVED";
@@ -53,6 +66,43 @@ function validateSplitAmounts(params: { transactionAmount: number; platformFee: 
 
 function buildMpIdempotencyKey(orderId: string, method: "pix" | "checkout_pro"): string {
   return `localix-mp-${method}-${orderId}`;
+}
+
+function sanitizeMpCause(cause: unknown) {
+  if (!Array.isArray(cause)) return cause ?? null;
+  return cause.map((item) => {
+    const row = (item ?? {}) as Record<string, unknown>;
+    return {
+      code: row.code ?? null,
+      description: row.description ?? null,
+    };
+  });
+}
+
+function logPixMercadoPagoRejection(input: {
+  environment: string;
+  orderId: string;
+  restaurantId: string;
+  error: MercadoPagoApiError;
+  request: Record<string, unknown>;
+}) {
+  if (input.environment !== "staging") return;
+  const body = input.error.body;
+  console.error("[mp-payment-intent][pix] mercado pago rejected payment", {
+    order_id: input.orderId,
+    restaurant_id: input.restaurantId,
+    http_status: input.error.httpStatus,
+    mp_error: body.error ?? null,
+    mp_message: body.message ?? input.error.message,
+    mp_status: body.status ?? body.status_detail ?? null,
+    mp_cause: sanitizeMpCause(body.cause),
+    transaction_amount: input.request.transaction_amount ?? null,
+    payment_method_id: input.request.payment_method_id ?? null,
+    application_fee: input.request.application_fee ?? null,
+    external_reference: input.request.external_reference ?? null,
+    notification_url: input.request.notification_url ?? null,
+    payer_email_present: Boolean((input.request.payer as { email?: unknown } | undefined)?.email),
+  });
 }
 
 function sumRefundedAmount(payment: Record<string, unknown>): number {
@@ -223,8 +273,7 @@ async function createPixPayment(token: string, params: {
   });
   const resBody = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = resBody?.message || resBody?.error || `MP error ${res.status}`;
-    throw new Error(msg);
+    throw new MercadoPagoApiError(res.status, resBody);
   }
   return resBody;
 }
@@ -698,6 +747,14 @@ Deno.serve(async (req) => {
       });
 
       let mp;
+      const pixPaymentRequestForDiagnostics = {
+        transaction_amount: splitAmounts.transactionAmount,
+        payment_method_id: "pix",
+        application_fee: splitAmounts.feeForGateway,
+        external_reference: order.id,
+        notification_url: notificationUrl,
+        payer: { email: payerEmail },
+      };
       try {
         mp = await createPixPayment(token, {
           amount: splitAmounts.transactionAmount,
@@ -711,6 +768,15 @@ Deno.serve(async (req) => {
           callbackUrl,
         });
       } catch (e) {
+        if (e instanceof MercadoPagoApiError) {
+          logPixMercadoPagoRejection({
+            environment: environmentConfig.runtimeEnvironment,
+            orderId,
+            restaurantId: order.restaurant_id,
+            error: e,
+            request: pixPaymentRequestForDiagnostics,
+          });
+        }
         await sb.from("order_payment").update({
           status: "PENDING",
           last_error: String((e as Error).message ?? e),
