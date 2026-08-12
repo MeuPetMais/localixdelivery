@@ -42,6 +42,18 @@ function persistPaymentSplitSource() {
   return source.slice(start, end);
 }
 
+function paymentSplitHelperSource() {
+  return readFileSync("supabase/functions/_shared/payment-split.ts", "utf8");
+}
+
+function mpWebhookSource() {
+  return readFileSync("supabase/functions/mp-webhook/index.ts", "utf8");
+}
+
+function splitFunctionsSource() {
+  return readFileSync("src/lib/payments/split.functions.ts", "utf8");
+}
+
 async function signWebhook(secret: string, manifest: string) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -464,10 +476,44 @@ describe("Mercado Pago security helpers", () => {
   it("payment intent captura e propaga falha de persistencia do payment_split", () => {
     const persistSplit = persistPaymentSplitSource();
 
-    expect(persistSplit).toContain('const { error } = await sb.from("payment_split").upsert');
+    expect(persistSplit).toContain("const { error } = await persistPaymentSplitByOrder");
     expect(persistSplit).toContain('if (error) {');
     expect(persistSplit).toContain('[mp-payment-intent][payment-split] persist failed');
     expect(persistSplit).toContain('throw new Error("mercadopago_payment_split_persist_failed")');
+  });
+
+  it("payment_split nao usa upsert por onConflict parcial de order_id nos writers Mercado Pago", () => {
+    const paymentIntent = paymentIntentSource();
+    const webhook = mpWebhookSource();
+    const splitFns = splitFunctionsSource();
+
+    expect(paymentIntent).not.toContain('.from("payment_split").upsert');
+    expect(webhook).not.toContain('.from("payment_split").upsert');
+    expect(splitFns).not.toContain('.from("payment_split").upsert');
+    expect(paymentIntent).toContain("persistPaymentSplitByOrder");
+    expect(webhook).toContain("persistPaymentSplitByOrderOrThrow");
+    expect(splitFns).toContain("async function persistPaymentSplitByOrder");
+  });
+
+  it("schema local de payment_split possui apenas indice unico parcial para order_id", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20260703001630_31ce2cfe-5d1a-4394-a0bd-749d1f3e6ac7.sql",
+      "utf8",
+    );
+
+    expect(migration).toContain("CREATE UNIQUE INDEX uq_payment_split_order ON public.payment_split(order_id) WHERE order_id IS NOT NULL");
+    expect(migration).not.toMatch(/ALTER TABLE public\.payment_split\s+ADD CONSTRAINT[\s\S]*UNIQUE\s*\(order_id\)/i);
+  });
+
+  it("payment_split persiste de forma idempotente por order_id e retry nao duplica split", () => {
+    const helper = paymentSplitHelperSource();
+
+    expect(helper).toContain('.from("payment_split")');
+    expect(helper).toContain('.eq("order_id", row.order_id)');
+    expect(helper).toContain('.insert(row)');
+    expect(helper).toContain("uniqueViolation(insertError)");
+    expect(helper).toContain("updatePaymentSplitByOrder(sb, row)");
+    expect(helper).not.toContain("onConflict");
   });
 
   it("payment intent loga sucesso de payment_split sem alterar o fluxo", () => {
@@ -494,6 +540,37 @@ describe("Mercado Pago security helpers", () => {
     expect(pixSuccessSplit).toContain('status: "PROCESSING"');
     expect(pixSuccessSplit).toContain("snapshot,");
     expect(pixSuccessSplit).toContain("gatewayStatus: mp?.status ?? null");
+  });
+
+  it("webhook Mercado Pago reconcilia PROCESSING sem reconhecer receita realizada enquanto pendente", () => {
+    const webhook = mpWebhookSource();
+    const pendingBranch = webhook.slice(
+      webhook.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")'),
+      webhook.indexOf('if (params.localStatus === "REJECTED"', webhook.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")')),
+    );
+
+    expect(pendingBranch).toContain('status: "PROCESSING"');
+    expect(pendingBranch).toContain("persistPaymentSplitByOrderOrThrow");
+    expect(pendingBranch).not.toContain("realized_platform_revenue");
+  });
+
+  it("webhook Mercado Pago so reconhece realized_platform_revenue apos reconciliacao valida", () => {
+    const webhook = mpWebhookSource();
+
+    expect(webhook).toContain('status = matches ? "COMPLETED" : "MANUAL_REVIEW"');
+    expect(webhook).toContain("update({ realized_platform_revenue: extraction.amount })");
+    expect(webhook.indexOf("update({ realized_platform_revenue: extraction.amount })")).toBeGreaterThan(
+      webhook.indexOf("const matches = extraction.ok"),
+    );
+  });
+
+  it("webhook Mercado Pago preserva FAILED e MANUAL_REVIEW na reconciliacao", () => {
+    const webhook = mpWebhookSource();
+
+    expect(webhook).toContain('status: "FAILED"');
+    expect(webhook).toContain('status: "MANUAL_REVIEW"');
+    expect(webhook).toContain("split_chargeback_reconciliation_required");
+    expect(webhook).toContain("invalid_platform_fee");
   });
 
   it("payment_split logs nao incluem tokens, headers, dados pessoais nem QR Code", () => {

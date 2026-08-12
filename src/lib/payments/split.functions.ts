@@ -45,9 +45,41 @@ async function persistAndPublish(
         : null,
     metadata: plan.reason ? { reason: plan.reason } : {},
   };
-  await admin
+  await persistPaymentSplitByOrder(admin, row);
+}
+
+async function persistPaymentSplitByOrder(admin: any, row: Record<string, any>) {
+  const { data: existing, error: selectError } = await admin
     .from("payment_split")
-    .upsert(row, { onConflict: "order_id" });
+    .select("id")
+    .eq("order_id", row.order_id)
+    .maybeSingle();
+  if (selectError) throw new Error(selectError.message);
+
+  if (existing?.id) {
+    const { data, error } = await admin
+      .from("payment_split")
+      .update(row)
+      .eq("id", existing.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) throw new Error("payment_split_update_no_rows");
+    return;
+  }
+
+  const { error: insertError } = await admin.from("payment_split").insert(row);
+  if (!insertError) return;
+
+  const duplicate = insertError.code === "23505" || /duplicate key value/i.test(String(insertError.message ?? ""));
+  if (!duplicate) throw new Error(insertError.message);
+
+  const { data, error } = await admin
+    .from("payment_split")
+    .update(row)
+    .eq("order_id", row.order_id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("payment_split_update_no_rows");
 }
 
 export const runOrderSplit = createServerFn({ method: "POST" })

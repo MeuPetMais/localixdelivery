@@ -12,6 +12,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { persistPaymentSplitByOrderOrThrow } from "../_shared/payment-split.ts";
 import {
   getRequiredMpEnvironmentConfig,
   getRestaurantMpAccessToken,
@@ -193,7 +194,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
 }) {
   const snapshot = await loadPricingSnapshot(sb, params.orderId, params.restaurantId);
   if (!snapshot) {
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       order_id: params.orderId,
       payment_id: params.paymentId,
       restaurant_id: params.restaurantId,
@@ -211,7 +212,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         restaurant_id: params.restaurantId,
         checked_at: new Date().toISOString(),
       },
-    }, { onConflict: "order_id" });
+    });
     return;
   }
 
@@ -228,7 +229,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
   };
 
   if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING") {
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       ...baseRow,
       status: "PROCESSING",
       error_message: null,
@@ -238,12 +239,12 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         expected_platform_fee: expectedPlatformFee,
         service_fee_payer: snapshot.service_fee_payer,
       },
-    }, { onConflict: "order_id" });
+    });
     return;
   }
 
   if (params.localStatus === "REJECTED" || params.localStatus === "CANCELLED" || params.localStatus === "EXPIRED") {
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       ...baseRow,
       status: "FAILED",
       error_message: `payment_${params.localStatus.toLowerCase()}`,
@@ -253,12 +254,12 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         expected_platform_fee: expectedPlatformFee,
         service_fee_payer: snapshot.service_fee_payer,
       },
-    }, { onConflict: "order_id" });
+    });
     return;
   }
 
   if (params.localStatus === "CHARGEBACK") {
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       ...baseRow,
       status: "MANUAL_REVIEW",
       error_message: "split_chargeback_reconciliation_required",
@@ -270,12 +271,12 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         service_fee_payer: snapshot.service_fee_payer,
         reason: "chargeback_dispute_requires_manual_review",
       },
-    }, { onConflict: "order_id" });
+    });
     return;
   }
 
   if (expectedPlatformFee < 0 || expectedPlatformFee >= roundMoney(snapshot.customer_total)) {
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       ...baseRow,
       status: "MANUAL_REVIEW",
       error_message: "invalid_platform_fee",
@@ -285,7 +286,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         customer_total: roundMoney(snapshot.customer_total),
         reason: "invalid_platform_fee",
       },
-    }, { onConflict: "order_id" });
+    });
     return;
   }
 
@@ -298,7 +299,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
   });
   if (refundReversal) {
     if (!refundReversal.ok) {
-      await sb.from("payment_split").upsert({
+      await persistPaymentSplitByOrderOrThrow(sb, {
         ...baseRow,
         status: "MANUAL_REVIEW",
         error_message: refundReversal.reason,
@@ -311,14 +312,14 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
           gateway_status_detail: params.payment.status_detail ?? null,
           reason: refundReversal.reason,
         },
-      }, { onConflict: "order_id" });
+      });
       return;
     }
 
     const previousRealized = roundMoney(Number(snapshot.realized_platform_revenue ?? 0));
     const nextRealized = refundReversal.realizedPlatformRevenue;
     const ledgerDelta = roundMoney(nextRealized - previousRealized);
-    await sb.from("payment_split").upsert({
+    await persistPaymentSplitByOrderOrThrow(sb, {
       ...baseRow,
       status: "COMPLETED",
       error_message: null,
@@ -334,7 +335,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
         service_fee_payer: snapshot.service_fee_payer,
         checked_at: new Date().toISOString(),
       },
-    }, { onConflict: "order_id" });
+    });
 
     const { error } = await sb
       .from("order_pricing_snapshot")
@@ -375,7 +376,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
   const status = matches ? "COMPLETED" : "MANUAL_REVIEW";
   const errorMessage = matches ? null : extraction.ok ? "marketplace_fee_divergent" : `marketplace_fee_${extraction.reason}`;
 
-  await sb.from("payment_split").upsert({
+  await persistPaymentSplitByOrderOrThrow(sb, {
     ...baseRow,
     status,
     error_message: errorMessage,
@@ -390,7 +391,7 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
       checked_at: new Date().toISOString(),
       reason: errorMessage,
     },
-  }, { onConflict: "order_id" });
+  });
 
   if (matches) {
     const { error } = await sb

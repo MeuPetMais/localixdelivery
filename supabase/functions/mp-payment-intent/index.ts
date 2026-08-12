@@ -9,6 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { persistPaymentSplitByOrder, type PaymentSplitStatus } from "../_shared/payment-split.ts";
 import {
   getMercadoPagoCheckoutProUrl,
   getRequiredMpEnvironmentConfig,
@@ -172,7 +173,7 @@ async function persistPaymentSplit(sb: ReturnType<typeof admin>, params: {
   restaurantId: string;
   paymentId: string | null;
   snapshot: PricingSnapshot;
-  status: "PROCESSING" | "FAILED";
+  status: Extract<PaymentSplitStatus, "PROCESSING" | "FAILED">;
   splitReference: string | null;
   checkoutType: "checkout_pro" | "pix";
   errorMessage?: string | null;
@@ -185,7 +186,7 @@ async function persistPaymentSplit(sb: ReturnType<typeof admin>, params: {
   const transactionAmount = roundMoney(params.snapshot.customer_total);
   const restaurantAmount = roundMoney(params.snapshot.restaurant_net);
   const gatewayFee = roundMoney(params.snapshot.gateway_fee);
-  const { error } = await sb.from("payment_split").upsert({
+  const { error } = await persistPaymentSplitByOrder(sb, {
     order_id: params.orderId,
     payment_id: params.paymentId,
     restaurant_id: params.restaurantId,
@@ -203,7 +204,7 @@ async function persistPaymentSplit(sb: ReturnType<typeof admin>, params: {
       service_fee_payer: params.snapshot.service_fee_payer,
       gateway_status: params.gatewayStatus ?? null,
     },
-  }, { onConflict: "order_id" });
+  });
   if (error) {
     if (Deno.env.get("LOCALIX_ENV") === "staging") {
       console.error("[mp-payment-intent][payment-split] persist failed", {
