@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { createClient } from "@supabase/supabase-js";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const PILOT_EXPECTED = Object.freeze({
   subtotal: 3.5,
@@ -216,6 +218,9 @@ export function evaluatePostflight(input) {
 export function formatReport(report) {
   const failed = report.checks.filter((check) => !check.ok);
   const sections = ["PRE-FLIGHT", "PRICING", "PAYMENT", "WEBHOOK", "SPLIT", "REVENUE RECOGNITION", "IDEMPOTENCY"];
+  if (report.kind === "preflight") {
+    return formatPreflightReport(report, failed);
+  }
   const lines = [
     "MERCADO PAGO CONTROLLED TEST REPORT",
     "",
@@ -241,6 +246,78 @@ export function formatReport(report) {
   }
   lines.push("", READ_ONLY_NOTICE);
   return lines.join("\n");
+}
+
+function checkStatus(checks, names) {
+  const selected = checks.filter((check) => names.includes(check.name));
+  return selected.length > 0 && selected.every((check) => check.ok) ? "PASS" : "FAIL";
+}
+
+function formatPreflightReport(report, failed) {
+  const checks = report.checks;
+  const lines = [
+    "MERCADO PAGO CONTROLLED TEST - PRE-FLIGHT",
+    "",
+    `Environment: ${checkStatus(checks, [
+      "LOCALIX_ENV production",
+      "LOCALIX_SUPABASE_ENVIRONMENT production",
+      "MP_ENVIRONMENT production",
+    ])}`,
+    `Supabase: ${checkStatus(checks, [
+      "SUPABASE_URL present",
+      "SUPABASE_SERVICE_ROLE_KEY present",
+      "Supabase project expected",
+    ].filter((name) => checks.some((check) => check.name === name)))}`,
+    `Restaurant: ${checkStatus(checks, [
+      "restaurant found",
+      "restaurant active",
+      "restaurant id expected",
+      "restaurant slug expected",
+    ].filter((name) => checks.some((check) => check.name === name)))}`,
+    `Seller OAuth: ${checkStatus(checks, [
+      "seller OAuth connected",
+      "seller OAuth not expired",
+      "seller expected",
+      "token_source seller_oauth",
+    ].filter((name) => checks.some((check) => check.name === name)))}`,
+    `Pricing: ${sectionStatus(checks, "PRICING")}`,
+    `Webhook config: ${sectionStatus(checks, "WEBHOOK")}`,
+    `Production safety: ${checkStatus(checks, [
+      "MP_TEST_ACCESS_TOKEN absent in production",
+      "MP_TOKEN_ENC_KEY present",
+      "MP_WEBHOOK_SECRET present",
+      "APP_BASE_URL https",
+    ])}`,
+    `Idempotency: ${sectionStatus(checks, "IDEMPOTENCY")}`,
+    "",
+    `FINAL RESULT: ${report.final}`,
+  ];
+  if (report.final !== "PASS") lines.push("DO NOT RUN PAYMENT");
+  lines.push("", "FAILED CHECKS:");
+  if (failed.length === 0) {
+    lines.push("[]");
+  } else {
+    for (const check of failed) {
+      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+    }
+  }
+  lines.push("", READ_ONLY_NOTICE);
+  return lines.join("\n");
+}
+
+function formatFatalErrorReport(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return [
+    "MERCADO PAGO CONTROLLED TEST - ERROR",
+    "",
+    "FINAL RESULT: FAIL",
+    "DO NOT RUN PAYMENT",
+    "",
+    "FAILED CHECKS:",
+    `- ${message}`,
+    "",
+    READ_ONLY_NOTICE,
+  ].join("\n");
 }
 
 function requiredArg(args, names) {
@@ -429,14 +506,14 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   process.exitCode = report.final === "PASS" ? 0 : 1;
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+function isDirectExecution() {
+  if (!process.argv[1]) return false;
+  return resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1]);
+}
+
+if (isDirectExecution()) {
   main().catch((error) => {
-    console.error("MERCADO PAGO CONTROLLED TEST REPORT");
-    console.error("");
-    console.error("FINAL RESULT: FAIL");
-    console.error("DO NOT RUN PAYMENT");
-    console.error("");
-    console.error(`FAILED CHECKS:\n- ${error instanceof Error ? error.message : String(error)}`);
+    console.log(formatFatalErrorReport(error));
     process.exitCode = 1;
   });
 }

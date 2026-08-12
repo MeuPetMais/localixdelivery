@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import {
   evaluatePostflight,
   evaluatePreflight,
@@ -110,6 +111,34 @@ function approvedPostflight(overrides = {}) {
 }
 
 describe("Mercado Pago controlled test report", () => {
+  it("CLI real sempre imprime relatorio explicito mesmo com erro de configuracao", () => {
+    const result = spawnSync(process.execPath, [
+      "scripts/mercadopago-controlled-test.mjs",
+      "preflight",
+      "--restaurant-id=restaurant-1",
+      "--expected-seller-id=seller-123",
+      "--customer-total=9.49",
+      "--platform-fee=0.99",
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: {
+        PATH: process.env.PATH,
+        Path: process.env.Path,
+        SystemRoot: process.env.SystemRoot,
+        ComSpec: process.env.ComSpec,
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout.trim()).not.toBe("");
+    expect(result.stdout).toContain("MERCADO PAGO CONTROLLED TEST - ERROR");
+    expect(result.stdout).toContain("FINAL RESULT: FAIL");
+    expect(result.stdout).toContain("DO NOT RUN PAYMENT");
+    expect(result.stdout).not.toContain("service-role");
+    expect(result.stderr.trim()).toBe("");
+  });
+
   it("pre-flight PASS valida ambiente, seller, pricing e idempotencia", () => {
     const report = preflight();
 
