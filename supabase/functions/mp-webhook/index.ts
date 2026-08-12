@@ -199,9 +199,41 @@ Deno.serve(async (req) => {
   const dataIdFromQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
   const xSignature = req.headers.get("x-signature");
   const xRequestId = req.headers.get("x-request-id");
+  const dataIdFromBody = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+
+  // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
+  // antes de qualquer persistencia/deduplicacao. Um evento nao assinado nunca
+  // pode ocupar a chave de idempotencia de um webhook legitimo posterior.
+  const sigResult = await verifyMercadoPagoWebhookSignature({
+    secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
+    xSignature,
+    xRequestId,
+    dataIdFromQuery,
+    dataIdFromBody,
+  });
+
+  console.log("[mp-webhook] signature audit", {
+    environment: environmentConfig.runtimeEnvironment,
+    mp_environment: environmentConfig.mercadoPagoEnvironment,
+    ok: sigResult.ok,
+    reason: sigResult.reason ?? null,
+    data_id: sigResult.dataId ?? null,
+    data_id_source: dataIdFromQuery ? "query" : dataIdFromBody ? "body" : "none",
+    ts: sigResult.ts ?? null,
+    x_request_id: xRequestId,
+    diverged_field: sigResult.ok ? null : sigResult.reason,
+  });
+
+  if (!sigResult.ok) {
+    console.warn("[mp-webhook] signature invalid", {
+      reason: sigResult.reason,
+      resource_id: dataIdFromBody ?? dataIdFromQuery,
+    });
+    return json({ ok: false, error: "webhook_signature_invalid" }, { status: 401 });
+  }
+
   const eventType = String(body?.type ?? body?.topic ?? "").toLowerCase() || null;
   const action = String(body?.action ?? "").toLowerCase() || null;
-  const dataIdFromBody = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
   const resourceId = dataIdFromBody ?? dataIdFromQuery;
   const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
@@ -228,8 +260,8 @@ Deno.serve(async (req) => {
       .eq("event_id", eventId)
       .maybeSingle();
     if (existing) {
-      duplicated = true;
       eventPk = existing.id;
+      duplicated = existing.processed === true;
     }
   }
   if (!eventPk) {
@@ -247,47 +279,6 @@ Deno.serve(async (req) => {
 
   if (duplicated) {
     return json({ ok: true, duplicated: true });
-  }
-
-  // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
-  const sigResult = await verifyMercadoPagoWebhookSignature({
-    secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
-    xSignature,
-    xRequestId,
-    dataIdFromQuery,
-    dataIdFromBody,
-  });
-
-  console.log("[mp-webhook] signature audit", {
-    environment: environmentConfig.runtimeEnvironment,
-    mp_environment: environmentConfig.mercadoPagoEnvironment,
-    ok: sigResult.ok,
-    reason: sigResult.reason ?? null,
-    data_id: sigResult.dataId ?? null,
-    data_id_source: dataIdFromQuery ? "query" : dataIdFromBody ? "body" : "none",
-    ts: sigResult.ts ?? null,
-    x_request_id: xRequestId,
-    diverged_field: sigResult.ok ? null : sigResult.reason,
-  });
-
-  if (!sigResult.ok) {
-    console.warn("[mp-webhook] signature invalid", {
-      reason: sigResult.reason,
-      resource_id: resourceId,
-    });
-    await sb.from("payment_webhook_events").update({
-      processed: false,
-      error_message: `signature_invalid:${sigResult.reason ?? "unknown"}`,
-      processing_attempts: 1,
-    }).eq("id", eventPk);
-    await sb.from("payment_event_queue").insert({
-      event_id: eventPk,
-      status: "pending",
-      retry_count: 0,
-      next_retry: null,
-      last_error: `signature_invalid:${sigResult.reason ?? "unknown"}`,
-    });
-    return json({ ok: false, error: "webhook_signature_invalid" }, { status: 401 });
   }
 
   const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));

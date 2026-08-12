@@ -58,6 +58,31 @@ function splitFunctionsSource() {
   return readFileSync("src/lib/payments/split.functions.ts", "utf8");
 }
 
+async function simulateWebhookSignatureGate(input: {
+  persistedEventIds: Set<string>;
+  eventId: string;
+  paymentId: string;
+  secret: string;
+  xSignature: string | null;
+  xRequestId: string | null;
+}) {
+  const signature = await verifyMercadoPagoWebhookSignature({
+    secret: input.secret,
+    xSignature: input.xSignature,
+    xRequestId: input.xRequestId,
+    dataIdFromQuery: input.paymentId,
+    dataIdFromBody: null,
+  });
+  if (!signature.ok) {
+    return { status: 401, persisted: false, duplicated: false, processed: false };
+  }
+  if (input.persistedEventIds.has(input.eventId)) {
+    return { status: 200, persisted: false, duplicated: true, processed: false };
+  }
+  input.persistedEventIds.add(input.eventId);
+  return { status: 200, persisted: true, duplicated: false, processed: true };
+}
+
 async function signWebhook(secret: string, manifest: string) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -515,6 +540,40 @@ describe("Mercado Pago security helpers", () => {
     );
   });
 
+  it("webhook valida assinatura antes de persistir ou consultar idempotencia", () => {
+    const webhook = mpWebhookSource();
+    const signatureIndex = webhook.indexOf("verifyMercadoPagoWebhookSignature");
+    const idempotencySelectIndex = webhook.indexOf('.from("payment_webhook_events")');
+    const idempotencyInsertIndex = webhook.indexOf(".insert(insertPayload)");
+    const invalidSignatureBlock = webhook.slice(
+      webhook.indexOf("if (!sigResult.ok)"),
+      webhook.indexOf("const eventType", webhook.indexOf("if (!sigResult.ok)")),
+    );
+
+    expect(signatureIndex).toBeGreaterThan(-1);
+    expect(idempotencySelectIndex).toBeGreaterThan(-1);
+    expect(idempotencyInsertIndex).toBeGreaterThan(-1);
+    expect(signatureIndex).toBeLessThan(idempotencySelectIndex);
+    expect(signatureIndex).toBeLessThan(idempotencyInsertIndex);
+    expect(invalidSignatureBlock).toContain('return json({ ok: false, error: "webhook_signature_invalid" }, { status: 401 })');
+    expect(invalidSignatureBlock).not.toContain("payment_webhook_events");
+    expect(invalidSignatureBlock).not.toContain("payment_event_queue");
+    expect(invalidSignatureBlock).not.toContain("order_payment");
+    expect(invalidSignatureBlock).not.toContain("payment_split");
+  });
+
+  it("webhook so retorna duplicado para evento valido ja processado", () => {
+    const webhook = mpWebhookSource();
+    const existingBranch = webhook.slice(
+      webhook.indexOf("if (existing) {"),
+      webhook.indexOf("if (!eventPk)", webhook.indexOf("if (existing) {")),
+    );
+
+    expect(existingBranch).toContain("eventPk = existing.id");
+    expect(existingBranch).toContain("duplicated = existing.processed === true");
+    expect(existingBranch).not.toContain("duplicated = true");
+  });
+
   it("payment intent mantem application_fee do snapshot e transaction_amount do customer_total", () => {
     const paymentIntent = paymentIntentSource();
 
@@ -793,5 +852,46 @@ describe("Mercado Pago security helpers", () => {
         dataIdFromBody: null,
       }),
     ).resolves.toMatchObject({ ok: false, reason: "length_mismatch" });
+  });
+
+  it("webhook invalido nao envenena idempotencia de evento legitimo posterior", async () => {
+    const persistedEventIds = new Set<string>();
+    const secret = "webhook-secret";
+    const paymentId = "1350310763";
+    const eventId = "abc123";
+    const manifest = `id:${paymentId};request-id:req-1;ts:1700000000;`;
+    const validSignature = await signWebhook(secret, manifest);
+
+    const invalid = await simulateWebhookSignatureGate({
+      persistedEventIds,
+      eventId,
+      paymentId,
+      secret,
+      xSignature: "ts=1700000000,v1=deadbeef",
+      xRequestId: "req-1",
+    });
+    expect(invalid).toEqual({ status: 401, persisted: false, duplicated: false, processed: false });
+    expect(persistedEventIds.size).toBe(0);
+
+    const valid = await simulateWebhookSignatureGate({
+      persistedEventIds,
+      eventId,
+      paymentId,
+      secret,
+      xSignature: `ts=1700000000,v1=${validSignature}`,
+      xRequestId: "req-1",
+    });
+    const duplicate = await simulateWebhookSignatureGate({
+      persistedEventIds,
+      eventId,
+      paymentId,
+      secret,
+      xSignature: `ts=1700000000,v1=${validSignature}`,
+      xRequestId: "req-1",
+    });
+
+    expect(valid).toEqual({ status: 200, persisted: true, duplicated: false, processed: true });
+    expect(duplicate).toEqual({ status: 200, persisted: false, duplicated: true, processed: false });
+    expect(persistedEventIds.size).toBe(1);
   });
 });
