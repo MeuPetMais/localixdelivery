@@ -29,6 +29,19 @@ function env(values: Record<string, string | undefined>) {
   };
 }
 
+function paymentIntentSource() {
+  return readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+}
+
+function persistPaymentSplitSource() {
+  const source = paymentIntentSource();
+  const start = source.indexOf("async function persistPaymentSplit");
+  const end = source.indexOf("function admin()");
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
 async function signWebhook(secret: string, manifest: string) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -440,7 +453,7 @@ describe("Mercado Pago security helpers", () => {
   });
 
   it("payment intent mantem application_fee do snapshot e transaction_amount do customer_total", () => {
-    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+    const paymentIntent = paymentIntentSource();
 
     expect(paymentIntent).toContain("transactionAmount: snapshot.customer_total");
     expect(paymentIntent).toContain("platformFee: snapshot.platform_fee");
@@ -448,8 +461,54 @@ describe("Mercado Pago security helpers", () => {
     expect(paymentIntent).toContain("body.application_fee = Number(params.applicationFee.toFixed(2))");
   });
 
+  it("payment intent captura e propaga falha de persistencia do payment_split", () => {
+    const persistSplit = persistPaymentSplitSource();
+
+    expect(persistSplit).toContain('const { error } = await sb.from("payment_split").upsert');
+    expect(persistSplit).toContain('if (error) {');
+    expect(persistSplit).toContain('[mp-payment-intent][payment-split] persist failed');
+    expect(persistSplit).toContain('throw new Error("mercadopago_payment_split_persist_failed")');
+  });
+
+  it("payment intent loga sucesso de payment_split sem alterar o fluxo", () => {
+    const paymentIntent = paymentIntentSource();
+    const persistSplit = persistPaymentSplitSource();
+    const orderPaymentUpsert = paymentIntent.indexOf('const { data: postUp, error: postErr } = await sb.from("order_payment").upsert');
+    const splitPersist = paymentIntent.indexOf("await persistPaymentSplit(sb, {", orderPaymentUpsert);
+
+    expect(persistSplit).toContain("[mp-payment-intent][payment-split] persisted");
+    expect(persistSplit).toContain("order_id: params.orderId");
+    expect(persistSplit).toContain("status: params.status");
+    expect(persistSplit).toContain("gateway_status: params.gatewayStatus ?? null");
+    expect(orderPaymentUpsert).toBeGreaterThan(-1);
+    expect(splitPersist).toBeGreaterThan(orderPaymentUpsert);
+  });
+
+  it("payment_split PIX PENDING continua sendo PROCESSING e usa valores do snapshot", () => {
+    const paymentIntent = paymentIntentSource();
+    const pixSuccessSplit = paymentIntent.slice(
+      paymentIntent.indexOf("await persistPaymentSplit(sb, {", paymentIntent.indexOf("await syncOrderStatusFromPayment")),
+      paymentIntent.indexOf("// Tamb", paymentIntent.indexOf("await syncOrderStatusFromPayment")),
+    );
+
+    expect(pixSuccessSplit).toContain('status: "PROCESSING"');
+    expect(pixSuccessSplit).toContain("snapshot,");
+    expect(pixSuccessSplit).toContain("gatewayStatus: mp?.status ?? null");
+  });
+
+  it("payment_split logs nao incluem tokens, headers, dados pessoais nem QR Code", () => {
+    const persistSplit = persistPaymentSplitSource();
+
+    expect(persistSplit).not.toMatch(/access_token|refresh_token|Authorization|headers|payer_email|customer_name|customer_phone|address|qr_code|qr_code_base64/i);
+    expect(persistSplit).toContain("order_id");
+    expect(persistSplit).toContain("transaction_amount");
+    expect(persistSplit).toContain("platform_fee");
+    expect(persistSplit).toContain("restaurant_amount");
+    expect(persistSplit).toContain("gateway_fee");
+  });
+
   it("logs nao incluem token e documentam limite do PIX sandbox com test token", () => {
-    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+    const paymentIntent = paymentIntentSource();
 
     expect(paymentIntent).toContain("token_source");
     expect(paymentIntent).toContain("pix_sandbox_test_token_validates_payment_creation_and_fee_payload_not_full_oauth_split");

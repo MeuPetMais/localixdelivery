@@ -182,14 +182,17 @@ async function persistPaymentSplit(sb: ReturnType<typeof admin>, params: {
     transactionAmount: params.snapshot.customer_total,
     platformFee: params.snapshot.platform_fee,
   });
-  await sb.from("payment_split").upsert({
+  const transactionAmount = roundMoney(params.snapshot.customer_total);
+  const restaurantAmount = roundMoney(params.snapshot.restaurant_net);
+  const gatewayFee = roundMoney(params.snapshot.gateway_fee);
+  const { error } = await sb.from("payment_split").upsert({
     order_id: params.orderId,
     payment_id: params.paymentId,
     restaurant_id: params.restaurantId,
     provider: "mercadopago",
-    restaurant_amount: roundMoney(params.snapshot.restaurant_net),
+    restaurant_amount: restaurantAmount,
     platform_amount: platformFee,
-    gateway_fee: roundMoney(params.snapshot.gateway_fee),
+    gateway_fee: gatewayFee,
     status: params.status,
     split_reference: params.splitReference,
     error_message: params.errorMessage ?? null,
@@ -201,6 +204,30 @@ async function persistPaymentSplit(sb: ReturnType<typeof admin>, params: {
       gateway_status: params.gatewayStatus ?? null,
     },
   }, { onConflict: "order_id" });
+  if (error) {
+    if (Deno.env.get("LOCALIX_ENV") === "staging") {
+      console.error("[mp-payment-intent][payment-split] persist failed", {
+        order_id: params.orderId,
+        restaurant_id: params.restaurantId,
+        status: params.status,
+        gateway_status: params.gatewayStatus ?? null,
+        transaction_amount: transactionAmount,
+        platform_fee: platformFee,
+        restaurant_amount: restaurantAmount,
+        gateway_fee: gatewayFee,
+        error_code: error.code ?? null,
+        error_message: error.message ?? null,
+      });
+    }
+    throw new Error("mercadopago_payment_split_persist_failed");
+  }
+  if (Deno.env.get("LOCALIX_ENV") === "staging") {
+    console.log("[mp-payment-intent][payment-split] persisted", {
+      order_id: params.orderId,
+      status: params.status,
+      gateway_status: params.gatewayStatus ?? null,
+    });
+  }
 }
 
 function admin() {
