@@ -28,6 +28,7 @@ Configurar somente no runtime server-side/Supabase Edge Functions:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `MP_APP_ID`
 - `MP_CLIENT_SECRET`
+- `MP_TEST_ACCESS_TOKEN` (somente staging/sandbox para PIX de teste; server-side, nunca `VITE_`)
 - `MP_WEBHOOK_SECRET`
 - `MP_TOKEN_ENCRYPTION_KEY`
 
@@ -45,6 +46,7 @@ Nao preencher secrets reais em arquivos versionados.
 - Definir `LOCALIX_SUPABASE_ENVIRONMENT=staging`.
 - Definir `LOCALIX_ENV=staging`.
 - Definir `MP_ENVIRONMENT=sandbox`.
+- Definir `MP_TEST_ACCESS_TOKEN` com o Access Token de teste da aplicacao Mercado Pago de staging.
 - Definir `PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL=https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1`.
 - Confirmar que `PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL` nao e igual a URL de staging.
 
@@ -64,6 +66,9 @@ na aplicacao.
 - Criar vendedores/usuarios de teste apropriados.
 - Conectar apenas contas de teste no OAuth de staging.
 - Validar que nenhuma credencial de producao foi copiada para staging.
+- PIX sandbox com `MP_TEST_ACCESS_TOKEN` valida a criacao de pagamento e que a comissao
+  (`application_fee`) foi enviada no payload. Isso nao constitui prova completa do Split 1:1
+  marketplace via OAuth do seller.
 
 ## Restaurante piloto
 

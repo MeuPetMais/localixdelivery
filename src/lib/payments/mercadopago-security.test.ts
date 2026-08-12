@@ -6,6 +6,7 @@ import {
   getRequiredMpOAuthConfig,
   getRestaurantMpAccessToken,
   resolveMercadoPagoOAuthAccountEnvironment,
+  resolveMercadoPagoPaymentAccessToken,
   validateMercadoPagoAccountEnvironment,
   verifyMercadoPagoWebhookSignature,
 } from "../../../supabase/functions/_shared/mp-security";
@@ -374,8 +375,86 @@ describe("Mercado Pago security helpers", () => {
     const validationCall = paymentIntent.indexOf("await validatePaymentAccountEnvironment(sb, order.restaurant_id, environmentConfig)");
 
     expect(validationCall).toBeGreaterThan(-1);
-    expect(validationCall).toBeLessThan(paymentIntent.indexOf("const token = await getAccessToken"));
+    expect(validationCall).toBeLessThan(paymentIntent.indexOf("const sellerOAuthToken = shouldUsePixSandboxTestToken"));
     expect(validationCall).toBeGreaterThan(paymentIntent.indexOf("const environmentConfig = getRequiredMpEnvironmentConfig"));
+  });
+
+  it("staging sandbox PIX usa MP_TEST_ACCESS_TOKEN e nao OAuth seller", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({ MP_TEST_ACCESS_TOKEN: "TEST-application-token", MP_ACCESS_TOKEN: "LIVE-token-never-used" }),
+      environmentConfig: stagingMpConfig(),
+      paymentMethod: "pix",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: true,
+      token: "TEST-application-token",
+      source: "mp_test_access_token",
+    });
+  });
+
+  it("staging sandbox PIX sem MP_TEST_ACCESS_TOKEN falha fechado sem fallback para OAuth seller", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({}),
+      environmentConfig: stagingMpConfig(),
+      paymentMethod: "pix",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: false,
+      error: "mercadopago_test_access_token_not_configured",
+    });
+  });
+
+  it("production usa OAuth seller e ignora MP_TEST_ACCESS_TOKEN", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({ MP_TEST_ACCESS_TOKEN: "TEST-application-token" }),
+      environmentConfig: productionMpConfig(),
+      paymentMethod: "pix",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: true,
+      token: "seller-oauth-token",
+      source: "seller_oauth",
+    });
+  });
+
+  it("Checkout Pro nao usa MP_TEST_ACCESS_TOKEN em staging sandbox", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({ MP_TEST_ACCESS_TOKEN: "TEST-application-token" }),
+      environmentConfig: stagingMpConfig(),
+      paymentMethod: "credit_card",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: true,
+      token: "seller-oauth-token",
+      source: "seller_oauth",
+    });
+  });
+
+  it("payment intent PIX sandbox falha antes de OAuth seller quando test token esta ausente", () => {
+    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+    const security = readFileSync("supabase/functions/_shared/mp-security.ts", "utf8");
+
+    expect(paymentIntent).toContain("const sellerOAuthToken = shouldUsePixSandboxTestToken");
+    expect(paymentIntent).toContain("? null");
+    expect(security).toContain("mercadopago_test_access_token_not_configured");
+  });
+
+  it("payment intent mantem application_fee do snapshot e transaction_amount do customer_total", () => {
+    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+
+    expect(paymentIntent).toContain("transactionAmount: snapshot.customer_total");
+    expect(paymentIntent).toContain("platformFee: snapshot.platform_fee");
+    expect(paymentIntent).toContain("applicationFee: splitAmounts.feeForGateway");
+    expect(paymentIntent).toContain("body.application_fee = Number(params.applicationFee.toFixed(2))");
+  });
+
+  it("logs nao incluem token e documentam limite do PIX sandbox com test token", () => {
+    const paymentIntent = readFileSync("supabase/functions/mp-payment-intent/index.ts", "utf8");
+
+    expect(paymentIntent).toContain("token_source");
+    expect(paymentIntent).toContain("pix_sandbox_test_token_validates_payment_creation_and_fee_payload_not_full_oauth_split");
+    expect(paymentIntent).not.toContain("access_token:");
+    expect(paymentIntent).not.toContain("MP_TEST_ACCESS_TOKEN:");
   });
 
   it("payment intent production nao depende da allowlist", () => {

@@ -13,6 +13,7 @@ import {
   getMercadoPagoCheckoutProUrl,
   getRequiredMpEnvironmentConfig,
   getRestaurantMpAccessToken,
+  resolveMercadoPagoPaymentAccessToken,
   validateMercadoPagoAccountEnvironment,
 } from "../_shared/mp-security.ts";
 
@@ -478,7 +479,32 @@ Deno.serve(async (req) => {
     }
 
     await validatePaymentAccountEnvironment(sb, order.restaurant_id, environmentConfig);
-    const token = await getAccessToken(sb, order.restaurant_id);
+    const shouldUsePixSandboxTestToken =
+      environmentConfig.runtimeEnvironment === "staging" &&
+      environmentConfig.supabaseEnvironment === "staging" &&
+      environmentConfig.mercadoPagoEnvironment === "sandbox" &&
+      method === "pix";
+    const sellerOAuthToken = shouldUsePixSandboxTestToken
+      ? null
+      : await getAccessToken(sb, order.restaurant_id);
+    const tokenResolution = resolveMercadoPagoPaymentAccessToken({
+      env: Deno.env,
+      environmentConfig,
+      paymentMethod: method,
+      sellerOAuthToken,
+    });
+    if (!tokenResolution.ok) {
+      console.error("[mp-payment-intent] access token not configured", {
+        provider: "mercado_pago",
+        order_id: orderId,
+        restaurant_id: order.restaurant_id,
+        payment_method: method,
+        error: tokenResolution.error,
+        timestamp: new Date().toISOString(),
+      });
+      return json({ error: tokenResolution.error }, { status: 500 });
+    }
+    const token = tokenResolution.token;
 
     // ---------- CREATE ----------
     if (action === "create") {
@@ -744,6 +770,10 @@ Deno.serve(async (req) => {
         transaction_amount: splitAmounts.transactionAmount,
         expected_platform_fee: splitAmounts.platformFee,
         service_fee_payer: snapshot.service_fee_payer,
+        token_source: tokenResolution.source,
+        split_validation_note: tokenResolution.source === "mp_test_access_token"
+          ? "pix_sandbox_test_token_validates_payment_creation_and_fee_payload_not_full_oauth_split"
+          : "oauth_seller_marketplace_flow",
       });
 
       let mp;

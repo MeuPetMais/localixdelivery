@@ -73,6 +73,7 @@ export type MpEnvironmentConfig =
 
 export const MP_ACCOUNT_NOT_ALLOWED_IN_STAGING = "mercadopago_account_not_allowed_in_staging";
 export const MP_STAGING_SELLER_ALLOWLIST_NOT_CONFIGURED = "mercadopago_staging_seller_allowlist_not_configured";
+export const MP_TEST_ACCESS_TOKEN_NOT_CONFIGURED = "mercadopago_test_access_token_not_configured";
 
 const TEMPORARY_STAGING_FUNCTIONS_BASE_URL = "https://dnotmvbhuqujvqdtgzav.supabase.co/functions/v1";
 
@@ -222,6 +223,28 @@ function parseStagingAllowedSellerIds(env: { get: (key: string) => string | unde
 
 function isStagingSandbox(environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>): boolean {
   return environmentConfig.runtimeEnvironment === "staging" && environmentConfig.mercadoPagoEnvironment === "sandbox";
+}
+
+export type MpPaymentAccessTokenResult =
+  | { ok: true; token: string; source: "mp_test_access_token" | "seller_oauth" }
+  | { ok: false; error: typeof MP_TEST_ACCESS_TOKEN_NOT_CONFIGURED | "restaurant_mp_token_missing" };
+
+export function resolveMercadoPagoPaymentAccessToken(input: {
+  env: { get: (key: string) => string | undefined | null };
+  environmentConfig: Extract<MpEnvironmentConfig, { ok: true }>;
+  paymentMethod: string;
+  sellerOAuthToken?: string | null;
+}): MpPaymentAccessTokenResult {
+  const method = input.paymentMethod.toLowerCase();
+  if (isStagingSandbox(input.environmentConfig) && method === "pix") {
+    const testToken = cleanEnvValue(input.env.get("MP_TEST_ACCESS_TOKEN"));
+    if (!testToken) return { ok: false, error: MP_TEST_ACCESS_TOKEN_NOT_CONFIGURED };
+    return { ok: true, token: testToken, source: "mp_test_access_token" };
+  }
+
+  const sellerOAuthToken = cleanEnvValue(input.sellerOAuthToken);
+  if (!sellerOAuthToken) return { ok: false, error: "restaurant_mp_token_missing" };
+  return { ok: true, token: sellerOAuthToken, source: "seller_oauth" };
 }
 
 function validateStagingSellerId(
