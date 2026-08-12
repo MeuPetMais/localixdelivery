@@ -13,6 +13,7 @@ import PricingEngine, {
   type PricingInput,
   type PricingResult,
   type ProviderId,
+  type ServiceFeePayer,
 } from "@/lib/payments/PricingEngine";
 import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
@@ -99,6 +100,62 @@ const previewInputSchema = z
 
 export type CheckoutPricingPreviewInput = z.infer<typeof previewInputSchema>;
 
+export type CheckoutPricingPreviewDiagnostics = {
+  resolvedRestaurantId?: string | null;
+  resolvedMinOrder?: number | null;
+  resolvedServiceFeePayer?: ServiceFeePayer | null;
+};
+
+type CheckoutPricingPreviewErrorResult = {
+  ok: false;
+  code: string;
+  message: string;
+};
+
+export function isCheckoutPricingPreviewServerDiagnosticsEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.LOCALIX_ENV === "staging";
+}
+
+export function checkoutPricingPreviewErrorResult(error: unknown): CheckoutPricingPreviewErrorResult {
+  const message = error instanceof Error ? error.message : "Erro no calculo";
+  const code = error instanceof PricingError ? error.code : "PRICING_ERROR";
+  return { ok: false, code, message };
+}
+
+export function buildCheckoutPricingPreviewServerDiagnosticPayload(
+  input: CheckoutPricingPreviewInput,
+  result: CheckoutPricingPreviewErrorResult,
+  diagnostics: CheckoutPricingPreviewDiagnostics = {},
+) {
+  return {
+    code: result.code,
+    message: result.message,
+    restaurantId: input.restaurantId ?? null,
+    restaurantSlug: input.restaurantSlug ?? null,
+    paymentMethod: input.paymentMethod ?? null,
+    subtotal: input.subtotal,
+    deliveryFee: input.deliveryFee ?? 0,
+    resolvedRestaurantId: diagnostics.resolvedRestaurantId ?? null,
+    resolvedMinOrder: diagnostics.resolvedMinOrder ?? null,
+    resolvedServiceFeePayer: diagnostics.resolvedServiceFeePayer ?? null,
+  };
+}
+
+export function logCheckoutPricingPreviewServerDiagnostic(
+  input: CheckoutPricingPreviewInput,
+  result: CheckoutPricingPreviewErrorResult,
+  diagnostics: CheckoutPricingPreviewDiagnostics = {},
+  env: Record<string, string | undefined> = process.env,
+) {
+  if (!isCheckoutPricingPreviewServerDiagnosticsEnabled(env)) return;
+  console.warn(
+    "[checkout-pricing-preview][server]",
+    buildCheckoutPricingPreviewServerDiagnosticPayload(input, result, diagnostics),
+  );
+}
+
 export async function calculateAuthoritativeCheckoutPricing(
   supabaseAdmin: any,
   input: {
@@ -111,6 +168,7 @@ export async function calculateAuthoritativeCheckoutPricing(
     loyaltyDiscount?: number;
     paymentMethod?: CheckoutMethod;
   },
+  diagnostics?: CheckoutPricingPreviewDiagnostics,
 ): Promise<PricingResult> {
   let query = supabaseAdmin
     .from("restaurants")
@@ -123,8 +181,15 @@ export async function calculateAuthoritativeCheckoutPricing(
   const { data: rest, error: restErr } = await query.maybeSingle();
   if (restErr) throw new Error(restErr.message);
   if (!rest) throw new Error("Restaurante nao encontrado");
+  if (diagnostics) {
+    diagnostics.resolvedRestaurantId = rest.id;
+    diagnostics.resolvedMinOrder = (rest as { min_order?: number | null }).min_order ?? null;
+  }
 
   const serviceFeeSettings = await loadServiceFeeSettingsByRestaurant(supabaseAdmin, rest.id);
+  if (diagnostics) {
+    diagnostics.resolvedServiceFeePayer = serviceFeeSettings.serviceFeePayer;
+  }
   const paymentDecision = input.paymentMethod
     ? resolveCheckoutPayment(input.paymentMethod)
     : resolveCheckoutPayment("pix");
@@ -330,13 +395,14 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 export const previewCheckoutPricing = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => previewInputSchema.parse(d))
   .handler(async ({ data }) => {
+    const diagnostics: CheckoutPricingPreviewDiagnostics = {};
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const pricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, data);
+      const pricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, data, diagnostics);
       return { ok: true as const, pricing };
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro no cálculo";
-      const code = e instanceof PricingError ? e.code : "PRICING_ERROR";
-      return { ok: false as const, code, message: msg };
+      const result = checkoutPricingPreviewErrorResult(e);
+      logCheckoutPricingPreviewServerDiagnostic(data, result, diagnostics);
+      return result;
     }
   });

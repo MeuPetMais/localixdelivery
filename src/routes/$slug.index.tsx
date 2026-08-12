@@ -14,7 +14,12 @@ import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
 import { buildCheckoutPaymentPayload, type CheckoutPaymentOption } from "@/lib/checkout/checkout-payment";
-import { canSubmitWithAuthoritativePricing, getCustomerServiceFee } from "@/lib/checkout/checkout-pricing-ui";
+import {
+  canSubmitWithAuthoritativePricing,
+  getCustomerServiceFee,
+  logCheckoutPricingPreviewClientError,
+  logCheckoutPricingPreviewClientException,
+} from "@/lib/checkout/checkout-pricing-ui";
 import { normalizeOrderPaymentMethod } from "@/lib/checkout/paymentMethodLabel";
 import { PaymentService } from "@/lib/payments/PaymentService";
 import MercadoPagoReadiness from "@/lib/payments/MercadoPagoReadiness";
@@ -1146,12 +1151,14 @@ const paymentOptions: PayOption[] = (
           setPricing(r.pricing as any);
           setPricingError(null);
         } else {
+          logCheckoutPricingPreviewClientError(import.meta.env, r.code, r.message);
           setPricing(null);
           setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
+        logCheckoutPricingPreviewClientException(import.meta.env, error);
         setPricing(null);
         setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
       })

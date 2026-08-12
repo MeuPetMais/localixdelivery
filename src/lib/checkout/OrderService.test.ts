@@ -5,10 +5,19 @@ import {
   canSubmitWithAuthoritativePricing,
   getAuthoritativeCustomerTotal,
   getCustomerServiceFee,
+  isCheckoutPricingPreviewClientDiagnosticsEnabled,
+  logCheckoutPricingPreviewClientError,
+  logCheckoutPricingPreviewClientException,
 } from "./checkout-pricing-ui";
 import { readFileSync } from "node:fs";
 import { paymentMethodLabel } from "./paymentMethodLabel";
-import { calculateAuthoritativeCheckoutPricing } from "./OrderService";
+import {
+  buildCheckoutPricingPreviewServerDiagnosticPayload,
+  calculateAuthoritativeCheckoutPricing,
+  checkoutPricingPreviewErrorResult,
+  isCheckoutPricingPreviewServerDiagnosticsEnabled,
+  logCheckoutPricingPreviewServerDiagnostic,
+} from "./OrderService";
 import {
   CheckoutValidationError,
   resolveAuthoritativeCheckoutPricing,
@@ -285,6 +294,91 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
 
     expect(canSubmitWithAuthoritativePricing(state)).toBe(false);
     expect(getAuthoritativeCustomerTotal(state)).toBeNull();
+  });
+
+  it("preview falha com ok=false e logging server de staging nao muda o resultado", () => {
+    const error = new PricingError("ORDER_BELOW_MINIMUM", "Pedido abaixo do minimo");
+    const result = checkoutPricingPreviewErrorResult(error);
+    const input = {
+      restaurantId: PILOT_RESTAURANT_ID,
+      restaurantSlug: "localix-mp-staging-pilot",
+      subtotal: 3.5,
+      deliveryFee: 5,
+      paymentMethod: "pix" as const,
+    };
+    const diagnostics = {
+      resolvedRestaurantId: PILOT_RESTAURANT_ID,
+      resolvedMinOrder: 0,
+      resolvedServiceFeePayer: "customer" as const,
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    expect(result).toEqual({
+      ok: false,
+      code: "ORDER_BELOW_MINIMUM",
+      message: "Pedido abaixo do minimo",
+    });
+    expect(isCheckoutPricingPreviewServerDiagnosticsEnabled({ LOCALIX_ENV: "staging" })).toBe(true);
+    expect(isCheckoutPricingPreviewServerDiagnosticsEnabled({ LOCALIX_ENV: "production" })).toBe(false);
+    expect(buildCheckoutPricingPreviewServerDiagnosticPayload(input, result, diagnostics)).toEqual({
+      code: "ORDER_BELOW_MINIMUM",
+      message: "Pedido abaixo do minimo",
+      restaurantId: PILOT_RESTAURANT_ID,
+      restaurantSlug: "localix-mp-staging-pilot",
+      paymentMethod: "pix",
+      subtotal: 3.5,
+      deliveryFee: 5,
+      resolvedRestaurantId: PILOT_RESTAURANT_ID,
+      resolvedMinOrder: 0,
+      resolvedServiceFeePayer: "customer",
+    });
+
+    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, { LOCALIX_ENV: "staging" });
+    expect(warn).toHaveBeenCalledWith(
+      "[checkout-pricing-preview][server]",
+      expect.objectContaining({
+        code: "ORDER_BELOW_MINIMUM",
+        restaurantId: PILOT_RESTAURANT_ID,
+        resolvedMinOrder: 0,
+        resolvedServiceFeePayer: "customer",
+      }),
+    );
+
+    warn.mockClear();
+    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, { LOCALIX_ENV: "production" });
+    expect(warn).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+  });
+
+  it("logging client de staging nao altera bloqueio nem volta ao fallback financeiro", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const state = {
+      pricing: null,
+      pricingLoading: false,
+      pricingError: "Nao foi possivel calcular o valor final do pedido. Tente novamente.",
+    };
+
+    expect(isCheckoutPricingPreviewClientDiagnosticsEnabled({ MODE: "staging" })).toBe(true);
+    expect(isCheckoutPricingPreviewClientDiagnosticsEnabled({ MODE: "production" })).toBe(false);
+    logCheckoutPricingPreviewClientError({ MODE: "staging" }, "PRICING_ERROR", "tenant_payment_settings permission denied");
+    logCheckoutPricingPreviewClientException({ MODE: "staging" }, new Error("network"));
+
+    expect(warn).toHaveBeenCalledWith(
+      "[checkout-pricing-preview][client]",
+      "PRICING_ERROR",
+      "tenant_payment_settings permission denied",
+    );
+    expect(warn).toHaveBeenCalledWith(
+      "[checkout-pricing-preview][client-exception]",
+      expect.any(Error),
+    );
+    expect(canSubmitWithAuthoritativePricing(state)).toBe(false);
+    expect(getAuthoritativeCustomerTotal(state)).toBeNull();
+
+    warn.mockClear();
+    logCheckoutPricingPreviewClientError({ MODE: "production" }, "PRICING_ERROR", "hidden in production");
+    logCheckoutPricingPreviewClientException({ MODE: "production" }, new Error("hidden in production"));
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("UI bloqueia pagamento enquanto a preview esta carregando", () => {
