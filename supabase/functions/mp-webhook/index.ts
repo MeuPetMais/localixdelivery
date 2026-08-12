@@ -14,6 +14,12 @@ import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
 import { persistPaymentSplitByOrderOrThrow } from "../_shared/payment-split.ts";
 import {
+  buildMercadoPagoSplitReconciliationPlan,
+  mapMercadoPagoStatus,
+  type LocalStatus,
+  type PricingSnapshot,
+} from "../_shared/mp-reconciliation.ts";
+import {
   getRequiredMpEnvironmentConfig,
   getRestaurantMpAccessToken,
   resolveMercadoPagoPaymentAccessToken,
@@ -22,37 +28,12 @@ import {
 } from "../_shared/mp-security.ts";
 
 
-type MpStatus = "approved"|"pending"|"in_process"|"rejected"|"cancelled"|"refunded"|"charged_back"|"expired";
-type LocalStatus = "PENDING"|"PROCESSING"|"APPROVED"|"REJECTED"|"CANCELLED"|"EXPIRED"|"REFUNDED"|"CHARGEBACK";
-type PricingSnapshot = {
-  platform_fee: number;
-  customer_total: number;
-  restaurant_net: number;
-  gateway_fee: number;
-  service_fee_payer: string;
-  realized_platform_revenue: number;
-};
-
 function admin(): SupabaseClient {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-}
-
-function mapStatus(s: string | null | undefined): LocalStatus {
-  switch ((s ?? "").toLowerCase() as MpStatus) {
-    case "approved": return "APPROVED";
-    case "in_process": return "PROCESSING";
-    case "pending": return "PENDING";
-    case "rejected": return "REJECTED";
-    case "cancelled": return "CANCELLED";
-    case "expired": return "EXPIRED";
-    case "refunded": return "REFUNDED";
-    case "charged_back": return "CHARGEBACK";
-    default: return "PENDING";
-  }
 }
 
 async function validatePaymentAccountEnvironment(
@@ -113,10 +94,6 @@ async function fetchMpPayment(token: string, paymentId: string) {
   return await res.json();
 }
 
-function roundMoney(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
 async function loadPricingSnapshot(sb: SupabaseClient, orderId: string, restaurantId: string): Promise<PricingSnapshot | null> {
   const { data, error } = await sb
     .from("order_pricing_snapshot")
@@ -133,74 +110,6 @@ async function loadPricingSnapshot(sb: SupabaseClient, orderId: string, restaura
     gateway_fee: Number(data.gateway_fee ?? 0),
     service_fee_payer: String(data.service_fee_payer ?? "customer"),
     realized_platform_revenue: Number(data.realized_platform_revenue ?? 0),
-  };
-}
-
-function extractMarketplaceFee(payment: Record<string, unknown>) {
-  const direct = payment.marketplace_fee ?? payment.application_fee;
-  if (direct !== undefined && direct !== null) {
-    const amount = roundMoney(Number(direct));
-    return Number.isFinite(amount)
-      ? { ok: true as const, amount, source: direct === payment.marketplace_fee ? "marketplace_fee" : "application_fee" }
-      : { ok: false as const, reason: "invalid" };
-  }
-
-  const feeDetails = Array.isArray(payment.fee_details) ? payment.fee_details : [];
-  const detail = feeDetails.find((entry) => {
-    const type = String((entry as { type?: unknown }).type ?? "").toLowerCase();
-    const name = String((entry as { name?: unknown }).name ?? "").toLowerCase();
-    return type.includes("marketplace") || type.includes("application") || name.includes("marketplace") || name.includes("application");
-  }) as { amount?: unknown; type?: unknown; name?: unknown } | undefined;
-  if (!detail) return { ok: false as const, reason: "missing" };
-  const amount = roundMoney(Number(detail.amount));
-  if (!Number.isFinite(amount)) return { ok: false as const, reason: "invalid" };
-  return { ok: true as const, amount, source: String(detail.type ?? detail.name ?? "fee_details") };
-}
-
-function sumRefundedAmount(payment: Record<string, unknown>): number | null {
-  const refunds = Array.isArray(payment.refunds) ? payment.refunds : null;
-  if (refunds) {
-    const total = refunds.reduce((sum, refund) => {
-      const amount = Number((refund as { amount?: unknown }).amount ?? 0);
-      return sum + (Number.isFinite(amount) ? amount : 0);
-    }, 0);
-    return roundMoney(total);
-  }
-  const transactionDetailsRefunded = (payment.transaction_details as { refunded_amount?: unknown } | undefined)?.refunded_amount;
-  const direct = Number(payment.refunded_amount ?? transactionDetailsRefunded);
-  return Number.isFinite(direct) && direct > 0 ? roundMoney(direct) : null;
-}
-
-function calculateRefundReversal(params: {
-  localStatus: LocalStatus;
-  paymentStatusDetail?: string | null;
-  transactionAmount: number;
-  expectedPlatformFee: number;
-  payment: Record<string, unknown>;
-}) {
-  const statusDetail = String(params.paymentStatusDetail ?? "").toLowerCase();
-  const isFullRefund = params.localStatus === "REFUNDED";
-  const isPartialRefund = statusDetail === "partially_refunded";
-  if (!isFullRefund && !isPartialRefund) return null;
-
-  const transactionAmount = roundMoney(params.transactionAmount);
-  if (!Number.isFinite(transactionAmount) || transactionAmount <= 0) {
-    return { ok: false as const, reason: "invalid_transaction_amount" };
-  }
-  const refundedAmount = isFullRefund ? transactionAmount : sumRefundedAmount(params.payment);
-  if (refundedAmount === null) return { ok: false as const, reason: "refund_amount_missing" };
-  if (!Number.isFinite(refundedAmount) || refundedAmount < 0 || refundedAmount > transactionAmount) {
-    return { ok: false as const, reason: "invalid_refund_amount" };
-  }
-
-  const ratio = Math.min(1, refundedAmount / transactionAmount);
-  const reversedPlatformFee = roundMoney(params.expectedPlatformFee * ratio);
-  return {
-    ok: true as const,
-    reversalStatus: refundedAmount >= transactionAmount ? "FULL" : "PARTIAL",
-    refundedAmount,
-    reversedPlatformFee,
-    realizedPlatformRevenue: Math.max(0, roundMoney(params.expectedPlatformFee - reversedPlatformFee)),
   };
 }
 
@@ -236,212 +145,34 @@ async function reconcilePaymentSplit(sb: SupabaseClient, params: {
   payment: Record<string, unknown>;
 }) {
   const snapshot = await loadPricingSnapshot(sb, params.orderId, params.restaurantId);
-  if (!snapshot) {
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      order_id: params.orderId,
-      payment_id: params.paymentId,
-      restaurant_id: params.restaurantId,
-      provider: "mercadopago",
-      restaurant_amount: 0,
-      platform_amount: 0,
-      gateway_fee: 0,
-      status: "MANUAL_REVIEW",
-      split_reference: `mp_payment:${params.paymentId}`,
-      error_message: "pricing_snapshot_missing",
-      metadata: {
-        reason: "pricing_snapshot_missing",
-        payment_id: params.paymentId,
-        order_id: params.orderId,
-        restaurant_id: params.restaurantId,
-        checked_at: new Date().toISOString(),
-      },
-    });
-    return;
-  }
-
-  const expectedPlatformFee = roundMoney(Number(snapshot.platform_fee ?? 0));
-  const baseRow = {
-    order_id: params.orderId,
-    payment_id: params.paymentId,
-    restaurant_id: params.restaurantId,
-    provider: "mercadopago",
-    restaurant_amount: roundMoney(snapshot.restaurant_net),
-    platform_amount: expectedPlatformFee,
-    gateway_fee: roundMoney(snapshot.gateway_fee),
-    split_reference: `mp_payment:${params.paymentId}`,
-  };
-
-  if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING") {
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      ...baseRow,
-      status: "PROCESSING",
-      error_message: null,
-      processed_at: null,
-      metadata: {
-        gateway_status: params.payment.status ?? null,
-        expected_platform_fee: expectedPlatformFee,
-        service_fee_payer: snapshot.service_fee_payer,
-      },
-    });
-    return;
-  }
-
-  if (params.localStatus === "REJECTED" || params.localStatus === "CANCELLED" || params.localStatus === "EXPIRED") {
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      ...baseRow,
-      status: "FAILED",
-      error_message: `payment_${params.localStatus.toLowerCase()}`,
-      processed_at: new Date().toISOString(),
-      metadata: {
-        gateway_status: params.payment.status ?? null,
-        expected_platform_fee: expectedPlatformFee,
-        service_fee_payer: snapshot.service_fee_payer,
-      },
-    });
-    return;
-  }
-
-  if (params.localStatus === "CHARGEBACK") {
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      ...baseRow,
-      status: "MANUAL_REVIEW",
-      error_message: "split_chargeback_reconciliation_required",
-      processed_at: null,
-      metadata: {
-        gateway_status: params.payment.status ?? null,
-        gateway_status_detail: params.payment.status_detail ?? null,
-        expected_platform_fee: expectedPlatformFee,
-        service_fee_payer: snapshot.service_fee_payer,
-        reason: "chargeback_dispute_requires_manual_review",
-      },
-    });
-    return;
-  }
-
-  if (expectedPlatformFee < 0 || expectedPlatformFee >= roundMoney(snapshot.customer_total)) {
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      ...baseRow,
-      status: "MANUAL_REVIEW",
-      error_message: "invalid_platform_fee",
-      processed_at: null,
-      metadata: {
-        expected_platform_fee: expectedPlatformFee,
-        customer_total: roundMoney(snapshot.customer_total),
-        reason: "invalid_platform_fee",
-      },
-    });
-    return;
-  }
-
-  const refundReversal = calculateRefundReversal({
-    localStatus: params.localStatus,
-    paymentStatusDetail: String(params.payment.status_detail ?? ""),
-    transactionAmount: roundMoney(snapshot.customer_total),
-    expectedPlatformFee,
-    payment: params.payment,
+  const plan = buildMercadoPagoSplitReconciliationPlan({
+    ...params,
+    snapshot,
   });
-  if (refundReversal) {
-    if (!refundReversal.ok) {
-      await persistPaymentSplitByOrderOrThrow(sb, {
-        ...baseRow,
-        status: "MANUAL_REVIEW",
-        error_message: refundReversal.reason,
-        processed_at: null,
-        metadata: {
-          expected_platform_fee: expectedPlatformFee,
-          customer_total: roundMoney(snapshot.customer_total),
-          service_fee_payer: snapshot.service_fee_payer,
-          gateway_status: params.payment.status ?? null,
-          gateway_status_detail: params.payment.status_detail ?? null,
-          reason: refundReversal.reason,
-        },
-      });
-      return;
-    }
+  await persistPaymentSplitByOrderOrThrow(sb, plan.splitRow);
 
-    const previousRealized = roundMoney(Number(snapshot.realized_platform_revenue ?? 0));
-    const nextRealized = refundReversal.realizedPlatformRevenue;
-    const ledgerDelta = roundMoney(nextRealized - previousRealized);
-    await persistPaymentSplitByOrderOrThrow(sb, {
-      ...baseRow,
-      status: "COMPLETED",
-      error_message: null,
-      processed_at: new Date().toISOString(),
-      metadata: {
-        expected_platform_fee: expectedPlatformFee,
-        realized_platform_fee: nextRealized,
-        reversed_platform_fee: refundReversal.reversedPlatformFee,
-        refunded_amount: refundReversal.refundedAmount,
-        reversal_status: refundReversal.reversalStatus,
-        gateway_status: params.payment.status ?? null,
-        gateway_status_detail: params.payment.status_detail ?? null,
-        service_fee_payer: snapshot.service_fee_payer,
-        checked_at: new Date().toISOString(),
-      },
-    });
-
+  if (plan.realizedPlatformRevenueUpdate !== null) {
     const { error } = await sb
       .from("order_pricing_snapshot")
-      .update({ realized_platform_revenue: nextRealized })
-      .eq("order_id", params.orderId);
-    if (error) console.error("[mp-webhook] realized platform revenue refund update failed", { orderId: params.orderId, error: error.message });
-
-    if (ledgerDelta < 0) {
-      await insertLedgerOnce(sb, {
-        order_id: params.orderId,
-        restaurant_id: params.restaurantId,
-        provider: "mercado_pago",
-        transaction_type: "PLATFORM_FEE_REVERSAL",
-        amount: ledgerDelta,
-        currency: String(params.payment.currency_id ?? "BRL"),
-        status: "COMPLETED",
-        reference_type: "mp_split_reversal",
-        reference_id: `${params.paymentId}:${refundReversal.reversalStatus}:${refundReversal.refundedAmount}`,
-        description: "Reversao da receita Localix por reembolso Mercado Pago",
-        metadata: {
-          payment_id: params.paymentId,
-          order_id: params.orderId,
-          restaurant_id: params.restaurantId,
-          previous_realized_platform_revenue: previousRealized,
-          realized_platform_revenue: nextRealized,
-          reversed_platform_fee_delta: ledgerDelta,
-          refund_reversal_status: refundReversal.reversalStatus,
-        },
-      });
-    }
-    return;
-  }
-
-  const extraction = expectedPlatformFee === 0
-    ? { ok: true as const, amount: 0, source: "zero_expected" }
-    : extractMarketplaceFee(params.payment);
-  const matches = extraction.ok && Math.abs(extraction.amount - expectedPlatformFee) <= 0.01;
-  const status = matches ? "COMPLETED" : "MANUAL_REVIEW";
-  const errorMessage = matches ? null : extraction.ok ? "marketplace_fee_divergent" : `marketplace_fee_${extraction.reason}`;
-
-  await persistPaymentSplitByOrderOrThrow(sb, {
-    ...baseRow,
-    status,
-    error_message: errorMessage,
-    processed_at: matches ? new Date().toISOString() : null,
-    metadata: {
-      expected_platform_fee: expectedPlatformFee,
-      realized_platform_fee: extraction.ok ? extraction.amount : null,
-      marketplace_fee_source: extraction.ok ? extraction.source : null,
-      payment_id: params.paymentId,
-      order_id: params.orderId,
-      restaurant_id: params.restaurantId,
-      checked_at: new Date().toISOString(),
-      reason: errorMessage,
-    },
-  });
-
-  if (matches) {
-    const { error } = await sb
-      .from("order_pricing_snapshot")
-      .update({ realized_platform_revenue: extraction.amount })
+      .update({ realized_platform_revenue: plan.realizedPlatformRevenueUpdate })
       .eq("order_id", params.orderId);
     if (error) console.error("[mp-webhook] realized platform revenue update failed", { orderId: params.orderId, error: error.message });
+  }
+
+  if (plan.ledgerReversal) {
+    await insertLedgerOnce(sb, {
+      order_id: params.orderId,
+      restaurant_id: params.restaurantId,
+      provider: "mercado_pago",
+      transaction_type: "PLATFORM_FEE_REVERSAL",
+      amount: plan.ledgerReversal.amount,
+      currency: String(params.payment.currency_id ?? "BRL"),
+      status: "COMPLETED",
+      reference_type: "mp_split_reversal",
+      reference_id: plan.ledgerReversal.referenceId,
+      description: "Reversao da receita Localix por reembolso Mercado Pago",
+      metadata: plan.ledgerReversal.metadata,
+    });
   }
 }
 
@@ -617,7 +348,7 @@ Deno.serve(async (req) => {
     const mp = await fetchMpPayment(tokenResolution.token, resourceId);
     if (!mp) throw new Error("mp_payment_not_found");
 
-    const local = mapStatus(mp.status);
+    const local = mapMercadoPagoStatus(mp.status);
     if (!orderId) {
       // tenta external_reference vindo do MP
       const extFromMp = mp.external_reference;

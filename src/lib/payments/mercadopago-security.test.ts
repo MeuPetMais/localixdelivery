@@ -50,6 +50,10 @@ function mpWebhookSource() {
   return readFileSync("supabase/functions/mp-webhook/index.ts", "utf8");
 }
 
+function mpReconciliationSource() {
+  return readFileSync("supabase/functions/_shared/mp-reconciliation.ts", "utf8");
+}
+
 function splitFunctionsSource() {
   return readFileSync("src/lib/payments/split.functions.ts", "utf8");
 }
@@ -590,34 +594,36 @@ describe("Mercado Pago security helpers", () => {
   });
 
   it("webhook Mercado Pago reconcilia PROCESSING sem reconhecer receita realizada enquanto pendente", () => {
-    const webhook = mpWebhookSource();
-    const pendingBranch = webhook.slice(
-      webhook.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")'),
-      webhook.indexOf('if (params.localStatus === "REJECTED"', webhook.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")')),
+    const reconciliation = mpReconciliationSource();
+    const pendingBranch = reconciliation.slice(
+      reconciliation.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")'),
+      reconciliation.indexOf('if (params.localStatus === "REJECTED"', reconciliation.indexOf('if (params.localStatus === "PENDING" || params.localStatus === "PROCESSING")')),
     );
 
     expect(pendingBranch).toContain('status: "PROCESSING"');
-    expect(pendingBranch).toContain("persistPaymentSplitByOrderOrThrow");
+    expect(pendingBranch).toContain("realizedPlatformRevenueUpdate: null");
     expect(pendingBranch).not.toContain("realized_platform_revenue");
   });
 
   it("webhook Mercado Pago so reconhece realized_platform_revenue apos reconciliacao valida", () => {
     const webhook = mpWebhookSource();
+    const reconciliation = mpReconciliationSource();
 
-    expect(webhook).toContain('status = matches ? "COMPLETED" : "MANUAL_REVIEW"');
-    expect(webhook).toContain("update({ realized_platform_revenue: extraction.amount })");
-    expect(webhook.indexOf("update({ realized_platform_revenue: extraction.amount })")).toBeGreaterThan(
-      webhook.indexOf("const matches = extraction.ok"),
+    expect(reconciliation).toContain('status = matches ? "COMPLETED" : "MANUAL_REVIEW"');
+    expect(reconciliation).toContain("realizedPlatformRevenueUpdate: matches ? extraction.amount : null");
+    expect(webhook).toContain("update({ realized_platform_revenue: plan.realizedPlatformRevenueUpdate })");
+    expect(webhook.indexOf("update({ realized_platform_revenue: plan.realizedPlatformRevenueUpdate })")).toBeGreaterThan(
+      webhook.indexOf("buildMercadoPagoSplitReconciliationPlan"),
     );
   });
 
   it("webhook Mercado Pago preserva FAILED e MANUAL_REVIEW na reconciliacao", () => {
-    const webhook = mpWebhookSource();
+    const reconciliation = mpReconciliationSource();
 
-    expect(webhook).toContain('status: "FAILED"');
-    expect(webhook).toContain('status: "MANUAL_REVIEW"');
-    expect(webhook).toContain("split_chargeback_reconciliation_required");
-    expect(webhook).toContain("invalid_platform_fee");
+    expect(reconciliation).toContain('status: "FAILED"');
+    expect(reconciliation).toContain('status: "MANUAL_REVIEW"');
+    expect(reconciliation).toContain("split_chargeback_reconciliation_required");
+    expect(reconciliation).toContain("invalid_platform_fee");
   });
 
   it("payment_split logs nao incluem tokens, headers, dados pessoais nem QR Code", () => {
