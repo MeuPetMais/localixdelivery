@@ -8,11 +8,16 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import PricingEngine, { PricingError, type ProviderId } from "@/lib/payments/PricingEngine";
+import PricingEngine, {
+  PricingError,
+  type PricingInput,
+  type PricingResult,
+  type ProviderId,
+} from "@/lib/payments/PricingEngine";
 import { optionalSupabaseAuth } from "@/integrations/supabase/optional-auth-middleware";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { getRestaurantClosedMessage } from "@/lib/restaurant-status-labels";
-import { CHECKOUT_METHODS, resolveCheckoutPayment } from "./checkout-payment";
+import { CHECKOUT_METHODS, resolveCheckoutPayment, type CheckoutMethod } from "./checkout-payment";
 import {
   CheckoutValidationError,
   resolveAuthoritativeCheckoutPricing,
@@ -76,6 +81,69 @@ const inputSchema = z.object({
 });
 
 export type CheckoutInput = z.infer<typeof inputSchema>;
+
+const previewInputSchema = z
+  .object({
+    restaurantId: z.string().uuid().optional(),
+    restaurantSlug: z.string().min(1).optional(),
+    subtotal: z.number().nonnegative(),
+    deliveryFee: z.number().nonnegative().optional().default(0),
+    couponDiscount: z.number().nonnegative().optional().default(0),
+    cashback: z.number().nonnegative().optional().default(0),
+    loyaltyDiscount: z.number().nonnegative().optional().default(0),
+    paymentMethod: z.enum(CHECKOUT_METHODS).optional(),
+  })
+  .refine((data) => !!data.restaurantId || !!data.restaurantSlug, {
+    message: "restaurantId ou restaurantSlug obrigatorio",
+  });
+
+export type CheckoutPricingPreviewInput = z.infer<typeof previewInputSchema>;
+
+export async function calculateAuthoritativeCheckoutPricing(
+  supabaseAdmin: any,
+  input: {
+    restaurantId?: string;
+    restaurantSlug?: string;
+    subtotal: number;
+    deliveryFee?: number;
+    couponDiscount?: number;
+    cashback?: number;
+    loyaltyDiscount?: number;
+    paymentMethod?: CheckoutMethod;
+  },
+): Promise<PricingResult> {
+  let query = supabaseAdmin
+    .from("restaurants")
+    .select("id, min_order, delivery_fee");
+
+  query = input.restaurantId
+    ? query.eq("id", input.restaurantId)
+    : query.eq("slug", input.restaurantSlug);
+
+  const { data: rest, error: restErr } = await query.maybeSingle();
+  if (restErr) throw new Error(restErr.message);
+  if (!rest) throw new Error("Restaurante nao encontrado");
+
+  const serviceFeeSettings = await loadServiceFeeSettingsByRestaurant(supabaseAdmin, rest.id);
+  const paymentDecision = input.paymentMethod
+    ? resolveCheckoutPayment(input.paymentMethod)
+    : resolveCheckoutPayment("pix");
+
+  const pricingInput: PricingInput = {
+    subtotal: input.subtotal,
+    deliveryFee: Number(input.deliveryFee ?? rest.delivery_fee ?? 0) || 0,
+    couponDiscount: input.couponDiscount ?? 0,
+    cashback: input.cashback ?? 0,
+    loyaltyDiscount: input.loyaltyDiscount ?? 0,
+    paymentMethod: paymentDecision.pricingMethod,
+    provider: "mercado_pago" as ProviderId,
+    restaurantId: rest.id,
+    serviceFeePayer: serviceFeeSettings.serviceFeePayer,
+    minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
+  };
+
+  return PricingEngine.calculateOrderPricing(pricingInput);
+}
 
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .middleware([optionalSupabaseAuth])
@@ -182,22 +250,18 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     }
 
     const deliveryFee = Number((rest as { delivery_fee?: number | null }).delivery_fee ?? 0) || 0;
-    const serviceFeeSettings = await loadServiceFeeSettingsByRestaurant(supabaseAdmin, rest.id);
 
     // 3) Pricing — motor central
     let pricing;
     try {
-      pricing = await PricingEngine.calculateOrderPricing({
+      pricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, {
+        restaurantId: rest.id,
         subtotal: authoritative.subtotal,
         deliveryFee,
         couponDiscount: authoritative.couponDiscount,
         cashback: 0,
         loyaltyDiscount: 0,
-        paymentMethod: paymentDecision.pricingMethod,
-        provider: "mercado_pago" as ProviderId,
-        restaurantId: rest.id,
-        serviceFeePayer: serviceFeeSettings.serviceFeePayer,
-        minimumOrder: (rest as { min_order?: number | null }).min_order ?? null,
+        paymentMethod: data.paymentMethod,
       });
     } catch (e) {
       if (e instanceof PricingError) throw new Error(e.message);
@@ -264,30 +328,11 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
   });
 
 export const previewCheckoutPricing = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
-    z
-      .object({
-        subtotal: z.number().nonnegative(),
-        deliveryFee: z.number().nonnegative().optional().default(0),
-        couponDiscount: z.number().nonnegative().optional().default(0),
-        cashback: z.number().nonnegative().optional().default(0),
-        loyaltyDiscount: z.number().nonnegative().optional().default(0),
-        paymentMethod: z.enum(CHECKOUT_METHODS).optional(),
-      })
-      .parse(d),
-  )
+  .inputValidator((d: unknown) => previewInputSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      const pricing = await PricingEngine.calculateOrderPricing({
-        subtotal: data.subtotal,
-        deliveryFee: data.deliveryFee,
-        couponDiscount: data.couponDiscount,
-        cashback: data.cashback,
-        loyaltyDiscount: data.loyaltyDiscount,
-        paymentMethod: data.paymentMethod
-          ? resolveCheckoutPayment(data.paymentMethod).pricingMethod
-          : "pix",
-      });
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const pricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, data);
       return { ok: true as const, pricing };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro no cálculo";

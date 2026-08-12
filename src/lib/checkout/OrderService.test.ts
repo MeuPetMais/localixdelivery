@@ -1,7 +1,14 @@
-import { describe, it, expect } from "vitest";
-import { computePricing, DEFAULT_PRICING_SETTINGS, PricingError } from "@/lib/payments/PricingEngine";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import PricingEngine, { computePricing, DEFAULT_PRICING_SETTINGS, PricingError } from "@/lib/payments/PricingEngine";
 import { buildCheckoutPaymentPayload, resolveCheckoutPayment } from "./checkout-payment";
+import {
+  canSubmitWithAuthoritativePricing,
+  getAuthoritativeCustomerTotal,
+  getCustomerServiceFee,
+} from "./checkout-pricing-ui";
+import { readFileSync } from "node:fs";
 import { paymentMethodLabel } from "./paymentMethodLabel";
+import { calculateAuthoritativeCheckoutPricing } from "./OrderService";
 import {
   CheckoutValidationError,
   resolveAuthoritativeCheckoutPricing,
@@ -12,6 +19,65 @@ import {
 // NÃ£o faz I/O; garante que Checkout inteligente confie 100% no PricingEngine.
 
 const S = DEFAULT_PRICING_SETTINGS;
+
+const PILOT_RESTAURANT_ID = "11111111-1111-1111-1111-111111111111";
+const pilotSettings = {
+  ...DEFAULT_PRICING_SETTINGS,
+  minimum_order: 0,
+  platform_fee_until_30: 0.99,
+  platform_fee_above_30: 0.99,
+};
+
+function mockSupabaseAdmin(input: {
+  serviceFeePayer: "customer" | "restaurant";
+  minOrder?: number;
+  deliveryFee?: number;
+}) {
+  return {
+    from(table: string) {
+      if (table === "restaurants") {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          async maybeSingle() {
+            return {
+              data: {
+                id: PILOT_RESTAURANT_ID,
+                min_order: input.minOrder ?? 0,
+                delivery_fee: input.deliveryFee ?? 5,
+              },
+              error: null,
+            };
+          },
+        };
+      }
+
+      if (table === "tenant_payment_settings") {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          async maybeSingle() {
+            return {
+              data: {
+                restaurant_id: PILOT_RESTAURANT_ID,
+                service_fee_payer: input.serviceFeePayer,
+                service_fee_last_changed_at: null,
+                service_fee_change_locked_until: null,
+              },
+              error: null,
+            };
+          },
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    },
+  };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
   it("rejeita pedido abaixo do mÃ­nimo", () => {
@@ -119,6 +185,134 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
       initialStatus: "aguardando_pagamento",
       paymentRecordStatus: "PENDING",
     });
+  });
+
+  it("preview customer no piloto soma taxa Localix ao total do cliente", () => {
+    const p = computePricing(
+      { subtotal: 3.5, deliveryFee: 5, serviceFeePayer: "customer" },
+      pilotSettings,
+    );
+
+    expect(p.platformFee).toBe(0.99);
+    expect(p.customerTotal).toBe(9.49);
+    expect(p.restaurantNet).toBe(3.5);
+  });
+
+  it("preview restaurant no piloto nao soma taxa Localix ao total do cliente", () => {
+    const p = computePricing(
+      { subtotal: 3.5, deliveryFee: 5, serviceFeePayer: "restaurant" },
+      pilotSettings,
+    );
+
+    expect(p.platformFee).toBe(0.99);
+    expect(p.customerTotal).toBe(8.5);
+    expect(p.restaurantNet).toBe(2.51);
+  });
+
+  it("preview autoritativa respeita min_order do restaurante igual a zero", async () => {
+    vi.spyOn(PricingEngine, "calculateOrderPricing").mockImplementation(async (input) =>
+      computePricing(input, {
+        ...pilotSettings,
+        minimum_order: Number(input.minimumOrder),
+        service_fee_payer: input.serviceFeePayer,
+      }),
+    );
+
+    const pricing = await calculateAuthoritativeCheckoutPricing(
+      mockSupabaseAdmin({ serviceFeePayer: "customer", minOrder: 0 }),
+      {
+        restaurantId: PILOT_RESTAURANT_ID,
+        subtotal: 3.5,
+        deliveryFee: 5,
+        paymentMethod: "pix",
+      },
+    );
+
+    expect(pricing.customerTotal).toBe(9.49);
+    expect(PricingEngine.calculateOrderPricing).toHaveBeenCalledWith(expect.objectContaining({
+      minimumOrder: 0,
+      serviceFeePayer: "customer",
+      restaurantId: PILOT_RESTAURANT_ID,
+    }));
+  });
+
+  it("preview autoritativa e criacao real usam o mesmo payload financeiro", async () => {
+    const spy = vi.spyOn(PricingEngine, "calculateOrderPricing").mockImplementation(async (input) =>
+      computePricing(input, {
+        ...pilotSettings,
+        minimum_order: Number(input.minimumOrder),
+        service_fee_payer: input.serviceFeePayer,
+      }),
+    );
+    const supabaseAdmin = mockSupabaseAdmin({ serviceFeePayer: "customer", minOrder: 0 });
+
+    const previewPricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, {
+      restaurantSlug: "localix-mp-staging-pilot",
+      subtotal: 3.5,
+      deliveryFee: 5,
+      couponDiscount: 0,
+      cashback: 0,
+      loyaltyDiscount: 0,
+      paymentMethod: "pix",
+    });
+
+    const creationPricing = await calculateAuthoritativeCheckoutPricing(supabaseAdmin, {
+      restaurantId: PILOT_RESTAURANT_ID,
+      subtotal: 3.5,
+      deliveryFee: 5,
+      couponDiscount: 0,
+      cashback: 0,
+      loyaltyDiscount: 0,
+      paymentMethod: "pix",
+    });
+
+    expect(previewPricing).toMatchObject({
+      platformFee: 0.99,
+      customerTotal: 9.49,
+      restaurantNet: 3.5,
+      serviceFeePayer: "customer",
+    });
+    expect(creationPricing).toEqual(previewPricing);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("UI bloqueia pagamento e nao inventa total quando a preview falha", () => {
+    const state = {
+      pricing: null,
+      pricingLoading: false,
+      pricingError: "Não foi possível calcular o valor final do pedido. Tente novamente.",
+    };
+
+    expect(canSubmitWithAuthoritativePricing(state)).toBe(false);
+    expect(getAuthoritativeCustomerTotal(state)).toBeNull();
+  });
+
+  it("UI bloqueia pagamento enquanto a preview esta carregando", () => {
+    expect(canSubmitWithAuthoritativePricing({
+      pricing: null,
+      pricingLoading: true,
+      pricingError: null,
+    })).toBe(false);
+  });
+
+  it("UI mostra taxa quando customer e nao adiciona taxa visivel quando restaurant", () => {
+    expect(getCustomerServiceFee({
+      platformFee: 0.99,
+      customerTotal: 9.49,
+      serviceFeePayer: "customer",
+    })).toBe(0.99);
+    expect(getCustomerServiceFee({
+      platformFee: 0.99,
+      customerTotal: 8.5,
+      serviceFeePayer: "restaurant",
+    })).toBe(0);
+  });
+
+  it("checkout publico nao contem mais fallback financeiro local antigo", () => {
+    const route = readFileSync("src/routes/$slug.index.tsx", "utf8");
+
+    expect(route).not.toContain("Math.max(0, subtotal - discount) + fee");
+    expect(route).toContain("canSubmitWithAuthoritativePricing");
   });
 
   it("labels do painel e acompanhamento distinguem cartao online de cartao na entrega", () => {
