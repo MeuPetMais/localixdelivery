@@ -16,6 +16,8 @@ import { persistPaymentSplitByOrderOrThrow } from "../_shared/payment-split.ts";
 import {
   getRequiredMpEnvironmentConfig,
   getRestaurantMpAccessToken,
+  resolveMercadoPagoPaymentAccessToken,
+  validateMercadoPagoAccountEnvironment,
   verifyMercadoPagoWebhookSignature,
 } from "../_shared/mp-security.ts";
 
@@ -53,13 +55,54 @@ function mapStatus(s: string | null | undefined): LocalStatus {
   }
 }
 
-async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string> {
-  console.log("[mp-webhook] getAccessTokenForOrder", {
+async function validatePaymentAccountEnvironment(
+  sb: SupabaseClient,
+  restaurantId: string,
+  environmentConfig: Extract<ReturnType<typeof getRequiredMpEnvironmentConfig>, { ok: true }>,
+) {
+  const { data, error } = await sb
+    .from("mercado_pago_accounts")
+    .select("mp_user_id")
+    .eq("restaurant_id", restaurantId)
+    .maybeSingle();
+  if (error) throw error;
+
+  const validation = validateMercadoPagoAccountEnvironment(data, Deno.env, environmentConfig);
+  if (!validation.ok) throw new Error(validation.error);
+}
+
+async function getSellerOAuthTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string> {
+  console.log("[mp-webhook] getSellerOAuthTokenForOrder", {
     restaurant_id: restaurantId,
   });
   const result = await getRestaurantMpAccessToken(sb as any, restaurantId, decryptToken);
   if (!result.ok) throw new Error(result.error);
   return result.token;
+}
+
+async function resolvePaymentLookupToken(sb: SupabaseClient, params: {
+  restaurantId: string;
+  paymentMethod: string | null;
+  environmentConfig: Extract<ReturnType<typeof getRequiredMpEnvironmentConfig>, { ok: true }>;
+}) {
+  await validatePaymentAccountEnvironment(sb, params.restaurantId, params.environmentConfig);
+  const method = String(params.paymentMethod ?? "").toLowerCase();
+  const shouldUsePixSandboxTestToken =
+    params.environmentConfig.runtimeEnvironment === "staging" &&
+    params.environmentConfig.supabaseEnvironment === "staging" &&
+    params.environmentConfig.mercadoPagoEnvironment === "sandbox" &&
+    method === "pix";
+  const sellerOAuthToken = shouldUsePixSandboxTestToken
+    ? null
+    : await getSellerOAuthTokenForOrder(sb, params.restaurantId);
+  const tokenResolution = resolveMercadoPagoPaymentAccessToken({
+    env: Deno.env,
+    environmentConfig: params.environmentConfig,
+    paymentMethod: method || "unknown",
+    sellerOAuthToken,
+  });
+  if (!tokenResolution.ok) throw new Error(tokenResolution.error);
+  return tokenResolution;
 }
 
 async function fetchMpPayment(token: string, paymentId: string) {
@@ -530,22 +573,24 @@ Deno.serve(async (req) => {
     // Localiza pedido primeiro (para pegar restaurant_id â†’ access token)
     const { data: op } = await sb
       .from("order_payment")
-      .select("order_id, orders:order_id(id, restaurant_id)")
+      .select("order_id, payment_method, orders:order_id(id, restaurant_id)")
         .eq("payment_id", resourceId)
         .maybeSingle();
 
 
     let orderId: string | null = op?.order_id ?? null;
     let restaurantId: string | null = (op as any)?.orders?.restaurant_id ?? null;
+    let paymentMethod: string | null = (op as any)?.payment_method ?? null;
 
     if (!orderId && externalRef) {
       const { data: opRef } = await sb
         .from("order_payment")
-        .select("order_id, orders:order_id(id, restaurant_id)")
+        .select("order_id, payment_method, orders:order_id(id, restaurant_id)")
         .eq("order_id", externalRef)
         .maybeSingle();
       orderId = opRef?.order_id ?? null;
       restaurantId = (opRef as any)?.orders?.restaurant_id ?? restaurantId;
+      paymentMethod = (opRef as any)?.payment_method ?? paymentMethod;
     }
 
     if (!restaurantId) {
@@ -564,8 +609,12 @@ Deno.serve(async (req) => {
       return json({ ok: true, warning: "restaurant_not_identified" });
     }
 
-    const token = await getAccessTokenForOrder(sb, restaurantId);
-    const mp = await fetchMpPayment(token, resourceId);
+    const tokenResolution = await resolvePaymentLookupToken(sb, {
+      restaurantId,
+      paymentMethod,
+      environmentConfig,
+    });
+    const mp = await fetchMpPayment(tokenResolution.token, resourceId);
     if (!mp) throw new Error("mp_payment_not_found");
 
     const local = mapStatus(mp.status);

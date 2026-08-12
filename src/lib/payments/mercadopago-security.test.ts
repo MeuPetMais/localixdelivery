@@ -464,6 +464,53 @@ describe("Mercado Pago security helpers", () => {
     expect(security).toContain("mercadopago_test_access_token_not_configured");
   });
 
+  it("webhook PIX sandbox usa o mesmo resolvedor e MP_TEST_ACCESS_TOKEN para consultar payment", () => {
+    const webhook = mpWebhookSource();
+
+    expect(webhook).toContain("resolvePaymentLookupToken");
+    expect(webhook).toContain("paymentMethod");
+    expect(webhook).toContain("resolveMercadoPagoPaymentAccessToken");
+    expect(webhook).toContain("const sellerOAuthToken = shouldUsePixSandboxTestToken");
+    expect(webhook).toContain("? null");
+    expect(webhook).toContain("fetchMpPayment(tokenResolution.token, resourceId)");
+  });
+
+  it("webhook production continua consultando payment com OAuth seller", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({ MP_TEST_ACCESS_TOKEN: "TEST-application-token" }),
+      environmentConfig: productionMpConfig(),
+      paymentMethod: "pix",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: true,
+      token: "seller-oauth-token",
+      source: "seller_oauth",
+    });
+  });
+
+  it("webhook staging sandbox sem MP_TEST_ACCESS_TOKEN falha fechado sem fallback OAuth", () => {
+    expect(resolveMercadoPagoPaymentAccessToken({
+      env: env({}),
+      environmentConfig: stagingMpConfig(),
+      paymentMethod: "pix",
+      sellerOAuthToken: "seller-oauth-token",
+    })).toEqual({
+      ok: false,
+      error: "mercadopago_test_access_token_not_configured",
+    });
+  });
+
+  it("webhook valida assinatura antes de consultar o payment no Mercado Pago", () => {
+    const webhook = mpWebhookSource();
+
+    expect(webhook.indexOf("verifyMercadoPagoWebhookSignature")).toBeLessThan(
+      webhook.indexOf("resolvePaymentLookupToken"),
+    );
+    expect(webhook.indexOf("verifyMercadoPagoWebhookSignature")).toBeLessThan(
+      webhook.indexOf("fetchMpPayment(tokenResolution.token, resourceId)"),
+    );
+  });
+
   it("payment intent mantem application_fee do snapshot e transaction_amount do customer_total", () => {
     const paymentIntent = paymentIntentSource();
 
