@@ -15,6 +15,8 @@ export const PILOT_EXPECTED = Object.freeze({
 
 const MONEY_TOLERANCE = 0.01;
 const READ_ONLY_NOTICE = "READ-ONLY: this tool only runs select queries and optional Mercado Pago GET.";
+const SAFE_ERROR_FIELDS = ["check", "name", "status", "message", "code", "expected", "actual", "details", "hint", "table", "operation"];
+const SENSITIVE_FIELD_RE = /(authorization|jwt|secret|service[_-]?role|access[_-]?token|refresh[_-]?token|enc[_-]?key|encryption[_-]?key|api[_-]?key|password)/i;
 
 function money(value) {
   const n = Number(value);
@@ -33,6 +35,51 @@ function maskId(value) {
   const text = String(value ?? "");
   if (text.length <= 8) return text || null;
   return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
+
+function truncate(text, max = 240) {
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
+function formatSafeValue(value, key = "") {
+  if (SENSITIVE_FIELD_RE.test(key)) return "[redacted]";
+  if (value == null) return null;
+  if (typeof value === "string") return truncate(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value instanceof Error) return formatSafeObject({ name: value.name, message: value.message, code: value.code });
+  if (typeof value === "object") return formatSafeObject(value);
+  return truncate(String(value));
+}
+
+function formatSafeObject(value) {
+  if (!value || typeof value !== "object") return formatSafeValue(value);
+  const parts = [];
+  for (const field of SAFE_ERROR_FIELDS) {
+    if (!(field in value)) continue;
+    const formatted = formatSafeValue(value[field], field);
+    if (formatted != null && formatted !== "") parts.push(`${field}=${formatted}`);
+  }
+  if (parts.length > 0) return parts.join(", ");
+  for (const [field, raw] of Object.entries(value)) {
+    if (SENSITIVE_FIELD_RE.test(field)) continue;
+    if (raw != null && typeof raw !== "object" && typeof raw !== "function") {
+      const formatted = formatSafeValue(raw, field);
+      if (formatted != null && formatted !== "") parts.push(`${field}=${formatted}`);
+    }
+    if (parts.length >= 6) break;
+  }
+  if (parts.length > 0) return parts.join(", ");
+  return "unrecognized structured error";
+}
+
+function formatDetails(details) {
+  const formatted = formatSafeValue(details);
+  return formatted ? ` (${formatted})` : "";
+}
+
+function formatCheckLine(check, suffix = "") {
+  const label = check?.name ?? check?.check ?? "unknown check";
+  return `- [${check?.section ?? "ERROR"}] ${label}${suffix}${formatDetails(check?.details)}`;
 }
 
 export function parseArgs(argv) {
@@ -225,7 +272,7 @@ export function evaluatePostflight(input) {
     addCheck(checks, "PAYMENT", "Mercado Pago amount expected", sameMoney(mpPayment.transaction_amount, expected.customerTotal), `actual=${mpPayment.transaction_amount ?? "missing"}`);
     addCheck(checks, "PAYMENT", "Mercado Pago application_fee expected", sameMoney(mpPayment.application_fee ?? mpPayment.marketplace_fee, expected.platformFee), `actual=${mpPayment.application_fee ?? mpPayment.marketplace_fee ?? "missing"}`, "manual_review");
   } else if (mpPayment?.error) {
-    addCheck(checks, "PAYMENT", "Mercado Pago GET", false, String(mpPayment.error));
+    addCheck(checks, "PAYMENT", "Mercado Pago GET", false, mpPayment.error);
   }
   if (mpPayment?.status === "approved" && orderPayment?.status !== "APPROVED") {
     addCheck(checks, "PAYMENT", "approved MP reconciled locally", false, "MP approved but local order_payment is not APPROVED");
@@ -290,13 +337,13 @@ export function formatReport(report) {
     lines.push("[]");
   } else {
     for (const check of failed) {
-      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+      lines.push(formatCheckLine(check));
     }
   }
   if (notVerifiable.length > 0) {
     lines.push("", "NOT VERIFIABLE LOCALLY:");
     for (const check of notVerifiable) {
-      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+      lines.push(formatCheckLine(check));
     }
   }
   lines.push("", READ_ONLY_NOTICE);
@@ -358,27 +405,29 @@ function formatPreflightReport(report, failed, notVerifiable, review) {
     lines.push("[]");
   } else {
     for (const check of failed) {
-      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+      lines.push(formatCheckLine(check));
     }
   }
   if (notVerifiable.length > 0) {
     lines.push("", "NOT VERIFIABLE LOCALLY:");
     for (const check of notVerifiable) {
-      lines.push(`- [${check.section}] ${check.name}: NOT_VERIFIABLE_LOCALLY${check.details ? ` (${check.details})` : ""}`);
+      lines.push(formatCheckLine(check, ": NOT_VERIFIABLE_LOCALLY"));
     }
   }
   if (review.length > 0) {
     lines.push("", "MANUAL REVIEW CHECKS:");
     for (const check of review) {
-      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+      lines.push(formatCheckLine(check));
     }
   }
   lines.push("", READ_ONLY_NOTICE);
   return lines.join("\n");
 }
 
-function formatFatalErrorReport(error) {
-  const message = error instanceof Error ? error.message : String(error);
+export function formatFatalErrorReport(error) {
+  const message = error instanceof Error
+    ? formatSafeObject({ name: error.name, message: error.message, code: error.code })
+    : formatSafeValue(error);
   return [
     "MERCADO PAGO CONTROLLED TEST - ERROR",
     "",

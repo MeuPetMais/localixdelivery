@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   evaluatePostflight,
   evaluatePreflight,
+  formatFatalErrorReport,
   formatReport,
   PILOT_EXPECTED,
   shouldQueryMercadoPagoReadOnly,
@@ -138,6 +139,48 @@ describe("Mercado Pago controlled test report", () => {
     expect(result.stdout).toContain("FINAL RESULT: FAIL");
     expect(result.stdout).toContain("DO NOT RUN PAYMENT");
     expect(result.stdout).not.toContain("service-role");
+    expect(result.stderr.trim()).toBe("");
+  });
+
+  it("fatal error handler serializa objeto sem [object Object] e sem secrets", () => {
+    const output = formatFatalErrorReport({
+      check: "tenant_payment_settings query failed",
+      code: "PGRST116",
+      message: "permission denied",
+      access_token: "secret-token-value",
+    });
+
+    expect(output).toContain("check=tenant_payment_settings query failed");
+    expect(output).toContain("code=PGRST116");
+    expect(output).toContain("message=permission denied");
+    expect(output).not.toContain("[object Object]");
+    expect(output).not.toContain("secret-token-value");
+  });
+
+  it("CLI real nunca imprime [object Object] para erro objeto formatado", () => {
+    const result = spawnSync(process.execPath, [
+      "--input-type=module",
+      "-e",
+      [
+        "import { formatFatalErrorReport } from './scripts/mercadopago-controlled-test.mjs';",
+        "console.log(formatFatalErrorReport({ check: 'restaurant pricing', code: 'PRICE_MISMATCH', message: 'expected platform_fee=0.99 actual=1.49', refresh_token: 'secret-refresh' }));",
+      ].join(" "),
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: {
+        PATH: process.env.PATH,
+        Path: process.env.Path,
+        SystemRoot: process.env.SystemRoot,
+        ComSpec: process.env.ComSpec,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("check=restaurant pricing");
+    expect(result.stdout).toContain("code=PRICE_MISMATCH");
+    expect(result.stdout).not.toContain("[object Object]");
+    expect(result.stdout).not.toContain("secret-refresh");
     expect(result.stderr.trim()).toBe("");
   });
 
@@ -336,6 +379,35 @@ describe("Mercado Pago controlled test report", () => {
 
     expect(report.final).toBe("MANUAL_REVIEW");
     expect(report.checks.some((check) => !check.ok && check.name === "realized_platform_revenue expected")).toBe(true);
+  });
+
+  it("FAILED CHECKS formata details objeto com campos seguros", () => {
+    const output = formatReport({
+      kind: "postflight",
+      final: "FAIL",
+      environment: { localix: "production", supabase: "production", mercadoPago: "production" },
+      restaurant: { id: "restaurant-1" },
+      order: { id: "order-1" },
+      payment: { id: "payment-1" },
+      checks: [{
+        section: "PRICING",
+        name: "restaurant pricing",
+        ok: false,
+        status: "FAIL",
+        severity: "fail",
+        details: {
+          expected: "platform_fee=0.99",
+          actual: "platform_fee=1.49",
+          service_role: "secret-service-role",
+        },
+      }],
+    });
+
+    expect(output).toContain("restaurant pricing");
+    expect(output).toContain("expected=platform_fee=0.99");
+    expect(output).toContain("actual=platform_fee=1.49");
+    expect(output).not.toContain("[object Object]");
+    expect(output).not.toContain("secret-service-role");
   });
 
   it("script permanece read-only e sem operacoes mutaveis", () => {
