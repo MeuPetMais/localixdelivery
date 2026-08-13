@@ -14,6 +14,12 @@ import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
 import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
 import { buildCheckoutPaymentPayload, type CheckoutPaymentOption } from "@/lib/checkout/checkout-payment";
+import {
+  canSubmitWithAuthoritativePricing,
+  getCustomerServiceFee,
+  logCheckoutPricingPreviewClientError,
+  logCheckoutPricingPreviewClientException,
+} from "@/lib/checkout/checkout-pricing-ui";
 import { normalizeOrderPaymentMethod } from "@/lib/checkout/paymentMethodLabel";
 import { PaymentService } from "@/lib/payments/PaymentService";
 import MercadoPagoReadiness from "@/lib/payments/MercadoPagoReadiness";
@@ -46,7 +52,16 @@ export const Route = createFileRoute("/$slug/")({
   component: PublicMenu,
 });
 
-type CartItem = { id: string; name: string; price: number; qty: number };
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  kind?: "product" | "builder";
+  builderId?: string;
+  selections?: Array<{ groupId: string; optionId: string; qty: number }>;
+  notes?: string;
+};
 
 function PublicMenu() {
   const { slug } = Route.useParams();
@@ -245,7 +260,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
       if (!raw) return;
-      const item = JSON.parse(raw) as { id: string; name: string; price: number };
+      const item = JSON.parse(raw) as Omit<CartItem, "qty">;
       if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
         setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
         setOpenSheet(true);
@@ -1098,28 +1113,63 @@ const paymentOptions: PayOption[] = (
   const create = useServerFn(createCheckoutOrder);
   const preview = useServerFn(previewCheckoutPricing);
   const [pricing, setPricing] = useState<{
-    subtotal: number; deliveryFee: number; platformFee: number; couponDiscount: number; customerTotal: number;
+    subtotal: number;
+    deliveryFee: number;
+    platformFee: number;
+    couponDiscount: number;
+    customerTotal: number;
+    restaurantNet: number;
+    serviceFeePayer: "customer" | "restaurant";
   } | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!subtotal) { setPricing(null); return; }
+    if (!subtotal) {
+      setPricing(null);
+      setPricingError(null);
+      setPricingLoading(false);
+      return;
+    }
+    setPricingLoading(true);
+    setPricingError(null);
     preview({
       data: {
+        restaurantId: restaurant.id,
+        restaurantSlug: restaurant.slug,
         subtotal,
         deliveryFee: fee,
         couponDiscount: discount,
         paymentMethod: selectedPayment.method,
       },
     })
-      .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
-      .catch(() => { /* silencioso — fallback para cálculo local */ });
+      .then((r) => {
+        if (cancelled) return;
+        if (r.ok) {
+          setPricing(r.pricing as any);
+          setPricingError(null);
+        } else {
+          logCheckoutPricingPreviewClientError(import.meta.env, r.code, r.message);
+          setPricing(null);
+          setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        logCheckoutPricingPreviewClientException(import.meta.env, error);
+        setPricing(null);
+        setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
+      })
+      .finally(() => {
+        if (!cancelled) setPricingLoading(false);
+      });
     return () => { cancelled = true; };
-  }, [subtotal, fee, discount, selectedPayment.method, preview]);
+  }, [restaurant.id, restaurant.slug, subtotal, fee, discount, selectedPayment.method, preview]);
 
-  const total = pricing?.customerTotal ?? Math.max(0, subtotal - discount) + fee;
-  const platformFee = pricing?.platformFee ?? 0;
+  const serviceFee = getCustomerServiceFee(pricing);
+  const canSubmitPricing = canSubmitWithAuthoritativePricing({ pricing, pricingLoading, pricingError });
 
   async function applyCoupon() {
     if (!couponInput.trim()) return;
@@ -1156,6 +1206,10 @@ const paymentOptions: PayOption[] = (
     if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
     if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
     if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
+    if (!canSubmitPricing) {
+      toast.error("Não foi possível calcular o valor final do pedido. Tente novamente.");
+      return;
+    }
     setSubmitting(true);
     try {
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
@@ -1165,7 +1219,16 @@ const paymentOptions: PayOption[] = (
         data: {
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
-          items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          items: cart.map((c) => ({
+            id: c.id,
+            name: c.name,
+            price: c.price,
+            qty: c.qty,
+            kind: c.kind,
+            builderId: c.builderId,
+            selections: c.selections,
+            notes: c.notes,
+          })),
           paymentMethod: paymentPayload.payloadPaymentMethod,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
@@ -1408,13 +1471,17 @@ const paymentOptions: PayOption[] = (
         <div className="flex justify-between"><span>Subtotal</span><span>{brl(pricing?.subtotal ?? subtotal)}</span></div>
         {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(pricing?.couponDiscount ?? discount)}</span></div>}
         <div className="flex justify-between"><span>Entrega</span><span>{brl(pricing?.deliveryFee ?? fee)}</span></div>
-        {platformFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Taxa da plataforma</span><span>{brl(platformFee)}</span></div>}
-        <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(total)}</span></div>
+        {serviceFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Taxa de serviço Localix</span><span>{brl(serviceFee)}</span></div>}
+        {pricingLoading && <div className="flex justify-between border-t pt-2 text-muted-foreground"><span>Total</span><span>Calculando...</span></div>}
+        {pricingError && <p className="border-t pt-2 text-xs text-destructive">{pricingError}</p>}
+        {!pricingLoading && !pricingError && pricing && (
+          <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(pricing.customerTotal)}</span></div>
+        )}
         {belowMin && <p className="mt-1 text-xs text-destructive">Pedido mínimo: {brl(min)}</p>}
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
+        <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting || !canSubmitPricing}>
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
           {selectedPayment.online
             ? selectedPayment.method === "pix" ? "Pagar com Pix" : "Pagar com Cartão"
