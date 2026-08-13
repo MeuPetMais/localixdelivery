@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -34,14 +35,18 @@ import {
   Globe,
   Mail,
   CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { slugify } from "@/lib/format";
-import { getScheduleDayBadgeLabel, getScheduleDaySwitchLabel } from "@/lib/restaurant-status-labels";
-import { calculateDriverEarning, DEFAULT_DRIVER_EARNING_SETTINGS } from "@/lib/driver-earnings";
+import {
+  getScheduleDayBadgeLabel,
+  getScheduleDaySwitchLabel,
+} from "@/lib/restaurant-status-labels";
+import { calculateDriverEarning } from "@/lib/driver-earnings";
 
 async function findAvailableSlug(base: string, currentId: string): Promise<string> {
   const safeBase = slugify(base) || "loja";
@@ -57,8 +62,6 @@ async function findAvailableSlug(base: string, currentId: string): Promise<strin
   }
   return `${safeBase}-${Date.now()}`;
 }
-
-
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Perfil do Estabelecimento — Localix" }] }),
@@ -84,8 +87,15 @@ const DAYS = [
 ];
 
 type Shift = { open: string; close: string };
-type DayHours = { enabled: boolean; open: string; close: string; open2?: string | null; close2?: string | null };
+type DayHours = {
+  enabled: boolean;
+  open: string;
+  close: string;
+  open2?: string | null;
+  close2?: string | null;
+};
 type Hours = Record<string, DayHours>;
+type DriverPaymentType = "fixed" | "per_km" | "fixed_plus_km";
 
 const DEFAULT_HOURS: Hours = DAYS.reduce((acc, d) => {
   acc[d.id] = { open: "18:00", close: "23:00", enabled: true, open2: null, close2: null };
@@ -96,6 +106,23 @@ function toDecimal(value: string): number | null {
   if (!value) return null;
   const parsed = Number(value.replace(",", "."));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toMoneyInput(value: unknown): string {
+  if (value == null) return "";
+  const n = Number(value);
+  return Number.isFinite(n) ? String(n) : "";
+}
+
+function inferDriverPaymentType(settings: {
+  base_fee?: number | null;
+  per_km_fee?: number | null;
+}): DriverPaymentType {
+  const baseFee = Number(settings.base_fee ?? 0);
+  const perKmFee = Number(settings.per_km_fee ?? 0);
+  if (baseFee > 0 && perKmFee > 0) return "fixed_plus_km";
+  if (perKmFee > 0) return "per_km";
+  return "fixed";
 }
 
 async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId: string) {
@@ -125,7 +152,9 @@ async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId:
   if (ownerErr) throw new Error(`Falha ao verificar restaurante: ${ownerErr.message}`);
   if (!ownerCheck) throw new Error("Restaurante não encontrado (RLS).");
   if (ownerCheck.owner_id !== uid)
-    throw new Error(`auth.uid (${uid}) ≠ owner_id (${ownerCheck.owner_id}). RLS do Storage vai bloquear.`);
+    throw new Error(
+      `auth.uid (${uid}) ≠ owner_id (${ownerCheck.owner_id}). RLS do Storage vai bloquear.`,
+    );
 
   const { data, error } = await supabase.storage.from("restaurant-assets").upload(path, file, {
     upsert: true,
@@ -154,12 +183,10 @@ async function uploadAsset(file: File, folder: "logos" | "covers", restaurantId:
   return signed?.signedUrl ?? null;
 }
 
-
 function SettingsPage() {
   const restaurant = useRestaurant();
   const { invalidate } = useRestaurantContext();
   const refetch = invalidate;
-
 
   const [form, setForm] = useState({
     name: "",
@@ -193,18 +220,33 @@ function SettingsPage() {
     google_maps_url: "",
   });
   const [driverEarning, setDriverEarning] = useState({
-    base_fee: "8",
-    per_km_fee: "1.5",
-    minimum_fee: "8",
+    base_fee: "",
+    per_km_fee: "",
+    minimum_fee: "",
     maximum_fee: "",
-    is_active: true,
+    is_active: false,
   });
+  const [usesOwnDrivers, setUsesOwnDrivers] = useState(false);
+  const [hasDriverEarningSettings, setHasDriverEarningSettings] = useState(false);
+  const [driverPaymentType, setDriverPaymentType] = useState<DriverPaymentType>("fixed_plus_km");
   const [payments, setPayments] = useState<Record<string, boolean>>({
-    cash: true, pix: true, credit: true, debit: false,
-    meal_voucher: false, food_voucher: false,
-    ticket: false, alelo: false, sodexo: false, vr: false, ben: false,
-    online_pix: false, online_card: false, online_credit: false, online_debit: false,
-    google_pay: false, apple_pay: false,
+    cash: true,
+    pix: true,
+    credit: true,
+    debit: false,
+    meal_voucher: false,
+    food_voucher: false,
+    ticket: false,
+    alelo: false,
+    sodexo: false,
+    vr: false,
+    ben: false,
+    online_pix: false,
+    online_card: false,
+    online_credit: false,
+    online_debit: false,
+    google_pay: false,
+    apple_pay: false,
   });
 
   const [hours, setHours] = useState<Hours>(DEFAULT_HOURS);
@@ -233,23 +275,39 @@ function SettingsPage() {
   useEffect(() => {
     if (!restaurant?.id) return;
     let active = true;
-    (supabase.from("driver_earning_settings") as any)
+    (supabase as any)
+      .from("driver_earning_settings")
       .select("base_fee, per_km_fee, minimum_fee, maximum_fee, is_active")
       .eq("restaurant_id", restaurant.id)
       .maybeSingle()
-      .then(({ data }) => {
-        if (!active || !data) return;
+      .then(({ data }: any) => {
+        if (!active) return;
+        setHasDriverEarningSettings(!!data);
+        if (!data) {
+          setUsesOwnDrivers(false);
+          setDriverEarning({
+            base_fee: "",
+            per_km_fee: "",
+            minimum_fee: "",
+            maximum_fee: "",
+            is_active: false,
+          });
+          return;
+        }
         setDriverEarning({
-          base_fee: String(data.base_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.base_fee),
-          per_km_fee: String(data.per_km_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee),
-          minimum_fee: String(data.minimum_fee ?? DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee),
+          base_fee: toMoneyInput(data.base_fee),
+          per_km_fee: toMoneyInput(data.per_km_fee),
+          minimum_fee: toMoneyInput(data.minimum_fee),
           maximum_fee: data.maximum_fee == null ? "" : String(data.maximum_fee),
           is_active: data.is_active ?? true,
         });
+        setUsesOwnDrivers(data.is_active ?? true);
+        setDriverPaymentType(inferDriverPaymentType(data));
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [restaurant?.id]);
-
 
   useEffect(() => {
     if (!restaurant) return;
@@ -297,10 +355,6 @@ function SettingsPage() {
     }
   }, [restaurant]);
 
-
-  if (!restaurant)
-    return <Card className="p-8 text-center">Crie seu restaurante primeiro no painel.</Card>;
-
   async function handleUpload(file: File, kind: "logo" | "cover") {
     if (file.size > 5 * 1024 * 1024) return toast.error("Máximo 5MB");
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
@@ -308,7 +362,7 @@ function SettingsPage() {
     const setUp = kind === "logo" ? setUploadingLogo : setUploadingCover;
     setUp(true);
     try {
-      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant.id);
+      const url = await uploadAsset(file, kind === "logo" ? "logos" : "covers", restaurant!.id);
       if (!url) throw new Error("Falha no upload");
       const field = kind === "logo" ? "logo_url" : "cover_url";
       setForm((f) => ({ ...f, [field]: url }));
@@ -329,7 +383,6 @@ function SettingsPage() {
       setUp(false);
     }
   }
-
 
   async function removeImage(kind: "logo" | "cover") {
     const field = kind === "logo" ? "logo_url" : "cover_url";
@@ -366,14 +419,14 @@ function SettingsPage() {
     if (updatingSlug) return;
     const base = slugify(desired);
     if (!base) return toast.error("URL inválida");
-    if (base === restaurant.slug) return toast.info("A URL já é essa.");
+    if (base === restaurant!.slug) return toast.info("A URL já é essa.");
     setUpdatingSlug(true);
     try {
-      const finalSlug = await findAvailableSlug(base, restaurant.id);
+      const finalSlug = await findAvailableSlug(base, restaurant!.id);
       const { error } = await supabase
         .from("restaurants")
         .update({ slug: finalSlug, updated_at: new Date().toISOString() })
-        .eq("id", restaurant.id);
+        .eq("id", restaurant!.id);
       if (error) throw error;
       setForm((f) => ({ ...f, slug: finalSlug }));
       if (finalSlug !== base) {
@@ -401,12 +454,49 @@ function SettingsPage() {
     };
 
     // Auto-sync do slug: só enquanto o estabelecimento ainda não recebeu pedidos.
-    let nextSlug = restaurant.slug;
+    if (usesOwnDrivers) {
+      const validateMoney = (value: string, label: string, required = true) => {
+        const n = toDecimal(value);
+        if (n == null) {
+          if (required) throw new Error(`${label} é obrigatório.`);
+          return null;
+        }
+        if (n < 0) throw new Error(`${label} não pode ser negativo.`);
+        return n;
+      };
+      try {
+        const baseFee =
+          driverPaymentType === "per_km"
+            ? 0
+            : validateMoney(
+                driverEarning.base_fee,
+                driverPaymentType === "fixed" ? "Valor por entrega" : "Valor base por entrega",
+              );
+        const perKmFee =
+          driverPaymentType === "fixed"
+            ? 0
+            : validateMoney(driverEarning.per_km_fee, "Valor por km");
+        const minimumFee =
+          driverPaymentType === "fixed"
+            ? baseFee
+            : validateMoney(driverEarning.minimum_fee, "Valor mínimo por entrega");
+        const maximumFee = validateMoney(driverEarning.maximum_fee, "Valor máximo", false);
+        if (maximumFee != null && minimumFee != null && maximumFee < minimumFee) {
+          throw new Error("Valor máximo não pode ser menor que o valor mínimo.");
+        }
+        void perKmFee;
+      } catch (err: any) {
+        setLoading(false);
+        return toast.error(err?.message ?? "Revise o pagamento dos entregadores.");
+      }
+    }
+
+    let nextSlug = restaurant!.slug;
     let slugAutoAdjusted = false;
     if (!hasOrders) {
       const desired = slugify(form.name);
-      if (desired && desired !== restaurant.slug) {
-        nextSlug = await findAvailableSlug(desired, restaurant.id);
+      if (desired && desired !== restaurant!.slug) {
+        nextSlug = await findAvailableSlug(desired, restaurant!.id);
         slugAutoAdjusted = true;
       }
     }
@@ -450,17 +540,35 @@ function SettingsPage() {
       return toast.error(error.message);
     }
 
-    const driverPolicy = {
-      restaurant_id: restaurant!.id,
-      base_fee: toDecimal(driverEarning.base_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.base_fee,
-      per_km_fee: toDecimal(driverEarning.per_km_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee,
-      minimum_fee: toDecimal(driverEarning.minimum_fee) ?? DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee,
-      maximum_fee: toDecimal(driverEarning.maximum_fee),
-      is_active: driverEarning.is_active,
-      updated_at: new Date().toISOString(),
-    };
-    const { error: driverErr } = await (supabase.from("driver_earning_settings") as any)
-      .upsert(driverPolicy, { onConflict: "restaurant_id" });
+    let driverErr: { message: string } | null = null;
+    if (!usesOwnDrivers) {
+      if (hasDriverEarningSettings) {
+        const { error: updateErr } = await (supabase as any)
+          .from("driver_earning_settings")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("restaurant_id", restaurant!.id);
+        driverErr = updateErr;
+      }
+    } else {
+      const baseFee = toDecimal(driverEarning.base_fee);
+      const perKmFee = toDecimal(driverEarning.per_km_fee);
+      const minimumFee = toDecimal(driverEarning.minimum_fee);
+      const maximumFee = toDecimal(driverEarning.maximum_fee);
+      const driverPolicy = {
+        restaurant_id: restaurant!.id,
+        base_fee: driverPaymentType === "per_km" ? 0 : (baseFee ?? 0),
+        per_km_fee: driverPaymentType === "fixed" ? 0 : (perKmFee ?? 0),
+        minimum_fee: driverPaymentType === "fixed" ? (baseFee ?? 0) : (minimumFee ?? 0),
+        maximum_fee: maximumFee,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: upsertErr } = await (supabase as any)
+        .from("driver_earning_settings")
+        .upsert(driverPolicy, { onConflict: "restaurant_id" });
+      driverErr = upsertErr;
+      if (!upsertErr) setHasDriverEarningSettings(true);
+    }
 
     setLoading(false);
     if (driverErr) return toast.error(driverErr.message);
@@ -473,7 +581,6 @@ function SettingsPage() {
     refetch();
   }
 
-
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/${form.slug}` : `/${form.slug}`;
   const status = useRestaurantStatus({
@@ -484,23 +591,44 @@ function SettingsPage() {
     const n = Number(v.replace(",", "."));
     return Number.isFinite(n) ? n : fallback;
   };
+  const previewBaseFee = driverPaymentType === "per_km" ? 0 : toDecimal(driverEarning.base_fee);
+  const previewPerKmFee = driverPaymentType === "fixed" ? 0 : toDecimal(driverEarning.per_km_fee);
+  const previewMinimumFee =
+    driverPaymentType === "fixed" ? previewBaseFee : toDecimal(driverEarning.minimum_fee);
+  const previewMaximumFee = toDecimal(driverEarning.maximum_fee);
+  const canPreviewDriverEarning =
+    usesOwnDrivers &&
+    previewBaseFee != null &&
+    previewPerKmFee != null &&
+    previewMinimumFee != null &&
+    (previewMaximumFee == null || previewMaximumFee >= previewMinimumFee);
   const previewSettings = {
-    base_fee: toPreviewNum(driverEarning.base_fee, DEFAULT_DRIVER_EARNING_SETTINGS.base_fee),
-    per_km_fee: toPreviewNum(driverEarning.per_km_fee, DEFAULT_DRIVER_EARNING_SETTINGS.per_km_fee),
-    minimum_fee: toPreviewNum(driverEarning.minimum_fee, DEFAULT_DRIVER_EARNING_SETTINGS.minimum_fee),
-    maximum_fee: driverEarning.maximum_fee.trim()
-      ? toPreviewNum(driverEarning.maximum_fee, DEFAULT_DRIVER_EARNING_SETTINGS.maximum_fee ?? 0)
-      : null,
+    base_fee: previewBaseFee ?? 0,
+    per_km_fee: previewPerKmFee ?? 0,
+    minimum_fee: previewMinimumFee ?? 0,
+    maximum_fee: previewMaximumFee,
   };
-  const driverPreview = [0, 2, 5].map((km) => ({
-    km,
-    amount: calculateDriverEarning(previewSettings, km).amount,
-  }));
+  const driverPreview = canPreviewDriverEarning
+    ? [0, 2, 5].map((km) => ({
+        km,
+        amount: calculateDriverEarning(previewSettings, km).amount,
+      }))
+    : [];
+  const deliveryFeePreview = toPreviewNum(form.delivery_fee, 0);
+  const driverEarningWarning = driverPreview.find((p) => p.amount > deliveryFeePreview) ?? null;
+  const driverEarningDifference = driverEarningWarning
+    ? driverEarningWarning.amount - deliveryFeePreview
+    : 0;
+
+  if (!restaurant)
+    return <Card className="p-8 text-center">Crie seu restaurante primeiro no painel.</Card>;
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Perfil do Estabelecimento</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">
+          Perfil do Estabelecimento
+        </h1>
         <p className="text-sm text-muted-foreground">
           Todos os dados aqui aparecem automaticamente na sua página pública.
         </p>
@@ -548,7 +676,6 @@ function SettingsPage() {
         );
       })()}
 
-
       {/* SEÇÃO 1 — Perfil da Loja */}
       <Card className="overflow-hidden rounded-2xl border-border/60 shadow-elegant">
         <div className="relative h-32 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent" />
@@ -576,7 +703,11 @@ function SettingsPage() {
                     className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-emerald-500" : "bg-rose-500"}`}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {status.isOpen ? "Aberto agora" : status.reason === "manual_closed" ? "Fechado manualmente" : "Fechado pelo horário"}
+                    {status.isOpen
+                      ? "Aberto agora"
+                      : status.reason === "manual_closed"
+                        ? "Fechado manualmente"
+                        : "Fechado pelo horário"}
                   </span>
                 </div>
               </div>
@@ -593,7 +724,12 @@ function SettingsPage() {
                 <Camera className="mr-2 h-4 w-4" /> Fazer Upload da Logo
               </Button>
               {form.logo_url && (
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeImage("logo")}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeImage("logo")}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -603,7 +739,11 @@ function SettingsPage() {
                 onClick={toggleOpen}
                 disabled={togglingOpen}
               >
-                {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
+                {togglingOpen ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Power className="mr-2 h-4 w-4" />
+                )}
                 {form.is_open ? "Fechar manualmente" : "Abrir loja"}
               </Button>
             </div>
@@ -640,7 +780,12 @@ function SettingsPage() {
                 <Camera className="mr-2 h-4 w-4" /> Alterar capa
               </Button>
               {form.cover_url && (
-                <Button type="button" size="sm" variant="secondary" onClick={() => removeImage("cover")}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => removeImage("cover")}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -781,79 +926,174 @@ function SettingsPage() {
           </div>
         </Card>
 
-        {/* SEÇÃO — Remuneração do motoboy */}
+        {/* SEÇÃO — Entregadores próprios */}
         <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-4 flex items-start gap-3">
             <Bike className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-bold">Remuneração do motoboy</h3>
-          </div>
-          <p className="mb-4 text-xs text-muted-foreground">
-            Este valor é a remuneração do motoboy e não altera automaticamente a taxa cobrada do cliente.
-          </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>Valor base por entrega (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={driverEarning.base_fee}
-                onChange={(e) => setDriverEarning({ ...driverEarning, base_fee: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor por km (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={driverEarning.per_km_fee}
-                onChange={(e) => setDriverEarning({ ...driverEarning, per_km_fee: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor mínimo (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={driverEarning.minimum_fee}
-                onChange={(e) => setDriverEarning({ ...driverEarning, minimum_fee: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor máximo opcional (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                placeholder="Sem teto"
-                value={driverEarning.maximum_fee}
-                onChange={(e) => setDriverEarning({ ...driverEarning, maximum_fee: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 p-3">
             <div>
-              <p className="text-sm font-semibold">Política ativa</p>
-              <p className="text-xs text-muted-foreground">Quando inativa, novas entregas usam a política padrão compatível.</p>
+              <h3 className="text-lg font-bold">Entregadores próprios</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ative esta opção se o seu estabelecimento utiliza motoboys próprios e deseja
+                gerenciar entregas e pagamentos pelo Localix.
+              </p>
             </div>
-            <Switch
-              checked={driverEarning.is_active}
-              onCheckedChange={(checked) => setDriverEarning({ ...driverEarning, is_active: checked })}
-            />
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {driverPreview.map((p) => (
-              <div key={p.km} className="rounded-xl bg-muted/50 p-3 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.km} km</p>
-                <p className="font-display text-lg font-extrabold">
-                  {p.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </p>
-              </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {[
+              { value: false, label: "Não" },
+              { value: true, label: "Sim" },
+            ].map((option) => (
+              <Button
+                key={String(option.value)}
+                type="button"
+                variant={usesOwnDrivers === option.value ? "default" : "outline"}
+                className="justify-center sm:w-28"
+                onClick={() => {
+                  setUsesOwnDrivers(option.value);
+                  setDriverEarning((current) => ({ ...current, is_active: option.value }));
+                }}
+              >
+                {option.label}
+              </Button>
             ))}
           </div>
         </Card>
+
+        {usesOwnDrivers && (
+          <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
+            <div className="mb-4 flex items-center gap-2">
+              <Bike className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold">Pagamento dos entregadores</h3>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Defina como seu estabelecimento remunera seus entregadores. Esses valores não alteram
+              automaticamente a taxa de entrega cobrada do cliente.
+            </p>
+            <div className="mb-5 space-y-2">
+              <Label>Como você paga seus entregadores?</Label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {[
+                  { value: "fixed" as const, label: "Fixo por entrega" },
+                  { value: "per_km" as const, label: "Por distância" },
+                  { value: "fixed_plus_km" as const, label: "Fixo + distância" },
+                ].map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={driverPaymentType === option.value ? "default" : "outline"}
+                    className="h-auto justify-center whitespace-normal py-3 text-center"
+                    onClick={() => setDriverPaymentType(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {driverPaymentType !== "per_km" && (
+                <div className="space-y-1.5">
+                  <Label>
+                    {driverPaymentType === "fixed"
+                      ? "Valor por entrega (R$)"
+                      : "Valor base por entrega (R$)"}
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="0,00"
+                    value={driverEarning.base_fee}
+                    onChange={(e) =>
+                      setDriverEarning({ ...driverEarning, base_fee: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {driverPaymentType !== "fixed" && (
+                <div className="space-y-1.5">
+                  <Label>Valor por km (R$)</Label>
+                  <Input
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="0,00"
+                    value={driverEarning.per_km_fee}
+                    onChange={(e) =>
+                      setDriverEarning({ ...driverEarning, per_km_fee: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {driverPaymentType !== "fixed" && (
+                <div className="space-y-1.5">
+                  <Label>
+                    {driverPaymentType === "per_km"
+                      ? "Valor mínimo por entrega (R$)"
+                      : "Valor mínimo (R$)"}
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="0,00"
+                    value={driverEarning.minimum_fee}
+                    onChange={(e) =>
+                      setDriverEarning({ ...driverEarning, minimum_fee: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {driverPaymentType !== "fixed" && (
+                <div className="space-y-1.5">
+                  <Label>Valor máximo opcional (R$)</Label>
+                  <Input
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="Sem teto"
+                    value={driverEarning.maximum_fee}
+                    onChange={(e) =>
+                      setDriverEarning({ ...driverEarning, maximum_fee: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+            {driverPreview.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {driverPreview.map((p) => (
+                  <div key={p.km} className="rounded-xl bg-muted/50 p-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {p.km} km
+                    </p>
+                    <p className="font-display text-lg font-extrabold">
+                      {p.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {driverEarningWarning && (
+              <div className="mt-4 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Atenção: nesta distância, o cliente paga{" "}
+                  {deliveryFeePreview.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}{" "}
+                  de entrega e o entregador recebe{" "}
+                  {driverEarningWarning.amount.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
+                  . A diferença de{" "}
+                  {driverEarningDifference.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}{" "}
+                  será absorvida pelo estabelecimento.
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* SEÇÃO — Endereço & Localização */}
         <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
@@ -954,8 +1194,8 @@ function SettingsPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Se preencher o link do Google Maps, ele será usado no botão "Abrir no Maps".
-              Sem coordenadas nem link, o mapa usa o endereço informado.
+              Se preencher o link do Google Maps, ele será usado no botão "Abrir no Maps". Sem
+              coordenadas nem link, o mapa usa o endereço informado.
             </p>
           </div>
         </Card>
@@ -968,20 +1208,45 @@ function SettingsPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5"><Instagram className="h-3.5 w-3.5" /> Instagram</Label>
-              <Input value={form.instagram} onChange={(e) => setForm({ ...form, instagram: e.target.value })} placeholder="@sualoja" />
+              <Label className="flex items-center gap-1.5">
+                <Instagram className="h-3.5 w-3.5" /> Instagram
+              </Label>
+              <Input
+                value={form.instagram}
+                onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+                placeholder="@sualoja"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5" /> Facebook</Label>
-              <Input value={form.facebook} onChange={(e) => setForm({ ...form, facebook: e.target.value })} placeholder="sualoja" />
+              <Label className="flex items-center gap-1.5">
+                <Facebook className="h-3.5 w-3.5" /> Facebook
+              </Label>
+              <Input
+                value={form.facebook}
+                onChange={(e) => setForm({ ...form, facebook: e.target.value })}
+                placeholder="sualoja"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Site</Label>
-              <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." />
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> Site
+              </Label>
+              <Input
+                value={form.website}
+                onChange={(e) => setForm({ ...form, website: e.target.value })}
+                placeholder="https://..."
+              />
             </div>
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> E-mail</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="contato@loja.com" />
+              <Label className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" /> E-mail
+              </Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="contato@loja.com"
+              />
             </div>
           </div>
         </Card>
@@ -994,7 +1259,9 @@ function SettingsPage() {
           </div>
           <div className="space-y-5">
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Na entrega</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Na entrega
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {[
                   { k: "cash", l: "Dinheiro" },
@@ -1009,7 +1276,10 @@ function SettingsPage() {
                   { k: "vr", l: "VR" },
                   { k: "ben", l: "Ben" },
                 ].map((m) => (
-                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                  <label
+                    key={m.k}
+                    className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}
+                  >
                     <input
                       type="checkbox"
                       checked={!!payments[m.k]}
@@ -1022,13 +1292,18 @@ function SettingsPage() {
               </div>
             </div>
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Online</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Online
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {[
                   { k: "online_pix", l: "Pix Online" },
                   { k: "online_card", l: "Cartão Online" },
                 ].map((m) => (
-                  <label key={m.k} className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}>
+                  <label
+                    key={m.k}
+                    className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${payments[m.k] ? "border-primary bg-primary/5" : ""}`}
+                  >
                     <input
                       type="checkbox"
                       checked={!!payments[m.k]}
@@ -1042,8 +1317,6 @@ function SettingsPage() {
             </div>
           </div>
         </Card>
-
-
 
         {/* SEÇÃO 5 — Link Público */}
         <Card className="rounded-2xl border-border/60 p-6 shadow-elegant">
@@ -1160,7 +1433,11 @@ function SettingsPage() {
                       <span className="font-medium w-20">{d.label}</span>
                       <Badge
                         variant={h.enabled ? "default" : "secondary"}
-                        className={h.enabled ? "bg-success/15 text-success border-success/30" : "bg-destructive/10 text-destructive border-destructive/30"}
+                        className={
+                          h.enabled
+                            ? "bg-success/15 text-success border-success/30"
+                            : "bg-destructive/10 text-destructive border-destructive/30"
+                        }
                       >
                         {getScheduleDayBadgeLabel(h.enabled)}
                       </Badge>
