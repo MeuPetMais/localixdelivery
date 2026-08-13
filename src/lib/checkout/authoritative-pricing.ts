@@ -218,10 +218,12 @@ function calculateBuilderPrice(builder: BuilderRecord, selections: SelectedOptio
     }
   }
 
-  const totalCents = toCents(builder.base_price) + selections.reduce((sum, s) => {
-    const option = optionsById.get(s.option_id)!;
-    return sum + toCents(option.price_delta) * s.quantity;
-  }, 0);
+  const totalCents =
+    toCents(builder.base_price) +
+    selections.reduce((sum, s) => {
+      const option = optionsById.get(s.option_id)!;
+      return sum + toCents(option.price_delta) * s.quantity;
+    }, 0);
   return fromCents(totalCents);
 }
 
@@ -254,8 +256,12 @@ export async function resolveAuthoritativeCheckoutPricing(input: {
   const productIds = Array.from(new Set(productInputs.map((i) => i.id)));
   const builderIds = Array.from(new Set(builderInputs.map((i) => i.resolvedBuilderId)));
   const [products, builders, optionConfig] = await Promise.all([
-    productIds.length ? input.repository.getProducts(productIds, input.restaurantId) : Promise.resolve([]),
-    builderIds.length ? input.repository.getBuilders(builderIds, input.restaurantId) : Promise.resolve([]),
+    productIds.length
+      ? input.repository.getProducts(productIds, input.restaurantId)
+      : Promise.resolve([]),
+    builderIds.length
+      ? input.repository.getBuilders(builderIds, input.restaurantId)
+      : Promise.resolve([]),
     productIds.length && input.repository.getProductOptionConfig
       ? input.repository.getProductOptionConfig(productIds, input.restaurantId)
       : Promise.resolve({ groups: [], options: [] }),
@@ -340,7 +346,9 @@ export async function resolveAuthoritativeCheckoutPricing(input: {
   if (requestedCoupon && input.repository.getCoupon) {
     const coupon = await input.repository.getCoupon(requestedCoupon, input.restaurantId);
     if (validCoupon(coupon)) {
-      couponDiscount = fromCents(Math.round((subtotalCents * Number(coupon.discount_percent)) / 100));
+      couponDiscount = fromCents(
+        Math.round((subtotalCents * Number(coupon.discount_percent)) / 100),
+      );
       couponCode = coupon.code;
       couponId = coupon.id;
     }

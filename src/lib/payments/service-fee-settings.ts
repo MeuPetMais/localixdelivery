@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -68,9 +69,13 @@ export function applyServiceFeePayerChange(input: {
     ? new Date(input.current.serviceFeeChangeLockedUntil)
     : null;
   if (lockedUntil && lockedUntil.getTime() > input.now.getTime()) {
-    throw new ServiceFeeSettingsError("service_fee_change_locked", "Alteracao bloqueada temporariamente", {
-      locked_until: lockedUntil.toISOString(),
-    });
+    throw new ServiceFeeSettingsError(
+      "service_fee_change_locked",
+      "Alteracao bloqueada temporariamente",
+      {
+        locked_until: lockedUntil.toISOString(),
+      },
+    );
   }
 
   const nextLockedUntil = new Date(input.now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -103,11 +108,7 @@ const updateSchema = payloadSchema.extend({
   serviceFeePayer: z.enum(["customer", "restaurant"]),
 });
 
-async function assertCanManageRestaurant(
-  supabase: any,
-  userId: string,
-  restaurantId: string,
-) {
+async function assertCanManageRestaurant(supabase: any, userId: string, restaurantId: string) {
   const { data: isAdmin } = await supabase.rpc("has_role", {
     _user_id: userId,
     _role: "admin",
@@ -120,7 +121,8 @@ async function assertCanManageRestaurant(
     .eq("id", restaurantId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!restaurant) throw new ServiceFeeSettingsError("restaurant_not_found", "Restaurante nao encontrado");
+  if (!restaurant)
+    throw new ServiceFeeSettingsError("restaurant_not_found", "Restaurante nao encontrado");
   assertServiceFeeSettingsPermission({
     userId,
     restaurantOwnerId: restaurant.owner_id,
@@ -134,7 +136,9 @@ export async function loadServiceFeeSettingsByRestaurant(
 ): Promise<ServiceFeeSettings> {
   const { data: row, error } = await supabaseAdmin
     .from("tenant_payment_settings")
-    .select("restaurant_id, service_fee_payer, service_fee_last_changed_at, service_fee_change_locked_until")
+    .select(
+      "restaurant_id, service_fee_payer, service_fee_last_changed_at, service_fee_change_locked_until",
+    )
     .eq("restaurant_id", restaurantId)
     .maybeSingle();
   if (error) throw new Error(error.message);

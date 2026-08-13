@@ -32,7 +32,9 @@ type CheckoutPricingPreviewClientEnv = {
 export function isCheckoutPricingPreviewClientDiagnosticsEnabled(
   env: CheckoutPricingPreviewClientEnv,
 ): boolean {
-  return env.VITE_LOCALIX_ENV === "staging" || env.LOCALIX_ENV === "staging" || env.MODE === "staging";
+  return (
+    env.VITE_LOCALIX_ENV === "staging" || env.LOCALIX_ENV === "staging" || env.MODE === "staging"
+  );
 }
 
 export function logCheckoutPricingPreviewClientError(

@@ -42,15 +42,17 @@ describe("service fee settings", () => {
   });
 
   it("rejects immediate rollback while locked", () => {
-    expect(() => applyServiceFeePayerChange({
-      current: current({
-        serviceFeePayer: "restaurant",
-        serviceFeeLastChangedAt: "2026-08-10T12:00:00.000Z",
-        serviceFeeChangeLockedUntil: "2026-08-17T12:00:00.000Z",
+    expect(() =>
+      applyServiceFeePayerChange({
+        current: current({
+          serviceFeePayer: "restaurant",
+          serviceFeeLastChangedAt: "2026-08-10T12:00:00.000Z",
+          serviceFeeChangeLockedUntil: "2026-08-17T12:00:00.000Z",
+        }),
+        next: "customer",
+        now: new Date("2026-08-10T12:05:00.000Z"),
       }),
-      next: "customer",
-      now: new Date("2026-08-10T12:05:00.000Z"),
-    })).toThrow(ServiceFeeSettingsError);
+    ).toThrow(ServiceFeeSettingsError);
 
     try {
       applyServiceFeePayerChange({
@@ -101,34 +103,44 @@ describe("service fee settings", () => {
   });
 
   it("rejects invalid payer value", () => {
-    expect(() => applyServiceFeePayerChange({
-      current: current(),
-      next: "platform",
-      now: NOW,
-    })).toThrow(ServiceFeeSettingsError);
+    expect(() =>
+      applyServiceFeePayerChange({
+        current: current(),
+        next: "platform",
+        now: NOW,
+      }),
+    ).toThrow(ServiceFeeSettingsError);
   });
 
   it("allows owner and admin to change settings", () => {
-    expect(() => assertServiceFeeSettingsPermission({
-      userId: "owner-1",
-      restaurantOwnerId: "owner-1",
-    })).not.toThrow();
-    expect(() => assertServiceFeeSettingsPermission({
-      userId: "admin-1",
-      restaurantOwnerId: "owner-1",
-      isAdmin: true,
-    })).not.toThrow();
+    expect(() =>
+      assertServiceFeeSettingsPermission({
+        userId: "owner-1",
+        restaurantOwnerId: "owner-1",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertServiceFeeSettingsPermission({
+        userId: "admin-1",
+        restaurantOwnerId: "owner-1",
+        isAdmin: true,
+      }),
+    ).not.toThrow();
   });
 
   it("rejects user from another restaurant or without permission", () => {
-    expect(() => assertServiceFeeSettingsPermission({
-      userId: "user-2",
-      restaurantOwnerId: "owner-1",
-    })).toThrow(ServiceFeeSettingsError);
-    expect(() => assertServiceFeeSettingsPermission({
-      userId: "user-2",
-      restaurantOwnerId: null,
-    })).toThrow(ServiceFeeSettingsError);
+    expect(() =>
+      assertServiceFeeSettingsPermission({
+        userId: "user-2",
+        restaurantOwnerId: "owner-1",
+      }),
+    ).toThrow(ServiceFeeSettingsError);
+    expect(() =>
+      assertServiceFeeSettingsPermission({
+        userId: "user-2",
+        restaurantOwnerId: null,
+      }),
+    ).toThrow(ServiceFeeSettingsError);
   });
 });
 

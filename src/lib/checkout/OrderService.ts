@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // OrderService — cria pedido + snapshot financeiro + registro de pagamento.
 //
 // REGRAS:
@@ -118,7 +119,9 @@ export function isCheckoutPricingPreviewServerDiagnosticsEnabled(
   return env.LOCALIX_ENV === "staging";
 }
 
-export function checkoutPricingPreviewErrorResult(error: unknown): CheckoutPricingPreviewErrorResult {
+export function checkoutPricingPreviewErrorResult(
+  error: unknown,
+): CheckoutPricingPreviewErrorResult {
   const message = error instanceof Error ? error.message : "Erro no calculo";
   const code = error instanceof PricingError ? error.code : "PRICING_ERROR";
   return { ok: false, code, message };
@@ -170,9 +173,7 @@ export async function calculateAuthoritativeCheckoutPricing(
   },
   diagnostics?: CheckoutPricingPreviewDiagnostics,
 ): Promise<PricingResult> {
-  let query = supabaseAdmin
-    .from("restaurants")
-    .select("id, min_order, delivery_fee");
+  let query = supabaseAdmin.from("restaurants").select("id, min_order, delivery_fee");
 
   query = input.restaurantId
     ? query.eq("id", input.restaurantId)
@@ -243,7 +244,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       async getProducts(ids, restaurantId) {
         const { data: rows, error } = await supabaseAdmin
           .from("menu_items")
-          .select("id, restaurant_id, name, price, promo_price, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_active, is_available, is_paused")
+          .select(
+            "id, restaurant_id, name, price, promo_price, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_active, is_available, is_paused",
+          )
           .eq("restaurant_id", restaurantId)
           .in("id", ids);
         if (error) throw new Error(error.message);
@@ -252,7 +255,9 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       async getBuilders(ids, restaurantId) {
         const { data: rows, error } = await supabaseAdmin
           .from("builders")
-          .select("id, restaurant_id, name, base_price, is_active, builder_groups(id, builder_id, name, is_required, min_select, max_select, builder_options(id, group_id, name, price_delta, max_qty))")
+          .select(
+            "id, restaurant_id, name, base_price, is_active, builder_groups(id, builder_id, name, is_required, min_select, max_select, builder_options(id, group_id, name, price_delta, max_qty))",
+          )
           .eq("restaurant_id", restaurantId)
           .in("id", ids);
         if (error) throw new Error(error.message);
@@ -261,11 +266,15 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       async getProductOptionConfig(productIds, restaurantId) {
         const { data: groups, error: groupError } = await supabaseAdmin
           .from("product_option_groups")
-          .select("id, product_id, name, description, type, min_selection, max_selection, required, price_strategy, display_order, depends_on_group_id, depends_on_option_id, metadata")
+          .select(
+            "id, product_id, name, description, type, min_selection, max_selection, required, price_strategy, display_order, depends_on_group_id, depends_on_option_id, metadata",
+          )
           .in("product_id", productIds);
         if (groupError) throw new Error(groupError.message);
 
-        const safeGroups = ((groups ?? []) as any[]).filter((g) => productIds.includes(g.product_id));
+        const safeGroups = ((groups ?? []) as any[]).filter((g) =>
+          productIds.includes(g.product_id),
+        );
         const groupIds = safeGroups.map((g) => g.id);
         if (groupIds.length === 0) return { groups: [], options: [] };
 
@@ -281,8 +290,13 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
 
         const { data: options, error: optionError } = await supabaseAdmin
           .from("product_options")
-          .select("id, group_id, name, description, price_adjustment, max_quantity, image_url, inventory_reference, recipe_reference, display_order, active, metadata")
-          .in("group_id", ownedGroups.map((g) => g.id));
+          .select(
+            "id, group_id, name, description, price_adjustment, max_quantity, image_url, inventory_reference, recipe_reference, display_order, active, metadata",
+          )
+          .in(
+            "group_id",
+            ownedGroups.map((g) => g.id),
+          );
         if (optionError) throw new Error(optionError.message);
         return { groups: ownedGroups as any, options: (options ?? []) as any };
       },
@@ -384,11 +398,10 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     });
 
     return {
-    orderId: order.id,
-    orderNumber: order.order_number,
-    status: paymentDecision.initialStatus,
-    pricing,
-    
+      orderId: order.id,
+      orderNumber: order.order_number,
+      status: paymentDecision.initialStatus,
+      pricing,
     };
   });
 

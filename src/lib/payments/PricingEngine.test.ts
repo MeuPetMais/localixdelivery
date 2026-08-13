@@ -61,7 +61,13 @@ describe("PricingEngine.computePricing", () => {
 
   it("aplica cupom e desconto no total do cliente e no liquido do restaurante", () => {
     const r = computePricing(
-      { subtotal: 50, deliveryFee: 5, couponDiscount: 4, loyaltyDiscount: 1, serviceFeePayer: "customer" },
+      {
+        subtotal: 50,
+        deliveryFee: 5,
+        couponDiscount: 4,
+        loyaltyDiscount: 1,
+        serviceFeePayer: "customer",
+      },
       flat099Settings,
     );
     expect(r.customerTotal).toBe(50.99);
@@ -70,7 +76,10 @@ describe("PricingEngine.computePricing", () => {
   });
 
   it("frete gratis equivale a entrega zero sem misturar com taxa Localix", () => {
-    const r = computePricing({ subtotal: 50, deliveryFee: 0, serviceFeePayer: "customer" }, flat099Settings);
+    const r = computePricing(
+      { subtotal: 50, deliveryFee: 0, serviceFeePayer: "customer" },
+      flat099Settings,
+    );
     expect(r.deliveryFee).toBe(0);
     expect(r.platformFee).toBe(0.99);
     expect(r.customerTotal).toBe(50.99);

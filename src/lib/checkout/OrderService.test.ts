@@ -1,5 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, describe, it, expect, vi } from "vitest";
-import PricingEngine, { computePricing, DEFAULT_PRICING_SETTINGS, PricingError } from "@/lib/payments/PricingEngine";
+import PricingEngine, {
+  computePricing,
+  DEFAULT_PRICING_SETTINGS,
+  PricingError,
+} from "@/lib/payments/PricingEngine";
 import { buildCheckoutPaymentPayload, resolveCheckoutPayment } from "./checkout-payment";
 import {
   canSubmitWithAuthoritativePricing,
@@ -46,8 +51,12 @@ function mockSupabaseAdmin(input: {
     from(table: string) {
       if (table === "restaurants") {
         return {
-          select() { return this; },
-          eq() { return this; },
+          select() {
+            return this;
+          },
+          eq() {
+            return this;
+          },
           async maybeSingle() {
             return {
               data: {
@@ -63,8 +72,12 @@ function mockSupabaseAdmin(input: {
 
       if (table === "tenant_payment_settings") {
         return {
-          select() { return this; },
-          eq() { return this; },
+          select() {
+            return this;
+          },
+          eq() {
+            return this;
+          },
           async maybeSingle() {
             return {
               data: {
@@ -100,10 +113,7 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
   });
 
   it("aplica cupom no total do cliente e no lÃ­quido do restaurante", () => {
-    const p = computePricing(
-      { subtotal: 40, deliveryFee: 5, couponDiscount: 5 },
-      S,
-    );
+    const p = computePricing({ subtotal: 40, deliveryFee: 5, couponDiscount: 5 }, S);
     expect(p.customerTotal).toBe(41.49);
     expect(p.restaurantNet).toBe(35);
     expect(p.platformFee).toBe(1.49);
@@ -238,11 +248,13 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
     );
 
     expect(pricing.customerTotal).toBe(9.49);
-    expect(PricingEngine.calculateOrderPricing).toHaveBeenCalledWith(expect.objectContaining({
-      minimumOrder: 0,
-      serviceFeePayer: "customer",
-      restaurantId: PILOT_RESTAURANT_ID,
-    }));
+    expect(PricingEngine.calculateOrderPricing).toHaveBeenCalledWith(
+      expect.objectContaining({
+        minimumOrder: 0,
+        serviceFeePayer: "customer",
+        restaurantId: PILOT_RESTAURANT_ID,
+      }),
+    );
   });
 
   it("preview autoritativa e criacao real usam o mesmo payload financeiro", async () => {
@@ -319,7 +331,9 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
       message: "Pedido abaixo do minimo",
     });
     expect(isCheckoutPricingPreviewServerDiagnosticsEnabled({ LOCALIX_ENV: "staging" })).toBe(true);
-    expect(isCheckoutPricingPreviewServerDiagnosticsEnabled({ LOCALIX_ENV: "production" })).toBe(false);
+    expect(isCheckoutPricingPreviewServerDiagnosticsEnabled({ LOCALIX_ENV: "production" })).toBe(
+      false,
+    );
     expect(buildCheckoutPricingPreviewServerDiagnosticPayload(input, result, diagnostics)).toEqual({
       code: "ORDER_BELOW_MINIMUM",
       message: "Pedido abaixo do minimo",
@@ -333,7 +347,9 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
       resolvedServiceFeePayer: "customer",
     });
 
-    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, { LOCALIX_ENV: "staging" });
+    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, {
+      LOCALIX_ENV: "staging",
+    });
     expect(warn).toHaveBeenCalledWith(
       "[checkout-pricing-preview][server]",
       expect.objectContaining({
@@ -345,7 +361,9 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
     );
 
     warn.mockClear();
-    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, { LOCALIX_ENV: "production" });
+    logCheckoutPricingPreviewServerDiagnostic(input, result, diagnostics, {
+      LOCALIX_ENV: "production",
+    });
     expect(warn).not.toHaveBeenCalled();
     expect(result.ok).toBe(false);
   });
@@ -360,7 +378,11 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
 
     expect(isCheckoutPricingPreviewClientDiagnosticsEnabled({ MODE: "staging" })).toBe(true);
     expect(isCheckoutPricingPreviewClientDiagnosticsEnabled({ MODE: "production" })).toBe(false);
-    logCheckoutPricingPreviewClientError({ MODE: "staging" }, "PRICING_ERROR", "tenant_payment_settings permission denied");
+    logCheckoutPricingPreviewClientError(
+      { MODE: "staging" },
+      "PRICING_ERROR",
+      "tenant_payment_settings permission denied",
+    );
     logCheckoutPricingPreviewClientException({ MODE: "staging" }, new Error("network"));
 
     expect(warn).toHaveBeenCalledWith(
@@ -376,30 +398,43 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
     expect(getAuthoritativeCustomerTotal(state)).toBeNull();
 
     warn.mockClear();
-    logCheckoutPricingPreviewClientError({ MODE: "production" }, "PRICING_ERROR", "hidden in production");
-    logCheckoutPricingPreviewClientException({ MODE: "production" }, new Error("hidden in production"));
+    logCheckoutPricingPreviewClientError(
+      { MODE: "production" },
+      "PRICING_ERROR",
+      "hidden in production",
+    );
+    logCheckoutPricingPreviewClientException(
+      { MODE: "production" },
+      new Error("hidden in production"),
+    );
     expect(warn).not.toHaveBeenCalled();
   });
 
   it("UI bloqueia pagamento enquanto a preview esta carregando", () => {
-    expect(canSubmitWithAuthoritativePricing({
-      pricing: null,
-      pricingLoading: true,
-      pricingError: null,
-    })).toBe(false);
+    expect(
+      canSubmitWithAuthoritativePricing({
+        pricing: null,
+        pricingLoading: true,
+        pricingError: null,
+      }),
+    ).toBe(false);
   });
 
   it("UI mostra taxa quando customer e nao adiciona taxa visivel quando restaurant", () => {
-    expect(getCustomerServiceFee({
-      platformFee: 0.99,
-      customerTotal: 9.49,
-      serviceFeePayer: "customer",
-    })).toBe(0.99);
-    expect(getCustomerServiceFee({
-      platformFee: 0.99,
-      customerTotal: 8.5,
-      serviceFeePayer: "restaurant",
-    })).toBe(0);
+    expect(
+      getCustomerServiceFee({
+        platformFee: 0.99,
+        customerTotal: 9.49,
+        serviceFeePayer: "customer",
+      }),
+    ).toBe(0.99);
+    expect(
+      getCustomerServiceFee({
+        platformFee: 0.99,
+        customerTotal: 8.5,
+        serviceFeePayer: "restaurant",
+      }),
+    ).toBe(0);
   });
 
   it("checkout publico nao contem mais fallback financeiro local antigo", () => {
@@ -459,11 +494,15 @@ function repo(over: Partial<AuthoritativePricingRepository> = {}): Authoritative
   return {
     async getProducts(ids, restaurantId) {
       const rows = [product()];
-      return rows.filter((p) => ids.includes(String(p.id)) && p.restaurant_id === restaurantId) as any;
+      return rows.filter(
+        (p) => ids.includes(String(p.id)) && p.restaurant_id === restaurantId,
+      ) as any;
     },
     async getBuilders(ids, restaurantId) {
       const rows = [builder()];
-      return rows.filter((b) => ids.includes(String(b.id)) && b.restaurant_id === restaurantId) as any;
+      return rows.filter(
+        (b) => ids.includes(String(b.id)) && b.restaurant_id === restaurantId,
+      ) as any;
     },
     async getProductOptionConfig() {
       return { groups: [], options: [] };
@@ -491,112 +530,136 @@ describe("Checkout authoritative pricing", () => {
   });
 
   it("rejects lower frontend price manipulation", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "prod-1", price: 1, qty: 1 }],
-      repository: repo(),
-    })).rejects.toMatchObject({ code: "checkout_price_changed" });
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "prod-1", price: 1, qty: 1 }],
+        repository: repo(),
+      }),
+    ).rejects.toMatchObject({ code: "checkout_price_changed" });
   });
 
   it("rejects higher frontend price divergence", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "prod-1", price: 99, qty: 1 }],
-      repository: repo(),
-    })).rejects.toMatchObject({ code: "checkout_price_changed" });
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "prod-1", price: 99, qty: 1 }],
+        repository: repo(),
+      }),
+    ).rejects.toMatchObject({ code: "checkout_price_changed" });
   });
 
   it("rejects nonexistent product", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "missing", price: 25, qty: 1 }],
-      repository: repo(),
-    })).rejects.toMatchObject({ code: "checkout_item_invalid" });
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "missing", price: 25, qty: 1 }],
+        repository: repo(),
+      }),
+    ).rejects.toMatchObject({ code: "checkout_item_invalid" });
   });
 
   it("rejects inactive product", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "prod-1", price: 25, qty: 1 }],
-      repository: repo({
-        async getProducts() {
-          return [product({ is_active: false })] as any;
-        },
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "prod-1", price: 25, qty: 1 }],
+        repository: repo({
+          async getProducts() {
+            return [product({ is_active: false })] as any;
+          },
+        }),
       }),
-    })).rejects.toMatchObject({ code: "checkout_item_invalid" });
+    ).rejects.toMatchObject({ code: "checkout_item_invalid" });
   });
 
   it("rejects product from another restaurant", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "prod-1", price: 25, qty: 1 }],
-      repository: repo({
-        async getProducts() {
-          return [product({ restaurant_id: "rest-2" })] as any;
-        },
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "prod-1", price: 25, qty: 1 }],
+        repository: repo({
+          async getProducts() {
+            return [product({ restaurant_id: "rest-2" })] as any;
+          },
+        }),
       }),
-    })).rejects.toMatchObject({ code: "checkout_item_invalid" });
+    ).rejects.toMatchObject({ code: "checkout_item_invalid" });
   });
 
   it("rejects invalid quantity", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{ id: "prod-1", price: 25, qty: 0 }],
-      repository: repo(),
-    })).rejects.toBeInstanceOf(CheckoutValidationError);
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [{ id: "prod-1", price: 25, qty: 0 }],
+        repository: repo(),
+      }),
+    ).rejects.toBeInstanceOf(CheckoutValidationError);
   });
 
   it("rejects manipulated product option/addon", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{
-        id: "prod-1",
-        price: 30,
-        qty: 1,
-        selectedOptions: [{ groupId: "addon-group", optionId: "foreign-addon", qty: 1 }],
-      }],
-      repository: repo({
-        async getProductOptionConfig() {
-          return {
-            groups: [{
-              id: "addon-group",
-              product_id: "prod-1",
-              name: "Adicionais",
-              type: "MULTIPLE",
-              min_selection: 0,
-              max_selection: 3,
-              required: false,
-              price_strategy: "SUM",
-              display_order: 0,
-            }],
-            options: [{
-              id: "allowed-addon",
-              group_id: "addon-group",
-              name: "Bacon",
-              price_adjustment: 5,
-              max_quantity: 2,
-              display_order: 0,
-              active: true,
-            }],
-          };
-        },
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [
+          {
+            id: "prod-1",
+            price: 30,
+            qty: 1,
+            selectedOptions: [{ groupId: "addon-group", optionId: "foreign-addon", qty: 1 }],
+          },
+        ],
+        repository: repo({
+          async getProductOptionConfig() {
+            return {
+              groups: [
+                {
+                  id: "addon-group",
+                  product_id: "prod-1",
+                  name: "Adicionais",
+                  type: "MULTIPLE",
+                  min_selection: 0,
+                  max_selection: 3,
+                  required: false,
+                  price_strategy: "SUM",
+                  display_order: 0,
+                },
+              ],
+              options: [
+                {
+                  id: "allowed-addon",
+                  group_id: "addon-group",
+                  name: "Bacon",
+                  price_adjustment: 5,
+                  max_quantity: 2,
+                  display_order: 0,
+                  active: true,
+                },
+              ],
+            };
+          },
+        }),
       }),
-    })).rejects.toMatchObject({ code: "checkout_item_invalid" });
+    ).rejects.toMatchObject({ code: "checkout_item_invalid" });
   });
 
   it("rejects manipulated builder selection", async () => {
-    await expect(resolveAuthoritativeCheckoutPricing({
-      restaurantId: "rest-1",
-      items: [{
-        id: "builder:builder-1:1",
-        kind: "builder",
-        builderId: "builder-1",
-        price: 20,
-        qty: 1,
-        selections: [{ groupId: "group-1", optionId: "foreign-option", qty: 1 }],
-      }],
-      repository: repo(),
-    })).rejects.toMatchObject({ code: "checkout_item_invalid" });
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [
+          {
+            id: "builder:builder-1:1",
+            kind: "builder",
+            builderId: "builder-1",
+            price: 20,
+            qty: 1,
+            selections: [{ groupId: "group-1", optionId: "foreign-option", qty: 1 }],
+          },
+        ],
+        repository: repo(),
+      }),
+    ).rejects.toMatchObject({ code: "checkout_item_invalid" });
   });
 
   it("does not apply expired promotion", async () => {
@@ -643,14 +706,16 @@ describe("Checkout authoritative pricing", () => {
   it("prices valid builder selections from server-side deltas", async () => {
     const r = await resolveAuthoritativeCheckoutPricing({
       restaurantId: "rest-1",
-      items: [{
-        id: "builder:builder-1:1",
-        kind: "builder",
-        builderId: "builder-1",
-        price: 27,
-        qty: 1,
-        selections: [{ groupId: "group-1", optionId: "opt-1", qty: 2 }],
-      }],
+      items: [
+        {
+          id: "builder:builder-1:1",
+          kind: "builder",
+          builderId: "builder-1",
+          price: 27,
+          qty: 1,
+          selections: [{ groupId: "group-1", optionId: "opt-1", qty: 2 }],
+        },
+      ],
       repository: repo(),
     });
 

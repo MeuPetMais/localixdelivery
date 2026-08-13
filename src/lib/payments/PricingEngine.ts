@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // PricingEngine â€” motor financeiro central da Localix.
 //
 // REGRA DE OURO: nenhum outro mÃ³dulo (React, Checkout, Carrinho,
@@ -172,7 +173,8 @@ export async function loadPricingSettings(force = false): Promise<PricingSetting
     platform_fee_above_30: Number(
       row.platform_fee_above_30 ?? DEFAULT_PRICING_SETTINGS.platform_fee_above_30,
     ),
-    default_gateway: (row.default_gateway ?? DEFAULT_PRICING_SETTINGS.default_gateway) as ProviderId,
+    default_gateway: (row.default_gateway ??
+      DEFAULT_PRICING_SETTINGS.default_gateway) as ProviderId,
     gateway_enabled:
       (row.gateway_enabled as Record<string, boolean>) ?? DEFAULT_PRICING_SETTINGS.gateway_enabled,
     currency: row.currency ?? DEFAULT_PRICING_SETTINGS.currency,
@@ -227,13 +229,18 @@ export function computePricing(input: PricingInput, settings: PricingSettings): 
   );
 
   const providerId: ProviderId = input.provider ?? settings.default_gateway;
-  const gatewayFeeCents = toCents(getGatewayCalculator(providerId).calculate({
-    amount: fromCents(subtotalCents + deliveryFeeCents),
-    method: input.paymentMethod ?? "pix",
-  }));
+  const gatewayFeeCents = toCents(
+    getGatewayCalculator(providerId).calculate({
+      amount: fromCents(subtotalCents + deliveryFeeCents),
+      method: input.paymentMethod ?? "pix",
+    }),
+  );
 
   const totalDiscountCents = couponDiscountCents + cashbackCents + loyaltyDiscountCents;
-  const itemsAndDeliveryTotalCents = Math.max(0, subtotalCents + deliveryFeeCents - totalDiscountCents);
+  const itemsAndDeliveryTotalCents = Math.max(
+    0,
+    subtotalCents + deliveryFeeCents - totalDiscountCents,
+  );
   const customerTotalCents =
     serviceFeePayer === "customer"
       ? itemsAndDeliveryTotalCents + platformFeeCents
