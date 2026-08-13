@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, no-empty, @typescript-eslint/no-unused-expressions */
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,20 +9,71 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { brl } from "@/lib/format";
 import { isPromoActiveNow } from "@/lib/promotions";
-import { createCheckoutOrder, previewCheckoutPricing, type CheckoutMethod } from "@/lib/checkout/OrderService";
-import { buildCheckoutPaymentPayload, type CheckoutPaymentOption } from "@/lib/checkout/checkout-payment";
+import {
+  createCheckoutOrder,
+  previewCheckoutPricing,
+  type CheckoutMethod,
+} from "@/lib/checkout/OrderService";
+import {
+  buildCheckoutPaymentPayload,
+  type CheckoutPaymentOption,
+} from "@/lib/checkout/checkout-payment";
+import {
+  canSubmitWithAuthoritativePricing,
+  getCustomerServiceFee,
+  logCheckoutPricingPreviewClientError,
+  logCheckoutPricingPreviewClientException,
+} from "@/lib/checkout/checkout-pricing-ui";
 import { normalizeOrderPaymentMethod } from "@/lib/checkout/paymentMethodLabel";
 import { PaymentService } from "@/lib/payments/PaymentService";
 import MercadoPagoReadiness from "@/lib/payments/MercadoPagoReadiness";
 import { getGatewayDisplay } from "@/lib/payments/gatewayDisplay";
 import { validateCoupon } from "@/lib/coupons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag, Plus, Minus, Clock, Loader2, Ticket, Check, Star, ImageIcon, Sparkles, ChevronRight, Heart, Search, LayoutGrid, Menu, X, Gift, Cake, Flame, Trophy } from "lucide-react";
-import { getFeaturedSections, type FeaturedItem, type FeaturedSection } from "@/lib/featured-sections.functions";
+import {
+  ShoppingBag,
+  Plus,
+  Minus,
+  Clock,
+  Loader2,
+  Ticket,
+  Check,
+  Star,
+  ImageIcon,
+  Sparkles,
+  ChevronRight,
+  Heart,
+  Search,
+  LayoutGrid,
+  Menu,
+  X,
+  Gift,
+  Cake,
+  Flame,
+  Trophy,
+} from "lucide-react";
+import {
+  getFeaturedSections,
+  type FeaturedItem,
+  type FeaturedSection,
+} from "@/lib/featured-sections.functions";
 import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
@@ -32,21 +84,41 @@ import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
 import type { CustomerAddress } from "@/lib/customer-addresses";
-import { AddressAutocomplete, formatFullAddress, type SelectedAddress } from "@/components/checkout/AddressAutocomplete";
+import {
+  AddressAutocomplete,
+  formatFullAddress,
+  type SelectedAddress,
+} from "@/components/checkout/AddressAutocomplete";
 import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
-
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
   errorComponent: ({ error }) => {
     console.error("[r/$slug] error:", error);
-    return <div className="grid min-h-screen place-items-center px-4 text-center">Não conseguimos carregar esta página.</div>;
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        Não conseguimos carregar esta página.
+      </div>
+    );
   },
-  notFoundComponent: () => <div className="grid min-h-screen place-items-center px-4 text-center">Restaurante não encontrado.</div>,
+  notFoundComponent: () => (
+    <div className="grid min-h-screen place-items-center px-4 text-center">
+      Restaurante não encontrado.
+    </div>
+  ),
   component: PublicMenu,
 });
 
-type CartItem = { id: string; name: string; price: number; qty: number };
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  kind?: "product" | "builder";
+  builderId?: string;
+  selections?: Array<{ groupId: string; optionId: string; qty: number }>;
+  notes?: string;
+};
 
 function PublicMenu() {
   const { slug } = Route.useParams();
@@ -55,23 +127,25 @@ function PublicMenu() {
 
 export function PublicMenuScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
-  const { rememberRestaurantRoute, prepareLoginRedirect, restoreRestaurantScroll, setPendingCart } = useCustomerNavigation();
+  const { rememberRestaurantRoute, prepareLoginRedirect, restoreRestaurantScroll, setPendingCart } =
+    useCustomerNavigation();
   const { setActiveRestaurant, markUnavailable } = useRestaurantSession();
-
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-restaurant", slug],
     enabled: !!slug,
-      retry: 3,
+    retry: 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
-      refetchOnWindowFocus: "always",
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled, opening_hours")
+        .select(
+          "id, name, slug, description, logo_url, cover_url, delivery_fee, min_order, is_open, category, delivery_time, avg_delivery_minutes, avg_pickup_minutes, payment_methods, builders_enabled, opening_hours",
+        )
         .eq("slug", slug)
         .maybeSingle();
       if (error) {
@@ -81,18 +155,31 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       if (!rest) return { restaurant: null, categories: [], items: [], builders: [] };
       const [cats, items, builders] = await Promise.all([
         supabase.from("menu_categories").select("*").eq("restaurant_id", rest.id).order("position"),
-        supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("is_available", true).order("position"),
-        (supabase as any).from("builders").select("*, builder_groups(*, builder_options(*))").eq("restaurant_id", rest.id).eq("is_active", true).order("position"),
+        supabase
+          .from("menu_items")
+          .select("*")
+          .eq("restaurant_id", rest.id)
+          .eq("is_available", true)
+          .order("position"),
+        (supabase as any)
+          .from("builders")
+          .select("*, builder_groups(*, builder_options(*))")
+          .eq("restaurant_id", rest.id)
+          .eq("is_active", true)
+          .order("position"),
       ]);
-      return { restaurant: rest as any, categories: cats.data ?? [], items: items.data ?? [], builders: builders.data ?? [] };
+      return {
+        restaurant: rest as any,
+        categories: cats.data ?? [],
+        items: items.data ?? [],
+        builders: builders.data ?? [],
+      };
     },
   });
 
   useEffect(() => {
     if (isError) console.error("[r/$slug] query error:", error);
   }, [isError, error]);
-
-
 
   useEffect(() => {
     if (data?.restaurant?.slug) {
@@ -106,7 +193,13 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         restaurantLogo: data.restaurant.logo_url ?? null,
       });
     }
-  }, [data?.restaurant?.slug, data?.restaurant?.id, rememberRestaurantRoute, restoreRestaurantScroll, setActiveRestaurant]);
+  }, [
+    data?.restaurant?.slug,
+    data?.restaurant?.id,
+    rememberRestaurantRoute,
+    restoreRestaurantScroll,
+    setActiveRestaurant,
+  ]);
 
   // Restaurante da sessão foi removido do banco → marca como indisponível.
   useEffect(() => {
@@ -121,24 +214,98 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       qc.invalidateQueries({ queryKey: ["public-restaurant", slug] });
       qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
     };
-    const invalidateFeatured = () => qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
+    const invalidateFeatured = () =>
+      qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
     const invalidateReviews = () => {
       qc.invalidateQueries({ queryKey: ["featured-sections", slug] });
       qc.invalidateQueries({ queryKey: ["public-review-stats", restaurantId] });
     };
     const channel = supabase
       .channel(`public-menu:${restaurantId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, invalidateAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_categories", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_item_images", filter: `restaurant_id=eq.${restaurantId}` }, invalidateAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "featured_sections", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
-      .on("postgres_changes", { event: "*", schema: "public", table: "builders", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
-      .on("postgres_changes", { event: "*", schema: "public", table: "customer_favorites", filter: `restaurant_id=eq.${restaurantId}` }, invalidateFeatured)
-      .on("postgres_changes", { event: "*", schema: "public", table: "reviews", filter: `restaurant_id=eq.${restaurantId}` }, invalidateReviews)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "restaurants",
+          filter: `id=eq.${restaurantId}`,
+        },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu_items",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu_categories",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu_item_images",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "featured_sections",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateFeatured,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "builders",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateFeatured,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customer_favorites",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateFeatured,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reviews",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidateReviews,
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [data?.restaurant?.id, slug, qc]);
 
   const restaurantId = data?.restaurant?.id as string | undefined;
@@ -158,9 +325,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     },
   });
 
-
-
-
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -176,11 +340,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const [builderUnavailableOpen, setBuilderUnavailableOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [catsSheetOpen, setCatsSheetOpen] = useState(false);
-  const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalize = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
   const q = normalize(query.trim());
   const matchesQuery = (it: any) => {
     if (!q) return true;
-    return normalize(String(it.name ?? "")).includes(q) || normalize(String(it.description ?? "")).includes(q);
+    return (
+      normalize(String(it.name ?? "")).includes(q) ||
+      normalize(String(it.description ?? "")).includes(q)
+    );
   };
 
   useEffect(() => {
@@ -199,7 +370,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       const price = isPromoActiveNow(item) ? Number(item.promo_price) : Number(item.price);
       setCart((c) => {
         const found = c.find((x) => x.id === item.id);
-        if (found) return c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x);
+        if (found) return c.map((x) => (x.id === item.id ? { ...x, qty: x.qty + 1 } : x));
         return [...c, { id: item.id, name: item.name, price, qty: 1 }];
       });
       setOpenSheet(true);
@@ -212,7 +383,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     window.history.replaceState(null, "", window.location.pathname + (q ? `?${q}` : ""));
     setAddHandled(true);
   }, [data, addHandled]);
-
 
   useEffect(() => {
     try {
@@ -245,7 +415,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
       if (!raw) return;
-      const item = JSON.parse(raw) as { id: string; name: string; price: number };
+      const item = JSON.parse(raw) as Omit<CartItem, "qty">;
       if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
         setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
         setOpenSheet(true);
@@ -262,12 +432,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       sessionStorage.setItem(`cart:${slug}`, JSON.stringify(cart));
     } catch {}
     setPendingCart(cart.length ? { slug, items: cart, updatedAt: new Date().toISOString() } : null);
-    if (data?.restaurant?.slug) rememberRestaurantRoute(data.restaurant.slug, { pendingCart: cart.length ? { slug, items: cart, updatedAt: new Date().toISOString() } : null });
+    if (data?.restaurant?.slug)
+      rememberRestaurantRoute(data.restaurant.slug, {
+        pendingCart: cart.length
+          ? { slug, items: cart, updatedAt: new Date().toISOString() }
+          : null,
+      });
   }, [cart, slug, setPendingCart, data?.restaurant?.slug, rememberRestaurantRoute]);
 
   // Favorites state (per restaurant) for the current authenticated customer
   const { isAuthenticated, session } = useCustomerAuth();
-  
 
   const [favItems, setFavItems] = useState<Set<string>>(new Set());
   const [favBuilders, setFavBuilders] = useState<Set<string>>(new Set());
@@ -283,7 +457,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       setFavItems(items);
       setFavBuilders(builders);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [isAuthenticated, restaurantId]);
 
   const status = useRestaurantStatus({
@@ -319,28 +495,43 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
   }
 
-
   const add = (it: { id: string; name: string; price: number }) =>
     setCart((c) => {
       const found = c.find((x) => x.id === it.id);
-      if (found) return c.map((x) => x.id === it.id ? { ...x, qty: x.qty + 1 } : x);
+      if (found) return c.map((x) => (x.id === it.id ? { ...x, qty: x.qty + 1 } : x));
       return [...c, { ...it, qty: 1 }];
     });
-  const dec = (id: string) => setCart((c) => c.flatMap((x) => x.id === id ? (x.qty <= 1 ? [] : [{ ...x, qty: x.qty - 1 }]) : [x]));
+  const dec = (id: string) =>
+    setCart((c) =>
+      c.flatMap((x) => (x.id === id ? (x.qty <= 1 ? [] : [{ ...x, qty: x.qty - 1 }]) : [x])),
+    );
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const [addedSheet, setAddedSheet] = useState<AddedItem | null>(null);
-  const addAndPrompt = (raw: { id: string; name: string; price: number; image_url?: string | null }) => {
+  const addAndPrompt = (raw: {
+    id: string;
+    name: string;
+    price: number;
+    image_url?: string | null;
+  }) => {
     add({ id: raw.id, name: raw.name, price: raw.price });
-    setAddedSheet({ id: raw.id, name: raw.name, price: raw.price, qty: 1, image_url: raw.image_url ?? null });
+    setAddedSheet({
+      id: raw.id,
+      name: raw.name,
+      price: raw.price,
+      qty: 1,
+      image_url: raw.image_url ?? null,
+    });
   };
   const suggestions = useMemo(() => {
     const items = (data?.items ?? []) as any[];
     const inCart = new Set(cart.map((c) => c.id));
     const lastId = addedSheet?.id;
-    const available = items.filter((i) => i.is_available !== false && !inCart.has(i.id) && i.id !== lastId);
+    const available = items.filter(
+      (i) => i.is_available !== false && !inCart.has(i.id) && i.id !== lastId,
+    );
     const min = Number(data?.restaurant?.min_order ?? 0);
     const missing = Math.max(0, min - subtotal);
     const priceOf = (i: any) => Number(isPromoActiveNow(i) ? i.promo_price : i.price);
@@ -348,15 +539,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       const cat = (data?.categories ?? []).find((c: any) => c.id === i.category_id);
       return (cat?.name ?? "").toLowerCase();
     };
-    const scored = available.map((i) => {
-      const p = priceOf(i);
-      const isComplement = /bebida|sobremesa|acompanh|adicional|complement/i.test(catName(i)) ? -5 : 0;
-      const distance = missing > 0 ? Math.abs(p - missing) : Math.abs(p - 15);
-      return { item: i, score: distance + isComplement };
-    }).sort((a, b) => a.score - b.score);
+    const scored = available
+      .map((i) => {
+        const p = priceOf(i);
+        const isComplement = /bebida|sobremesa|acompanh|adicional|complement/i.test(catName(i))
+          ? -5
+          : 0;
+        const distance = missing > 0 ? Math.abs(p - missing) : Math.abs(p - 15);
+        return { item: i, score: distance + isComplement };
+      })
+      .sort((a, b) => a.score - b.score);
     return scored.slice(0, 6).map((s) => s.item);
   }, [data?.items, data?.categories, data?.restaurant?.min_order, cart, subtotal, addedSheet?.id]);
-
 
   const openBuilder = (builder: Builder) => {
     const builderStatus = getRestaurantStatus({
@@ -373,7 +567,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
     navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builder.id } as any });
   };
-
 
   if (isLoading || (!data && !isError)) {
     return (
@@ -392,7 +585,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             <Skeleton className="mt-4 h-16 w-full rounded-2xl" />
           </div>
           <div className="mt-6 space-y-3">
-            {[0,1,2,3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+            ))}
           </div>
         </div>
       </div>
@@ -416,12 +611,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     const emptySlug = !slug || !slug.trim();
     const offline = typeof navigator !== "undefined" && !navigator.onLine;
     console.log("===== TESTE OFFLINE =====");
-console.log("navigator.onLine =", navigator.onLine);
-console.log("offline =", offline);
+    console.log("navigator.onLine =", navigator.onLine);
+    console.log("offline =", offline);
     const anyErr = error as any;
     const isNetworkError =
       offline ||
-      (anyErr && (anyErr.message === "Failed to fetch" || /NetworkError|fetch/i.test(String(anyErr?.message ?? ""))));
+      (anyErr &&
+        (anyErr.message === "Failed to fetch" ||
+          /NetworkError|fetch/i.test(String(anyErr?.message ?? ""))));
     const isSupabaseError = !!anyErr && !isNetworkError;
 
     let title = "Restaurante não encontrado";
@@ -475,22 +672,33 @@ console.log("offline =", offline);
     );
   }
 
-
-  const { restaurant, categories, items, builders } = data as { restaurant: any; categories: any[]; items: any[]; builders: any[] };
+  const { restaurant, categories, items, builders } = data as {
+    restaurant: any;
+    categories: any[];
+    items: any[];
+    builders: any[];
+  };
 
   const effectiveOpen = status.isOpen;
-
 
   return (
     <div className="min-h-screen bg-muted/30 pb-36">
       {/* cover */}
-      <div className="relative h-[200px] w-full overflow-hidden rounded-b-2xl bg-gradient-warm" style={{ zIndex: 1 }}>
-        {restaurant.cover_url && <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover" />}
+      <div
+        className="relative h-[200px] w-full overflow-hidden rounded-b-2xl bg-gradient-warm"
+        style={{ zIndex: 1 }}
+      >
+        {restaurant.cover_url && (
+          <img src={restaurant.cover_url} alt="" className="h-full w-full object-cover" />
+        )}
       </div>
 
       <div className="mx-auto max-w-3xl px-4">
         {/* premium store card */}
-        <Card className="relative rounded-3xl border bg-card p-5 shadow-premium" style={{ marginTop: "-50px", zIndex: 5 }}>
+        <Card
+          className="relative rounded-3xl border bg-card p-5 shadow-premium"
+          style={{ marginTop: "-50px", zIndex: 5 }}
+        >
           {/* logo absolute inside card */}
           <div className="absolute" style={{ top: "-45px", left: "24px", zIndex: 10 }}>
             {restaurant.logo_url ? (
@@ -508,9 +716,13 @@ console.log("offline =", offline);
 
           {/* content shifted right of logo */}
           <div style={{ paddingLeft: "112px", minHeight: "80px" }}>
-            <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">{restaurant.name}</h1>
+            <h1 className="truncate font-display text-xl font-extrabold leading-tight sm:text-2xl">
+              {restaurant.name}
+            </h1>
             <div className="flex flex-wrap items-center gap-2" style={{ marginTop: "8px" }}>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${effectiveOpen ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${effectiveOpen ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}
+              >
                 {effectiveOpen ? "● Aberto" : "● Fechado"}
               </span>
               <span className="inline-flex items-center gap-1 text-sm">
@@ -534,24 +746,41 @@ console.log("offline =", offline);
           </div>
 
           {restaurant.description && (
-            <p className="line-clamp-2 text-sm text-muted-foreground" style={{ marginTop: "8px" }}>{restaurant.description}</p>
+            <p className="line-clamp-2 text-sm text-muted-foreground" style={{ marginTop: "8px" }}>
+              {restaurant.description}
+            </p>
           )}
 
           {(() => {
             const PAYMENT_LABELS: Record<string, string> = {
-              pix: "Pix", cash: "Dinheiro", credit: "Crédito", debit: "Débito",
-              meal_voucher: "VR", food_voucher: "VA", ticket: "Ticket", alelo: "Alelo",
-              sodexo: "Sodexo", vr: "VR", ben: "Ben",
-              online_pix: "Pix online", online_credit: "Crédito online", online_debit: "Débito online", online_card: "Cartão online",
-              apple_pay: "Apple Pay", google_pay: "Google Pay",
+              pix: "Pix",
+              cash: "Dinheiro",
+              credit: "Crédito",
+              debit: "Débito",
+              meal_voucher: "VR",
+              food_voucher: "VA",
+              ticket: "Ticket",
+              alelo: "Alelo",
+              sodexo: "Sodexo",
+              vr: "VR",
+              ben: "Ben",
+              online_pix: "Pix online",
+              online_credit: "Crédito online",
+              online_debit: "Débito online",
+              online_card: "Cartão online",
+              apple_pay: "Apple Pay",
+              google_pay: "Google Pay",
             };
             const pm = (restaurant.payment_methods ?? {}) as Record<string, boolean>;
-            const enabled = Object.entries(pm).filter(([, v]) => v).map(([k]) => PAYMENT_LABELS[k] ?? k);
-            const paymentsSummary = enabled.length === 0
-              ? "—"
-              : enabled.length <= 2
-                ? enabled.join(" • ")
-                : `${enabled.slice(0, 2).join(" • ")} +${enabled.length - 2}`;
+            const enabled = Object.entries(pm)
+              .filter(([, v]) => v)
+              .map(([k]) => PAYMENT_LABELS[k] ?? k);
+            const paymentsSummary =
+              enabled.length === 0
+                ? "—"
+                : enabled.length <= 2
+                  ? enabled.join(" • ")
+                  : `${enabled.slice(0, 2).join(" • ")} +${enabled.length - 2}`;
 
             const avgDel = Number(restaurant.avg_delivery_minutes ?? 0);
             const avgPick = Number(restaurant.avg_pickup_minutes ?? 0);
@@ -560,11 +789,12 @@ console.log("offline =", offline);
               : avgDel > 0
                 ? `${Math.max(10, avgDel - 10)}–${avgDel + 5} min`
                 : "—";
-            const modality = avgDel > 0 && avgPick > 0
-              ? "Entrega e Retirada"
-              : avgPick > 0
-                ? "Retirada"
-                : "Entrega";
+            const modality =
+              avgDel > 0 && avgPick > 0
+                ? "Entrega e Retirada"
+                : avgPick > 0
+                  ? "Retirada"
+                  : "Entrega";
 
             return (
               <div className="grid grid-cols-3 gap-2 sm:gap-3" style={{ marginTop: "20px" }}>
@@ -575,12 +805,16 @@ console.log("offline =", offline);
                 </div>
                 <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
                   <div className="mb-1 text-lg leading-none">🚚</div>
-                  <p className="text-xs font-bold leading-tight text-foreground sm:text-sm">{modality}</p>
+                  <p className="text-xs font-bold leading-tight text-foreground sm:text-sm">
+                    {modality}
+                  </p>
                   <p className="text-[10px] text-muted-foreground sm:text-xs">Modalidade</p>
                 </div>
                 <div className="rounded-2xl border bg-muted/40 px-2 py-3 text-center">
                   <div className="mb-1 text-lg leading-none">💳</div>
-                  <p className="line-clamp-1 text-xs font-bold text-foreground sm:text-sm">{paymentsSummary}</p>
+                  <p className="line-clamp-1 text-xs font-bold text-foreground sm:text-sm">
+                    {paymentsSummary}
+                  </p>
                   <p className="text-[10px] text-muted-foreground sm:text-xs">Pagamentos</p>
                 </div>
               </div>
@@ -601,8 +835,8 @@ console.log("offline =", offline);
               to="/$slug/sobre"
               params={{ slug }}
               search={{
-  tab: b.tab as "info" | "pagamentos" | "avaliacoes" | "horarios",
-}}
+                tab: b.tab as "info" | "pagamentos" | "avaliacoes" | "horarios",
+              }}
               className="group flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 shadow-elegant transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-premium"
             >
               <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -613,24 +847,34 @@ console.log("offline =", offline);
           ))}
         </div>
 
-
         {/* 🔥 Promoções do Dia */}
         {(() => {
           const promos = (items as any[])
             .filter((i) => isPromoActiveNow(i))
-            .map((i) => ({ ...i, _pct: Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100) }))
-            .sort((a, b) =>
-              b._pct - a._pct ||
-              Number(!!b.is_featured) - Number(!!a.is_featured) ||
-              Number(!!b.is_bestseller) - Number(!!a.is_bestseller) ||
-              (a.position ?? 0) - (b.position ?? 0),
+            .map((i) => ({
+              ...i,
+              _pct: Math.round((1 - Number(i.promo_price) / Number(i.price)) * 100),
+            }))
+            .sort(
+              (a, b) =>
+                b._pct - a._pct ||
+                Number(!!b.is_featured) - Number(!!a.is_featured) ||
+                Number(!!b.is_bestseller) - Number(!!a.is_bestseller) ||
+                (a.position ?? 0) - (b.position ?? 0),
             );
           if (promos.length === 0) return null;
           return (
-            <section id="sec-promos" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <section
+              id="sec-promos"
+              className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-xl font-extrabold tracking-tight">🔥 Promoções do Dia</h2>
-                <span className="text-xs font-semibold text-muted-foreground">{promos.length} {promos.length === 1 ? "oferta" : "ofertas"}</span>
+                <h2 className="font-display text-xl font-extrabold tracking-tight">
+                  🔥 Promoções do Dia
+                </h2>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {promos.length} {promos.length === 1 ? "oferta" : "ofertas"}
+                </span>
               </div>
               <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {promos.map((it: any) => (
@@ -649,14 +893,24 @@ console.log("offline =", offline);
                     <button
                       type="button"
                       aria-label="Favoritar"
-                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleFavorite("menu_item", it.id);
+                      }}
                       className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
                     >
-                      <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                      <Heart
+                        className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`}
+                      />
                     </button>
                     <div className="relative h-32 w-full bg-muted">
                       {it.image_url ? (
-                        <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                        <img
+                          src={it.image_url}
+                          alt={it.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
                       ) : (
                         <div className="grid h-full w-full place-items-center text-muted-foreground">
                           <ImageIcon className="h-6 w-6" />
@@ -666,16 +920,31 @@ console.log("offline =", offline);
 
                     <div className="flex flex-1 flex-col gap-1 p-3">
                       <h3 className="line-clamp-1 text-sm font-bold leading-snug">{it.name}</h3>
-                      {it.description && <p className="line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                      {it.description && (
+                        <p className="line-clamp-2 text-xs text-muted-foreground">
+                          {it.description}
+                        </p>
+                      )}
                       <div className="mt-auto flex items-baseline gap-2 pt-2">
-                        <span className="font-display text-base font-extrabold text-primary">{brl(it.promo_price)}</span>
-                        <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                        <span className="font-display text-base font-extrabold text-primary">
+                          {brl(it.promo_price)}
+                        </span>
+                        <span className="text-xs text-muted-foreground line-through">
+                          {brl(it.price)}
+                        </span>
                       </div>
                       <Button
                         size="sm"
                         className="mt-2 w-full rounded-xl"
                         disabled={!effectiveOpen}
-                        onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price), image_url: it.image_url })}
+                        onClick={() =>
+                          addAndPrompt({
+                            id: it.id,
+                            name: it.name,
+                            price: Number(it.promo_price),
+                            image_url: it.image_url,
+                          })
+                        }
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                       </Button>
@@ -689,10 +958,17 @@ console.log("offline =", offline);
 
         {/* 🍕 Monte do Seu Jeito */}
         {restaurant.builders_enabled && builders && builders.length > 0 && (
-          <section id="sec-monte" className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <section
+            id="sec-monte"
+            className="mt-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl font-extrabold tracking-tight">🍕 Monte do Seu Jeito</h2>
-              <span className="text-xs font-semibold text-muted-foreground">{builders.length} {builders.length === 1 ? "opção" : "opções"}</span>
+              <h2 className="font-display text-xl font-extrabold tracking-tight">
+                🍕 Monte do Seu Jeito
+              </h2>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {builders.length} {builders.length === 1 ? "opção" : "opções"}
+              </span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {builders.map((b: any) => (
@@ -701,34 +977,54 @@ console.log("offline =", offline);
                   role="button"
                   tabIndex={0}
                   onClick={() => openBuilder(b as Builder)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openBuilder(b as Builder); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") openBuilder(b as Builder);
+                  }}
                   className="group relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
                 >
                   <button
                     type="button"
                     aria-label="Favoritar"
-                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite("builder", b.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite("builder", b.id);
+                    }}
                     className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
                   >
-                    <Heart className={`h-4 w-4 ${favBuilders.has(b.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                    <Heart
+                      className={`h-4 w-4 ${favBuilders.has(b.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`}
+                    />
                   </button>
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-card text-3xl shadow-sm">
-                    {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : (b.emoji ?? "✨")}
+                    {b.image_url ? (
+                      <img
+                        src={b.image_url}
+                        alt=""
+                        className="h-full w-full rounded-2xl object-cover"
+                      />
+                    ) : (
+                      (b.emoji ?? "✨")
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
                       <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-primary">Personalizado</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-primary">
+                        Personalizado
+                      </span>
                     </div>
-                    <h3 className="font-display text-base font-extrabold leading-tight">{b.name}</h3>
-                    {b.description && <p className="line-clamp-1 text-xs text-muted-foreground">{b.description}</p>}
+                    <h3 className="font-display text-base font-extrabold leading-tight">
+                      {b.name}
+                    </h3>
+                    {b.description && (
+                      <p className="line-clamp-1 text-xs text-muted-foreground">{b.description}</p>
+                    )}
                     <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
                       Começar <ChevronRight className="h-3 w-3" />
                     </span>
                   </div>
                 </div>
               ))}
-
             </div>
           </section>
         )}
@@ -736,10 +1032,22 @@ console.log("offline =", offline);
         <FeaturedSections
           slug={slug}
           effectiveOpen={effectiveOpen}
-          onAdd={(it) => addAndPrompt({ id: it.id, name: it.name, price: Number(it.promo_price ?? it.price), image_url: (it as any).image_url })}
-          onOpenBuilder={(builderId) => navigate({ to: "/$slug/montar", params: { slug }, search: { builder: builderId } as any })}
+          onAdd={(it) =>
+            addAndPrompt({
+              id: it.id,
+              name: it.name,
+              price: Number(it.promo_price ?? it.price),
+              image_url: (it as any).image_url,
+            })
+          }
+          onOpenBuilder={(builderId) =>
+            navigate({
+              to: "/$slug/montar",
+              params: { slug },
+              search: { builder: builderId } as any,
+            })
+          }
         />
-
 
         {/* smart sticky category menu */}
         <SmartCategoryMenu
@@ -756,7 +1064,10 @@ console.log("offline =", offline);
         <div className="mt-5 space-y-7">
           {(() => {
             const visibleCats = categories
-              .map((cat) => ({ cat, catItems: items.filter((i) => i.category_id === cat.id && matchesQuery(i)) }))
+              .map((cat) => ({
+                cat,
+                catItems: items.filter((i) => i.category_id === cat.id && matchesQuery(i)),
+              }))
               .filter(({ catItems }) => catItems.length > 0);
             const totalMatches = visibleCats.reduce((n, c) => n + c.catItems.length, 0);
             if (q && totalMatches === 0) {
@@ -764,49 +1075,82 @@ console.log("offline =", offline);
                 <Card className="flex flex-col items-center gap-3 rounded-2xl p-10 text-center text-muted-foreground">
                   <Search className="h-8 w-8 opacity-60" />
                   <div>
-                    <p className="font-semibold text-foreground">Nenhum item encontrado para “{query}”.</p>
+                    <p className="font-semibold text-foreground">
+                      Nenhum item encontrado para “{query}”.
+                    </p>
                     <p className="text-sm">Tente outro termo ou limpe a busca.</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setQuery("")}>Limpar busca</Button>
+                  <Button variant="outline" size="sm" onClick={() => setQuery("")}>
+                    Limpar busca
+                  </Button>
                 </Card>
               );
             }
             return (
               <>
                 {visibleCats.map(({ cat, catItems }) => (
-                  <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-20 animate-fade-in">
-                    <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">{cat.name}</h2>
+                  <section
+                    key={cat.id}
+                    id={`cat-${cat.id}`}
+                    className="scroll-mt-20 animate-fade-in"
+                  >
+                    <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">
+                      {cat.name}
+                    </h2>
                     <div className="grid gap-3">
                       {catItems.map((it: any) => {
                         const hasPromo = isPromoActiveNow(it);
                         return (
-                          <Card key={it.id} className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant">
+                          <Card
+                            key={it.id}
+                            className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
+                          >
                             <button
                               type="button"
                               aria-label="Favoritar"
-                              onClick={(e) => { e.stopPropagation(); handleToggleFavorite("menu_item", it.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFavorite("menu_item", it.id);
+                              }}
                               className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
                             >
-                              <Heart className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+                              <Heart
+                                className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`}
+                              />
                             </button>
 
                             <div className="flex min-w-0 flex-1 flex-col">
                               <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
-                              {it.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{it.description}</p>}
+                              {it.description && (
+                                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                                  {it.description}
+                                </p>
+                              )}
                               <div className="mt-auto flex items-baseline gap-2 pt-2">
                                 {hasPromo ? (
                                   <>
-                                    <span className="font-display text-lg font-extrabold text-primary">{brl(it.promo_price)}</span>
-                                    <span className="text-xs text-muted-foreground line-through">{brl(it.price)}</span>
+                                    <span className="font-display text-lg font-extrabold text-primary">
+                                      {brl(it.promo_price)}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground line-through">
+                                      {brl(it.price)}
+                                    </span>
                                   </>
                                 ) : (
-                                  <span className="font-display text-lg font-extrabold text-primary">{brl(it.price)}</span>
+                                  <span className="font-display text-lg font-extrabold text-primary">
+                                    {brl(it.price)}
+                                  </span>
                                 )}
                               </div>
                             </div>
                             <div className="relative shrink-0">
                               {it.image_url ? (
-                                <img src={it.image_url} alt={it.name} className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28" loading="lazy" />
+                                <img
+                                  src={it.image_url}
+                                  alt={it.name}
+                                  className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28"
+                                  loading="lazy"
+                                />
                               ) : (
                                 <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
                                   <ImageIcon className="h-6 w-6" />
@@ -816,7 +1160,14 @@ console.log("offline =", offline);
                                 size="icon"
                                 className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
                                 disabled={!effectiveOpen}
-                                onClick={() => addAndPrompt({ id: it.id, name: it.name, price: Number(hasPromo ? it.promo_price : it.price), image_url: it.image_url })}
+                                onClick={() =>
+                                  addAndPrompt({
+                                    id: it.id,
+                                    name: it.name,
+                                    price: Number(hasPromo ? it.promo_price : it.price),
+                                    image_url: it.image_url,
+                                  })
+                                }
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -828,7 +1179,9 @@ console.log("offline =", offline);
                   </section>
                 ))}
                 {items.length === 0 && (
-                  <Card className="rounded-2xl p-12 text-center text-muted-foreground">Cardápio em montagem. Volte em breve!</Card>
+                  <Card className="rounded-2xl p-12 text-center text-muted-foreground">
+                    Cardápio em montagem. Volte em breve!
+                  </Card>
                 )}
               </>
             );
@@ -855,7 +1208,10 @@ console.log("offline =", offline);
               </SheetHeader>
               <div className="mt-4 grid grid-cols-2 gap-2 overflow-y-auto pb-4">
                 {categories
-                  .map((c) => ({ c, count: items.filter((i) => i.category_id === c.id && matchesQuery(i)).length }))
+                  .map((c) => ({
+                    c,
+                    count: items.filter((i) => i.category_id === c.id && matchesQuery(i)).length,
+                  }))
                   .filter(({ count }) => count > 0)
                   .map(({ c, count }) => (
                     <button
@@ -873,7 +1229,9 @@ console.log("offline =", offline);
                       className="flex items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3 text-left font-semibold transition hover:border-primary/40 hover:bg-primary/5"
                     >
                       <span className="truncate">{c.name}</span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{count}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                        {count}
+                      </span>
                     </button>
                   ))}
               </div>
@@ -885,7 +1243,9 @@ console.log("offline =", offline);
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Monte do seu jeito estará disponível em breve.</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              Monte do seu jeito estará disponível em breve.
+            </DialogTitle>
             <DialogDescription>
               O restaurante ainda está preparando essa experiência personalizada.
             </DialogDescription>
@@ -904,34 +1264,48 @@ console.log("offline =", offline);
               <SheetTrigger asChild>
                 <button className="flex w-full items-center justify-between gap-3 rounded-2xl bg-primary px-5 py-3.5 text-primary-foreground shadow-float transition hover:brightness-105">
                   <span className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-foreground/20 text-sm font-bold">{totalQty}</span>
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-foreground/20 text-sm font-bold">
+                      {totalQty}
+                    </span>
                     <span className="text-left">
                       <span className="block text-xs opacity-90">Ver carrinho</span>
-                      <span className="block font-display text-base font-extrabold leading-tight">{brl(subtotal)}</span>
+                      <span className="block font-display text-base font-extrabold leading-tight">
+                        {brl(subtotal)}
+                      </span>
                     </span>
                   </span>
                   <ShoppingBag className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <CheckoutSheet restaurant={restaurant} cart={cart} subtotal={subtotal} dec={dec} add={add} onClose={() => setOpenSheet(false)} onCreated={(orderId, options) => {
-                setCart([]);
-                try {
-                  sessionStorage.removeItem(`cart:${slug}`);
-                  sessionStorage.removeItem(`repeat:${slug}`);
-                  sessionStorage.removeItem(`builder:add:${slug}`);
-                } catch {}
-                setPendingCart(null);
-                if (options?.navigate !== false) {
-                  navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
-                }
-              }} />
+              <CheckoutSheet
+                restaurant={restaurant}
+                cart={cart}
+                subtotal={subtotal}
+                dec={dec}
+                add={add}
+                onClose={() => setOpenSheet(false)}
+                onCreated={(orderId, options) => {
+                  setCart([]);
+                  try {
+                    sessionStorage.removeItem(`cart:${slug}`);
+                    sessionStorage.removeItem(`repeat:${slug}`);
+                    sessionStorage.removeItem(`builder:add:${slug}`);
+                  } catch {}
+                  setPendingCart(null);
+                  if (options?.navigate !== false) {
+                    navigate({ to: "/pedido-sucesso/$id", params: { id: orderId } });
+                  }
+                }}
+              />
             </Sheet>
           </div>
         </div>
       )}
       <AddedToCartSheet
         open={!!addedSheet}
-        onOpenChange={(o) => { if (!o) setAddedSheet(null); }}
+        onOpenChange={(o) => {
+          if (!o) setAddedSheet(null);
+        }}
         lastAdded={addedSheet}
         subtotal={subtotal}
         minOrder={Number(restaurant.min_order ?? 0)}
@@ -939,18 +1313,38 @@ console.log("offline =", offline);
         onAddSuggestion={(it: any) => {
           const price = Number(isPromoActiveNow(it) ? it.promo_price : it.price);
           add({ id: it.id, name: it.name, price });
-          setAddedSheet({ id: it.id, name: it.name, price, qty: 1, image_url: it.image_url ?? null });
+          setAddedSheet({
+            id: it.id,
+            name: it.name,
+            price,
+            qty: 1,
+            image_url: it.image_url ?? null,
+          });
         }}
         onContinue={() => setAddedSheet(null)}
-        onGoToCart={() => { setAddedSheet(null); setOpenSheet(true); }}
+        onGoToCart={() => {
+          setAddedSheet(null);
+          setOpenSheet(true);
+        }}
       />
     </div>
   );
 }
 
-function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreated }: {
-  restaurant: any; cart: CartItem[]; subtotal: number;
-  dec: (id: string) => void; add: (it: { id: string; name: string; price: number }) => void;
+function CheckoutSheet({
+  restaurant,
+  cart,
+  subtotal,
+  dec,
+  add,
+  onClose,
+  onCreated,
+}: {
+  restaurant: any;
+  cart: CartItem[];
+  subtotal: number;
+  dec: (id: string) => void;
+  add: (it: { id: string; name: string; price: number }) => void;
   onClose: () => void;
   onCreated: (orderId: string, options?: { navigate?: boolean }) => void;
 }) {
@@ -966,13 +1360,13 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
     { id: "meal_voucher", label: "Cartão Alimentação/Refeição", method: "meal_voucher" },
   ];
   const readiness = {
-  ready: true,
-  connected: true,
-  provider: "mercado_pago",
-  accountId: "teste",
-  methods: ["pix", "credit_card"],
-  reasons: [],
-};
+    ready: true,
+    connected: true,
+    provider: "mercado_pago",
+    accountId: "teste",
+    methods: ["pix", "credit_card"],
+    reasons: [],
+  };
 
   const { data: primaryProviderId } = useQuery({
     queryKey: ["primary-provider", restaurant.id],
@@ -983,35 +1377,33 @@ function CheckoutSheet({ restaurant, cart, subtotal, dec, add, onClose, onCreate
 
   const gateway = getGatewayDisplay(primaryProviderId);
 
-const paymentOptions: PayOption[] = (
-  readiness?.ready
-    ? [
-        {
-          id: "pix",
-          label: gateway.pix,
-          method: "pix",
-          online: true,
-        },
-        {
-          id: "card_online",
-          label: `${gateway.card} Online`,
-          method: "credit_card",
-          online: true,
-        },
-        ...BASE_METHODS,
-      ]
-    : BASE_METHODS
-).filter((option) => {
-  if (!user && option.online) {
-    return false;
-  }
+  const paymentOptions: PayOption[] = (
+    readiness?.ready
+      ? [
+          {
+            id: "pix",
+            label: gateway.pix,
+            method: "pix",
+            online: true,
+          },
+          {
+            id: "card_online",
+            label: `${gateway.card} Online`,
+            method: "credit_card",
+            online: true,
+          },
+          ...BASE_METHODS,
+        ]
+      : BASE_METHODS
+  ).filter((option) => {
+    if (!user && option.online) {
+      return false;
+    }
 
-  return true;
-});
+    return true;
+  });
 
-  const [paymentId, setPaymentId] = useState<string>(
-  paymentOptions[0]?.id ?? "cash"
-);
+  const [paymentId, setPaymentId] = useState<string>(paymentOptions[0]?.id ?? "cash");
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -1020,7 +1412,6 @@ const paymentOptions: PayOption[] = (
 
   // Guest / manual fallback — endereço inteligente compartilhado com /$slug/checkout
   const [smartAddress, setSmartAddress] = useState<SelectedAddress | null>(null);
-
 
   const fee = Number(restaurant.delivery_fee ?? 0);
   const min = Number(restaurant.min_order ?? 0);
@@ -1071,11 +1462,12 @@ const paymentOptions: PayOption[] = (
     if (!phone) setPhone(profile?.phone || profile?.whatsapp || "");
     if (profile?.last_payment_method) {
       const savedMethod = normalizeOrderPaymentMethod(profile.last_payment_method);
-      const match = paymentOptions.find((p) =>
-        p.label === profile.last_payment_method ||
-        p.id === profile.last_payment_method ||
-        p.id === savedMethod ||
-        p.method === savedMethod
+      const match = paymentOptions.find(
+        (p) =>
+          p.label === profile.last_payment_method ||
+          p.id === profile.last_payment_method ||
+          p.id === savedMethod ||
+          p.method === savedMethod,
       );
       if (match) setPaymentId(match.id);
     }
@@ -1098,35 +1490,80 @@ const paymentOptions: PayOption[] = (
   const create = useServerFn(createCheckoutOrder);
   const preview = useServerFn(previewCheckoutPricing);
   const [pricing, setPricing] = useState<{
-    subtotal: number; deliveryFee: number; platformFee: number; couponDiscount: number; customerTotal: number;
+    subtotal: number;
+    deliveryFee: number;
+    platformFee: number;
+    couponDiscount: number;
+    customerTotal: number;
+    restaurantNet: number;
+    serviceFeePayer: "customer" | "restaurant";
   } | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!subtotal) { setPricing(null); return; }
+    if (!subtotal) {
+      setPricing(null);
+      setPricingError(null);
+      setPricingLoading(false);
+      return;
+    }
+    setPricingLoading(true);
+    setPricingError(null);
     preview({
       data: {
+        restaurantId: restaurant.id,
+        restaurantSlug: restaurant.slug,
         subtotal,
         deliveryFee: fee,
         couponDiscount: discount,
         paymentMethod: selectedPayment.method,
       },
     })
-      .then((r) => { if (!cancelled && r.ok) setPricing(r.pricing as any); })
-      .catch(() => { /* silencioso — fallback para cálculo local */ });
-    return () => { cancelled = true; };
-  }, [subtotal, fee, discount, selectedPayment.method, preview]);
+      .then((r) => {
+        if (cancelled) return;
+        if (r.ok) {
+          setPricing(r.pricing as any);
+          setPricingError(null);
+        } else {
+          logCheckoutPricingPreviewClientError(import.meta.env, r.code, r.message);
+          setPricing(null);
+          setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        logCheckoutPricingPreviewClientException(import.meta.env, error);
+        setPricing(null);
+        setPricingError("Não foi possível calcular o valor final do pedido. Tente novamente.");
+      })
+      .finally(() => {
+        if (!cancelled) setPricingLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurant.id, restaurant.slug, subtotal, fee, discount, selectedPayment.method, preview]);
 
-  const total = pricing?.customerTotal ?? Math.max(0, subtotal - discount) + fee;
-  const platformFee = pricing?.platformFee ?? 0;
+  const serviceFee = getCustomerServiceFee(pricing);
+  const canSubmitPricing = canSubmitWithAuthoritativePricing({
+    pricing,
+    pricingLoading,
+    pricingError,
+  });
 
   async function applyCoupon() {
     if (!couponInput.trim()) return;
     setValidating(true);
     try {
       const res = await checkCoupon({ data: { slug: restaurant.slug, code: couponInput.trim() } });
-      if (!res.valid) { setCoupon(null); toast.error(res.reason); return; }
+      if (!res.valid) {
+        setCoupon(null);
+        toast.error(res.reason);
+        return;
+      }
       setCoupon({ code: couponInput.trim().toUpperCase(), discountPercent: res.discountPercent });
       toast.success(`Cupom aplicado: -${res.discountPercent}%`);
     } finally {
@@ -1140,7 +1577,10 @@ const paymentOptions: PayOption[] = (
       const parts = [line];
       if (selectedAddress.complement) parts.push(selectedAddress.complement);
       if (selectedAddress.neighborhood) parts.push(selectedAddress.neighborhood);
-      if (selectedAddress.city) parts.push(`${selectedAddress.city}${selectedAddress.state ? "/" + selectedAddress.state : ""}`);
+      if (selectedAddress.city)
+        parts.push(
+          `${selectedAddress.city}${selectedAddress.state ? "/" + selectedAddress.state : ""}`,
+        );
       return parts.filter(Boolean).join(" — ");
     }
     if (smartAddress && (smartAddress.number || smartAddress.numberOverride)) {
@@ -1149,13 +1589,28 @@ const paymentOptions: PayOption[] = (
     return null;
   }
 
-  async function confirmOrder ()
-   { 
-    if (!name.trim() || !phone.trim()) { toast.error("Preencha nome e telefone"); return; }
+  async function confirmOrder() {
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Preencha nome e telefone");
+      return;
+    }
     const fullAddress = buildAddressString();
-    if (!fullAddress) { toast.error("Selecione ou informe um endereço de entrega"); return; }
-    if (belowMin) { toast.error(`Pedido mínimo de ${brl(min)}`); return; }
-    if (!cart.length) { toast.error("Seu carrinho está vazio"); return; }
+    if (!fullAddress) {
+      toast.error("Selecione ou informe um endereço de entrega");
+      return;
+    }
+    if (belowMin) {
+      toast.error(`Pedido mínimo de ${brl(min)}`);
+      return;
+    }
+    if (!cart.length) {
+      toast.error("Seu carrinho está vazio");
+      return;
+    }
+    if (!canSubmitPricing) {
+      toast.error("Não foi possível calcular o valor final do pedido. Tente novamente.");
+      return;
+    }
     setSubmitting(true);
     try {
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
@@ -1165,7 +1620,16 @@ const paymentOptions: PayOption[] = (
         data: {
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress, notes: notes || undefined },
-          items: cart.map((c) => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+          items: cart.map((c) => ({
+            id: c.id,
+            name: c.name,
+            price: c.price,
+            qty: c.qty,
+            kind: c.kind,
+            builderId: c.builderId,
+            selections: c.selections,
+            notes: c.notes,
+          })),
           paymentMethod: paymentPayload.payloadPaymentMethod,
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
@@ -1176,15 +1640,16 @@ const paymentOptions: PayOption[] = (
       // Persist profile prefill for next orders (best-effort)
       if (user) {
         try {
-          await (supabase as any)
-            .from("customer_profiles")
-            .upsert({
+          await (supabase as any).from("customer_profiles").upsert(
+            {
               id: user.id,
               full_name: name,
               phone,
               whatsapp: phone,
               last_payment_method: selectedPayment.label,
-            }, { onConflict: "id" });
+            },
+            { onConflict: "id" },
+          );
           qc.invalidateQueries({ queryKey: ["customer-profile", user.id] });
         } catch {}
       }
@@ -1214,7 +1679,9 @@ const paymentOptions: PayOption[] = (
           if (result.redirectUrl) {
             // Marca pedido pendente para auto-redirecionar caso o usuário
             // volte manualmente à loja.
-            try { sessionStorage.setItem(`pending-order:${restaurant.slug}`, res.orderId); } catch {}
+            try {
+              sessionStorage.setItem(`pending-order:${restaurant.slug}`, res.orderId);
+            } catch {}
             // Limpa carrinho antes de sair para o gateway sem navegar agora.
             // O callback_url do Mercado Pago retorna esta mesma aba para
             // /pedido-sucesso/:id após a confirmação.
@@ -1246,10 +1713,11 @@ const paymentOptions: PayOption[] = (
     }
   }
 
-
   return (
     <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-      <SheetHeader><SheetTitle className="font-display text-2xl">Seu pedido</SheetTitle></SheetHeader>
+      <SheetHeader>
+        <SheetTitle className="font-display text-2xl">Seu pedido</SheetTitle>
+      </SheetHeader>
       <div className="mt-4 space-y-2">
         {cart.map((c) => (
           <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
@@ -1258,17 +1726,37 @@ const paymentOptions: PayOption[] = (
               <p className="text-sm text-muted-foreground">{brl(c.price)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => dec(c.id)}><Minus className="h-3 w-3" /></Button>
+              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => dec(c.id)}>
+                <Minus className="h-3 w-3" />
+              </Button>
               <span className="w-6 text-center font-semibold">{c.qty}</span>
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => add({ id: c.id, name: c.name, price: c.price })}><Plus className="h-3 w-3" /></Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-7 w-7"
+                onClick={() => add({ id: c.id, name: c.name, price: c.price })}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
             </div>
           </div>
         ))}
       </div>
 
       <div className="mt-5 grid gap-3">
-        <div className="space-y-1.5"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" /></div>
-        <div className="space-y-1.5"><Label>Telefone / WhatsApp</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" /></div>
+        <div className="space-y-1.5">
+          <Label>Nome</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="João Silva" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Telefone / WhatsApp</Label>
+          <Input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="(11) 99999-9999"
+          />
+        </div>
 
         {/* Endereço */}
         {user ? (
@@ -1284,27 +1772,54 @@ const paymentOptions: PayOption[] = (
                     <p className="text-sm font-semibold">
                       {selectedAddress.label}
                       {selectedAddress.is_default && (
-                        <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">Principal</span>
+                        <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          Principal
+                        </span>
                       )}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {[selectedAddress.street, selectedAddress.number].filter(Boolean).join(", ")}
                       {selectedAddress.complement ? ` — ${selectedAddress.complement}` : ""}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">{selectedAddress.neighborhood}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {selectedAddress.neighborhood}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { setPickerMode("list"); setPickerOpen(true); }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setPickerMode("list");
+                      setPickerOpen(true);
+                    }}
+                  >
                     Alterar endereço
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { setPickerMode("form"); setPickerOpen(true); }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setPickerMode("form");
+                      setPickerOpen(true);
+                    }}
+                  >
                     <Plus className="mr-1 h-3.5 w-3.5" /> Novo endereço
                   </Button>
                 </div>
               </Card>
             ) : (
-              <Button variant="outline" className="w-full" onClick={() => { setPickerMode("form"); setPickerOpen(true); }}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setPickerMode("form");
+                  setPickerOpen(true);
+                }}
+              >
                 <Plus className="mr-1.5 h-4 w-4" /> Adicionar endereço de entrega
               </Button>
             )}
@@ -1324,14 +1839,26 @@ const paymentOptions: PayOption[] = (
                 </div>
                 <div className="flex-1 space-y-2">
                   <div>
-                    <h3 className="text-base font-semibold text-foreground">🚀 Compre mais rápido!</h3>
-                    <p className="text-xs text-muted-foreground">Entre na sua conta e tenha vantagens:</p>
+                    <h3 className="text-base font-semibold text-foreground">
+                      🚀 Compre mais rápido!
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Entre na sua conta e tenha vantagens:
+                    </p>
                   </div>
                   <ul className="grid gap-1 text-xs text-foreground/90 sm:grid-cols-2">
-                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Endereços salvos</li>
-                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Acompanhe seus pedidos</li>
-                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Refaça pedidos em segundos</li>
-                    <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Ofertas exclusivas</li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary" /> Endereços salvos
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary" /> Acompanhe seus pedidos
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary" /> Refaça pedidos em segundos
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary" /> Ofertas exclusivas
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -1343,15 +1870,28 @@ const paymentOptions: PayOption[] = (
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground">Benefícios exclusivos</h4>
-                    <p className="text-[11px] text-muted-foreground">Programa de Fidelidade Localix</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Programa de Fidelidade Localix
+                    </p>
                   </div>
                 </div>
                 <ul className="grid gap-1.5 text-xs text-foreground/90 sm:grid-cols-2">
-                  <li className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-amber-500" /> Acumule pontos a cada pedido</li>
-                  <li className="flex items-center gap-1.5"><Ticket className="h-3.5 w-3.5 text-emerald-500" /> Troque pontos por descontos</li>
-                  <li className="flex items-center gap-1.5"><Cake className="h-3.5 w-3.5 text-pink-500" /> Brindes em datas especiais</li>
-                  <li className="flex items-center gap-1.5"><Flame className="h-3.5 w-3.5 text-orange-500" /> Promoções exclusivas</li>
-                  <li className="flex items-center gap-1.5 sm:col-span-2"><Trophy className="h-3.5 w-3.5 text-yellow-500" /> Suba de nível e desbloqueie vantagens</li>
+                  <li className="flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5 text-amber-500" /> Acumule pontos a cada pedido
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Ticket className="h-3.5 w-3.5 text-emerald-500" /> Troque pontos por descontos
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Cake className="h-3.5 w-3.5 text-pink-500" /> Brindes em datas especiais
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Flame className="h-3.5 w-3.5 text-orange-500" /> Promoções exclusivas
+                  </li>
+                  <li className="flex items-center gap-1.5 sm:col-span-2">
+                    <Trophy className="h-3.5 w-3.5 text-yellow-500" /> Suba de nível e desbloqueie
+                    vantagens
+                  </li>
                 </ul>
               </div>
 
@@ -1360,10 +1900,19 @@ const paymentOptions: PayOption[] = (
               </p>
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button asChild size="sm" className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1">
+                <Button
+                  asChild
+                  size="sm"
+                  className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1"
+                >
                   <Link to="/cliente">Entrar agora</Link>
                 </Button>
-                <Button asChild size="sm" variant="outline" className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1">
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="w-full transition-transform active:scale-[0.98] sm:w-auto sm:flex-1"
+                >
                   <Link to="/cliente">Criar conta gratuitamente</Link>
                 </Button>
               </div>
@@ -1387,39 +1936,102 @@ const paymentOptions: PayOption[] = (
             ))}
           </div>
           {selectedPayment.online && (
-            <p className="text-xs text-muted-foreground">Você será redirecionado para um ambiente seguro de pagamento.</p>
+            <p className="text-xs text-muted-foreground">
+              Você será redirecionado para um ambiente seguro de pagamento.
+            </p>
           )}
         </div>
-        <div className="space-y-1.5"><Label>Observações (opcional)</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        <div className="space-y-1.5">
+          <Label>Observações (opcional)</Label>
+          <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
 
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5"><Ticket className="h-4 w-4" /> Cupom de desconto</Label>
+          <Label className="flex items-center gap-1.5">
+            <Ticket className="h-4 w-4" /> Cupom de desconto
+          </Label>
           <div className="flex gap-2">
-            <Input value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCoupon(null); }} placeholder="DIGITE O CÓDIGO" />
-            <Button type="button" variant="outline" onClick={applyCoupon} disabled={validating || !couponInput.trim()}>
-              {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : coupon ? <Check className="h-4 w-4 text-success" /> : "Aplicar"}
+            <Input
+              value={couponInput}
+              onChange={(e) => {
+                setCouponInput(e.target.value.toUpperCase());
+                setCoupon(null);
+              }}
+              placeholder="DIGITE O CÓDIGO"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={applyCoupon}
+              disabled={validating || !couponInput.trim()}
+            >
+              {validating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : coupon ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : (
+                "Aplicar"
+              )}
             </Button>
           </div>
-          {coupon && <p className="text-xs text-success">Cupom {coupon.code} aplicado: -{coupon.discountPercent}%</p>}
+          {coupon && (
+            <p className="text-xs text-success">
+              Cupom {coupon.code} aplicado: -{coupon.discountPercent}%
+            </p>
+          )}
         </div>
       </div>
 
       <div className="mt-5 space-y-1 rounded-xl bg-muted/50 p-4 text-sm">
-        <div className="flex justify-between"><span>Subtotal</span><span>{brl(pricing?.subtotal ?? subtotal)}</span></div>
-        {discount > 0 && <div className="flex justify-between text-success"><span>Desconto ({coupon?.code})</span><span>-{brl(pricing?.couponDiscount ?? discount)}</span></div>}
-        <div className="flex justify-between"><span>Entrega</span><span>{brl(pricing?.deliveryFee ?? fee)}</span></div>
-        {platformFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Taxa da plataforma</span><span>{brl(platformFee)}</span></div>}
-        <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold"><span>Total</span><span className="text-primary">{brl(total)}</span></div>
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span>{brl(pricing?.subtotal ?? subtotal)}</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-success">
+            <span>Desconto ({coupon?.code})</span>
+            <span>-{brl(pricing?.couponDiscount ?? discount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>Entrega</span>
+          <span>{brl(pricing?.deliveryFee ?? fee)}</span>
+        </div>
+        {serviceFee > 0 && (
+          <div className="flex justify-between text-muted-foreground">
+            <span>Taxa de serviço Localix</span>
+            <span>{brl(serviceFee)}</span>
+          </div>
+        )}
+        {pricingLoading && (
+          <div className="flex justify-between border-t pt-2 text-muted-foreground">
+            <span>Total</span>
+            <span>Calculando...</span>
+          </div>
+        )}
+        {pricingError && <p className="border-t pt-2 text-xs text-destructive">{pricingError}</p>}
+        {!pricingLoading && !pricingError && pricing && (
+          <div className="mt-1 flex justify-between border-t pt-2 font-display text-lg font-bold">
+            <span>Total</span>
+            <span className="text-primary">{brl(pricing.customerTotal)}</span>
+          </div>
+        )}
         {belowMin && <p className="mt-1 text-xs text-destructive">Pedido mínimo: {brl(min)}</p>}
       </div>
 
       <SheetFooter className="mt-5">
-        <Button size="lg" className="w-full shadow-glow" onClick={confirmOrder} disabled={!effectiveOpen || belowMin || submitting}>
+        <Button
+          size="lg"
+          className="w-full shadow-glow"
+          onClick={confirmOrder}
+          disabled={!effectiveOpen || belowMin || submitting || !canSubmitPricing}
+        >
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
           {selectedPayment.online
-            ? selectedPayment.method === "pix" ? "Pagar com Pix" : "Pagar com Cartão"
+            ? selectedPayment.method === "pix"
+              ? "Pagar com Pix"
+              : "Pagar com Cartão"
             : "Confirmar pedido"}
-
         </Button>
       </SheetFooter>
 
@@ -1503,7 +2115,12 @@ function FeaturedSections({
                   >
                     <div className="relative h-28 w-full bg-muted">
                       {it.image_url ? (
-                        <img src={it.image_url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+                        <img
+                          src={it.image_url}
+                          alt={it.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
                       ) : (
                         <div className="grid h-full w-full place-items-center text-muted-foreground">
                           <ImageIcon className="h-6 w-6" />
@@ -1516,11 +2133,17 @@ function FeaturedSections({
                       )}
                     </div>
                     <div className="p-3">
-                      <p className="line-clamp-2 min-h-[2.4em] text-sm font-semibold leading-tight">{it.name}</p>
+                      <p className="line-clamp-2 min-h-[2.4em] text-sm font-semibold leading-tight">
+                        {it.name}
+                      </p>
                       <div className="mt-2 flex items-baseline gap-1.5">
-                        <span className="font-display text-base font-extrabold text-primary">{brl(price)}</span>
+                        <span className="font-display text-base font-extrabold text-primary">
+                          {brl(price)}
+                        </span>
                         {it.promo_price != null && (
-                          <span className="text-[10px] text-muted-foreground line-through">{brl(it.price)}</span>
+                          <span className="text-[10px] text-muted-foreground line-through">
+                            {brl(it.price)}
+                          </span>
                         )}
                       </div>
                       <Button
@@ -1574,8 +2197,10 @@ function SmartCategoryMenu({
 
   const menuItems = useMemo(() => {
     const arr: { id: string; label: string; count: number }[] = [];
-    if (!hasQuery && promoCount > 0) arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
-    if (!hasQuery && builderCount > 0) arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
+    if (!hasQuery && promoCount > 0)
+      arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
+    if (!hasQuery && builderCount > 0)
+      arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
     if (!hasQuery) {
       for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
         if (s.key === "promotions" || s.key === "half_half_pizza") continue;
@@ -1678,7 +2303,10 @@ function SmartCategoryMenu({
         )}
       </div>
       {menuItems.length > 0 && (
-        <div ref={pillsRowRef} className="flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={pillsRowRef}
+          className="flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {menuItems.map((m) => {
             const isActive = active === m.id;
             return (
@@ -1690,7 +2318,9 @@ function SmartCategoryMenu({
                 className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
               >
                 <span>{m.label}</span>
-                <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}>
+                <span
+                  className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"}`}
+                >
                   {m.count}
                 </span>
               </a>
@@ -1701,4 +2331,3 @@ function SmartCategoryMenu({
     </nav>
   );
 }
-
