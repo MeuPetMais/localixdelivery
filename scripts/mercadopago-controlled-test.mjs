@@ -55,18 +55,51 @@ function envReader(source = process.env) {
 }
 
 function addCheck(checks, section, name, ok, details = "", severity = "fail") {
-  checks.push({ section, name, ok: Boolean(ok), details, severity });
+  checks.push({
+    section,
+    name,
+    ok: Boolean(ok),
+    status: ok
+      ? "PASS"
+      : severity === "not_verifiable_locally"
+        ? "NOT_VERIFIABLE_LOCALLY"
+        : severity === "manual_review"
+          ? "MANUAL_REVIEW"
+          : "FAIL",
+    details,
+    severity,
+  });
+}
+
+function addNotVerifiable(checks, section, name, details = "") {
+  addCheck(checks, section, name, false, details, "not_verifiable_locally");
+}
+
+function isFail(check) {
+  return check.status === "FAIL";
+}
+
+function isNotVerifiable(check) {
+  return check.status === "NOT_VERIFIABLE_LOCALLY";
+}
+
+function isManualReview(check) {
+  return check.status === "MANUAL_REVIEW";
 }
 
 function sectionStatus(checks, section) {
   const sectionChecks = checks.filter((check) => check.section === section);
-  if (sectionChecks.some((check) => !check.ok && check.severity === "manual_review")) return "MANUAL_REVIEW";
+  if (sectionChecks.some(isFail)) return "FAIL";
+  if (sectionChecks.some(isNotVerifiable)) return "NOT_VERIFIABLE_LOCALLY";
+  if (sectionChecks.some(isManualReview)) return "MANUAL_REVIEW";
   return sectionChecks.every((check) => check.ok) ? "PASS" : "FAIL";
 }
 
 function finalStatus(checks) {
-  if (checks.some((check) => !check.ok && check.severity === "manual_review")) return "MANUAL_REVIEW";
-  return checks.every((check) => check.ok) ? "PASS" : "FAIL";
+  if (checks.some(isFail)) return "FAIL";
+  if (checks.some(isNotVerifiable)) return "MANUAL_REVIEW";
+  if (checks.some(isManualReview)) return "MANUAL_REVIEW";
+  return "PASS";
 }
 
 export function expectedTokenSource(env) {
@@ -96,8 +129,16 @@ export function evaluatePreflight(input) {
   addCheck(checks, "PRE-FLIGHT", "SUPABASE_URL present", present(env.SUPABASE_URL));
   addCheck(checks, "PRE-FLIGHT", "SUPABASE_SERVICE_ROLE_KEY present", present(env.SUPABASE_SERVICE_ROLE_KEY), "presence only");
   addCheck(checks, "PRE-FLIGHT", "APP_BASE_URL https", /^https:\/\/[^\s]+$/.test(String(env.APP_BASE_URL ?? env.APP_URL ?? "")));
-  addCheck(checks, "PRE-FLIGHT", "MP_TOKEN_ENC_KEY present", present(env.MP_TOKEN_ENC_KEY), "presence only");
-  addCheck(checks, "PRE-FLIGHT", "MP_WEBHOOK_SECRET present", present(env.MP_WEBHOOK_SECRET), "presence only");
+  if (present(env.MP_TOKEN_ENC_KEY)) {
+    addCheck(checks, "PRE-FLIGHT", "MP_TOKEN_ENC_KEY local presence", true, "presence only");
+  } else {
+    addNotVerifiable(checks, "PRE-FLIGHT", "MP_TOKEN_ENC_KEY remote presence", "configured as remote runtime secret; not available locally");
+  }
+  if (present(env.MP_WEBHOOK_SECRET)) {
+    addCheck(checks, "PRE-FLIGHT", "MP_WEBHOOK_SECRET local presence", true, "presence only");
+  } else {
+    addNotVerifiable(checks, "PRE-FLIGHT", "MP_WEBHOOK_SECRET remote presence", "configured as remote runtime secret; not available locally");
+  }
   addCheck(checks, "PRE-FLIGHT", "MP_TEST_ACCESS_TOKEN absent in production", !present(env.MP_TEST_ACCESS_TOKEN), "production must not depend on test token");
   addCheck(checks, "PRE-FLIGHT", "token_source seller_oauth", productionMode && expectedTokenSource(env) === "seller_oauth");
 
@@ -163,6 +204,9 @@ export function evaluatePostflight(input) {
   const webhookEvents = input.webhookEvents ?? [];
   const mpPayment = input.mpPayment ?? null;
   const split = splitRows[0] ?? null;
+  if (input.mpGetNotVerifiable) {
+    addNotVerifiable(checks, "PAYMENT", "Mercado Pago GET", "MP_TOKEN_ENC_KEY not available locally; direct MP read skipped");
+  }
 
   addCheck(checks, "PAYMENT", "order exists", Boolean(order?.id));
   addCheck(checks, "PAYMENT", "order status pago", order?.status === "pago", `actual=${order?.status ?? "missing"}`);
@@ -176,10 +220,12 @@ export function evaluatePostflight(input) {
   addCheck(checks, "PAYMENT", "order_payment exists", Boolean(orderPayment));
   addCheck(checks, "PAYMENT", "order_payment APPROVED", orderPayment?.status === "APPROVED", `actual=${orderPayment?.status ?? "missing"}`);
   addCheck(checks, "PAYMENT", "transaction_amount expected", sameMoney(orderPayment?.transaction_amount, expected.customerTotal), `actual=${orderPayment?.transaction_amount ?? "missing"}`);
-  if (mpPayment) {
+  if (mpPayment && !mpPayment.error) {
     addCheck(checks, "PAYMENT", "Mercado Pago approved", mpPayment.status === "approved", `actual=${mpPayment.status ?? "missing"}`);
     addCheck(checks, "PAYMENT", "Mercado Pago amount expected", sameMoney(mpPayment.transaction_amount, expected.customerTotal), `actual=${mpPayment.transaction_amount ?? "missing"}`);
     addCheck(checks, "PAYMENT", "Mercado Pago application_fee expected", sameMoney(mpPayment.application_fee ?? mpPayment.marketplace_fee, expected.platformFee), `actual=${mpPayment.application_fee ?? mpPayment.marketplace_fee ?? "missing"}`, "manual_review");
+  } else if (mpPayment?.error) {
+    addCheck(checks, "PAYMENT", "Mercado Pago GET", false, String(mpPayment.error));
   }
   if (mpPayment?.status === "approved" && orderPayment?.status !== "APPROVED") {
     addCheck(checks, "PAYMENT", "approved MP reconciled locally", false, "MP approved but local order_payment is not APPROVED");
@@ -216,10 +262,12 @@ export function evaluatePostflight(input) {
 }
 
 export function formatReport(report) {
-  const failed = report.checks.filter((check) => !check.ok);
+  const failed = report.checks.filter(isFail);
+  const notVerifiable = report.checks.filter(isNotVerifiable);
+  const review = report.checks.filter((check) => !check.ok && check.severity === "manual_review");
   const sections = ["PRE-FLIGHT", "PRICING", "PAYMENT", "WEBHOOK", "SPLIT", "REVENUE RECOGNITION", "IDEMPOTENCY"];
   if (report.kind === "preflight") {
-    return formatPreflightReport(report, failed);
+    return formatPreflightReport(report, failed, notVerifiable, review);
   }
   const lines = [
     "MERCADO PAGO CONTROLLED TEST REPORT",
@@ -236,11 +284,18 @@ export function formatReport(report) {
   }
   lines.push("", `FINAL RESULT: ${report.final}`);
   if (report.final === "FAIL") lines.push("DO NOT RUN PAYMENT");
+  if (notVerifiable.length > 0) lines.push("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
   lines.push("", "FAILED CHECKS:");
   if (failed.length === 0) {
     lines.push("[]");
   } else {
     for (const check of failed) {
+      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+    }
+  }
+  if (notVerifiable.length > 0) {
+    lines.push("", "NOT VERIFIABLE LOCALLY:");
+    for (const check of notVerifiable) {
       lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
     }
   }
@@ -250,10 +305,12 @@ export function formatReport(report) {
 
 function checkStatus(checks, names) {
   const selected = checks.filter((check) => names.includes(check.name));
+  if (selected.some(isFail)) return "FAIL";
+  if (selected.some(isNotVerifiable)) return "NOT_VERIFIABLE_LOCALLY";
   return selected.length > 0 && selected.every((check) => check.ok) ? "PASS" : "FAIL";
 }
 
-function formatPreflightReport(report, failed) {
+function formatPreflightReport(report, failed, notVerifiable, review) {
   const checks = report.checks;
   const lines = [
     "MERCADO PAGO CONTROLLED TEST - PRE-FLIGHT",
@@ -284,20 +341,35 @@ function formatPreflightReport(report, failed) {
     `Webhook config: ${sectionStatus(checks, "WEBHOOK")}`,
     `Production safety: ${checkStatus(checks, [
       "MP_TEST_ACCESS_TOKEN absent in production",
-      "MP_TOKEN_ENC_KEY present",
-      "MP_WEBHOOK_SECRET present",
+      "MP_TOKEN_ENC_KEY local presence",
+      "MP_TOKEN_ENC_KEY remote presence",
+      "MP_WEBHOOK_SECRET local presence",
+      "MP_WEBHOOK_SECRET remote presence",
       "APP_BASE_URL https",
     ])}`,
     `Idempotency: ${sectionStatus(checks, "IDEMPOTENCY")}`,
     "",
     `FINAL RESULT: ${report.final}`,
   ];
-  if (report.final !== "PASS") lines.push("DO NOT RUN PAYMENT");
+  if (report.final === "FAIL") lines.push("DO NOT RUN PAYMENT");
+  if (notVerifiable.length > 0) lines.push("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
   lines.push("", "FAILED CHECKS:");
   if (failed.length === 0) {
     lines.push("[]");
   } else {
     for (const check of failed) {
+      lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
+    }
+  }
+  if (notVerifiable.length > 0) {
+    lines.push("", "NOT VERIFIABLE LOCALLY:");
+    for (const check of notVerifiable) {
+      lines.push(`- [${check.section}] ${check.name}: NOT_VERIFIABLE_LOCALLY${check.details ? ` (${check.details})` : ""}`);
+    }
+  }
+  if (review.length > 0) {
+    lines.push("", "MANUAL REVIEW CHECKS:");
+    for (const check of review) {
       lines.push(`- [${check.section}] ${check.name}${check.details ? ` (${check.details})` : ""}`);
     }
   }
@@ -426,6 +498,10 @@ async function fetchMercadoPagoPaymentReadOnly(token, paymentId) {
   return body;
 }
 
+export function shouldQueryMercadoPagoReadOnly({ env = {}, paymentId, account } = {}) {
+  return Boolean(paymentId && account?.connected && account?.access_token && present(env.MP_TOKEN_ENC_KEY));
+}
+
 async function queryPostflight(sb, args, env) {
   const orderId = requiredArg(args, ["order-id"]);
   const explicitPaymentId = optionalArg(args, ["payment-id"]);
@@ -468,6 +544,7 @@ async function queryPostflight(sb, args, env) {
   if (eventsError) throw eventsError;
 
   let mpPayment = null;
+  let mpGetNotVerifiable = false;
   if (paymentId && order?.restaurant_id) {
     const { data: account, error: accountError } = await sb
       .from("mercado_pago_accounts")
@@ -476,8 +553,12 @@ async function queryPostflight(sb, args, env) {
       .maybeSingle();
     if (accountError) throw accountError;
     if (account?.connected && account.access_token) {
-      const token = await decryptToken(account.access_token, env.MP_TOKEN_ENC_KEY);
-      mpPayment = await fetchMercadoPagoPaymentReadOnly(token, paymentId);
+      if (shouldQueryMercadoPagoReadOnly({ env, paymentId, account })) {
+        const token = await decryptToken(account.access_token, env.MP_TOKEN_ENC_KEY);
+        mpPayment = await fetchMercadoPagoPaymentReadOnly(token, paymentId);
+      } else {
+        mpGetNotVerifiable = true;
+      }
     }
   }
 
@@ -489,6 +570,7 @@ async function queryPostflight(sb, args, env) {
     paymentSplitRows: paymentSplitRows ?? [],
     webhookEvents: webhookEvents ?? [],
     mpPayment,
+    mpGetNotVerifiable,
     paymentId,
   });
 }

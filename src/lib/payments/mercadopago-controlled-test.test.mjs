@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import {
   evaluatePostflight,
   evaluatePreflight,
   formatReport,
   PILOT_EXPECTED,
+  shouldQueryMercadoPagoReadOnly,
 } from "../../../scripts/mercadopago-controlled-test.mjs";
 
 const productionEnv = {
@@ -146,6 +148,62 @@ describe("Mercado Pago controlled test report", () => {
     expect(formatReport(report)).toContain("FINAL RESULT: PASS");
     expect(formatReport(report)).not.toContain("service-role-present");
     expect(formatReport(report)).not.toContain("webhook-secret-present");
+    expect(formatReport(report)).not.toContain("token-encryption-key-present");
+  });
+
+  it("pre-flight sem MP_TOKEN_ENC_KEY local marca NOT_VERIFIABLE_LOCALLY", () => {
+    const report = preflight({
+      env: { ...productionEnv, MP_TOKEN_ENC_KEY: undefined },
+    });
+    const output = formatReport(report);
+
+    expect(report.final).toBe("MANUAL_REVIEW");
+    expect(report.checks.find((check) => check.name === "MP_TOKEN_ENC_KEY remote presence")?.status).toBe("NOT_VERIFIABLE_LOCALLY");
+    expect(output).toContain("MP_TOKEN_ENC_KEY remote presence: NOT_VERIFIABLE_LOCALLY");
+    expect(output).toContain("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
+    expect(output).not.toContain("DO NOT RUN PAYMENT");
+  });
+
+  it("pre-flight sem MP_WEBHOOK_SECRET local marca NOT_VERIFIABLE_LOCALLY", () => {
+    const report = preflight({
+      env: { ...productionEnv, MP_WEBHOOK_SECRET: undefined },
+    });
+    const output = formatReport(report);
+
+    expect(report.final).toBe("MANUAL_REVIEW");
+    expect(report.checks.find((check) => check.name === "MP_WEBHOOK_SECRET remote presence")?.status).toBe("NOT_VERIFIABLE_LOCALLY");
+    expect(output).toContain("MP_WEBHOOK_SECRET remote presence: NOT_VERIFIABLE_LOCALLY");
+    expect(output).toContain("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
+    expect(output).not.toContain("DO NOT RUN PAYMENT");
+  });
+
+  it("pre-flight com secrets remotos ausentes localmente fica em MANUAL_REVIEW sem bloquear pagamento por si so", () => {
+    const report = preflight({
+      env: { ...productionEnv, MP_TOKEN_ENC_KEY: undefined, MP_WEBHOOK_SECRET: undefined },
+    });
+    const output = formatReport(report);
+
+    expect(report.final).toBe("MANUAL_REVIEW");
+    expect(output).toContain("FINAL RESULT: MANUAL_REVIEW");
+    expect(output).toContain("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
+    expect(output).not.toContain("DO NOT RUN PAYMENT");
+  });
+
+  it("pre-flight com FAIL critico e NOT_VERIFIABLE_LOCALLY continua bloqueando pagamento", () => {
+    const report = preflight({
+      env: {
+        ...productionEnv,
+        LOCALIX_ENV: "staging",
+        MP_TOKEN_ENC_KEY: undefined,
+        MP_WEBHOOK_SECRET: undefined,
+      },
+    });
+    const output = formatReport(report);
+
+    expect(report.final).toBe("FAIL");
+    expect(output).toContain("FINAL RESULT: FAIL");
+    expect(output).toContain("DO NOT RUN PAYMENT");
+    expect(output).toContain("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
   });
 
   it("pre-flight falha em ambiente errado", () => {
@@ -181,6 +239,25 @@ describe("Mercado Pago controlled test report", () => {
     expect(formatReport(report)).toContain("PAYMENT: PASS");
     expect(formatReport(report)).toContain("SPLIT: PASS");
     expect(formatReport(report)).toContain("REVENUE RECOGNITION: PASS");
+  });
+
+  it("post-flight sem encryption key local nao tenta GET Mercado Pago", () => {
+    const canQuery = shouldQueryMercadoPagoReadOnly({
+      env: { ...productionEnv, MP_TOKEN_ENC_KEY: undefined },
+      paymentId: "mp-payment-1",
+      account,
+    });
+    const report = approvedPostflight({
+      mpPayment: null,
+      mpGetNotVerifiable: true,
+    });
+    const output = formatReport(report);
+
+    expect(canQuery).toBe(false);
+    expect(report.final).toBe("MANUAL_REVIEW");
+    expect(report.checks.find((check) => check.name === "Mercado Pago GET")?.status).toBe("NOT_VERIFIABLE_LOCALLY");
+    expect(output).toContain("Mercado Pago GET");
+    expect(output).toContain("REMOTE RUNTIME CHECKS REQUIRED BEFORE PAYMENT");
   });
 
   it("post-flight FAIL quando payment continua pending", () => {
@@ -259,5 +336,17 @@ describe("Mercado Pago controlled test report", () => {
 
     expect(report.final).toBe("MANUAL_REVIEW");
     expect(report.checks.some((check) => !check.ok && check.name === "realized_platform_revenue expected")).toBe(true);
+  });
+
+  it("script permanece read-only e sem operacoes mutaveis", () => {
+    const source = readFileSync("scripts/mercadopago-controlled-test.mjs", "utf8");
+
+    expect(source).not.toMatch(/\.insert\s*\(/);
+    expect(source).not.toMatch(/\.update\s*\(/);
+    expect(source).not.toMatch(/\.delete\s*\(/);
+    expect(source).not.toMatch(/\.upsert\s*\(/);
+    expect(source).not.toMatch(/\.rpc\s*\(/);
+    expect(source).not.toMatch(/\/refunds\b/);
+    expect(source).not.toMatch(/method:\s*["']POST["']/);
   });
 });
