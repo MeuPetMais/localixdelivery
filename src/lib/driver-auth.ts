@@ -6,13 +6,11 @@ export type DriverLoginCandidate = {
   owner_id: string | null;
 };
 
-export const DRIVER_PASSWORD_RESET_CONFIRMATION = `Solicitação registrada.
+export const DRIVER_PASSWORD_RESET_CONFIRMATION = `Solicitacao registrada.
 
-Se existir uma conta vinculada a este telefone, sua solicitação foi registrada.
+Se existir uma conta ativa vinculada aos dados informados, enviaremos as instrucoes para o e-mail cadastrado.
 
-Em breve a recuperação automática por SMS ou WhatsApp estará disponível.
-
-Enquanto isso, entre em contato com o restaurante ou com o suporte da Localix.`;
+Se voce nao receber o e-mail, peca ao restaurante para gerar um link de recuperacao no painel.`;
 
 export const digits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
 
@@ -44,8 +42,13 @@ export function matchesDriverIdentifier(candidate: DriverLoginCandidate, identif
 
 export function resolveDriverLoginEmail(candidates: DriverLoginCandidate[], identifier: string) {
   const match = candidates.find(
-    (candidate) => isActiveDriverLoginCandidate(candidate) && matchesDriverIdentifier(candidate, identifier),
+    (candidate) =>
+      isActiveDriverLoginCandidate(candidate) && matchesDriverIdentifier(candidate, identifier),
   );
 
   return match?.email ?? null;
+}
+
+export function isGeneratedDriverEmail(email: string | null | undefined, driverId: string) {
+  return (email ?? "").trim().toLowerCase() === `driver+${driverId}@localix.app`;
 }

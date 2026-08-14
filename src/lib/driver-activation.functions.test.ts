@@ -3,12 +3,10 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import {
   DRIVER_PASSWORD_RESET_CONFIRMATION,
+  isGeneratedDriverEmail,
   resolveDriverLoginEmail,
 } from "./driver-auth";
-import {
-  getPasswordVisibilityConfig,
-  togglePasswordVisibility,
-} from "./password-visibility";
+import { getPasswordVisibilityConfig, togglePasswordVisibility } from "./password-visibility";
 
 const digits = (s: string) => s.replace(/\D/g, "");
 
@@ -37,20 +35,31 @@ describe("driver-activation input contracts", () => {
     expect(digits(p.phone)).toBe("11999998888");
   });
   it("rejects weak password (<8)", () => {
-    expect(() => activateSchema.parse({
-      cpf: "11122233344", phone: "11999998888", password: "abc",
-    })).toThrow();
+    expect(() =>
+      activateSchema.parse({
+        cpf: "11122233344",
+        phone: "11999998888",
+        password: "abc",
+      }),
+    ).toThrow();
   });
   it("email is optional", () => {
     const ok = activateSchema.parse({
-      cpf: "11122233344", phone: "11999998888", password: "senha1234",
+      cpf: "11122233344",
+      phone: "11999998888",
+      password: "senha1234",
     });
     expect(ok.password.length).toBeGreaterThanOrEqual(8);
   });
   it("rejects invalid email when provided", () => {
-    expect(() => activateSchema.parse({
-      cpf: "11122233344", phone: "11999998888", password: "senha1234", email: "not-an-email",
-    })).toThrow();
+    expect(() =>
+      activateSchema.parse({
+        cpf: "11122233344",
+        phone: "11999998888",
+        password: "senha1234",
+        email: "not-an-email",
+      }),
+    ).toThrow();
   });
 });
 
@@ -90,13 +99,24 @@ describe("driver password UX", () => {
   it("toggles password visibility type and accessible label", () => {
     const visible = togglePasswordVisibility(false);
     expect(visible).toBe(true);
-    expect(getPasswordVisibilityConfig(false)).toEqual({ type: "password", ariaLabel: "Mostrar senha" });
-    expect(getPasswordVisibilityConfig(visible)).toEqual({ type: "text", ariaLabel: "Ocultar senha" });
+    expect(getPasswordVisibilityConfig(false)).toEqual({
+      type: "password",
+      ariaLabel: "Mostrar senha",
+    });
+    expect(getPasswordVisibilityConfig(visible)).toEqual({
+      type: "text",
+      ariaLabel: "Ocultar senha",
+    });
   });
 
   it("uses the neutral pilot password recovery confirmation", () => {
-    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("Se existir uma conta vinculada a este telefone");
-    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("SMS ou WhatsApp");
-    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("suporte da Localix");
+    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("Se existir uma conta ativa");
+    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("e-mail cadastrado");
+    expect(DRIVER_PASSWORD_RESET_CONFIRMATION).toContain("link de recuperacao");
+  });
+
+  it("identifies generated fallback driver emails", () => {
+    expect(isGeneratedDriverEmail("driver+abc@localix.app", "abc")).toBe(true);
+    expect(isGeneratedDriverEmail("driver@example.com", "abc")).toBe(false);
   });
 });

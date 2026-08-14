@@ -2,12 +2,41 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { QRCodeCanvas } from "qrcode.react";
 import { toast } from "sonner";
 import {
-  Bike, Car, Footprints, Search, Plus, Trash2, Pencil, MapPin, Users,
-  Wifi, Package, Clock, ArrowLeft, ArrowRight, Check, Upload, X, Eye,
-  UserPlus, ShieldCheck, IdCard, Camera, Loader2, Phone,
-  MessageCircle, Copy, Share2, FileText, Home,
+  Bike,
+  Car,
+  Footprints,
+  Search,
+  Plus,
+  Trash2,
+  Pencil,
+  MapPin,
+  Users,
+  Wifi,
+  Package,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Upload,
+  X,
+  Eye,
+  UserPlus,
+  ShieldCheck,
+  IdCard,
+  Camera,
+  Loader2,
+  Phone,
+  MessageCircle,
+  Copy,
+  Share2,
+  FileText,
+  Home,
+  KeyRound,
+  QrCode,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,25 +45,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { listDrivers, updateDriver, deleteDriver } from "@/lib/delivery-drivers.functions";
 import {
-  listDrivers, updateDriver, deleteDriver,
-} from "@/lib/delivery-drivers.functions";
-import { registerDriverPending } from "@/lib/driver-activation.functions";
+  generateDriverPasswordRecoveryLink,
+  registerDriverPending,
+} from "@/lib/driver-activation.functions";
 import { uploadDriverAsset } from "@/lib/driver-upload";
 import {
-  maskCPF, maskPhoneBR, isValidCPF, isValidPhoneBR,
-  buildWhatsAppUrl, buildInviteMessage,
+  maskCPF,
+  maskPhoneBR,
+  isValidCPF,
+  isValidPhoneBR,
+  buildDriverAppAccessWhatsAppUrl,
+  buildDriverRecoveryWhatsAppUrl,
+  buildInviteMessage,
+  buildWhatsAppUrl,
   DRIVER_ACTIVATION_URL,
 } from "@/lib/driver-invite";
 import { getDriverActivationUrl } from "@/lib/driver-invite.functions";
@@ -43,12 +85,17 @@ import {
   type DriverOperationalStatus,
 } from "@/lib/driver-operational-status";
 
-
 export const Route = createFileRoute("/_authenticated/motoboys")({
-  head: () => ({ meta: [
-    { title: "Motoboys — Localix" },
-    { name: "description", content: "Gerencie sua equipe de entregadores própria: cadastros, status, veículos e documentos." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Motoboys — Localix" },
+      {
+        name: "description",
+        content:
+          "Gerencie sua equipe de entregadores própria: cadastros, status, veículos e documentos.",
+      },
+    ],
+  }),
   component: DriversPage,
 });
 
@@ -56,8 +103,12 @@ type Vehicle = "moto" | "bicicleta" | "carro" | "a_pe";
 type DriverStatus = "ativo" | "inativo" | "afastado" | "aguardando_ativacao";
 
 type Driver = {
-  id: string; name: string; phone: string | null; email: string | null;
-  cpf: string | null; photo_url: string | null;
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  cpf: string | null;
+  photo_url: string | null;
   vehicle_type: Vehicle;
   vehicle_plate: string | null;
   status: DriverStatus;
@@ -67,15 +118,24 @@ type Driver = {
   queue_entered_at?: string | null;
   has_active_assignment?: boolean;
   active_assignment_status?: string | null;
-  last_lat: number | null; last_lng: number | null; last_seen_at: string | null;
+  last_lat: number | null;
+  last_lng: number | null;
+  last_seen_at: string | null;
   last_accuracy?: number | null;
   last_location_server_at?: string | null;
   location_confidence?: "HIGH" | "MEDIUM" | "LOW" | null;
   created_at?: string;
 };
 
+type NavigatorWithShare = Navigator & {
+  share?: (data: ShareData) => Promise<void>;
+};
+
 const VEHICLE_LABEL: Record<Vehicle, string> = {
-  moto: "Moto", bicicleta: "Bicicleta", carro: "Carro", a_pe: "A pé",
+  moto: "Moto",
+  bicicleta: "Bicicleta",
+  carro: "Carro",
+  a_pe: "A pé",
 };
 
 function VehicleIcon({ v, className }: { v: Vehicle; className?: string }) {
@@ -90,20 +150,65 @@ function derivePresence(d: Driver): PresenceState {
   return d.operational_status ?? "offline";
 }
 
-const PRESENCE_META: Record<PresenceState, { label: string; dot: string; text: string; bg: string; ring: string }> = {
-  disponivel: { label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel, dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30" },
-  na_fila: { label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila, dot: "bg-blue-500", text: "text-blue-700 dark:text-blue-400", bg: "bg-blue-500/10", ring: "ring-blue-500/30" },
-  em_entrega: { label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega, dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-400", bg: "bg-sky-500/10", ring: "ring-sky-500/30" },
-  retornando: { label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando, dot: "bg-amber-400", text: "text-amber-700 dark:text-amber-400", bg: "bg-amber-400/10", ring: "ring-amber-400/30" },
-  pausa: { label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa, dot: "bg-orange-500", text: "text-orange-700 dark:text-orange-400", bg: "bg-orange-500/10", ring: "ring-orange-500/30" },
-  offline: { label: DRIVER_OPERATIONAL_STATUS_LABEL.offline, dot: "bg-muted-foreground/50", text: "text-muted-foreground", bg: "bg-muted", ring: "ring-border" },
+const PRESENCE_META: Record<
+  PresenceState,
+  { label: string; dot: string; text: string; bg: string; ring: string }
+> = {
+  disponivel: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel,
+    dot: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+    bg: "bg-emerald-500/10",
+    ring: "ring-emerald-500/30",
+  },
+  na_fila: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila,
+    dot: "bg-blue-500",
+    text: "text-blue-700 dark:text-blue-400",
+    bg: "bg-blue-500/10",
+    ring: "ring-blue-500/30",
+  },
+  em_entrega: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega,
+    dot: "bg-sky-500",
+    text: "text-sky-700 dark:text-sky-400",
+    bg: "bg-sky-500/10",
+    ring: "ring-sky-500/30",
+  },
+  retornando: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando,
+    dot: "bg-amber-400",
+    text: "text-amber-700 dark:text-amber-400",
+    bg: "bg-amber-400/10",
+    ring: "ring-amber-400/30",
+  },
+  pausa: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa,
+    dot: "bg-orange-500",
+    text: "text-orange-700 dark:text-orange-400",
+    bg: "bg-orange-500/10",
+    ring: "ring-orange-500/30",
+  },
+  offline: {
+    label: DRIVER_OPERATIONAL_STATUS_LABEL.offline,
+    dot: "bg-muted-foreground/50",
+    text: "text-muted-foreground",
+    bg: "bg-muted",
+    ring: "ring-border",
+  },
 };
-
 
 function StatusPill({ state }: { state: PresenceState }) {
   const m = PRESENCE_META[state];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1", m.bg, m.text, m.ring)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1",
+        m.bg,
+        m.text,
+        m.ring,
+      )}
+    >
       <span className={cn("h-1.5 w-1.5 rounded-full", m.dot)} />
       {m.label}
     </span>
@@ -128,7 +233,11 @@ function DriversPage() {
     staleTime: Infinity,
     retry: false,
   });
-  const { data: drivers = [], isLoading, error: listError } = useQuery({
+  const {
+    data: drivers = [],
+    isLoading,
+    error: listError,
+  } = useQuery({
     queryKey,
     queryFn: () => list({ data: { restaurantId: restaurant.id } }),
     enabled: !!restaurant.id,
@@ -146,40 +255,69 @@ function DriversPage() {
   useEffect(() => {
     const ch = supabase
       .channel(`drivers-${restaurant.id}`)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_drivers", filter: `restaurant_id=eq.${restaurant.id}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_drivers",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_queue", filter: `restaurant_id=eq.${restaurant.id}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_queue",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_assignments", filter: `restaurant_id=eq.${restaurant.id}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_assignments",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "driver_shifts", filter: `restaurant_id=eq.${restaurant.id}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "driver_shifts",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey }),
       )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [restaurant.id, qc]);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | PresenceState>("all");
   const [editing, setEditing] = useState<Driver | null>(null);
   const [viewing, setViewing] = useState<Driver | null>(null);
+  const [accessDriver, setAccessDriver] = useState<Driver | null>(null);
   const [creating, setCreating] = useState(false);
 
   const enriched = useMemo(
-    () => (drivers as Driver[]).map((d) => ({ ...d, _presence: derivePresence(d) as PresenceState })),
+    () =>
+      (drivers as Driver[]).map((d) => ({ ...d, _presence: derivePresence(d) as PresenceState })),
     [drivers],
   );
 
   const filtered = enriched.filter((d) => {
     const q = query.trim().toLowerCase();
-    const matchesQ = !q ||
+    const matchesQ =
+      !q ||
       d.name.toLowerCase().includes(q) ||
       (d.phone ?? "").toLowerCase().includes(q) ||
       (d.vehicle_plate ?? "").toLowerCase().includes(q);
@@ -198,9 +336,8 @@ function DriversPage() {
     return { total, available, inQueue, delivering, returning, paused, offline };
   }, [enriched]);
 
-
   const createMut = useMutation({
-    mutationFn: (data: any) => create({ data }),
+    mutationFn: (data: Record<string, unknown>) => create({ data }),
     onSuccess: async () => {
       toast.success("Motoboy cadastrado com sucesso");
       await qc.invalidateQueries({ queryKey });
@@ -212,7 +349,7 @@ function DriversPage() {
     },
   });
   const updateMut = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: Record<string, unknown>) => update({ data }),
     onSuccess: async () => {
       toast.success("Motoboy atualizado");
       setEditing(null);
@@ -236,7 +373,9 @@ function DriversPage() {
       {/* HEADER */}
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Motoboys</h1>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+            Motoboys
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Gerencie sua equipe de entregas própria.
           </p>
@@ -257,7 +396,6 @@ function DriversPage() {
         <StatCard icon={ShieldCheck} label="Offline" value={stats.offline} tone="muted" />
       </section>
 
-
       {/* SEARCH + FILTERS */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-sm">
@@ -270,16 +408,17 @@ function DriversPage() {
           />
         </div>
         <div className="-mx-1 flex gap-1 overflow-x-auto pb-1 sm:mx-0">
-          {([
-            ["all", "Todos"],
-            ["disponivel", "Disponível"],
-            ["na_fila", "Na fila"],
-            ["em_entrega", "Em entrega"],
-            ["retornando", "Retornando"],
-            ["pausa", "Pausa"],
-            ["offline", "Offline"],
-          ] as const).map(([id, label]) => (
-
+          {(
+            [
+              ["all", "Todos"],
+              ["disponivel", "Disponível"],
+              ["na_fila", "Na fila"],
+              ["em_entrega", "Em entrega"],
+              ["retornando", "Retornando"],
+              ["pausa", "Pausa"],
+              ["offline", "Offline"],
+            ] as const
+          ).map(([id, label]) => (
             <Button
               key={id}
               variant={filter === id ? "default" : "outline"}
@@ -311,10 +450,12 @@ function DriversPage() {
               restaurantName={restaurant.name}
               activationUrl={driverActivationUrl}
               onView={() => setViewing(d)}
+              onAccess={() => setAccessDriver(d)}
               onEdit={() => setEditing(d)}
               onToggle={() =>
                 updateMut.mutate({
-                  id: d.id, restaurantId: restaurant.id,
+                  id: d.id,
+                  restaurantId: restaurant.id,
                   patch: { status: d.status === "ativo" ? "inativo" : "ativo" },
                 })
               }
@@ -322,7 +463,6 @@ function DriversPage() {
                 if (confirm(`Remover ${d.name}?`)) removeMut.mutate(d.id);
               }}
             />
-
           ))}
         </section>
       )}
@@ -348,7 +488,9 @@ function DriversPage() {
           restaurantId={restaurant.id}
           loading={updateMut.isPending}
           onClose={() => setEditing(null)}
-          onSubmit={(patch) => updateMut.mutate({ id: editing.id, restaurantId: restaurant.id, patch })}
+          onSubmit={(patch) =>
+            updateMut.mutate({ id: editing.id, restaurantId: restaurant.id, patch })
+          }
         />
       )}
       {viewing && (
@@ -359,6 +501,16 @@ function DriversPage() {
           onClose={() => setViewing(null)}
         />
       )}
+      {accessDriver && (
+        <DriverAccessDialog
+          open
+          driver={accessDriver}
+          restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
+          appUrl={driverActivationUrl}
+          onClose={() => setAccessDriver(null)}
+        />
+      )}
     </div>
   );
 }
@@ -366,19 +518,23 @@ function DriversPage() {
 /* ============ COMPONENTS ============ */
 
 function StatCard({
-  icon: Icon, label, value, tone = "primary",
+  icon: Icon,
+  label,
+  value,
+  tone = "primary",
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string; value: number | string;
+  label: string;
+  value: number | string;
   tone?: "primary" | "emerald" | "sky" | "amber" | "orange" | "muted";
 }) {
   const tones: Record<string, string> = {
     primary: "bg-primary/10 text-primary",
     emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    sky:     "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-    amber:   "bg-amber-400/15 text-amber-700 dark:text-amber-400",
-    orange:  "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    muted:   "bg-muted text-muted-foreground",
+    sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    amber: "bg-amber-400/15 text-amber-700 dark:text-amber-400",
+    orange: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    muted: "bg-muted text-muted-foreground",
   };
   return (
     <Card className="flex items-center gap-3 p-4 transition-shadow hover:shadow-md">
@@ -394,14 +550,33 @@ function StatCard({
 }
 
 function DriverCard({
-  driver, presence, restaurantName, activationUrl, onView, onEdit, onToggle, onDelete,
+  driver,
+  presence,
+  restaurantName,
+  activationUrl,
+  onView,
+  onAccess,
+  onEdit,
+  onToggle,
+  onDelete,
 }: {
-  driver: Driver; presence: PresenceState; restaurantName: string; activationUrl: string;
-  onView: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void;
+  driver: Driver;
+  presence: PresenceState;
+  restaurantName: string;
+  activationUrl: string;
+  onView: () => void;
+  onAccess: () => void;
+  onEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
 }) {
-
   const meta = PRESENCE_META[presence];
-  const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
+  const initials =
+    driver.name
+      .split(" ")
+      .slice(0, 2)
+      .map((s) => s[0]?.toUpperCase())
+      .join("") || "?";
   const lastSeen = driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—";
 
   return (
@@ -412,19 +587,29 @@ function DriverCard({
           <div className="relative">
             <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 text-lg font-bold text-muted-foreground ring-1 ring-border">
               {driver.photo_url ? (
-                <img src={driver.photo_url} alt={driver.name} className="h-full w-full object-cover" />
-              ) : initials}
+                <img
+                  src={driver.photo_url}
+                  alt={driver.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
-            <span className={cn(
-              "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-background",
-              meta.dot,
-            )} />
+            <span
+              className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-background",
+                meta.dot,
+              )}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <p className="truncate font-semibold">{driver.name}</p>
             </div>
-            <div className="mt-1"><StatusPill state={presence} /></div>
+            <div className="mt-1">
+              <StatusPill state={presence} />
+            </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <VehicleIcon v={driver.vehicle_type} className="h-3.5 w-3.5" />
@@ -443,10 +628,19 @@ function DriverCard({
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
           <MiniStat label="Entrega atual" value={driver.active_assignment_status ?? "—"} />
           <MiniStat label="Última atualização" value={lastSeen} />
-          <MiniStat label="Posição fila" value={driver.queue_position ? `#${driver.queue_position}` : "—"} />
+          <MiniStat
+            label="Posição fila"
+            value={driver.queue_position ? `#${driver.queue_position}` : "—"}
+          />
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Entrada na fila: {driver.queue_entered_at ? new Date(driver.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}
+          Entrada na fila:{" "}
+          {driver.queue_entered_at
+            ? new Date(driver.queue_entered_at).toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "—"}
         </p>
 
         <DriverLocationSummary driver={driver} />
@@ -461,7 +655,8 @@ function DriverCard({
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Button
-                size="sm" variant="default"
+                size="sm"
+                variant="default"
                 onClick={() => {
                   const url = buildWhatsAppUrl({
                     phone: driver.phone ?? "",
@@ -475,12 +670,15 @@ function DriverCard({
                 <MessageCircle className="mr-1 h-3.5 w-3.5" /> Enviar convite
               </Button>
               <Button
-                size="sm" variant="outline"
+                size="sm"
+                variant="outline"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(activationUrl);
                     toast.success("Link copiado");
-                  } catch { toast.error("Não foi possível copiar"); }
+                  } catch {
+                    toast.error("Não foi possível copiar");
+                  }
                 }}
               >
                 <Copy className="mr-1 h-3.5 w-3.5" /> Copiar link
@@ -493,15 +691,24 @@ function DriverCard({
           <Button size="sm" variant="outline" onClick={onView} className="flex-1">
             <Eye className="mr-1 h-4 w-4" /> Detalhes
           </Button>
+          {driver.status === "ativo" && (
+            <Button size="sm" variant="outline" onClick={onAccess} className="flex-1">
+              <KeyRound className="mr-1 h-4 w-4" /> Acesso
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={onEdit} className="flex-1">
             <Pencil className="mr-1 h-4 w-4" /> Editar
           </Button>
-          <Button size="sm" variant="ghost" onClick={onToggle} title={driver.status === "ativo" ? "Inativar" : "Ativar"}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onToggle}
+            title={driver.status === "ativo" ? "Inativar" : "Ativar"}
+          >
             {driver.status === "ativo" ? "Inativar" : "Ativar"}
           </Button>
           <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Remover">
             <Trash2 className="h-4 w-4 text-destructive" />
-
           </Button>
         </div>
       </div>
@@ -524,11 +731,12 @@ function DriverLocationSummary({ driver }: { driver: Driver }) {
   }
   const updatedAt = driver.last_location_server_at ?? driver.last_seen_at;
   const accuracy = driver.last_accuracy != null ? Math.round(driver.last_accuracy) : null;
-  const label = accuracy == null
-    ? "Localizacao aproximada"
-    : accuracy <= 30
-      ? "Localizacao precisa"
-      : "Localizacao aproximada";
+  const label =
+    accuracy == null
+      ? "Localizacao aproximada"
+      : accuracy <= 30
+        ? "Localizacao precisa"
+        : "Localizacao aproximada";
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${driver.last_lat},${driver.last_lng}`;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -537,13 +745,10 @@ function DriverLocationSummary({ driver }: { driver: Driver }) {
       </span>
       {updatedAt && <span>Atualizado {relativeTime(updatedAt)}</span>}
       {accuracy != null && <span>Precisao {accuracy}m</span>}
-      <Button
-        asChild
-        size="sm"
-        variant="outline"
-        className="h-7 rounded-full px-2 text-[11px]"
-      >
-        <a href={mapsUrl} target="_blank" rel="noreferrer">Ver no mapa</a>
+      <Button asChild size="sm" variant="outline" className="h-7 rounded-full px-2 text-[11px]">
+        <a href={mapsUrl} target="_blank" rel="noreferrer">
+          Ver no mapa
+        </a>
       </Button>
     </div>
   );
@@ -601,38 +806,75 @@ function EmptyState({ hasAny, onCreate }: { hasAny: boolean; onCreate: () => voi
  * ==================================================== */
 
 type WizardForm = {
-  name: string; phone: string; cpf: string;
-  vehicleType: Vehicle; vehiclePlate: string; vehicleModel: string; vehicleColor: string;
-  photoUrl: string; cnhUrl: string; addressProofUrl: string;
+  name: string;
+  phone: string;
+  cpf: string;
+  vehicleType: Vehicle;
+  vehiclePlate: string;
+  vehicleModel: string;
+  vehicleColor: string;
+  photoUrl: string;
+  cnhUrl: string;
+  addressProofUrl: string;
 };
 
 const emptyForm: WizardForm = {
-  name: "", phone: "", cpf: "",
-  vehicleType: "moto", vehiclePlate: "", vehicleModel: "", vehicleColor: "",
-  photoUrl: "", cnhUrl: "", addressProofUrl: "",
+  name: "",
+  phone: "",
+  cpf: "",
+  vehicleType: "moto",
+  vehiclePlate: "",
+  vehicleModel: "",
+  vehicleColor: "",
+  photoUrl: "",
+  cnhUrl: "",
+  addressProofUrl: "",
 };
 
 function WizardDialog({
-  open, onClose, restaurantId, restaurantName, activationUrl, onSubmit,
+  open,
+  onClose,
+  restaurantId,
+  restaurantName,
+  activationUrl,
+  onSubmit,
 }: {
-  open: boolean; onClose: () => void; restaurantId: string; restaurantName: string; activationUrl: string;
+  open: boolean;
+  onClose: () => void;
+  restaurantId: string;
+  restaurantName: string;
+  activationUrl: string;
   onSubmit: (data: {
-    name: string; phone: string; cpf: string;
-    vehicleType: Vehicle; vehiclePlate: string | null;
-    photoUrl: string | null; documentUrl: string | null;
+    name: string;
+    phone: string;
+    cpf: string;
+    vehicleType: Vehicle;
+    vehiclePlate: string | null;
+    photoUrl: string | null;
+    documentUrl: string | null;
   }) => Promise<void>;
 }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [f, setF] = useState<WizardForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setF(emptyForm); setStep(1); };
+  const reset = () => {
+    setF(emptyForm);
+    setStep(1);
+  };
 
-  const personalErrors = useMemo(() => ({
-    name: f.name.trim().length < 2 ? "Informe o nome completo" : null,
-    cpf: !f.cpf ? "CPF obrigatório" : (!isValidCPF(f.cpf) ? "CPF inválido" : null),
-    phone: !f.phone ? "Telefone obrigatório" : (!isValidPhoneBR(f.phone) ? "Telefone inválido" : null),
-  }), [f.name, f.cpf, f.phone]);
+  const personalErrors = useMemo(
+    () => ({
+      name: f.name.trim().length < 2 ? "Informe o nome completo" : null,
+      cpf: !f.cpf ? "CPF obrigatório" : !isValidCPF(f.cpf) ? "CPF inválido" : null,
+      phone: !f.phone
+        ? "Telefone obrigatório"
+        : !isValidPhoneBR(f.phone)
+          ? "Telefone inválido"
+          : null,
+    }),
+    [f.name, f.cpf, f.phone],
+  );
 
   const step1Valid = !personalErrors.name && !personalErrors.cpf && !personalErrors.phone;
   const step2Valid = !!f.vehicleType;
@@ -715,10 +957,16 @@ function WizardDialog({
             <>
               <Button
                 variant="ghost"
-                onClick={() => (step === 1 ? onClose() : setStep((s) => ((s - 1) as 1 | 2 | 3)))}
+                onClick={() => (step === 1 ? onClose() : setStep((s) => (s - 1) as 1 | 2 | 3))}
                 disabled={saving}
               >
-                {step === 1 ? "Cancelar" : (<><ArrowLeft className="mr-1 h-4 w-4" /> Voltar</>)}
+                {step === 1 ? (
+                  "Cancelar"
+                ) : (
+                  <>
+                    <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
+                  </>
+                )}
               </Button>
               {step < 3 ? (
                 <Button onClick={next} disabled={!canProceed}>
@@ -726,7 +974,15 @@ function WizardDialog({
                 </Button>
               ) : (
                 <Button onClick={submit} disabled={saving}>
-                  {saving ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Salvando…</>) : (<><Check className="mr-1 h-4 w-4" /> Cadastrar entregador</>)}
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Salvando…
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-1 h-4 w-4" /> Cadastrar entregador
+                    </>
+                  )}
                 </Button>
               )}
             </>
@@ -738,9 +994,12 @@ function WizardDialog({
 }
 
 function StepPersonal({
-  f, setF, errors,
+  f,
+  setF,
+  errors,
 }: {
-  f: WizardForm; setF: (v: WizardForm) => void;
+  f: WizardForm;
+  setF: (v: WizardForm) => void;
   errors: { name: string | null; cpf: string | null; phone: string | null };
 }) {
   return (
@@ -760,7 +1019,8 @@ function StepPersonal({
         <div className="grid gap-1.5">
           <Label htmlFor="drv-phone">Telefone *</Label>
           <Input
-            id="drv-phone" inputMode="tel"
+            id="drv-phone"
+            inputMode="tel"
             value={f.phone}
             onChange={(e) => setF({ ...f, phone: maskPhoneBR(e.target.value) })}
             placeholder="(11) 90000-0000"
@@ -771,7 +1031,8 @@ function StepPersonal({
         <div className="grid gap-1.5">
           <Label htmlFor="drv-cpf">CPF *</Label>
           <Input
-            id="drv-cpf" inputMode="numeric"
+            id="drv-cpf"
+            inputMode="numeric"
             value={f.cpf}
             onChange={(e) => setF({ ...f, cpf: maskCPF(e.target.value) })}
             placeholder="000.000.000-00"
@@ -781,16 +1042,20 @@ function StepPersonal({
         </div>
       </div>
       <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-xs text-muted-foreground">
-        As credenciais de acesso serão criadas pelo próprio entregador no
-        aplicativo <span className="font-semibold text-foreground">Localix Entregador</span> após
-        o cadastro ser concluído.
+        As credenciais de acesso serão criadas pelo próprio entregador no aplicativo{" "}
+        <span className="font-semibold text-foreground">Localix Entregador</span> após o cadastro
+        ser concluído.
       </div>
     </div>
   );
 }
 
 function StepVehicle({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => void }) {
-  const opts: Array<{ v: Vehicle; label: string; Icon: React.ComponentType<{ className?: string }> }> = [
+  const opts: Array<{
+    v: Vehicle;
+    label: string;
+    Icon: React.ComponentType<{ className?: string }>;
+  }> = [
     { v: "moto", label: "Moto", Icon: Bike },
     { v: "bicicleta", label: "Bicicleta", Icon: Bike },
     { v: "carro", label: "Carro", Icon: Car },
@@ -822,15 +1087,31 @@ function StepVehicle({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => void
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="grid gap-1.5">
           <Label>Placa</Label>
-          <Input value={f.vehiclePlate} onChange={(e) => setF({ ...f, vehiclePlate: e.target.value.toUpperCase() })} placeholder="ABC-1D23" />
+          <Input
+            value={f.vehiclePlate}
+            onChange={(e) => setF({ ...f, vehiclePlate: e.target.value.toUpperCase() })}
+            placeholder="ABC-1D23"
+          />
         </div>
         <div className="grid gap-1.5">
-          <Label>Modelo <span className="text-muted-foreground">(opcional)</span></Label>
-          <Input value={f.vehicleModel} onChange={(e) => setF({ ...f, vehicleModel: e.target.value })} placeholder="Honda Biz" />
+          <Label>
+            Modelo <span className="text-muted-foreground">(opcional)</span>
+          </Label>
+          <Input
+            value={f.vehicleModel}
+            onChange={(e) => setF({ ...f, vehicleModel: e.target.value })}
+            placeholder="Honda Biz"
+          />
         </div>
         <div className="grid gap-1.5">
-          <Label>Cor <span className="text-muted-foreground">(opcional)</span></Label>
-          <Input value={f.vehicleColor} onChange={(e) => setF({ ...f, vehicleColor: e.target.value })} placeholder="Vermelha" />
+          <Label>
+            Cor <span className="text-muted-foreground">(opcional)</span>
+          </Label>
+          <Input
+            value={f.vehicleColor}
+            onChange={(e) => setF({ ...f, vehicleColor: e.target.value })}
+            placeholder="Vermelha"
+          />
         </div>
       </div>
     </div>
@@ -838,60 +1119,81 @@ function StepVehicle({ f, setF }: { f: WizardForm; setF: (v: WizardForm) => void
 }
 
 function StepDocuments({
-  f, setF, restaurantId,
-}: { f: WizardForm; setF: (v: WizardForm) => void; restaurantId: string }) {
+  f,
+  setF,
+  restaurantId,
+}: {
+  f: WizardForm;
+  setF: (v: WizardForm) => void;
+  restaurantId: string;
+}) {
   return (
     <div className="grid gap-3 animate-in fade-in slide-in-from-right-2 duration-200">
       <DocumentRow
         label="Foto do Entregador"
         description="Foto nítida para identificação do entregador."
-        icon={Camera} kind="photo"
-        value={f.photoUrl} onChange={(url) => setF({ ...f, photoUrl: url })}
+        icon={Camera}
+        kind="photo"
+        value={f.photoUrl}
+        onChange={(url) => setF({ ...f, photoUrl: url })}
         restaurantId={restaurantId}
       />
       <DocumentRow
         label="CNH"
         description="Frente da Carteira Nacional de Habilitação."
-        icon={IdCard} kind="cnh"
-        value={f.cnhUrl} onChange={(url) => setF({ ...f, cnhUrl: url })}
+        icon={IdCard}
+        kind="cnh"
+        value={f.cnhUrl}
+        onChange={(url) => setF({ ...f, cnhUrl: url })}
         restaurantId={restaurantId}
       />
       <DocumentRow
         label="Comprovante de Endereço"
         description="Conta de água, energia, telefone ou equivalente."
-        icon={Home} kind="document"
-        value={f.addressProofUrl} onChange={(url) => setF({ ...f, addressProofUrl: url })}
+        icon={Home}
+        kind="document"
+        value={f.addressProofUrl}
+        onChange={(url) => setF({ ...f, addressProofUrl: url })}
         restaurantId={restaurantId}
       />
       <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-        Os documentos enviados são utilizados exclusivamente para validação do
-        cadastro e permanecem protegidos conforme a política de privacidade da
-        Localix.
+        Os documentos enviados são utilizados exclusivamente para validação do cadastro e permanecem
+        protegidos conforme a política de privacidade da Localix.
       </p>
     </div>
   );
 }
 
 function DocumentRow({
-  label, description, icon: Icon, value, onChange, restaurantId, kind,
+  label,
+  description,
+  icon: Icon,
+  value,
+  onChange,
+  restaurantId,
+  kind,
 }: {
   label: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  value: string; onChange: (url: string) => void;
+  value: string;
+  onChange: (url: string) => void;
   restaurantId: string;
   kind: "photo" | "cnh" | "document";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [fileMeta, setFileMeta] = useState<{ name: string; size: number; type: string } | null>(null);
+  const [fileMeta, setFileMeta] = useState<{ name: string; size: number; type: string } | null>(
+    null,
+  );
 
   const pick = () => inputRef.current?.click();
 
   const onFile = async (file?: File | null) => {
     if (!file) return;
-    setBusy(true); setProgress(10);
+    setBusy(true);
+    setProgress(10);
     const tick = setInterval(() => setProgress((p) => Math.min(p + 8, 85)), 120);
     try {
       const url = await uploadDriverAsset(file, restaurantId, kind);
@@ -908,7 +1210,10 @@ function DocumentRow({
     }
   };
 
-  const remove = () => { onChange(""); setFileMeta(null); };
+  const remove = () => {
+    onChange("");
+    setFileMeta(null);
+  };
 
   const humanSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -916,7 +1221,7 @@ function DocumentRow({
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const isImage = (fileMeta?.type ?? "").startsWith("image/") || !!value && !fileMeta;
+  const isImage = (fileMeta?.type ?? "").startsWith("image/") || (!!value && !fileMeta);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -974,7 +1279,13 @@ function DocumentRow({
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" aria-label={`Substituir ${label}`} onClick={pick} disabled={busy}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Substituir ${label}`}
+                    onClick={pick}
+                    disabled={busy}
+                  >
                     <Upload className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -982,7 +1293,12 @@ function DocumentRow({
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" aria-label={`Remover ${label}`} onClick={remove}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Remover ${label}`}
+                    onClick={remove}
+                  >
                     <X className="h-4 w-4 text-destructive" />
                   </Button>
                 </TooltipTrigger>
@@ -992,15 +1308,24 @@ function DocumentRow({
           )}
           {!value && (
             <Button size="sm" onClick={pick} disabled={busy}>
-              {busy
-                ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…</>)
-                : (<><Upload className="mr-1 h-4 w-4" /> Selecionar</>)}
+              {busy ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-1 h-4 w-4" /> Selecionar
+                </>
+              )}
             </Button>
           )}
         </div>
 
         <input
-          ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
+          ref={inputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          className="hidden"
           onChange={(e) => onFile(e.target.files?.[0])}
         />
       </div>
@@ -1010,11 +1335,17 @@ function DocumentRow({
 
 /** UploadTile — mantido para a tela de edição (photo apenas). */
 function UploadTile({
-  label, icon: Icon, value, onChange, restaurantId, kind,
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  restaurantId,
+  kind,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  value: string; onChange: (url: string) => void;
+  value: string;
+  onChange: (url: string) => void;
   restaurantId: string;
   kind: "photo" | "cnh" | "document";
 }) {
@@ -1028,18 +1359,30 @@ function UploadTile({
       const url = await uploadDriverAsset(file, restaurantId, kind);
       onChange(url);
       toast.success(`${label} enviado`);
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setBusy(false); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <div className="flex items-center gap-2">
       <Button type="button" size="sm" variant="outline" onClick={pick} disabled={busy}>
-        {busy
-          ? (<><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…</>)
-          : (<><Icon className="mr-1 h-4 w-4" /> {label}</>)}
+        {busy ? (
+          <>
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Enviando…
+          </>
+        ) : (
+          <>
+            <Icon className="mr-1 h-4 w-4" /> {label}
+          </>
+        )}
       </Button>
       <input
-        ref={inputRef} type="file" accept="image/*" className="hidden"
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}
       />
     </div>
@@ -1047,12 +1390,21 @@ function UploadTile({
 }
 
 function StepSuccess({
-  driverName, driverPhone, restaurantName, activationUrl,
+  driverName,
+  driverPhone,
+  restaurantName,
+  activationUrl,
 }: {
-  driverName: string; driverPhone: string; restaurantName: string; activationUrl: string;
+  driverName: string;
+  driverPhone: string;
+  restaurantName: string;
+  activationUrl: string;
 }) {
   const waUrl = buildWhatsAppUrl({
-    phone: driverPhone, driverName, restaurantName, activationUrl,
+    phone: driverPhone,
+    driverName,
+    restaurantName,
+    activationUrl,
   });
   const inviteMessage = buildInviteMessage({ driverName, restaurantName, activationUrl });
 
@@ -1060,18 +1412,24 @@ function StepSuccess({
     try {
       await navigator.clipboard.writeText(activationUrl);
       toast.success("Link copiado");
-    } catch { toast.error("Não foi possível copiar"); }
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
   };
 
   const share = async () => {
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    const shareNavigator =
+      typeof navigator !== "undefined" ? (navigator as NavigatorWithShare) : null;
+    if (shareNavigator?.share) {
       try {
-        await (navigator as any).share({
+        await shareNavigator.share({
           title: "Localix Entregador",
           text: inviteMessage,
           url: activationUrl,
         });
-      } catch { /* usuário cancelou */ }
+      } catch {
+        /* usuário cancelou */
+      }
     } else {
       copyLink();
     }
@@ -1109,7 +1467,9 @@ function StepSuccess({
               <span
                 className={cn(
                   "grid h-4 w-4 shrink-0 place-items-center rounded-sm border",
-                  s.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/40",
+                  s.done
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : "border-muted-foreground/40",
                 )}
               >
                 {s.done && <Check className="h-3 w-3" />}
@@ -1125,15 +1485,20 @@ function StepSuccess({
       <div className="rounded-xl border bg-primary/5 p-4">
         <p className="text-sm font-semibold">Ativar conta do entregador</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Envie o convite para {driverName.split(" ")[0] || "o entregador"} ativar
-          a conta no aplicativo Localix Entregador.
+          Envie o convite para {driverName.split(" ")[0] || "o entregador"} ativar a conta no
+          aplicativo Localix Entregador.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild>
-                  <a href={waUrl} target="_blank" rel="noreferrer" aria-label="Enviar convite pelo WhatsApp">
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Enviar convite pelo WhatsApp"
+                  >
                     <MessageCircle className="mr-1 h-4 w-4" /> Enviar pelo WhatsApp
                   </a>
                 </Button>
@@ -1163,17 +1528,186 @@ function StepSuccess({
   );
 }
 
+function DriverAccessDialog({
+  open,
+  driver,
+  restaurantId,
+  restaurantName,
+  appUrl,
+  onClose,
+}: {
+  open: boolean;
+  driver: Driver;
+  restaurantId: string;
+  restaurantName: string;
+  appUrl: string;
+  onClose: () => void;
+}) {
+  const generateRecovery = useServerFn(generateDriverPasswordRecoveryLink);
+  const [recoveryLink, setRecoveryLink] = useState<string | null>(null);
+  const [loadingRecovery, setLoadingRecovery] = useState(false);
+  const qrId = `driver-app-qr-${driver.id}`;
+  const appAccessUrl = buildDriverAppAccessWhatsAppUrl({
+    phone: driver.phone ?? "",
+    driverName: driver.name,
+    restaurantName,
+    appUrl,
+  });
+  const recoveryWhatsAppUrl = recoveryLink
+    ? buildDriverRecoveryWhatsAppUrl({
+        phone: driver.phone ?? "",
+        driverName: driver.name,
+        restaurantName,
+        recoveryUrl: recoveryLink,
+      })
+    : null;
+
+  const copyAppLink = async () => {
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      toast.success("Link do app copiado");
+    } catch {
+      toast.error("Nao foi possivel copiar");
+    }
+  };
+
+  const copyRecoveryLink = async () => {
+    if (!recoveryLink) return;
+    try {
+      await navigator.clipboard.writeText(recoveryLink);
+      toast.success("Link de recuperacao copiado");
+    } catch {
+      toast.error("Nao foi possivel copiar");
+    }
+  };
+
+  const downloadQrCode = () => {
+    const canvas = document.getElementById(qrId) as HTMLCanvasElement | null;
+    if (!canvas) return toast.error("Nao foi possivel gerar o QR Code");
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `localix-entregador-${driver.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
+    a.click();
+  };
+
+  const createRecoveryLink = async () => {
+    setLoadingRecovery(true);
+    try {
+      const res = await generateRecovery({ data: { driverId: driver.id, restaurantId } });
+      setRecoveryLink(res.recoveryLink);
+      toast.success("Link de recuperacao gerado");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingRecovery(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Acesso ao aplicativo</DialogTitle>
+          <DialogDescription>
+            Envie o link do app ou gere uma redefinicao de senha para um motoboy ativo.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2">
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <p className="font-semibold">{driver.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {driver.phone ?? "Sem telefone"} {driver.email ? `- ${driver.email}` : ""}
+            </p>
+          </div>
+
+          <div className="grid gap-3 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Link do app</p>
+                <p className="text-xs text-muted-foreground">
+                  QR Code e mensagem usam apenas a URL do app.
+                </p>
+              </div>
+              <div className="rounded-lg bg-white p-2">
+                <QRCodeCanvas id={qrId} value={appUrl} size={116} includeMargin />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <a href={appAccessUrl} target="_blank" rel="noreferrer">
+                  <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp
+                </a>
+              </Button>
+              <Button size="sm" variant="outline" onClick={copyAppLink}>
+                <Copy className="mr-1 h-4 w-4" /> Copiar link
+              </Button>
+              <Button size="sm" variant="outline" onClick={downloadQrCode}>
+                <QrCode className="mr-1 h-4 w-4" /> QR Code
+              </Button>
+              <Button size="sm" variant="outline" onClick={downloadQrCode}>
+                <Download className="mr-1 h-4 w-4" /> Baixar
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-semibold">Redefinir acesso</p>
+              <p className="text-xs text-muted-foreground">
+                Mantem o mesmo usuario, historico, restaurante e permissoes do entregador.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={createRecoveryLink} disabled={loadingRecovery}>
+                {loadingRecovery ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <KeyRound className="mr-1 h-4 w-4" />
+                )}
+                Gerar link de recuperacao
+              </Button>
+              {recoveryLink && recoveryWhatsAppUrl && (
+                <>
+                  <Button asChild size="sm" variant="outline">
+                    <a href={recoveryWhatsAppUrl} target="_blank" rel="noreferrer">
+                      <MessageCircle className="mr-1 h-4 w-4" /> Enviar pelo WhatsApp
+                    </a>
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={copyRecoveryLink}>
+                    <Copy className="mr-1 h-4 w-4" /> Copiar recuperacao
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /* ============ EDIT / DETAILS ============ */
 
 function EditDialog({
-  open, driver, restaurantId, loading, onClose, onSubmit,
+  open,
+  driver,
+  restaurantId,
+  loading,
+  onClose,
+  onSubmit,
 }: {
-  open: boolean; driver: Driver; restaurantId: string; loading?: boolean;
+  open: boolean;
+  driver: Driver;
+  restaurantId: string;
+  loading?: boolean;
   onClose: () => void;
   onSubmit: (patch: {
-    name?: string; phone?: string | null; cpf?: string | null;
-    vehicle_type?: Vehicle; vehicle_plate?: string | null;
+    name?: string;
+    phone?: string | null;
+    cpf?: string | null;
+    vehicle_type?: Vehicle;
+    vehicle_plate?: string | null;
     photo_url?: string | null;
   }) => void;
 }) {
@@ -1187,16 +1721,24 @@ function EditDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Editar motoboy</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Editar motoboy</DialogTitle>
+        </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-muted">
-              {photoUrl ? <img src={photoUrl} alt="" className="h-full w-full object-cover" /> : null}
+              {photoUrl ? (
+                <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+              ) : null}
             </div>
             <div className="flex-1">
               <UploadTile
-                label="Trocar foto" icon={Camera} kind="photo"
-                value={photoUrl} onChange={setPhotoUrl} restaurantId={restaurantId}
+                label="Trocar foto"
+                icon={Camera}
+                kind="photo"
+                value={photoUrl}
+                onChange={setPhotoUrl}
+                restaurantId={restaurantId}
               />
             </div>
           </div>
@@ -1205,16 +1747,22 @@ function EditDialog({
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5"><Label>Telefone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-            <div className="grid gap-1.5"><Label>CPF</Label>
-              <Input value={cpf} onChange={(e) => setCpf(e.target.value)} /></div>
+            <div className="grid gap-1.5">
+              <Label>Telefone</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>CPF</Label>
+              <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>Veículo</Label>
               <Select value={vt} onValueChange={(v) => setVt(v as Vehicle)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="moto">Moto</SelectItem>
                   <SelectItem value="bicicleta">Bicicleta</SelectItem>
@@ -1223,18 +1771,25 @@ function EditDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5"><Label>Placa</Label>
-              <Input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} /></div>
+            <div className="grid gap-1.5">
+              <Label>Placa</Label>
+              <Input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} />
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button
             disabled={loading}
             onClick={() =>
               onSubmit({
-                name, phone: phone || null, cpf: cpf || null,
-                vehicle_type: vt, vehicle_plate: plate || null,
+                name,
+                phone: phone || null,
+                cpf: cpf || null,
+                vehicle_type: vt,
+                vehicle_plate: plate || null,
                 photo_url: photoUrl || null,
               })
             }
@@ -1248,31 +1803,59 @@ function EditDialog({
 }
 
 function DetailsDialog({
-  open, driver, presence, onClose,
-}: { open: boolean; driver: Driver; presence: PresenceState; onClose: () => void }) {
-  const initials = driver.name.split(" ").slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
+  open,
+  driver,
+  presence,
+  onClose,
+}: {
+  open: boolean;
+  driver: Driver;
+  presence: PresenceState;
+  onClose: () => void;
+}) {
+  const initials = driver.name
+    .split(" ")
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("");
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Detalhes do motoboy</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Detalhes do motoboy</DialogTitle>
+        </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="flex items-center gap-4">
             <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-muted text-xl font-bold text-muted-foreground">
               {driver.photo_url ? (
-                <img src={driver.photo_url} alt={driver.name} className="h-full w-full object-cover" />
-              ) : initials}
+                <img
+                  src={driver.photo_url}
+                  alt={driver.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="min-w-0">
               <p className="truncate text-lg font-bold">{driver.name}</p>
-              <div className="mt-1"><StatusPill state={presence} /></div>
+              <div className="mt-1">
+                <StatusPill state={presence} />
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">{driver.email ?? "—"}</p>
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <Info k="Telefone" v={driver.phone ?? "—"} />
             <Info k="CPF" v={driver.cpf ?? "—"} />
-            <Info k="Veículo" v={`${VEHICLE_LABEL[driver.vehicle_type]}${driver.vehicle_plate ? ` • ${driver.vehicle_plate}` : ""}`} />
-            <Info k="Última atividade" v={driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—"} />
+            <Info
+              k="Veículo"
+              v={`${VEHICLE_LABEL[driver.vehicle_type]}${driver.vehicle_plate ? ` • ${driver.vehicle_plate}` : ""}`}
+            />
+            <Info
+              k="Última atividade"
+              v={driver.last_seen_at ? relativeTime(driver.last_seen_at) : "—"}
+            />
           </dl>
           <div className="rounded-lg border bg-muted/30 p-3">
             <DriverLocationSummary driver={driver} />

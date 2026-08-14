@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SupportInviteRouteImport } from './routes/support-invite'
 import { Route as SupabaseRawFetchTempRouteImport } from './routes/supabase-raw-fetch-temp'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as MotoboyRouteImport } from './routes/motoboy'
@@ -34,6 +33,7 @@ import { Route as SlugIndexRouteImport } from './routes/$slug.index'
 import { Route as RSplatRouteImport } from './routes/r.$'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as PedidoSucessoIdRouteImport } from './routes/pedido-sucesso.$id'
+import { Route as EntregadorRedefinirSenhaRouteImport } from './routes/entregador.redefinir-senha'
 import { Route as EntregadorEsqueciSenhaRouteImport } from './routes/entregador.esqueci-senha'
 import { Route as EntregadorEntrarRouteImport } from './routes/entregador.entrar'
 import { Route as EntregadorAtivarRouteImport } from './routes/entregador.ativar'
@@ -89,11 +89,6 @@ import { Route as ApiPublicOrdersTransitionRouteImport } from './routes/api/publ
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
 
-const SupportInviteRoute = SupportInviteRouteImport.update({
-  id: '/support-invite',
-  path: '/support-invite',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SupabaseRawFetchTempRoute = SupabaseRawFetchTempRouteImport.update({
   id: '/supabase-raw-fetch-temp',
   path: '/supabase-raw-fetch-temp',
@@ -213,6 +208,12 @@ const PedidoSucessoIdRoute = PedidoSucessoIdRouteImport.update({
   path: '/pedido-sucesso/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntregadorRedefinirSenhaRoute =
+  EntregadorRedefinirSenhaRouteImport.update({
+    id: '/entregador/redefinir-senha',
+    path: '/entregador/redefinir-senha',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EntregadorEsqueciSenhaRoute = EntregadorEsqueciSenhaRouteImport.update({
   id: '/entregador/esqueci-senha',
   path: '/entregador/esqueci-senha',
@@ -508,7 +509,6 @@ export interface FileRoutesByFullPath {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
-  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -557,6 +557,7 @@ export interface FileRoutesByFullPath {
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
+  '/entregador/redefinir-senha': typeof EntregadorRedefinirSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -586,7 +587,6 @@ export interface FileRoutesByTo {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
-  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
@@ -635,6 +635,7 @@ export interface FileRoutesByTo {
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
+  '/entregador/redefinir-senha': typeof EntregadorRedefinirSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -668,7 +669,6 @@ export interface FileRoutesById {
   '/motoboy': typeof MotoboyRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
-  '/support-invite': typeof SupportInviteRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
@@ -717,6 +717,7 @@ export interface FileRoutesById {
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
+  '/entregador/redefinir-senha': typeof EntregadorRedefinirSenhaRoute
   '/pedido-sucesso/$id': typeof PedidoSucessoIdRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/r/$': typeof RSplatRoute
@@ -750,7 +751,6 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
-    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -799,6 +799,7 @@ export interface FileRouteTypes {
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
+    | '/entregador/redefinir-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -828,7 +829,6 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
-    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
@@ -877,6 +877,7 @@ export interface FileRouteTypes {
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
+    | '/entregador/redefinir-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -909,7 +910,6 @@ export interface FileRouteTypes {
     | '/motoboy'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
-    | '/support-invite'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/_authenticated/ai'
@@ -958,6 +958,7 @@ export interface FileRouteTypes {
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
+    | '/entregador/redefinir-senha'
     | '/pedido-sucesso/$id'
     | '/pedido/$id'
     | '/r/$'
@@ -991,11 +992,11 @@ export interface RootRouteChildren {
   MotoboyRoute: typeof MotoboyRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
-  SupportInviteRoute: typeof SupportInviteRoute
   AdminLoginRoute: typeof AdminLoginRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
   EntregadorEntrarRoute: typeof EntregadorEntrarRoute
   EntregadorEsqueciSenhaRoute: typeof EntregadorEsqueciSenhaRoute
+  EntregadorRedefinirSenhaRoute: typeof EntregadorRedefinirSenhaRoute
   PedidoSucessoIdRoute: typeof PedidoSucessoIdRoute
   PedidoIdRoute: typeof PedidoIdRoute
   RSplatRoute: typeof RSplatRoute
@@ -1007,13 +1008,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/support-invite': {
-      id: '/support-invite'
-      path: '/support-invite'
-      fullPath: '/support-invite'
-      preLoaderRoute: typeof SupportInviteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/supabase-raw-fetch-temp': {
       id: '/supabase-raw-fetch-temp'
       path: '/supabase-raw-fetch-temp'
@@ -1180,6 +1174,13 @@ declare module '@tanstack/react-router' {
       path: '/pedido-sucesso/$id'
       fullPath: '/pedido-sucesso/$id'
       preLoaderRoute: typeof PedidoSucessoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entregador/redefinir-senha': {
+      id: '/entregador/redefinir-senha'
+      path: '/entregador/redefinir-senha'
+      fullPath: '/entregador/redefinir-senha'
+      preLoaderRoute: typeof EntregadorRedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entregador/esqueci-senha': {
@@ -1715,11 +1716,11 @@ const rootRouteChildren: RootRouteChildren = {
   MotoboyRoute: MotoboyRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,
-  SupportInviteRoute: SupportInviteRoute,
   AdminLoginRoute: AdminLoginRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
   EntregadorEntrarRoute: EntregadorEntrarRoute,
   EntregadorEsqueciSenhaRoute: EntregadorEsqueciSenhaRoute,
+  EntregadorRedefinirSenhaRoute: EntregadorRedefinirSenhaRoute,
   PedidoSucessoIdRoute: PedidoSucessoIdRoute,
   PedidoIdRoute: PedidoIdRoute,
   RSplatRoute: RSplatRoute,

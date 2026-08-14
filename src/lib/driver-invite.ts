@@ -7,6 +7,7 @@ export const APP_BASE_URL = "https://localixdelivery.rngdigital.com.br";
 export const DRIVER_ACTIVATION_URL = `${APP_BASE_URL}/entregador`;
 /** Caminho relativo dentro do próprio app (fallback web). */
 export const DRIVER_ACTIVATION_APP_URL = "/entregador";
+export const DRIVER_PASSWORD_RESET_APP_URL = "/entregador/redefinir-senha";
 
 /* -------------------- Máscaras -------------------- */
 
@@ -92,8 +93,67 @@ export function buildWhatsAppUrl(opts: {
   restaurantName: string;
   activationUrl?: string;
 }): string {
-  const phone = onlyDigits(opts.phone);
-  const msg = buildInviteMessage(opts);
-  const target = phone ? `https://wa.me/55${phone}` : "https://wa.me/";
-  return `${target}?text=${encodeURIComponent(msg)}`;
+  return buildWhatsAppMessageUrl(opts.phone, buildInviteMessage(opts));
+}
+
+export function buildDriverAppAccessMessage(opts: {
+  driverName: string;
+  restaurantName: string;
+  appUrl?: string;
+}): string {
+  const url = opts.appUrl ?? DRIVER_ACTIVATION_URL;
+  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olÃ¡";
+  return [
+    `OlÃ¡, ${firstName}!`,
+    "",
+    `Aqui Ã© da ${opts.restaurantName}.`,
+    "Para acessar o app Localix Entregador, use este link:",
+    "",
+    `Link: ${url}`,
+    "",
+    "Entre com seu CPF ou telefone e sua senha.",
+  ].join("\n");
+}
+
+export function buildDriverRecoveryMessage(opts: {
+  driverName: string;
+  restaurantName: string;
+  recoveryUrl: string;
+}): string {
+  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olÃ¡";
+  return [
+    `OlÃ¡, ${firstName}!`,
+    "",
+    `Aqui Ã© da ${opts.restaurantName}.`,
+    "Use este link seguro para redefinir sua senha do app Localix Entregador:",
+    "",
+    `Link: ${opts.recoveryUrl}`,
+    "",
+    "Se vocÃª nÃ£o solicitou essa alteraÃ§Ã£o, ignore esta mensagem e fale com o restaurante.",
+  ].join("\n");
+}
+
+export function buildDriverAppAccessWhatsAppUrl(opts: {
+  phone: string;
+  driverName: string;
+  restaurantName: string;
+  appUrl?: string;
+}): string {
+  return buildWhatsAppMessageUrl(opts.phone, buildDriverAppAccessMessage(opts));
+}
+
+export function buildDriverRecoveryWhatsAppUrl(opts: {
+  phone: string;
+  driverName: string;
+  restaurantName: string;
+  recoveryUrl: string;
+}): string {
+  return buildWhatsAppMessageUrl(opts.phone, buildDriverRecoveryMessage(opts));
+}
+
+function buildWhatsAppMessageUrl(phoneValue: string, message: string): string {
+  const phone = onlyDigits(phoneValue);
+  const normalizedPhone = phone.startsWith("55") ? phone : `55${phone}`;
+  const target = phone ? `https://wa.me/${normalizedPhone}` : "https://wa.me/";
+  return `${target}?text=${encodeURIComponent(message)}`;
 }

@@ -1,8 +1,17 @@
 // RC-UX.3 — Testes de utilitários do convite/ativação do entregador.
 import { describe, it, expect } from "vitest";
 import {
-  maskPhoneBR, maskCPF, isValidPhoneBR, isValidCPF,
-  buildInviteMessage, buildWhatsAppUrl, DRIVER_ACTIVATION_URL,
+  maskPhoneBR,
+  maskCPF,
+  isValidPhoneBR,
+  isValidCPF,
+  buildDriverAppAccessMessage,
+  buildDriverAppAccessWhatsAppUrl,
+  buildDriverRecoveryMessage,
+  buildDriverRecoveryWhatsAppUrl,
+  buildInviteMessage,
+  buildWhatsAppUrl,
+  DRIVER_ACTIVATION_URL,
 } from "./driver-invite";
 
 describe("driver-invite masks", () => {
@@ -37,7 +46,8 @@ describe("driver-invite validators", () => {
 describe("driver-invite messaging", () => {
   it("monta mensagem com nome, restaurante e link oficial", () => {
     const msg = buildInviteMessage({
-      driverName: "João da Silva", restaurantName: "Hamburgueria Sanliver",
+      driverName: "João da Silva",
+      restaurantName: "Hamburgueria Sanliver",
     });
     expect(msg).toContain("Olá, João!");
     expect(msg).toContain("Hamburgueria Sanliver");
@@ -46,9 +56,47 @@ describe("driver-invite messaging", () => {
   it("monta URL do WhatsApp com telefone e mensagem codificada", () => {
     const url = buildWhatsAppUrl({
       phone: "(11) 99999-8888",
-      driverName: "João", restaurantName: "Sanliver",
+      driverName: "João",
+      restaurantName: "Sanliver",
     });
     expect(url.startsWith("https://wa.me/5511999998888?text=")).toBe(true);
     expect(url).toContain(encodeURIComponent("Sanliver"));
+  });
+  it("monta mensagem de acesso ao app sem fluxo de ativacao", () => {
+    const msg = buildDriverAppAccessMessage({
+      driverName: "Joao da Silva",
+      restaurantName: "Sanliver",
+      appUrl: "https://app.example.com/entregador",
+    });
+    expect(msg).toContain("Localix Entregador");
+    expect(msg).toContain("CPF ou telefone");
+    expect(msg).toContain("https://app.example.com/entregador");
+    expect(msg).not.toContain("Crie sua senha");
+  });
+  it("monta WhatsApp de acesso sem duplicar DDI 55", () => {
+    const url = buildDriverAppAccessWhatsAppUrl({
+      phone: "+55 (11) 99999-8888",
+      driverName: "Joao",
+      restaurantName: "Sanliver",
+    });
+    expect(url.startsWith("https://wa.me/5511999998888?text=")).toBe(true);
+  });
+  it("monta mensagem e WhatsApp de recuperacao com link seguro", () => {
+    const recoveryUrl = "https://example.supabase.co/auth/v1/verify?token_hash=abc&type=recovery";
+    const msg = buildDriverRecoveryMessage({
+      driverName: "Joao",
+      restaurantName: "Sanliver",
+      recoveryUrl,
+    });
+    expect(msg).toContain("redefinir sua senha");
+    expect(msg).toContain(recoveryUrl);
+
+    const url = buildDriverRecoveryWhatsAppUrl({
+      phone: "11999998888",
+      driverName: "Joao",
+      restaurantName: "Sanliver",
+      recoveryUrl,
+    });
+    expect(url).toContain(encodeURIComponent(recoveryUrl));
   });
 });
