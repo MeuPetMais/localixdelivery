@@ -73,6 +73,7 @@ import {
 } from "lucide-react";
 import {
   getFeaturedSections,
+  getFeaturedItemPrice,
   type FeaturedItem,
   type FeaturedSection,
 } from "@/lib/featured-sections.functions";
@@ -1039,7 +1040,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             addAndPrompt({
               id: it.id,
               name: it.name,
-              price: Number(it.promo_price ?? it.price),
+              price: getFeaturedItemPrice(it),
               image_url: (it as any).image_url,
             })
           }
@@ -2203,7 +2204,8 @@ function FeaturedSections({
             </div>
             <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {section.items.map((it) => {
-                const price = it.promo_price ?? it.price;
+                const hasPromo = isPromoActiveNow(it);
+                const price = getFeaturedItemPrice(it);
                 return (
                   <Card
                     key={`${section.key}-${it.id}`}
@@ -2222,7 +2224,7 @@ function FeaturedSections({
                           <ImageIcon className="h-6 w-6" />
                         </div>
                       )}
-                      {it.promo_price != null && (
+                      {hasPromo && (
                         <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                           Oferta
                         </span>
@@ -2236,7 +2238,7 @@ function FeaturedSections({
                         <span className="font-display text-base font-extrabold text-primary">
                           {brl(price)}
                         </span>
-                        {it.promo_price != null && (
+                        {hasPromo && (
                           <span className="text-[10px] text-muted-foreground line-through">
                             {brl(it.price)}
                           </span>
