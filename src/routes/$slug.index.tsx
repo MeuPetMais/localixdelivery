@@ -6,8 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
@@ -78,6 +80,7 @@ import { toast } from "sonner";
 import type { Builder } from "@/components/BuilderConfigurator";
 import { fetchFavoriteIdsForRestaurant, toggleFavorite as toggleFav } from "@/lib/favorites";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { createCustomerAccount } from "@/lib/customer-signup.functions";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
@@ -1353,6 +1356,9 @@ function CheckoutSheet({
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [createAccount, setCreateAccount] = useState(true);
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   type PayOption = CheckoutPaymentOption;
   const BASE_METHODS: PayOption[] = [
     { id: "cash", label: "Dinheiro", method: "cash" },
@@ -1488,6 +1494,7 @@ function CheckoutSheet({
   const belowMin = subtotal < min;
 
   const create = useServerFn(createCheckoutOrder);
+  const createCustomer = useServerFn(createCustomerAccount);
   const preview = useServerFn(previewCheckoutPricing);
   const [pricing, setPricing] = useState<{
     subtotal: number;
@@ -1613,6 +1620,33 @@ function CheckoutSheet({
     }
     setSubmitting(true);
     try {
+      let checkoutUser = user;
+      if (!checkoutUser && createAccount) {
+        if (!signupEmail.trim() || !signupPassword) {
+          toast.error("Informe e-mail e senha para criar sua conta");
+          return;
+        }
+        await createCustomer({
+          data: {
+            name,
+            email: signupEmail,
+            password: signupPassword,
+          },
+        });
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: signupEmail.trim().toLowerCase(),
+          password: signupPassword,
+        });
+        if (signInError || !signInData.user || !signInData.session) {
+          throw (
+            signInError ??
+            new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.")
+          );
+        }
+        checkoutUser = signInData.user;
+        toast.success("Conta criada! Você já está logado(a).");
+      }
+
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
       console.log("[checkout-payment-debug]", paymentPayload);
 
@@ -1638,11 +1672,11 @@ function CheckoutSheet({
       });
 
       // Persist profile prefill for next orders (best-effort)
-      if (user) {
+      if (checkoutUser) {
         try {
           await (supabase as any).from("customer_profiles").upsert(
             {
-              id: user.id,
+              id: checkoutUser.id,
               full_name: name,
               phone,
               whatsapp: phone,
@@ -1650,14 +1684,14 @@ function CheckoutSheet({
             },
             { onConflict: "id" },
           );
-          qc.invalidateQueries({ queryKey: ["customer-profile", user.id] });
+          qc.invalidateQueries({ queryKey: ["customer-profile", checkoutUser.id] });
         } catch {}
       }
 
       // Cartão/Pix Online — via PaymentService (Provider Pattern).
       if (selectedPayment.online) {
         try {
-          const email = user?.email;
+          const email = checkoutUser?.email;
           if (!email) {
             toast.error("Faça login com e-mail para pagar online");
             onClose();
@@ -1759,6 +1793,50 @@ function CheckoutSheet({
         </div>
 
         {/* Endereço */}
+        {!user && (
+          <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Label htmlFor="create-customer-account">Criar conta</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Salve seus dados e acompanhe este pedido com login ativo.
+                </p>
+              </div>
+              <Switch
+                id="create-customer-account"
+                checked={createAccount}
+                onCheckedChange={setCreateAccount}
+              />
+            </div>
+            {createAccount && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="checkout-signup-email">E-mail</Label>
+                  <Input
+                    id="checkout-signup-email"
+                    type="email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    placeholder="voce@email.com"
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="checkout-signup-password">Senha</Label>
+                  <PasswordInput
+                    id="checkout-signup-password"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="********"
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {user ? (
           <div className="space-y-2">
             <Label>Entregar em</Label>
