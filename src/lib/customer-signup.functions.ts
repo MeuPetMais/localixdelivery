@@ -12,7 +12,9 @@ const RATE_LIMIT_MAX_ATTEMPTS = 5;
 type SupabaseAdminLike = {
   auth: {
     admin: {
-      createUser: (args: unknown) => Promise<{ data: { user?: { id: string } } | null; error: AuthErrorLike | null }>;
+      createUser: (
+        args: unknown,
+      ) => Promise<{ data: { user?: { id: string } } | null; error: AuthErrorLike | null }>;
       deleteUser: (userId: string) => Promise<{ error?: AuthErrorLike | null } | void>;
     };
   };
@@ -20,7 +22,10 @@ type SupabaseAdminLike = {
     select: (columns?: string) => unknown;
     upsert?: (values: unknown, options?: unknown) => Promise<{ error: AuthErrorLike | null }>;
   };
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: AuthErrorLike | null }>;
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: AuthErrorLike | null }>;
 };
 
 type AuthErrorLike = {
@@ -35,13 +40,18 @@ type QueryLike<T = unknown> = {
 };
 
 type ListQueryLike<T = unknown> = {
-  eq: (column: string, value: unknown) => Promise<{ data: T[] | null; error: AuthErrorLike | null }>;
+  eq: (
+    column: string,
+    value: unknown,
+  ) => Promise<{ data: T[] | null; error: AuthErrorLike | null }>;
 };
 
 type RoleRow = { role: string };
 type CustomerProfileRow = { id: string; email: string | null; full_name: string | null };
 
-function getRequestIpFromHeaders(req: { headers: { get: (name: string) => string | null } } | undefined) {
+function getRequestIpFromHeaders(
+  req: { headers: { get: (name: string) => string | null } } | undefined,
+) {
   const forwarded = req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const realIp = req?.headers.get("x-real-ip")?.trim();
   return forwarded || realIp || "unknown";
@@ -61,7 +71,12 @@ function safeErrorDetails(error: unknown) {
   };
 }
 
-function logCriticalSignupFailure(stage: string, userId: string, error: unknown, rollbackOk?: boolean) {
+function logCriticalSignupFailure(
+  stage: string,
+  userId: string,
+  error: unknown,
+  rollbackOk?: boolean,
+) {
   console.error("[customer-signup] critical failure", {
     stage,
     userId,
@@ -91,7 +106,12 @@ export async function assertCustomerSignupRateLimit(
   }
 }
 
-async function rollbackCreatedUser(supabaseAdmin: SupabaseAdminLike, userId: string, stage: string, error: unknown) {
+async function rollbackCreatedUser(
+  supabaseAdmin: SupabaseAdminLike,
+  userId: string,
+  stage: string,
+  error: unknown,
+) {
   const rollback = await supabaseAdmin.auth.admin.deleteUser(userId);
   const rollbackError = rollback && "error" in rollback ? rollback.error : null;
   logCriticalSignupFailure(stage, userId, error, !rollbackError);

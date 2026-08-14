@@ -1638,7 +1638,10 @@ function CheckoutSheet({
           password: signupPassword,
         });
         if (signInError || !signInData.user || !signInData.session) {
-          throw signInError ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.");
+          throw (
+            signInError ??
+            new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.")
+          );
         }
         checkoutUser = signInData.user;
         toast.success("Conta criada! Você já está logado(a).");

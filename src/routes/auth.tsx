@@ -7,13 +7,19 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/format";
 import { resolvePostLoginRedirect } from "@/lib/admin-mode";
 import { toastArgsFromAuthError } from "@/lib/auth-errors";
-
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
@@ -83,7 +89,6 @@ function AuthPage() {
     }
   }
 
-
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
@@ -121,8 +126,6 @@ function AuthPage() {
     return () => window.clearInterval(iv);
   }, [tab, password]);
 
-
-
   function notifyAuthError(context: string, err: unknown) {
     const [title, opts] = toastArgsFromAuthError(err, context);
     toast.error(title, opts);
@@ -155,7 +158,9 @@ function AuthPage() {
               ownerName,
             }),
           );
-        } catch {}
+        } catch {
+          void 0;
+        }
 
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -187,7 +192,10 @@ function AuthPage() {
           notifyAuthError("signUp", error);
           return;
         }
-        console.info("[signup] auth.signUp ok", { userId: data.user?.id, hasSession: !!data.session });
+        console.info("[signup] auth.signUp ok", {
+          userId: data.user?.id,
+          hasSession: !!data.session,
+        });
 
         const userId = data.user?.id;
         if (!userId) {
@@ -220,7 +228,10 @@ function AuthPage() {
             owner_name: ownerName,
             cnpj: cnpj || null,
           });
-          if (!insErr) { insertOk = true; break; }
+          if (!insErr) {
+            insertOk = true;
+            break;
+          }
           lastErr = insErr;
           if (insErr.code === "23505") {
             finalSlug = `${baseSlug}-${attempt}`;
@@ -232,7 +243,8 @@ function AuthPage() {
         if (!insertOk) {
           console.error("[signup] insert restaurants falhou", lastErr);
           toast.error("Não foi possível concluir o cadastro", {
-            description: "Sua conta foi criada, mas não conseguimos criar o estabelecimento. Tente novamente em instantes.",
+            description:
+              "Sua conta foi criada, mas não conseguimos criar o estabelecimento. Tente novamente em instantes.",
             duration: 10000,
           });
           return;
@@ -244,10 +256,16 @@ function AuthPage() {
             { id: userId, full_name: ownerName, phone: whatsapp || null },
             { onConflict: "id" },
           );
-        try { localStorage.removeItem("localix.onboarding.draft"); } catch {}
+        try {
+          localStorage.removeItem("localix.onboarding.draft");
+        } catch {
+          void 0;
+        }
         console.info("[signup] insert restaurants ok", { slug: finalSlug });
         if (adjusted) {
-          toast.info("Sua URL foi ajustada automaticamente porque já existia outra igual.", { duration: 6000 });
+          toast.info("Sua URL foi ajustada automaticamente porque já existia outra igual.", {
+            duration: 6000,
+          });
         }
         toast.success("Conta criada! Painel pronto.");
         navigate({ to: "/dashboard", replace: true });
@@ -260,7 +278,10 @@ function AuthPage() {
             screen: "/auth (signin tab)",
           });
         }
-        const { error, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        const { error, data: signInData } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (import.meta.env.DEV) {
           const er = error as { code?: string; status?: number; message?: string } | null;
           console.info("[auth-debug] signInWithPassword:after", {
@@ -276,10 +297,11 @@ function AuthPage() {
           notifyAuthError("signIn", error);
           return;
         }
-        const dest = signInData.user ? await resolvePostLoginRedirect(signInData.user.id) : "/dashboard";
+        const dest = signInData.user
+          ? await resolvePostLoginRedirect(signInData.user.id)
+          : "/dashboard";
         navigate({ to: dest, replace: true });
       }
-
     } catch (err) {
       notifyAuthError("inesperado", err);
     } finally {
@@ -287,16 +309,26 @@ function AuthPage() {
     }
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-display text-2xl font-extrabold">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-warm text-primary-foreground shadow-glow">L</span>
+        <Link
+          to="/"
+          className="mb-8 flex items-center justify-center gap-2 font-display text-2xl font-extrabold"
+        >
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-warm text-primary-foreground shadow-glow">
+            L
+          </span>
           Localix
         </Link>
         <Card className="p-6 shadow-glow">
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as "signin" | "signup"); setPassword(""); }}>
+          <Tabs
+            value={tab}
+            onValueChange={(v) => {
+              setTab(v as "signin" | "signup");
+              setPassword("");
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
@@ -307,7 +339,9 @@ function AuthPage() {
             </TabsContent>
             <TabsContent value="signup" className="mt-6 space-y-4">
               <h1 className="font-display text-2xl font-bold">Cadastre seu estabelecimento</h1>
-              <p className="text-sm text-muted-foreground">Painel criado automaticamente. Sem cartão de crédito.</p>
+              <p className="text-sm text-muted-foreground">
+                Painel criado automaticamente. Sem cartão de crédito.
+              </p>
               <ul className="grid grid-cols-1 gap-1.5 rounded-lg border bg-muted/40 p-3 text-xs sm:grid-cols-2">
                 {[
                   "Cadastro 100% gratuito",
@@ -328,31 +362,64 @@ function AuthPage() {
               </ul>
             </TabsContent>
 
-
             <form onSubmit={handleEmail} className="mt-4 space-y-3">
               {tab === "signup" && (
                 <>
                   <div className="space-y-1.5">
                     <Label htmlFor="store">Nome do estabelecimento</Label>
-                    <Input id="store" required value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="Pizzaria do Zé" />
+                    <Input
+                      id="store"
+                      required
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                      placeholder="Pizzaria do Zé"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="owner">Nome do responsável</Label>
-                    <Input id="owner" required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="José da Silva" />
+                    <Input
+                      id="owner"
+                      required
+                      value={ownerName}
+                      onChange={(e) => setOwnerName(e.target.value)}
+                      placeholder="José da Silva"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="wa">WhatsApp</Label>
-                    <Input id="wa" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+55 11 99999-9999" />
+                    <Input
+                      id="wa"
+                      required
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      placeholder="+55 11 99999-9999"
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="cnpj">CNPJ <span className="text-xs text-muted-foreground">(opcional)</span></Label>
-                    <Input id="cnpj" value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" />
+                    <Label htmlFor="cnpj">
+                      CNPJ <span className="text-xs text-muted-foreground">(opcional)</span>
+                    </Label>
+                    <Input
+                      id="cnpj"
+                      value={cnpj}
+                      onChange={(e) => setCnpj(e.target.value)}
+                      placeholder="00.000.000/0000-00"
+                    />
                   </div>
                 </>
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
-                <Input id="email" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@restaurante.com" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@restaurante.com"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">Senha</Label>
@@ -372,7 +439,11 @@ function AuthPage() {
                 <div className="text-right">
                   <button
                     type="button"
-                    onClick={() => { setForgotEmail(email); setForgotSent(false); setForgotOpen(true); }}
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotSent(false);
+                      setForgotOpen(true);
+                    }}
                     className="text-sm font-medium text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:underline"
                   >
                     Esqueceu sua senha?
@@ -386,10 +457,23 @@ function AuthPage() {
             </form>
           </Tabs>
         </Card>
-        <Link to="/" className="mt-6 text-center text-sm text-muted-foreground hover:text-foreground">← Voltar para o site</Link>
+        <Link
+          to="/"
+          className="mt-6 text-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Voltar para o site
+        </Link>
       </div>
 
-      <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) { setForgotSent(false); } }}>
+      <Dialog
+        open={forgotOpen}
+        onOpenChange={(o) => {
+          setForgotOpen(o);
+          if (!o) {
+            setForgotSent(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Recuperar acesso</DialogTitle>
@@ -400,7 +484,8 @@ function AuthPage() {
           {forgotSent ? (
             <div className="space-y-4">
               <p className="rounded-md bg-muted/60 p-3 text-sm">
-                Se existir uma conta vinculada a este e-mail, enviamos um link para redefinição da senha.
+                Se existir uma conta vinculada a este e-mail, enviamos um link para redefinição da
+                senha.
               </p>
               <DialogFooter>
                 <Button type="button" className="w-full" onClick={() => setForgotOpen(false)}>
@@ -423,7 +508,12 @@ function AuthPage() {
                 />
               </div>
               <DialogFooter className="gap-2 sm:gap-0">
-                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotSending}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setForgotOpen(false)}
+                  disabled={forgotSending}
+                >
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={forgotSending}>
@@ -438,4 +528,3 @@ function AuthPage() {
     </div>
   );
 }
-

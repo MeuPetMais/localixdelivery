@@ -131,7 +131,9 @@ describe("customer signup server flow", () => {
   it("creates a confirmed customer and verifies the final role is only customer", async () => {
     const supabase = createSupabaseMock();
 
-    await expect(createConfirmedCustomerUser(supabase, data)).resolves.toEqual({ userId: "user-123" });
+    await expect(createConfirmedCustomerUser(supabase, data)).resolves.toEqual({
+      userId: "user-123",
+    });
 
     expect(supabase.createUser).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -142,7 +144,8 @@ describe("customer signup server flow", () => {
         user_metadata: expect.objectContaining({ account_type: "customer", kind: "customer" }),
       }),
     );
-    expect(JSON.stringify((supabase.createUser as any).mock.calls[0][0])).not.toContain("partner");
+    const createUserPayload = supabase.createUser.mock.calls.at(0)?.at(0);
+    expect(JSON.stringify(createUserPayload)).not.toContain("partner");
     expect(supabase.upsert).toHaveBeenCalledWith(
       { user_id: "user-123", role: "customer" },
       { onConflict: "user_id,role" },
@@ -153,7 +156,9 @@ describe("customer signup server flow", () => {
   it("fails closed and rolls back when customer_profiles is missing", async () => {
     const supabase = createSupabaseMock({ profileError: { message: "missing" } });
 
-    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow("Não foi possível concluir");
+    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow(
+      "Não foi possível concluir",
+    );
 
     expect(supabase.deleteUser).toHaveBeenCalledWith("user-123");
   });
@@ -164,7 +169,9 @@ describe("customer signup server flow", () => {
       rollbackError: { message: "delete failed" },
     });
 
-    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow("Não foi possível concluir");
+    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow(
+      "Não foi possível concluir",
+    );
 
     expect(supabase.deleteUser).toHaveBeenCalledWith("user-123");
   });
@@ -172,7 +179,9 @@ describe("customer signup server flow", () => {
   it("rejects a final role set that contains partner", async () => {
     const supabase = createSupabaseMock({ roles: ["customer", "partner"] });
 
-    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow("Não foi possível concluir");
+    await expect(createConfirmedCustomerUser(supabase, data)).rejects.toThrow(
+      "Não foi possível concluir",
+    );
 
     expect(supabase.deleteUser).toHaveBeenCalledWith("user-123");
   });
@@ -180,9 +189,9 @@ describe("customer signup server flow", () => {
   it("uses the shared Postgres rate limit between calls", async () => {
     const supabase = createSupabaseMock({ rateLimitAllowed: false });
 
-    await expect(assertCustomerSignupRateLimit(supabase, "ana@example.com", "203.0.113.10")).rejects.toThrow(
-      "Muitas tentativas",
-    );
+    await expect(
+      assertCustomerSignupRateLimit(supabase, "ana@example.com", "203.0.113.10"),
+    ).rejects.toThrow("Muitas tentativas");
 
     expect(supabase.rpc).toHaveBeenCalledWith("check_customer_signup_rate_limit", {
       ip_hash: await hashRateLimitValue("203.0.113.10"),

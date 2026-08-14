@@ -19,11 +19,38 @@ const searchSchema = z.object({
 });
 
 const RESERVED_TOP = new Set([
-  "", "home", "inicio", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
-  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
-  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
-  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
-  "reviews", "suppliers", "units", "builders", "r", "api",
+  "",
+  "home",
+  "inicio",
+  "beneficios",
+  "favoritos",
+  "meus-pedidos",
+  "cliente",
+  "pedido",
+  "pedido-sucesso",
+  "auth",
+  "entrar",
+  "esqueci-senha",
+  "redefinir-senha",
+  "admin",
+  "dashboard",
+  "menu",
+  "orders",
+  "settings",
+  "ai",
+  "consultor",
+  "customers",
+  "finance",
+  "finance-ai",
+  "inventory",
+  "loyalty",
+  "promotions",
+  "reviews",
+  "suppliers",
+  "units",
+  "builders",
+  "r",
+  "api",
 ]);
 
 function validRestaurantRedirect(path?: string | null) {
@@ -34,7 +61,11 @@ function validRestaurantRedirect(path?: string | null) {
 }
 
 function readStoredLoginRedirect() {
-  try { return sessionStorage.getItem("postLoginRedirect"); } catch { return null; }
+  try {
+    return sessionStorage.getItem("postLoginRedirect");
+  } catch {
+    return null;
+  }
 }
 
 export const Route = createFileRoute("/entrar")({
@@ -51,7 +82,8 @@ function CustomerAuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
-  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } =
+    useCustomerNavigation();
   const createCustomer = useServerFn(createCustomerAccount);
 
   useEffect(() => {
@@ -66,7 +98,12 @@ function CustomerAuthPage() {
       redirectIfAuthenticated(data.session);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (import.meta.env.DEV) console.info("[auth-debug] onAuthStateChange(entrar)", { event: _event, hasSession: !!session, userId: session?.user?.id });
+      if (import.meta.env.DEV)
+        console.info("[auth-debug] onAuthStateChange(entrar)", {
+          event: _event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+        });
       redirectIfAuthenticated(session);
     });
     return () => sub.subscription.unsubscribe();
@@ -94,7 +131,11 @@ function CustomerAuthPage() {
 
   function goNext() {
     const target = getRestaurantLoginTarget();
-    try { sessionStorage.removeItem("postLoginRedirect"); } catch {}
+    try {
+      sessionStorage.removeItem("postLoginRedirect");
+    } catch {
+      void 0;
+    }
     if (target?.slug) {
       navigate({ to: "/$slug", params: { slug: target.slug }, replace: true });
       return;
@@ -120,24 +161,22 @@ function CustomerAuthPage() {
       return;
     }
     const { error } = await supabase.auth.signInWithOAuth({
-  provider,
-  options: {
-    redirectTo: window.location.origin + "/entrar",
-  },
-});
+      provider,
+      options: {
+        redirectTo: window.location.origin + "/entrar",
+      },
+    });
 
-if (error) {
-  toast.error(
-    `Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`
-  );
-  setLoading(null);
-  return;
-}
+    if (error) {
+      toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
+      setLoading(null);
+      return;
+    }
 
-// O Supabase faz o redirecionamento automaticamente.
-// Se não houve erro, não execute goNext().
-return;
- }
+    // O Supabase faz o redirecionamento automaticamente.
+    // Se não houve erro, não execute goNext().
+    return;
+  }
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading("email");
@@ -149,7 +188,13 @@ return;
     }
     try {
       if (tab === "signup") {
-        if (import.meta.env.DEV) console.info("[auth-debug] customerSignUp:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
+        if (import.meta.env.DEV)
+          console.info("[auth-debug] customerSignUp:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/entrar",
+          });
         const created = await createCustomer({ data: { name, email, password } });
         if (import.meta.env.DEV) {
           console.info("[auth-debug] customerSignUp:after", { ok: true, userId: created.userId });
@@ -157,16 +202,39 @@ return;
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (import.meta.env.DEV) {
           const er = error as { code?: string; status?: number; message?: string } | null;
-          console.info("[auth-debug] customerSignInAfterSignUp:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+          console.info("[auth-debug] customerSignInAfterSignUp:after", {
+            ok: !error,
+            userId: data?.user?.id,
+            hasSession: !!data?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
         }
-        if (error || !data.session) throw error ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.");
+        if (error || !data.session)
+          throw (
+            error ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.")
+          );
         toast.success("Conta criada! Bem-vindo(a).");
       } else {
-        if (import.meta.env.DEV) console.info("[auth-debug] signInWithPassword:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
+        if (import.meta.env.DEV)
+          console.info("[auth-debug] signInWithPassword:before", {
+            ts: new Date().toISOString(),
+            email,
+            passwordLength: password.length,
+            screen: "/entrar",
+          });
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (import.meta.env.DEV) {
           const er = error as { code?: string; status?: number; message?: string } | null;
-          console.info("[auth-debug] signInWithPassword:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+          console.info("[auth-debug] signInWithPassword:after", {
+            ok: !error,
+            userId: data?.user?.id,
+            hasSession: !!data?.session,
+            errorCode: er?.code,
+            errorStatus: er?.status,
+            errorMessage: er?.message,
+          });
         }
         if (error) throw error;
       }
@@ -196,7 +264,9 @@ return;
             <span className="font-display text-2xl font-extrabold">L</span>
           </div>
           <h1 className="font-display text-2xl font-extrabold">Acesse sua conta</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Entre em segundos e desbloqueie benefícios</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Entre em segundos e desbloqueie benefícios
+          </p>
         </div>
 
         <Card className="space-y-3 p-5 shadow-xl">
@@ -222,10 +292,18 @@ return;
           </Button>
 
           <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-wider text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />ou<span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" />
+            ou
+            <span className="h-px flex-1 bg-border" />
           </div>
 
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as "signin" | "signup"); setPassword(""); }}>
+          <Tabs
+            value={tab}
+            onValueChange={(v) => {
+              setTab(v as "signin" | "signup");
+              setPassword("");
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
@@ -235,13 +313,30 @@ return;
               <TabsContent value="signup" className="m-0 space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Nome</Label>
-                  <Input id="name" name="name" autoComplete="name" required={tab === "signup"} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
+                  <Input
+                    id="name"
+                    name="name"
+                    autoComplete="name"
+                    required={tab === "signup"}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Seu nome"
+                  />
                 </div>
               </TabsContent>
 
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
-                <Input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@email.com"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pwd">Senha</Label>
@@ -258,13 +353,20 @@ return;
                 />
               </div>
 
-              <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={isBusy}>
+              <Button
+                type="submit"
+                className="h-11 w-full text-base font-semibold"
+                disabled={isBusy}
+              >
                 {loading === "email" && <Loader2 className="h-4 w-4 animate-spin" />}
                 {tab === "signup" ? "Criar conta" : "Entrar"}
               </Button>
 
               {tab === "signin" && (
-                <Link to="/esqueci-senha" className="block text-center text-sm text-primary hover:underline">
+                <Link
+                  to="/esqueci-senha"
+                  className="block text-center text-sm text-primary hover:underline"
+                >
                   Esqueci minha senha
                 </Link>
               )}
@@ -299,7 +401,10 @@ function Benefit({ icon, label }: { icon: React.ReactNode; label: string }) {
 function GoogleIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#EA4335" d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z" />
+      <path
+        fill="#EA4335"
+        d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z"
+      />
     </svg>
   );
 }
