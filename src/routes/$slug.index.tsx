@@ -87,7 +87,7 @@ import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
 import { AddressPickerModal } from "@/components/AddressPickerModal";
-import type { CustomerAddress } from "@/lib/customer-addresses";
+import { persistCheckoutAddressForCustomer, type CustomerAddress } from "@/lib/customer-addresses";
 import {
   AddressAutocomplete,
   formatFullAddress,
@@ -1693,6 +1693,20 @@ function CheckoutSheet({
           );
           qc.invalidateQueries({ queryKey: ["customer-profile", checkoutUser.id] });
         } catch {}
+
+        if (smartAddress && (smartAddress.number || smartAddress.numberOverride)) {
+          try {
+            await persistCheckoutAddressForCustomer(checkoutUser.id, smartAddress);
+            qc.invalidateQueries({ queryKey: ["customer-addresses", checkoutUser.id] });
+          } catch (addressError: any) {
+            console.error("[checkout-address] failed to persist customer address", {
+              userId: checkoutUser.id,
+              orderId: res.orderId,
+              message: addressError?.message,
+              code: addressError?.code,
+            });
+          }
+        }
       }
 
       // Cartão/Pix Online — via PaymentService (Provider Pattern).
