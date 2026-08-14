@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { isPromoActiveNow } from "@/lib/promotions";
 
 export type FeaturedItem = {
   id: string;
@@ -7,8 +8,14 @@ export type FeaturedItem = {
   description: string | null;
   price: number;
   promo_price: number | null;
+  promo_starts_at: string | null;
+  promo_ends_at: string | null;
+  recurrence_days: number[] | null;
+  recurrence_start_time: string | null;
+  recurrence_end_time: string | null;
   image_url: string | null;
   is_available: boolean;
+  is_paused: boolean | null;
 };
 
 export type FeaturedSectionKey =
@@ -47,6 +54,30 @@ export type FeaturedConfig = {
   half_half_pizza_enabled: boolean;
 };
 
+type FeaturedConfigKey = `${FeaturedSectionKey}_enabled`;
+
+type FeaturedItemRow = FeaturedItem & {
+  is_weekly_favorite?: boolean | null;
+  created_at?: string | null;
+  position?: number | null;
+};
+
+type FeaturedFavoriteRow = {
+  item_id: string;
+};
+
+type FeaturedReviewRow = {
+  rating?: number | string | null;
+  orders?: {
+    items?: Array<{ id?: string | null }> | null;
+  } | null;
+};
+
+type FeaturedBuilderRow = {
+  id: string;
+  name?: string | null;
+};
+
 const DEFAULT_CONFIG: FeaturedConfig = {
   promotions_enabled: true,
   weekly_favorites_enabled: true,
@@ -58,15 +89,25 @@ const DEFAULT_CONFIG: FeaturedConfig = {
 
 const NEW_DAYS = 30;
 
-function toItem(row: any): FeaturedItem {
+export function getFeaturedItemPrice(item: FeaturedItem): number {
+  return Number(isPromoActiveNow(item) ? item.promo_price : item.price);
+}
+
+function toItem(row: FeaturedItemRow): FeaturedItem {
   return {
     id: row.id,
     name: row.name,
     description: row.description ?? null,
     price: Number(row.price),
     promo_price: row.promo_price == null ? null : Number(row.promo_price),
+    promo_starts_at: row.promo_starts_at ?? null,
+    promo_ends_at: row.promo_ends_at ?? null,
+    recurrence_days: row.recurrence_days ?? null,
+    recurrence_start_time: row.recurrence_start_time ?? null,
+    recurrence_end_time: row.recurrence_end_time ?? null,
     image_url: row.image_url ?? null,
     is_available: row.is_available !== false,
+    is_paused: row.is_paused ?? null,
   };
 }
 
@@ -86,11 +127,23 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
     const restaurantId = rest.id as string;
     const isPizzeria = /pizz/i.test(String(rest.category ?? ""));
 
-    const [{ data: cfgRow }, { data: allItems }, { data: builders }, { data: favRows }, { data: reviewRows }] = await Promise.all([
-      supabaseAdmin.from("featured_sections").select("*").eq("restaurant_id", restaurantId).maybeSingle(),
+    const [
+      { data: cfgRow },
+      { data: allItems },
+      { data: builders },
+      { data: favRows },
+      { data: reviewRows },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("featured_sections")
+        .select("*")
+        .eq("restaurant_id", restaurantId)
+        .maybeSingle(),
       supabaseAdmin
         .from("menu_items")
-        .select("id, name, description, price, promo_price, image_url, is_available, is_active, is_weekly_favorite, promo_starts_at, promo_ends_at, is_paused, created_at, position")
+        .select(
+          "id, name, description, price, promo_price, image_url, is_available, is_active, is_weekly_favorite, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_paused, created_at, position",
+        )
         .eq("restaurant_id", restaurantId)
         .eq("is_active", true)
         .eq("is_available", true),
@@ -115,8 +168,8 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
       ...(cfgRow ?? {}),
     };
 
-    const items = (allItems ?? []) as any[];
-    const itemMap = new Map<string, any>(items.map((i) => [i.id, i]));
+    const items = (allItems ?? []) as FeaturedItemRow[];
+    const itemMap = new Map<string, FeaturedItemRow>(items.map((i) => [i.id, i]));
     const sections: FeaturedSection[] = [];
     const diagnostics: FeaturedDiagnostic[] = [];
 
@@ -128,32 +181,47 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
       rendered: boolean,
       note: string,
     ) => {
-      diagnostics.push({ key, label, emoji, enabled: !!(config as any)[`${key}_enabled`], count, rendered, note });
+      diagnostics.push({
+        key,
+        label,
+        emoji,
+        enabled: !!config[`${key}_enabled` as FeaturedConfigKey],
+        count,
+        rendered,
+        note,
+      });
     };
 
     // Promotions — active promo price
     {
-      const now = Date.now();
       const promoted = items
-        .filter((i) => {
-          if (i.is_paused) return false;
-          const price = Number(i.price);
-          const promo = i.promo_price == null ? null : Number(i.promo_price);
-          if (!promo || promo <= 0 || promo >= price) return false;
-          if (i.promo_starts_at && now < new Date(i.promo_starts_at).getTime()) return false;
-          if (i.promo_ends_at && now > new Date(i.promo_ends_at).getTime()) return false;
-          return true;
-        })
+        .filter((i) => isPromoActiveNow(i))
         .map((i) => ({ item: i, discount: 1 - Number(i.promo_price) / Number(i.price) }))
         .sort((a, b) => b.discount - a.discount)
         .slice(0, 20)
         .map(({ item }) => toItem(item));
       const rendered = config.promotions_enabled && promoted.length > 0;
       if (rendered) {
-        sections.push({ key: "promotions", title: "Promoções", subtitle: "Ofertas ativas agora", emoji: "⭐", items: promoted });
+        sections.push({
+          key: "promotions",
+          title: "Promoções",
+          subtitle: "Ofertas ativas agora",
+          emoji: "⭐",
+          items: promoted,
+        });
       }
-      pushDiag("promotions", "Promoções", "⭐", promoted.length, rendered,
-        !config.promotions_enabled ? "Desativada" : promoted.length === 0 ? "Nenhuma promoção ativa" : "OK");
+      pushDiag(
+        "promotions",
+        "Promoções",
+        "⭐",
+        promoted.length,
+        rendered,
+        !config.promotions_enabled
+          ? "Desativada"
+          : promoted.length === 0
+            ? "Nenhuma promoção ativa"
+            : "OK",
+      );
     }
 
     // Weekly favorites — marked manually
@@ -165,17 +233,33 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(toItem);
       const rendered = config.weekly_favorites_enabled && weekly.length > 0;
       if (rendered) {
-        sections.push({ key: "weekly_favorites", title: "Queridinhos da Semana", subtitle: "Selecionados pelo restaurante", emoji: "❤️", items: weekly });
+        sections.push({
+          key: "weekly_favorites",
+          title: "Queridinhos da Semana",
+          subtitle: "Selecionados pelo restaurante",
+          emoji: "❤️",
+          items: weekly,
+        });
       }
-      pushDiag("weekly_favorites", "Queridinhos da Semana", "🔥", weekly.length, rendered,
-        !config.weekly_favorites_enabled ? "Desativada" : weekly.length === 0 ? "Marque produtos como Queridinho" : "OK");
+      pushDiag(
+        "weekly_favorites",
+        "Queridinhos da Semana",
+        "🔥",
+        weekly.length,
+        rendered,
+        !config.weekly_favorites_enabled
+          ? "Desativada"
+          : weekly.length === 0
+            ? "Marque produtos como Queridinho"
+            : "OK",
+      );
     }
 
     // Top rated — aggregate from order-level reviews
     {
       const stats = new Map<string, { sum: number; count: number }>();
-      for (const r of (reviewRows ?? []) as any[]) {
-        const orderItems = ((r as any).orders?.items ?? []) as any[];
+      for (const r of (reviewRows ?? []) as FeaturedReviewRow[]) {
+        const orderItems = r.orders?.items ?? [];
         if (!Array.isArray(orderItems)) continue;
         for (const oi of orderItems) {
           const id = String(oi?.id ?? "");
@@ -194,10 +278,26 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(({ id }) => toItem(itemMap.get(id)));
       const rendered = config.top_rated_enabled && ranked.length > 0;
       if (rendered) {
-        sections.push({ key: "top_rated", title: "Mais Bem Avaliados", subtitle: "Aprovados pelos clientes", emoji: "🏆", items: ranked });
+        sections.push({
+          key: "top_rated",
+          title: "Mais Bem Avaliados",
+          subtitle: "Aprovados pelos clientes",
+          emoji: "🏆",
+          items: ranked,
+        });
       }
-      pushDiag("top_rated", "Mais Bem Avaliados", "🏆", ranked.length, rendered,
-        !config.top_rated_enabled ? "Desativada" : ranked.length === 0 ? "Nenhum produto com 5+ avaliações" : "OK");
+      pushDiag(
+        "top_rated",
+        "Mais Bem Avaliados",
+        "🏆",
+        ranked.length,
+        rendered,
+        !config.top_rated_enabled
+          ? "Desativada"
+          : ranked.length === 0
+            ? "Nenhum produto com 5+ avaliações"
+            : "OK",
+      );
     }
 
     // New items — last 30 days
@@ -210,16 +310,32 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(toItem);
       const rendered = config.new_items_enabled && news.length > 0;
       if (rendered) {
-        sections.push({ key: "new_items", title: "Novidades", subtitle: `Adicionados nos últimos ${NEW_DAYS} dias`, emoji: "🆕", items: news });
+        sections.push({
+          key: "new_items",
+          title: "Novidades",
+          subtitle: `Adicionados nos últimos ${NEW_DAYS} dias`,
+          emoji: "🆕",
+          items: news,
+        });
       }
-      pushDiag("new_items", "Novidades", "🆕", news.length, rendered,
-        !config.new_items_enabled ? "Desativada" : news.length === 0 ? "Nenhum produto nos últimos 30 dias" : "OK");
+      pushDiag(
+        "new_items",
+        "Novidades",
+        "🆕",
+        news.length,
+        rendered,
+        !config.new_items_enabled
+          ? "Desativada"
+          : news.length === 0
+            ? "Nenhum produto nos últimos 30 dias"
+            : "OK",
+      );
     }
 
     // Customer favorites — most saved
     {
       const counts = new Map<string, number>();
-      for (const f of (favRows ?? []) as any[]) {
+      for (const f of (favRows ?? []) as FeaturedFavoriteRow[]) {
         counts.set(f.item_id, (counts.get(f.item_id) ?? 0) + 1);
       }
       const favs = Array.from(counts.entries())
@@ -229,18 +345,35 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(([id]) => toItem(itemMap.get(id)));
       const rendered = config.customer_favorites_enabled && favs.length > 0;
       if (rendered) {
-        sections.push({ key: "customer_favorites", title: "Favoritos dos Clientes", subtitle: "Os mais salvos", emoji: "😍", items: favs });
+        sections.push({
+          key: "customer_favorites",
+          title: "Favoritos dos Clientes",
+          subtitle: "Os mais salvos",
+          emoji: "😍",
+          items: favs,
+        });
       }
-      pushDiag("customer_favorites", "Favoritos dos Clientes", "😍", favs.length, rendered,
-        !config.customer_favorites_enabled ? "Desativada" : favs.length === 0 ? "Ninguém favoritou ainda" : "OK");
+      pushDiag(
+        "customer_favorites",
+        "Favoritos dos Clientes",
+        "😍",
+        favs.length,
+        rendered,
+        !config.customer_favorites_enabled
+          ? "Desativada"
+          : favs.length === 0
+            ? "Ninguém favoritou ainda"
+            : "OK",
+      );
     }
 
     // Half-half pizza — needs matching builder (pizzeria hint no longer blocks)
     {
-      const allBuilders = (builders ?? []) as any[];
+      const allBuilders = (builders ?? []) as FeaturedBuilderRow[];
       const builder =
-        allBuilders.find((b) => /meio\s*(a|\/)?\s*meio|meio-a-meio|1\/2/i.test(String(b.name ?? ""))) ??
-        (isPizzeria ? allBuilders[0] : undefined);
+        allBuilders.find((b) =>
+          /meio\s*(a|\/)?\s*meio|meio-a-meio|1\/2/i.test(String(b.name ?? "")),
+        ) ?? (isPizzeria ? allBuilders[0] : undefined);
       const rendered = config.half_half_pizza_enabled && !!builder;
       if (rendered && builder) {
         sections.push({
@@ -252,8 +385,18 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
           builderId: builder.id,
         });
       }
-      pushDiag("half_half_pizza", "Pizza Meio a Meio", "🍕", builder ? 1 : 0, rendered,
-        !config.half_half_pizza_enabled ? "Desativada" : !builder ? "Builder inexistente" : "Builder encontrado");
+      pushDiag(
+        "half_half_pizza",
+        "Pizza Meio a Meio",
+        "🍕",
+        builder ? 1 : 0,
+        rendered,
+        !config.half_half_pizza_enabled
+          ? "Desativada"
+          : !builder
+            ? "Builder inexistente"
+            : "Builder encontrado",
+      );
     }
 
     return { config, sections, diagnostics };
