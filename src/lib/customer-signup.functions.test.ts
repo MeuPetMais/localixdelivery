@@ -80,7 +80,13 @@ function createSupabaseMock(options?: {
   }));
   const deleteUser = vi.fn(async () => ({ error: options?.rollbackError ?? null }));
   const rpc = vi.fn(async () => ({ data: options?.rateLimitAllowed ?? true, error: null }));
-  const upsert = vi.fn(async () => ({ error: options?.roleError ?? null }));
+  const upsert = vi.fn(async function (this: { cloneRequestState?: () => void } | undefined) {
+    if (!this?.cloneRequestState) {
+      throw new Error("Cannot read properties of undefined (reading 'cloneRequestState')");
+    }
+    this.cloneRequestState();
+    return { error: options?.roleError ?? null };
+  });
 
   return {
     auth: { admin: { createUser, deleteUser } },
@@ -102,7 +108,8 @@ function createSupabaseMock(options?: {
       }
 
       if (table === "user_roles") {
-        return {
+        const userRolesTable = {
+          cloneRequestState: vi.fn(),
           upsert,
           select: vi.fn(() => ({
             eq: vi.fn(async () => ({
@@ -111,6 +118,7 @@ function createSupabaseMock(options?: {
             })),
           })),
         };
+        return userRolesTable;
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -128,7 +136,7 @@ describe("customer signup server flow", () => {
     password: "senha123",
   };
 
-  it("creates a confirmed customer and verifies the final role is only customer", async () => {
+  it("creates a confirmed customer and preserves the PostgREST table method context", async () => {
     const supabase = createSupabaseMock();
 
     await expect(createConfirmedCustomerUser(supabase, data)).resolves.toEqual({

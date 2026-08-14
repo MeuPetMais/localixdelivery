@@ -135,10 +135,10 @@ async function requireCustomerProfile(supabaseAdmin: SupabaseAdminLike, userId: 
 }
 
 async function requireOnlyCustomerRole(supabaseAdmin: SupabaseAdminLike, userId: string) {
-  const upsert = supabaseAdmin.from("user_roles").upsert;
-  if (!upsert) throw new Error("user_roles_upsert_unavailable");
+  const userRoles = supabaseAdmin.from("user_roles");
+  if (!userRoles.upsert) throw new Error("user_roles_upsert_unavailable");
 
-  const { error: roleError } = await upsert(
+  const { error: roleError } = await userRoles.upsert(
     { user_id: userId, role: "customer" },
     { onConflict: "user_id,role" },
   );
