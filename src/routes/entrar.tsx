@@ -12,6 +12,7 @@ import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { toastArgsFromAuthError } from "@/lib/auth-errors";
+import { createCustomerAccount } from "@/lib/customer-signup.functions";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -51,6 +52,7 @@ function CustomerAuthPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
   const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } = useCustomerNavigation();
+  const createCustomer = useServerFn(createCustomerAccount);
 
   useEffect(() => {
     let redirected = false;
@@ -147,20 +149,17 @@ return;
     }
     try {
       if (tab === "signup") {
-        if (import.meta.env.DEV) console.info("[auth-debug] signUp:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/entrar`,
-            data: { full_name: name },
-          },
-        });
+        if (import.meta.env.DEV) console.info("[auth-debug] customerSignUp:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
+        const created = await createCustomer({ data: { name, email, password } });
+        if (import.meta.env.DEV) {
+          console.info("[auth-debug] customerSignUp:after", { ok: true, userId: created.userId });
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (import.meta.env.DEV) {
           const er = error as { code?: string; status?: number; message?: string } | null;
-          console.info("[auth-debug] signUp:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+          console.info("[auth-debug] customerSignInAfterSignUp:after", { ok: !error, userId: data?.user?.id, hasSession: !!data?.session, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
         }
-        if (error) throw error;
+        if (error || !data.session) throw error ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.");
         toast.success("Conta criada! Bem-vindo(a).");
       } else {
         if (import.meta.env.DEV) console.info("[auth-debug] signInWithPassword:before", { ts: new Date().toISOString(), email, passwordLength: password.length, screen: "/entrar" });
@@ -251,7 +250,7 @@ return;
                   id="pwd"
                   name={tab === "signup" ? "new-password" : "password"}
                   required
-                  minLength={6}
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"

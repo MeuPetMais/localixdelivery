@@ -163,6 +163,8 @@ function AuthPage() {
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
+              account_type: "partner",
+              kind: "partner",
               owner_name: ownerName,
               store_name: storeName,
               whatsapp,
