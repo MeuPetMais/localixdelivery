@@ -6,13 +6,11 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Gift, Heart, Ticket, History, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { toastArgsFromAuthError } from "@/lib/auth-errors";
-import { createCustomerAccount } from "@/lib/customer-signup.functions";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -77,14 +75,11 @@ export const Route = createFileRoute("/entrar")({
 function CustomerAuthPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/entrar" });
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState<null | "google" | "apple" | "email">(null);
   const { currentRestaurantSlug, lastRestaurantSlug, prepareLoginRedirect } =
     useCustomerNavigation();
-  const createCustomer = useServerFn(createCustomerAccount);
 
   useEffect(() => {
     let redirected = false;
@@ -187,60 +182,32 @@ function CustomerAuthPage() {
       return;
     }
     try {
-      if (tab === "signup") {
-        if (import.meta.env.DEV)
-          console.info("[auth-debug] customerSignUp:before", {
-            ts: new Date().toISOString(),
-            email,
-            passwordLength: password.length,
-            screen: "/entrar",
-          });
-        const created = await createCustomer({ data: { name, email, password } });
-        if (import.meta.env.DEV) {
-          console.info("[auth-debug] customerSignUp:after", { ok: true, userId: created.userId });
-        }
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (import.meta.env.DEV) {
-          const er = error as { code?: string; status?: number; message?: string } | null;
-          console.info("[auth-debug] customerSignInAfterSignUp:after", {
-            ok: !error,
-            userId: data?.user?.id,
-            hasSession: !!data?.session,
-            errorCode: er?.code,
-            errorStatus: er?.status,
-            errorMessage: er?.message,
-          });
-        }
-        if (error || !data.session)
-          throw (
-            error ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.")
-          );
-        toast.success("Conta criada! Bem-vindo(a).");
-      } else {
-        if (import.meta.env.DEV)
-          console.info("[auth-debug] signInWithPassword:before", {
-            ts: new Date().toISOString(),
-            email,
-            passwordLength: password.length,
-            screen: "/entrar",
-          });
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (import.meta.env.DEV) {
-          const er = error as { code?: string; status?: number; message?: string } | null;
-          console.info("[auth-debug] signInWithPassword:after", {
-            ok: !error,
-            userId: data?.user?.id,
-            hasSession: !!data?.session,
-            errorCode: er?.code,
-            errorStatus: er?.status,
-            errorMessage: er?.message,
-          });
-        }
-        if (error) throw error;
+      if (import.meta.env.DEV)
+        console.info("[auth-debug] signInWithPassword:before", {
+          ts: new Date().toISOString(),
+          email,
+          passwordLength: password.length,
+          screen: "/entrar",
+        });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (import.meta.env.DEV) {
+        const er = error as { code?: string; status?: number; message?: string } | null;
+        console.info("[auth-debug] signInWithPassword:after", {
+          ok: !error,
+          userId: data?.user?.id,
+          hasSession: !!data?.session,
+          errorCode: er?.code,
+          errorStatus: er?.status,
+          errorMessage: er?.message,
+        });
       }
+      if (error || !data.session)
+        throw (
+          error ?? new Error("Não foi possível iniciar sua sessão. Tente entrar com seu e-mail.")
+        );
       goNext();
     } catch (err) {
-      const [title, opts] = toastArgsFromAuthError(err, tab === "signup" ? "signUp" : "signIn");
+      const [title, opts] = toastArgsFromAuthError(err, "signIn");
       toast.error(title, opts);
     } finally {
       setLoading(null);
@@ -297,81 +264,46 @@ function CustomerAuthPage() {
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          <Tabs
-            value={tab}
-            onValueChange={(v) => {
-              setTab(v as "signin" | "signup");
-              setPassword("");
-            }}
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Criar conta</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleEmail} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="voce@email.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pwd">Senha</Label>
+              <PasswordInput
+                id="pwd"
+                name="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
 
-            <form onSubmit={handleEmail} className="mt-4 space-y-3">
-              <TabsContent value="signup" className="m-0 space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    autoComplete="name"
-                    required={tab === "signup"}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Seu nome"
-                  />
-                </div>
-              </TabsContent>
+            <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={isBusy}>
+              {loading === "email" && <Loader2 className="h-4 w-4 animate-spin" />}
+              Entrar
+            </Button>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="voce@email.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pwd">Senha</Label>
-                <PasswordInput
-                  key={tab === "signup" ? "pwd-signup" : "pwd-signin"}
-                  id="pwd"
-                  name={tab === "signup" ? "new-password" : "password"}
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={tab === "signup" ? "new-password" : "current-password"}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="h-11 w-full text-base font-semibold"
-                disabled={isBusy}
-              >
-                {loading === "email" && <Loader2 className="h-4 w-4 animate-spin" />}
-                {tab === "signup" ? "Criar conta" : "Entrar"}
-              </Button>
-
-              {tab === "signin" && (
-                <Link
-                  to="/esqueci-senha"
-                  className="block text-center text-sm text-primary hover:underline"
-                >
-                  Esqueci minha senha
-                </Link>
-              )}
-            </form>
-          </Tabs>
+            <Link
+              to="/esqueci-senha"
+              className="block text-center text-sm text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+          </form>
         </Card>
 
         <div className="mt-6 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
