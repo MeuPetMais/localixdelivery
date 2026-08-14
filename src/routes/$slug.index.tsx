@@ -1797,9 +1797,10 @@ function CheckoutSheet({
           <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <Label htmlFor="create-customer-account">Criar conta</Label>
+                <Label htmlFor="create-customer-account">Criar conta ao finalizar pedido</Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Salve seus dados e acompanhe este pedido com login ativo.
+                  Salve seus dados e acompanhe seus pedidos. Sua conta será criada automaticamente
+                  ao finalizar.
                 </p>
               </div>
               <Switch
@@ -2105,11 +2106,17 @@ function CheckoutSheet({
           disabled={!effectiveOpen || belowMin || submitting || !canSubmitPricing}
         >
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-          {selectedPayment.online
-            ? selectedPayment.method === "pix"
-              ? "Pagar com Pix"
-              : "Pagar com Cartão"
-            : "Confirmar pedido"}
+          {!user && createAccount
+            ? selectedPayment.online
+              ? selectedPayment.method === "pix"
+                ? "Criar conta e pagar com Pix"
+                : "Criar conta e pagar com cartão"
+              : "Criar conta e confirmar pedido"
+            : selectedPayment.online
+              ? selectedPayment.method === "pix"
+                ? "Pagar com Pix"
+                : "Pagar com Cartão"
+              : "Confirmar pedido"}
         </Button>
       </SheetFooter>
 

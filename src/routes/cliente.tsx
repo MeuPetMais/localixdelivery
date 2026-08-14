@@ -68,35 +68,32 @@ const BENEFITS = [
 
 function AuthView() {
   const [loading, setLoading] = useState<null | "google" | "apple">(null);
-  const { restaurantPath, prepareLoginRedirect, currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const { restaurantPath, prepareLoginRedirect, currentRestaurantSlug, lastRestaurantSlug } =
+    useCustomerNavigation();
   const emailRedirect = restaurantPath ?? "/cliente";
 
   function prepareEmailLogin() {
     prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
   }
 
- async function handleOAuth(provider: "google" | "apple") {
-  setLoading(provider);
+  async function handleOAuth(provider: "google" | "apple") {
+    setLoading(provider);
 
-  prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
+    prepareLoginRedirect(currentRestaurantSlug ?? lastRestaurantSlug);
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: window.location.origin + "/entrar",
-    },
-  });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin + "/entrar",
+      },
+    });
 
-  if (error) {
-    toast.error(
-      `Não foi possível entrar com ${
-        provider === "google" ? "Google" : "Apple"
-      }`
-    );
-    setLoading(null);
-    return;
+    if (error) {
+      toast.error(`Não foi possível entrar com ${provider === "google" ? "Google" : "Apple"}`);
+      setLoading(null);
+      return;
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40">
@@ -107,7 +104,8 @@ function AuthView() {
           </div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight">Minha Conta</h1>
           <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
-            Entre para desbloquear vantagens exclusivas e pedir mais rápido nos seus restaurantes favoritos.
+            Entre para desbloquear vantagens exclusivas e pedir mais rápido nos seus restaurantes
+            favoritos.
           </p>
         </div>
 
@@ -146,20 +144,26 @@ function AuthView() {
           </Button>
 
           <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-wider text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />ou<span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" />
+            ou
+            <span className="h-px flex-1 bg-border" />
           </div>
 
-          <Button asChild variant="secondary" className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold">
+          <Button
+            asChild
+            variant="secondary"
+            className="h-12 w-full justify-center gap-2 rounded-xl text-base font-semibold"
+          >
             <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin}>
               <Mail className="h-5 w-5" /> Entrar com e-mail
             </Link>
           </Button>
 
           <div className="flex flex-col gap-1 pt-1 text-center text-sm">
-            <Link to="/entrar" search={{ redirect: emailRedirect }} onClick={prepareEmailLogin} className="font-semibold text-primary hover:underline">
-              Criar uma conta
-            </Link>
-            <Link to="/esqueci-senha" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+            <Link
+              to="/esqueci-senha"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
               Esqueci minha senha
             </Link>
           </div>
@@ -176,9 +180,20 @@ function AuthView() {
 function ProfileView({ user }: { user: User }) {
   const navigate = useNavigate();
   const { restaurantPath } = useCustomerNavigation();
-  const meta = (user.user_metadata ?? {}) as Record<string, any>;
-  const name = meta.full_name || meta.name || user.email?.split("@")[0] || "Cliente";
-  const avatar = meta.avatar_url || meta.picture;
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const metaName =
+    typeof meta.full_name === "string"
+      ? meta.full_name
+      : typeof meta.name === "string"
+        ? meta.name
+        : undefined;
+  const name = metaName || user.email?.split("@")[0] || "Cliente";
+  const avatar =
+    typeof meta.avatar_url === "string"
+      ? meta.avatar_url
+      : typeof meta.picture === "string"
+        ? meta.picture
+        : undefined;
   const initials = name
     .split(" ")
     .map((s: string) => s[0])
@@ -190,7 +205,7 @@ function ProfileView({ user }: { user: User }) {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
     if (restaurantPath) {
-      navigate({ to: restaurantPath as any, replace: true });
+      navigate({ to: restaurantPath as never, replace: true });
     } else {
       navigate({ to: "/cliente", replace: true });
     }
@@ -223,12 +238,12 @@ function ProfileView({ user }: { user: User }) {
         <Card className="bg-gradient-warm p-5 text-primary-foreground shadow-glow">
           <p className="text-sm opacity-90">Sua conta está ativa</p>
           <p className="mt-1 font-display text-2xl font-extrabold">Aproveite todos os benefícios</p>
-          <p className="mt-1 text-sm opacity-90">Favoritos, cupons e pedidos sincronizados em qualquer dispositivo.</p>
+          <p className="mt-1 text-sm opacity-90">
+            Favoritos, cupons e pedidos sincronizados em qualquer dispositivo.
+          </p>
         </Card>
 
         <LoyaltyProfileCard />
-
-
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <ProfileLink to="/favoritos" icon={Heart} label="Favoritos" />
@@ -236,14 +251,16 @@ function ProfileView({ user }: { user: User }) {
           <ProfileLink to="/meus-pedidos" icon={History} label="Meus Pedidos" />
           <ProfileLink to="/meus-enderecos" icon={MapPin} label="Meus Endereços" />
           <ProfileLink to={restaurantPath ?? "/cliente"} icon={Zap} label="Pedir agora" />
-
         </div>
 
         <NotifyPrefsCard />
 
         <Card className="p-4 text-sm text-muted-foreground">
           <p className="font-semibold text-foreground">Sessão segura</p>
-          <p className="mt-1">Sua sessão fica ativa por até 30 dias neste dispositivo. Saia a qualquer momento pelo botão acima.</p>
+          <p className="mt-1">
+            Sua sessão fica ativa por até 30 dias neste dispositivo. Saia a qualquer momento pelo
+            botão acima.
+          </p>
         </Card>
       </main>
     </div>
@@ -274,7 +291,9 @@ function NotifyPrefsCard() {
       try {
         const regs = await navigator.serviceWorker.getRegistrations();
         swCount = regs.length;
-      } catch {}
+      } catch {
+        void 0;
+      }
     }
     const before = hasAPI ? Notification.permission : "denied";
     console.log("[notify][audit]", {
@@ -356,16 +375,32 @@ function NotifyPrefsCard() {
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="font-semibold text-foreground">Notificações</p>
-          <p className="text-xs text-muted-foreground">Como você quer ser avisado sobre seus pedidos</p>
+          <p className="text-xs text-muted-foreground">
+            Como você quer ser avisado sobre seus pedidos
+          </p>
         </div>
-        <Button size="sm" variant="outline" onClick={handleTest}>Testar</Button>
+        <Button size="sm" variant="outline" onClick={handleTest}>
+          Testar
+        </Button>
       </div>
       <div className="space-y-3">
-        <PrefRow icon={Volume2} label="Sons" desc="Toque ao receber atualizações"
-          checked={prefs.sound} onChange={(v) => update({ sound: v })} />
-        <PrefRow icon={Vibrate} label="Vibração" desc="Vibrar o aparelho (Android)"
-          checked={prefs.vibration} onChange={(v) => update({ vibration: v })} />
-        <PrefRow icon={Bell} label="Notificações do navegador"
+        <PrefRow
+          icon={Volume2}
+          label="Sons"
+          desc="Toque ao receber atualizações"
+          checked={prefs.sound}
+          onChange={(v) => update({ sound: v })}
+        />
+        <PrefRow
+          icon={Vibrate}
+          label="Vibração"
+          desc="Vibrar o aparelho (Android)"
+          checked={prefs.vibration}
+          onChange={(v) => update({ vibration: v })}
+        />
+        <PrefRow
+          icon={Bell}
+          label="Notificações do navegador"
           desc={
             perm === "denied"
               ? "Bloqueadas — cadeado ao lado do endereço → Permissões → Notificações → Permitir"
@@ -374,22 +409,34 @@ function NotifyPrefsCard() {
                 : "Toque para permitir no navegador"
           }
           checked={prefs.notifications && perm === "granted"}
-          onChange={handleToggleNotifications} />
+          onChange={handleToggleNotifications}
+        />
       </div>
       {perm === "denied" && (
         <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
-          As notificações foram bloqueadas por este site. No Chrome Android: toque no cadeado ao lado do endereço →
-          Permissões → Notificações → Permitir. Depois volte aqui e toque em "Testar".
+          As notificações foram bloqueadas por este site. No Chrome Android: toque no cadeado ao
+          lado do endereço → Permissões → Notificações → Permitir. Depois volte aqui e toque em
+          "Testar".
         </p>
       )}
     </Card>
   );
 }
 
-
-function PrefRow({ icon: Icon, label, desc, checked, onChange, disabled }: {
-  icon: typeof Heart; label: string; desc: string;
-  checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
+function PrefRow({
+  icon: Icon,
+  label,
+  desc,
+  checked,
+  onChange,
+  disabled,
+}: {
+  icon: typeof Heart;
+  label: string;
+  desc: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -409,7 +456,7 @@ function PrefRow({ icon: Icon, label, desc, checked, onChange, disabled }: {
 
 function ProfileLink({ to, icon: Icon, label }: { to: string; icon: typeof Heart; label: string }) {
   return (
-    <Link to={to as any} className="group">
+    <Link to={to as never} className="group">
       <Card className="flex items-center justify-between p-4 transition-all group-hover:border-primary/40 group-hover:shadow-md">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -426,7 +473,10 @@ function ProfileLink({ to, icon: Icon, label }: { to: string; icon: typeof Heart
 function GoogleIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#EA4335" d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z" />
+      <path
+        fill="#EA4335"
+        d="M12 11v3.2h5.07c-.22 1.28-1.62 3.74-5.07 3.74-3.05 0-5.54-2.53-5.54-5.64s2.49-5.64 5.54-5.64c1.74 0 2.9.74 3.57 1.38l2.43-2.34C16.42 4.36 14.4 3.5 12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c4.9 0 8.14-3.44 8.14-8.28 0-.56-.06-.98-.13-1.42H12z"
+      />
     </svg>
   );
 }
@@ -452,7 +502,9 @@ function LoyaltyProfileCard() {
             <p className="font-semibold truncate">🎁 Programa de Fidelidade</p>
             <p className="text-xs text-muted-foreground truncate">
               {data.balance} pts · {data.level ?? "Iniciante"}
-              {data.nextLevel ? ` · Faltam ${data.nextLevel.remaining} p/ ${data.nextLevel.name}` : ""}
+              {data.nextLevel
+                ? ` · Faltam ${data.nextLevel.remaining} p/ ${data.nextLevel.name}`
+                : ""}
             </p>
           </div>
         </div>
