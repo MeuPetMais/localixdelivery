@@ -1,4 +1,4 @@
-// RC-UX.3 — Testes de utilitários do convite/ativação do entregador.
+// RC-UX.3 - Testes de utilitarios do convite/ativacao do entregador.
 import { describe, it, expect } from "vitest";
 import {
   maskPhoneBR,
@@ -15,7 +15,7 @@ import {
 } from "./driver-invite";
 
 describe("driver-invite masks", () => {
-  it("mascara telefone móvel", () => {
+  it("mascara telefone movel", () => {
     expect(maskPhoneBR("11999998888")).toBe("(11) 99999-8888");
   });
   it("mascara telefone fixo", () => {
@@ -28,17 +28,17 @@ describe("driver-invite masks", () => {
 });
 
 describe("driver-invite validators", () => {
-  it("telefone: aceita 10/11 dígitos", () => {
+  it("telefone: aceita 10/11 digitos", () => {
     expect(isValidPhoneBR("(11) 99999-8888")).toBe(true);
     expect(isValidPhoneBR("(11) 3000-1234")).toBe(true);
     expect(isValidPhoneBR("123")).toBe(false);
   });
-  it("CPF: rejeita inválido e repetido", () => {
+  it("CPF: rejeita invalido e repetido", () => {
     expect(isValidCPF("111.111.111-11")).toBe(false);
     expect(isValidCPF("123.456.789-00")).toBe(false);
   });
-  it("CPF: aceita válido", () => {
-    // 529.982.247-25 é um CPF de exemplo válido.
+  it("CPF: aceita valido", () => {
+    // 529.982.247-25 e um CPF de exemplo valido.
     expect(isValidCPF("529.982.247-25")).toBe(true);
   });
 });
@@ -50,6 +50,7 @@ describe("driver-invite messaging", () => {
       restaurantName: "Hamburgueria Sanliver",
     });
     expect(msg).toContain("Olá, João!");
+    expect(msg).toContain("Você foi cadastrado");
     expect(msg).toContain("Hamburgueria Sanliver");
     expect(msg).toContain(DRIVER_ACTIVATION_URL);
   });
@@ -61,6 +62,7 @@ describe("driver-invite messaging", () => {
     });
     expect(url.startsWith("https://wa.me/5511999998888?text=")).toBe(true);
     expect(url).toContain(encodeURIComponent("Sanliver"));
+    expect(decodeURIComponent(url.split("text=")[1])).toContain("Olá, João!");
   });
   it("monta mensagem de acesso ao app sem fluxo de ativacao", () => {
     const msg = buildDriverAppAccessMessage({
@@ -81,22 +83,30 @@ describe("driver-invite messaging", () => {
     });
     expect(url.startsWith("https://wa.me/5511999998888?text=")).toBe(true);
   });
-  it("monta mensagem e WhatsApp de recuperacao com link seguro", () => {
-    const recoveryUrl = "https://example.supabase.co/auth/v1/verify?token_hash=abc&type=recovery";
+  it("monta mensagem e WhatsApp de recuperacao com link seguro em UTF-8", () => {
+    const recoveryUrl =
+      "https://localixdelivery.rngdigital.com.br/entregador/redefinir-senha?token_hash=abc&type=recovery";
     const msg = buildDriverRecoveryMessage({
-      driverName: "Joao",
-      restaurantName: "Sanliver",
+      driverName: "João",
+      restaurantName: "São Bento",
       recoveryUrl,
     });
+    expect(msg).toContain("Olá, João!");
+    expect(msg).toContain("Aqui é da São Bento.");
     expect(msg).toContain("redefinir sua senha");
+    expect(msg).toContain("Se você não solicitou essa alteração");
     expect(msg).toContain(recoveryUrl);
 
     const url = buildDriverRecoveryWhatsAppUrl({
       phone: "11999998888",
-      driverName: "Joao",
-      restaurantName: "Sanliver",
+      driverName: "João",
+      restaurantName: "São Bento",
       recoveryUrl,
     });
+    const decodedMessage = decodeURIComponent(url.split("text=")[1]);
     expect(url).toContain(encodeURIComponent(recoveryUrl));
+    expect(decodedMessage).toContain("Olá, João!");
+    expect(decodedMessage).toContain("Aqui é da São Bento.");
+    expect(decodedMessage).toContain("alteração");
   });
 });

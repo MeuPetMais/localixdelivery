@@ -6,6 +6,7 @@ import {
   isGeneratedDriverEmail,
   resolveDriverLoginEmail,
 } from "./driver-auth";
+import { buildDriverPasswordRecoveryUrl } from "./driver-activation.functions";
 import { getPasswordVisibilityConfig, togglePasswordVisibility } from "./password-visibility";
 
 const digits = (s: string) => s.replace(/\D/g, "");
@@ -118,5 +119,14 @@ describe("driver password UX", () => {
   it("identifies generated fallback driver emails", () => {
     expect(isGeneratedDriverEmail("driver+abc@localix.app", "abc")).toBe(true);
     expect(isGeneratedDriverEmail("driver@example.com", "abc")).toBe(false);
+  });
+
+  it("builds Localix recovery URL with token_hash and recovery type", () => {
+    const url = new URL(buildDriverPasswordRecoveryUrl("hashed-token"));
+    expect(`${url.origin}${url.pathname}`).toBe(
+      "https://localixdelivery.rngdigital.com.br/entregador/redefinir-senha",
+    );
+    expect(url.searchParams.get("token_hash")).toBe("hashed-token");
+    expect(url.searchParams.get("type")).toBe("recovery");
   });
 });

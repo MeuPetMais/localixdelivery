@@ -76,6 +76,13 @@ function getDriverRecoveryRedirectUrl() {
   return `${normalizedBase}${DRIVER_PASSWORD_RESET_APP_URL}`;
 }
 
+export function buildDriverPasswordRecoveryUrl(hashedToken: string) {
+  const url = new URL(getDriverRecoveryRedirectUrl());
+  url.searchParams.set("token_hash", hashedToken);
+  url.searchParams.set("type", "recovery");
+  return url.toString();
+}
+
 async function canManageRestaurant(
   supabaseAdmin: SupabaseLike,
   context: { userId: string; supabase: RestaurantScopedClient },
@@ -414,9 +421,13 @@ export const generateDriverPasswordRecoveryLink = createServerFn({ method: "POST
       email,
       options: { redirectTo: getDriverRecoveryRedirectUrl() },
     });
-    if (linkErr || !linkData?.properties?.action_link) {
+    if (linkErr || !linkData?.properties?.hashed_token) {
       throw new Error(linkErr?.message ?? "Nao foi possivel gerar o link de recuperacao.");
     }
+    if (linkData.properties.verification_type !== "recovery") {
+      throw new Error("Nao foi possivel gerar um link de recuperacao valido.");
+    }
+    const recoveryLink = buildDriverPasswordRecoveryUrl(linkData.properties.hashed_token);
 
     await driverAudit(supabaseAdmin).insert({
       actor_id: context.userId,
@@ -433,7 +444,7 @@ export const generateDriverPasswordRecoveryLink = createServerFn({ method: "POST
 
     return {
       ok: true as const,
-      recoveryLink: linkData.properties.action_link,
+      recoveryLink,
       driverName: driver.name,
       driverPhone: driver.phone,
       correlationId,

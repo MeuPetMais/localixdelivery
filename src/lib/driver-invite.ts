@@ -1,21 +1,21 @@
-// RC-UX.3 — Constantes e utilidades para convite/ativação do entregador.
-// Sem regras de negócio: apenas formatação, validação leve e montagem
-// de mensagens/links. Nenhuma dependência de rede ou banco.
+// RC-UX.3 - Constantes e utilidades para convite/ativacao do entregador.
+// Sem regras de negocio: apenas formatacao, validacao leve e montagem
+// de mensagens/links. Nenhuma dependencia de rede ou banco.
 
-/** URL oficial de ativação (landing publicada dentro do app principal). */
+/** URL oficial de ativacao (landing publicada dentro do app principal). */
 export const APP_BASE_URL = "https://localixdelivery.rngdigital.com.br";
 export const DRIVER_ACTIVATION_URL = `${APP_BASE_URL}/entregador`;
-/** Caminho relativo dentro do próprio app (fallback web). */
+/** Caminho relativo dentro do proprio app (fallback web). */
 export const DRIVER_ACTIVATION_APP_URL = "/entregador";
 export const DRIVER_PASSWORD_RESET_APP_URL = "/entregador/redefinir-senha";
 
-/* -------------------- Máscaras -------------------- */
+/* -------------------- Mascaras -------------------- */
 
 export function onlyDigits(v: string | null | undefined): string {
   return (v ?? "").replace(/\D/g, "");
 }
 
-/** Máscara BR: (11) 90000-0000 / (11) 3000-0000 */
+/** Mascara BR: (11) 90000-0000 / (11) 3000-0000 */
 export function maskPhoneBR(v: string): string {
   const d = onlyDigits(v).slice(0, 11);
   if (d.length <= 2) return d;
@@ -24,7 +24,7 @@ export function maskPhoneBR(v: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-/** Máscara CPF: 000.000.000-00 */
+/** Mascara CPF: 000.000.000-00 */
 export function maskCPF(v: string): string {
   const d = onlyDigits(v).slice(0, 11);
   const p1 = d.slice(0, 3);
@@ -38,14 +38,14 @@ export function maskCPF(v: string): string {
   return out;
 }
 
-/* -------------------- Validações -------------------- */
+/* -------------------- Validacoes -------------------- */
 
 export function isValidPhoneBR(v: string): boolean {
   const d = onlyDigits(v);
   return d.length === 10 || d.length === 11;
 }
 
-/** Validação oficial do CPF (dígitos verificadores). */
+/** Validacao oficial do CPF (digitos verificadores). */
 export function isValidCPF(v: string): boolean {
   const d = onlyDigits(v);
   if (d.length !== 11) return false;
@@ -76,10 +76,10 @@ export function buildInviteMessage(opts: {
     `Você foi cadastrado como entregador da ${opts.restaurantName}.`,
     "Agora basta ativar sua conta:",
     "",
-    "1️⃣ Instale o aplicativo Localix Entregador.",
-    "2️⃣ Abra o aplicativo.",
-    "3️⃣ Informe seu CPF e telefone.",
-    "4️⃣ Crie sua senha.",
+    "1. Instale o aplicativo Localix Entregador.",
+    "2. Abra o aplicativo.",
+    "3. Informe seu CPF e telefone.",
+    "4. Crie sua senha.",
     "",
     `Link: ${url}`,
     "",
@@ -102,11 +102,11 @@ export function buildDriverAppAccessMessage(opts: {
   appUrl?: string;
 }): string {
   const url = opts.appUrl ?? DRIVER_ACTIVATION_URL;
-  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olÃ¡";
+  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olá";
   return [
-    `OlÃ¡, ${firstName}!`,
+    `Olá, ${firstName}!`,
     "",
-    `Aqui Ã© da ${opts.restaurantName}.`,
+    `Aqui é da ${opts.restaurantName}.`,
     "Para acessar o app Localix Entregador, use este link:",
     "",
     `Link: ${url}`,
@@ -120,16 +120,16 @@ export function buildDriverRecoveryMessage(opts: {
   restaurantName: string;
   recoveryUrl: string;
 }): string {
-  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olÃ¡";
+  const firstName = opts.driverName.trim().split(/\s+/)[0] || "olá";
   return [
-    `OlÃ¡, ${firstName}!`,
+    `Olá, ${firstName}!`,
     "",
-    `Aqui Ã© da ${opts.restaurantName}.`,
+    `Aqui é da ${opts.restaurantName}.`,
     "Use este link seguro para redefinir sua senha do app Localix Entregador:",
     "",
-    `Link: ${opts.recoveryUrl}`,
+    opts.recoveryUrl,
     "",
-    "Se vocÃª nÃ£o solicitou essa alteraÃ§Ã£o, ignore esta mensagem e fale com o restaurante.",
+    "Se você não solicitou essa alteração, ignore esta mensagem e fale com o restaurante.",
   ].join("\n");
 }
 
