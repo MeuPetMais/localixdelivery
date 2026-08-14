@@ -1356,7 +1356,7 @@ function CheckoutSheet({
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [createAccount, setCreateAccount] = useState(true);
+  const [createAccount, setCreateAccount] = useState(false);
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   type PayOption = CheckoutPaymentOption;
@@ -1383,6 +1383,7 @@ function CheckoutSheet({
 
   const gateway = getGatewayDisplay(primaryProviderId);
 
+  const canUseOnlinePayment = !!user || createAccount;
   const paymentOptions: PayOption[] = (
     readiness?.ready
       ? [
@@ -1402,7 +1403,7 @@ function CheckoutSheet({
         ]
       : BASE_METHODS
   ).filter((option) => {
-    if (!user && option.online) {
+    if (!canUseOnlinePayment && option.online) {
       return false;
     }
 
@@ -1444,6 +1445,11 @@ function CheckoutSheet({
       return data as any;
     },
   });
+
+  useEffect(() => {
+    if (paymentOptions.some((option) => option.id === paymentId)) return;
+    setPaymentId(paymentOptions[0]?.id ?? "cash");
+  }, [paymentId, paymentOptions]);
 
   // Load saved addresses
   const { data: addresses = [] } = useQuery({
@@ -2002,6 +2008,17 @@ function CheckoutSheet({
 
         <div className="space-y-1.5">
           <Label>Forma de pagamento</Label>
+          {!user && !createAccount && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+              Para pagar com Pix ou Cartão Online, entre na sua conta ou marque "Criar conta ao
+              finalizar pedido".
+              <Button asChild variant="link" className="h-auto px-1 py-0 text-xs">
+                <Link to="/entrar" search={{ redirect: `/${restaurant.slug}` }}>
+                  Entrar agora
+                </Link>
+              </Button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {paymentOptions.map((p) => (
               <button
