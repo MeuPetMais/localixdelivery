@@ -2391,14 +2391,14 @@ function MobileCategorySheet({
                   onOpenChange(false);
                   window.setTimeout(() => scrollToMenuSection(category.targetId), 180);
                 }}
-                className={`min-h-[112px] rounded-2xl border bg-card p-3 text-left shadow-sm transition active:scale-[0.98] ${
+                className={`min-h-[96px] rounded-2xl border bg-card p-2.5 text-left shadow-sm transition active:scale-[0.98] ${
                   isActive
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-border text-foreground hover:border-primary/40 hover:bg-primary/5"
                 }`}
               >
                 <span
-                  className={`mb-2 grid h-10 w-10 place-items-center rounded-xl ${
+                  className={`mb-1.5 grid h-9 w-9 place-items-center rounded-xl ${
                     isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -2408,7 +2408,7 @@ function MobileCategorySheet({
                   {category.name}
                 </span>
                 <span
-                  className={`mt-1 block text-xs font-semibold ${
+                  className={`mt-0.5 block text-xs font-semibold ${
                     isActive ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
