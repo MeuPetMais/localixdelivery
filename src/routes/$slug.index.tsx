@@ -64,12 +64,24 @@ import {
   Heart,
   Search,
   LayoutGrid,
-  Menu,
   X,
   Gift,
   Cake,
   Flame,
   Trophy,
+  Hamburger,
+  CupSoda,
+  CakeSlice,
+  Utensils,
+  Package,
+  CirclePlus,
+  Pizza,
+  IceCreamBowl,
+  Coffee,
+  Salad,
+  Sandwich,
+  Donut,
+  type LucideIcon,
 } from "lucide-react";
 import {
   getFeaturedSections,
@@ -1192,56 +1204,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           })()}
         </div>
 
-        {/* Floating "Categorias" button — primary nav aid on long menus */}
-        {categories.length > 3 && (
-          <Sheet open={catsSheetOpen} onOpenChange={setCatsSheetOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Ver categorias do cardápio"
-                className="fixed right-4 z-30 inline-flex items-center gap-2 rounded-full bg-primary pl-4 pr-5 py-3 text-primary-foreground shadow-float transition hover:scale-105 active:scale-95"
-                style={{ bottom: "calc(140px + env(safe-area-inset-bottom))" }}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="text-sm font-bold">Categorias</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[80vh] rounded-t-3xl">
-              <SheetHeader>
-                <SheetTitle className="font-display text-xl">Categorias</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 grid grid-cols-2 gap-2 overflow-y-auto pb-4">
-                {categories
-                  .map((c) => ({
-                    c,
-                    count: items.filter((i) => i.category_id === c.id && matchesQuery(i)).length,
-                  }))
-                  .filter(({ count }) => count > 0)
-                  .map(({ c, count }) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => {
-                        setCatsSheetOpen(false);
-                        setTimeout(() => {
-                          const el = document.getElementById(`cat-${c.id}`);
-                          if (!el) return;
-                          const top = el.getBoundingClientRect().top + window.scrollY - 80;
-                          window.scrollTo({ top, behavior: "smooth" });
-                        }, 150);
-                      }}
-                      className="flex items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3 text-left font-semibold transition hover:border-primary/40 hover:bg-primary/5"
-                    >
-                      <span className="truncate">{c.name}</span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                        {count}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            </SheetContent>
-          </Sheet>
-        )}
+        <MobileCategorySheet
+          open={catsSheetOpen}
+          onOpenChange={setCatsSheetOpen}
+          categories={categories}
+          items={items}
+          matchesQuery={matchesQuery}
+          hasCart={totalQty > 0}
+        />
       </div>
 
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
@@ -2278,6 +2248,181 @@ function FeaturedSections({
   );
 }
 
+type CategoryMenuItem = {
+  id: string;
+  name: string;
+  count: number;
+  targetId: string;
+};
+
+const categoryIconRules: Array<{ pattern: RegExp; icon: LucideIcon }> = [
+  { pattern: /hamburg|burger|smash|x-?burg|lanche|sandu/i, icon: Hamburger },
+  { pattern: /pizza|pizz/i, icon: Pizza },
+  { pattern: /bebida|refri|refrigerante|suco|agua|drink|soda/i, icon: CupSoda },
+  { pattern: /milk|shake|vitamina|copo|acai|acai/i, icon: IceCreamBowl },
+  { pattern: /sobremesa|doce|bolo|cake|torta/i, icon: CakeSlice },
+  { pattern: /sorvete|gelato|picole|ice/i, icon: IceCreamBowl },
+  { pattern: /combo|kit|promocao|oferta|familia/i, icon: Package },
+  { pattern: /adicional|extra|acrescimo|complemento/i, icon: CirclePlus },
+  { pattern: /porcao|batata|frita|aperitivo|entrada/i, icon: Utensils },
+  { pattern: /cafe|coffee|capuccino/i, icon: Coffee },
+  { pattern: /salada|natural|fit|vegan/i, icon: Salad },
+  { pattern: /donut|rosquinha/i, icon: Donut },
+];
+
+function normalizeCategoryName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getCategoryIcon(name: string) {
+  const normalized = normalizeCategoryName(name);
+  return categoryIconRules.find((rule) => rule.pattern.test(normalized))?.icon ?? Sandwich;
+}
+
+function scrollToMenuSection(targetId: string) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - 88;
+  window.scrollTo({ top, behavior: "smooth" });
+  el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
+  window.setTimeout(() => {
+    el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl");
+  }, 1200);
+}
+
+function MobileCategorySheet({
+  open,
+  onOpenChange,
+  categories,
+  items,
+  matchesQuery,
+  hasCart,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  categories: any[];
+  items: any[];
+  matchesQuery: (it: any) => boolean;
+  hasCart: boolean;
+}) {
+  const categoryItems = useMemo<CategoryMenuItem[]>(
+    () =>
+      categories
+        .map((category) => ({
+          id: category.id,
+          name: String(category.name ?? "Categoria"),
+          count: items.filter((item) => item.category_id === category.id && matchesQuery(item))
+            .length,
+          targetId: `cat-${category.id}`,
+        }))
+        .filter((category) => category.count > 0),
+    [categories, items, matchesQuery],
+  );
+  const [activeId, setActiveId] = useState<string | null>(categoryItems[0]?.targetId ?? null);
+
+  useEffect(() => {
+    if (!categoryItems.length) return;
+    const targets = categoryItems
+      .map((category) => document.getElementById(category.targetId))
+      .filter(Boolean) as HTMLElement[];
+    if (!targets.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveId(visible[0].target.id);
+      },
+      { rootMargin: "-104px 0px -58% 0px", threshold: 0 },
+    );
+    for (const target of targets) observer.observe(target);
+    return () => observer.disconnect();
+  }, [categoryItems]);
+
+  useEffect(() => {
+    if (activeId || !categoryItems[0]) return;
+    setActiveId(categoryItems[0].targetId);
+  }, [activeId, categoryItems]);
+
+  if (!categoryItems.length) return null;
+
+  const bottom = hasCart
+    ? "calc(140px + env(safe-area-inset-bottom))"
+    : "calc(84px + env(safe-area-inset-bottom))";
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="Abrir categorias"
+          className="fixed right-4 z-30 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-float transition hover:scale-105 active:scale-95 sm:hidden"
+          style={{ bottom }}
+        >
+          <LayoutGrid className="h-5 w-5" />
+          <span className="text-sm font-bold">Categorias</span>
+        </button>
+      </SheetTrigger>
+      <SheetContent
+        side="bottom"
+        closeAriaLabel="Fechar categorias"
+        className="max-h-[78dvh] overflow-hidden rounded-t-3xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3"
+      >
+        <div aria-hidden className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/25" />
+        <SheetHeader className="pr-10 text-left">
+          <SheetTitle className="flex items-center gap-2 font-display text-xl">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            Categorias
+          </SheetTitle>
+        </SheetHeader>
+        <div className="mt-4 grid max-h-[calc(78dvh-6.5rem)] grid-cols-2 gap-2 overflow-y-auto overscroll-contain pb-2">
+          {categoryItems.map((category) => {
+            const Icon = getCategoryIcon(category.name);
+            const isActive = activeId === category.targetId;
+            const countLabel = `${category.count} ${category.count === 1 ? "item" : "itens"}`;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  window.setTimeout(() => scrollToMenuSection(category.targetId), 180);
+                }}
+                className={`min-h-[112px] rounded-2xl border bg-card p-3 text-left shadow-sm transition active:scale-[0.98] ${
+                  isActive
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-foreground hover:border-primary/40 hover:bg-primary/5"
+                }`}
+              >
+                <span
+                  className={`mb-2 grid h-10 w-10 place-items-center rounded-xl ${
+                    isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
+                  {category.name}
+                </span>
+                <span
+                  className={`mt-1 block text-xs font-semibold ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {countLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function SmartCategoryMenu({
   slug,
   categories,
@@ -2379,14 +2524,9 @@ function SmartCategoryMenu({
     e.preventDefault();
     const el = document.getElementById(id);
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 80;
-    window.scrollTo({ top, behavior: "smooth" });
+    scrollToMenuSection(id);
     setActive(id);
     clickLockRef.current = Date.now() + 1000;
-    el.classList.add("ring-2", "ring-primary/60", "rounded-2xl");
-    window.setTimeout(() => {
-      el.classList.remove("ring-2", "ring-primary/60", "rounded-2xl");
-    }, 1200);
   };
 
   return (
@@ -2417,7 +2557,7 @@ function SmartCategoryMenu({
       {menuItems.length > 0 && (
         <div
           ref={pillsRowRef}
-          className="flex gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="hidden gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] sm:flex [&::-webkit-scrollbar]:hidden"
         >
           {menuItems.map((m) => {
             const isActive = active === m.id;
