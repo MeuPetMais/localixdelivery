@@ -161,7 +161,14 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
             <div className="min-w-0">
               <h3 className="line-clamp-1 font-bold leading-snug">{fav.name ?? "Produto removido"}</h3>
               <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                {fav.categoryName && <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">{fav.categoryName}</Badge>}
+                {fav.categoryName && (
+                  <Badge
+                    variant="secondary"
+                    className="max-w-full truncate rounded-full px-2 py-0 text-[10px]"
+                  >
+                    {fav.categoryName}
+                  </Badge>
+                )}
                 <span className="line-clamp-1">{fav.restaurantName}</span>
               </div>
             </div>
@@ -175,9 +182,9 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
             </button>
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+          <div className="mt-auto flex min-w-0 flex-col items-stretch gap-2 pt-2 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
             {fav.available ? (
-              <div className="flex items-baseline gap-2">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 {fav.promoPrice != null && fav.price != null ? (
                   <>
                     <span className="font-display text-base font-extrabold text-primary">{brl(fav.promoPrice)}</span>
@@ -192,7 +199,12 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
                 <AlertTriangle className="h-3.5 w-3.5" /> Produto indisponível
               </span>
             )}
-            <Button size="sm" className="rounded-full" disabled={!fav.available} onClick={reorder}>
+            <Button
+              size="sm"
+              className="w-full justify-center rounded-full min-[420px]:w-auto min-[420px]:shrink-0"
+              disabled={!fav.available}
+              onClick={reorder}
+            >
               <ShoppingBag className="mr-1.5 h-4 w-4" />
               {fav.kind === "builder" ? "Montar" : "Pedir novamente"}
             </Button>
