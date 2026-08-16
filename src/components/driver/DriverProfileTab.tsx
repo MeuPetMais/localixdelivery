@@ -2,6 +2,7 @@
 // UI de perfil completo: dados pessoais, veículo, documentos, segurança,
 // app (PWA + verificar atualização), suporte e logout.
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -20,6 +21,10 @@ import { updateMyDriverProfile } from "@/lib/delivery-drivers.functions";
 import { uploadDriverAsset, type DriverAssetKind } from "@/lib/driver-upload";
 import { PwaInstallButton } from "@/components/driver/PwaInstallModal";
 import { checkForDriverAppUpdate } from "@/lib/pwa-driver-update";
+import {
+  buildDriverSupportWhatsAppUrl,
+  getConfiguredDriverSupportWhatsApp,
+} from "@/lib/driver-support";
 
 type Driver = {
   id: string;
@@ -66,6 +71,8 @@ export function DriverProfileTab(props: { driver: Driver }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changing, setChanging] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const supportPhone = getConfiguredDriverSupportWhatsApp(import.meta.env);
+  const supportUrl = buildDriverSupportWhatsAppUrl(supportPhone, { name });
 
   const days = useMemo(
     () => Math.max(0, Math.round((Date.now() - new Date(d.created_at).getTime()) / 86400000)),
@@ -287,22 +294,35 @@ export function DriverProfileTab(props: { driver: Driver }) {
 
       {/* Suporte */}
       <Section icon={<LifeBuoy className="h-4 w-4" />} title="Suporte">
-        <a
+        <Link
           className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2 text-sm hover:bg-muted"
-          href="https://ajuda.localix.app/entregador"
-          target="_blank" rel="noreferrer"
+          to="/entregador/ajuda"
         >
           Perguntas frequentes (FAQ)
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </a>
-        <a
-          className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2 text-sm hover:bg-muted"
-          href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20do%20app%20do%20entregador."
-          target="_blank" rel="noreferrer"
-        >
-          Falar com o suporte
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </a>
+        </Link>
+        {supportUrl ? (
+          <a
+            className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2 text-sm hover:bg-muted"
+            href={supportUrl}
+            target="_blank" rel="noreferrer"
+          >
+            Falar com o suporte
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="flex w-full cursor-not-allowed items-center justify-between rounded-xl border border-border/50 px-3 py-2 text-left text-sm text-muted-foreground"
+            disabled
+          >
+            <span className="flex min-w-0 flex-col">
+              <span>Falar com o suporte</span>
+              <span className="text-xs font-normal">Suporte temporariamente indisponível</span>
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </Section>
 
       <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>

@@ -37,6 +37,7 @@ import { Route as EntregadorRedefinirSenhaRouteImport } from './routes/entregado
 import { Route as EntregadorEsqueciSenhaRouteImport } from './routes/entregador.esqueci-senha'
 import { Route as EntregadorEntrarRouteImport } from './routes/entregador.entrar'
 import { Route as EntregadorAtivarRouteImport } from './routes/entregador.ativar'
+import { Route as EntregadorAjudaRouteImport } from './routes/entregador.ajuda'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransacoesRouteImport } from './routes/admin.transacoes'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
@@ -227,6 +228,11 @@ const EntregadorEntrarRoute = EntregadorEntrarRouteImport.update({
 const EntregadorAtivarRoute = EntregadorAtivarRouteImport.update({
   id: '/entregador/ativar',
   path: '/entregador/ativar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntregadorAjudaRoute = EntregadorAjudaRouteImport.update({
+  id: '/entregador/ajuda',
+  path: '/entregador/ajuda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -554,6 +560,7 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
+  '/entregador/ajuda': typeof EntregadorAjudaRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
@@ -632,6 +639,7 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin/login': typeof AdminLoginRoute
+  '/entregador/ajuda': typeof EntregadorAjudaRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
@@ -714,6 +722,7 @@ export interface FileRoutesById {
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/transacoes': typeof AdminTransacoesRoute
   '/admin_/login': typeof AdminLoginRoute
+  '/entregador/ajuda': typeof EntregadorAjudaRoute
   '/entregador/ativar': typeof EntregadorAtivarRoute
   '/entregador/entrar': typeof EntregadorEntrarRoute
   '/entregador/esqueci-senha': typeof EntregadorEsqueciSenhaRoute
@@ -796,6 +805,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/transacoes'
     | '/admin/login'
+    | '/entregador/ajuda'
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
@@ -874,6 +884,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/transacoes'
     | '/admin/login'
+    | '/entregador/ajuda'
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
@@ -955,6 +966,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/transacoes'
     | '/admin_/login'
+    | '/entregador/ajuda'
     | '/entregador/ativar'
     | '/entregador/entrar'
     | '/entregador/esqueci-senha'
@@ -993,6 +1005,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  EntregadorAjudaRoute: typeof EntregadorAjudaRoute
   EntregadorAtivarRoute: typeof EntregadorAtivarRoute
   EntregadorEntrarRoute: typeof EntregadorEntrarRoute
   EntregadorEsqueciSenhaRoute: typeof EntregadorEsqueciSenhaRoute
@@ -1202,6 +1215,13 @@ declare module '@tanstack/react-router' {
       path: '/entregador/ativar'
       fullPath: '/entregador/ativar'
       preLoaderRoute: typeof EntregadorAtivarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entregador/ajuda': {
+      id: '/entregador/ajuda'
+      path: '/entregador/ajuda'
+      fullPath: '/entregador/ajuda'
+      preLoaderRoute: typeof EntregadorAjudaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin_/login': {
@@ -1717,6 +1737,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,
   AdminLoginRoute: AdminLoginRoute,
+  EntregadorAjudaRoute: EntregadorAjudaRoute,
   EntregadorAtivarRoute: EntregadorAtivarRoute,
   EntregadorEntrarRoute: EntregadorEntrarRoute,
   EntregadorEsqueciSenhaRoute: EntregadorEsqueciSenhaRoute,
