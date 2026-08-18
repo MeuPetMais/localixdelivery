@@ -57,10 +57,13 @@ async function createPixPayment(token: string, params: {
   payerEmail: string;
   expirationDate: string;
   notificationUrl: string;
+  platformFee: number;
+  idempotencyKey: string;
   callbackUrl?: string | null;
 }) {
   const body: Record<string, unknown> = {
     transaction_amount: Number(params.amount.toFixed(2)),
+    application_fee: Number(params.platformFee.toFixed(2)),
     description: params.description,
     payment_method_id: "pix",
     external_reference: params.externalReference,
@@ -80,7 +83,7 @@ async function createPixPayment(token: string, params: {
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
-      "X-Idempotency-Key": crypto.randomUUID(),
+      "X-Idempotency-Key": params.idempotencyKey,
     },
     body: JSON.stringify(body),
   });
@@ -457,6 +460,25 @@ Deno.serve(async (req) => {
         return json({ error: "payer_email_required" }, { status: 400 });
       }
 
+      const { data: pricingSnapshot, error: pricingErr } = await sb
+        .from("order_pricing_snapshot")
+        .select("platform_fee")
+        .eq("order_id", orderId)
+        .maybeSingle();
+      if (pricingErr) throw pricingErr;
+
+      const rawPlatformFee = pricingSnapshot?.platform_fee;
+      const platformFee = Number(rawPlatformFee);
+      if (
+        rawPlatformFee === null ||
+        rawPlatformFee === undefined ||
+        rawPlatformFee === "" ||
+        !Number.isFinite(platformFee) ||
+        platformFee < 0
+      ) {
+        return json({ error: "invalid_platform_fee" }, { status: 500 });
+      }
+
       // Garante linha em order_payment ANTES de chamar o MP.
       const { data: preUp, error: preErr } = await sb.from("order_payment").upsert({
         order_id: orderId,
@@ -488,6 +510,7 @@ console.log("[mp-payment-intent] creating pix", {
   callback_url: /^https:\/\/[^\s]+$/.test(callbackUrl) ? callbackUrl : null,
   payment_method: "pix",
   transaction_amount: Number(order.total),
+  application_fee: Number(platformFee.toFixed(2)),
 });
 
       let mp;
@@ -499,6 +522,8 @@ console.log("[mp-payment-intent] creating pix", {
           payerEmail,
           expirationDate: expiration,
           notificationUrl,
+          platformFee,
+          idempotencyKey: `localix-mp-pix-${orderId}`,
           callbackUrl,
         });
       } catch (e) {
