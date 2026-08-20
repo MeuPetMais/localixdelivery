@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isOrderRealizedSaleEligible } from "@/lib/orders/order-metrics-contract";
 import type { CustomerAnalytics } from "./types";
 
 type OrderRow = {
   id: string; total: number; created_at: string;
   items: unknown; payment_method?: string | null;
+  status?: string | null;
 };
 
 const DAY_MS = 86400000;
@@ -15,11 +17,13 @@ const DAY_MS = 86400000;
 export const CustomerAnalyticsService = {
   /** Compute analytics from a set of orders (pure). */
   compute(customerId: string, restaurantId: string, orders: OrderRow[]): CustomerAnalytics {
-    const total_orders = orders.length;
-    const total_spent = orders.reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const realizedOrders = orders.filter((order) => isOrderRealizedSaleEligible(order.status));
+
+    const total_orders = realizedOrders.length;
+    const total_spent = realizedOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
     const avg_ticket = total_orders ? total_spent / total_orders : 0;
 
-    const sorted = [...orders].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+    const sorted = [...realizedOrders].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
     const first = sorted[0]?.created_at;
     const last = sorted[sorted.length - 1]?.created_at;
     const now = Date.now();
@@ -32,7 +36,7 @@ export const CustomerAnalyticsService = {
     const catCount = new Map<string, { name?: string; qty: number }>();
     const channelCount = new Map<string, number>();
 
-    for (const o of orders) {
+    for (const o of realizedOrders) {
       const ch = String(o.payment_method ?? "unknown");
       channelCount.set(ch, (channelCount.get(ch) ?? 0) + 1);
       const items = Array.isArray(o.items) ? (o.items as any[]) : [];
@@ -80,7 +84,7 @@ export const CustomerAnalyticsService = {
   async forCustomer(customerId: string, restaurantId: string, limit = 200): Promise<CustomerAnalytics> {
     const { data, error } = await (supabase as any)
       .from("orders")
-      .select("id,total,created_at,items,payment_method")
+      .select("id,total,created_at,items,payment_method,status")
       .eq("customer_id", customerId)
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: false })

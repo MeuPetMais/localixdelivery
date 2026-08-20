@@ -8,9 +8,9 @@ import { CustomerIntelligenceService } from "./CustomerIntelligenceService";
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
 const ordersActive = [
-  { id: "1", total: 60, created_at: daysAgo(2), items: [{ id: "p1", name: "Pizza", qty: 1, category_id: "c1" }], payment_method: "pix" },
-  { id: "2", total: 80, created_at: daysAgo(10), items: [{ id: "p1", name: "Pizza", qty: 2, category_id: "c1" }], payment_method: "pix" },
-  { id: "3", total: 45, created_at: daysAgo(20), items: [{ id: "p2", name: "Burger", qty: 1, category_id: "c2" }], payment_method: "credit" },
+  { id: "1", total: 60, created_at: daysAgo(2), items: [{ id: "p1", name: "Pizza", qty: 1, category_id: "c1" }], payment_method: "pix", status: "entregue" },
+  { id: "2", total: 80, created_at: daysAgo(10), items: [{ id: "p1", name: "Pizza", qty: 2, category_id: "c1" }], payment_method: "pix", status: "entregue" },
+  { id: "3", total: 45, created_at: daysAgo(20), items: [{ id: "p2", name: "Burger", qty: 1, category_id: "c2" }], payment_method: "credit", status: "concluido" },
 ];
 
 describe("CustomerAnalyticsService", () => {
@@ -30,6 +30,43 @@ describe("CustomerAnalyticsService", () => {
     expect(a.avg_ticket).toBe(0);
     expect(a.favorite_channel).toBeNull();
   });
+
+  it("usa somente vendas realizadas para compras, gasto, datas, frequencia e recorrencia", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 10, created_at: daysAgo(30), items: [{ id: "pending", name: "Pending", qty: 1 }], payment_method: "pix", status: "aguardando_pagamento" },
+      { id: "2", total: 20, created_at: daysAgo(25), items: [{ id: "failed", name: "Failed", qty: 1 }], payment_method: "pix", status: "falha_pagamento" },
+      { id: "3", total: 30, created_at: daysAgo(20), items: [{ id: "canceled", name: "Canceled", qty: 1 }], payment_method: "cash", status: "cancelado" },
+      { id: "4", total: 40, created_at: daysAgo(12), items: [{ id: "valid-first", name: "Pizza", qty: 1 }], payment_method: "pix", status: "entregue" },
+      { id: "5", total: 50, created_at: daysAgo(3), items: [{ id: "valid-last", name: "Burger", qty: 2 }], payment_method: "card", status: "concluido" },
+      { id: "6", total: 60, created_at: daysAgo(1), items: [{ id: "refunded", name: "Refunded", qty: 1 }], payment_method: "pix", status: "reembolsado" },
+    ]);
+
+    expect(a.total_orders).toBe(2);
+    expect(a.total_spent).toBe(90);
+    expect(a.avg_ticket).toBe(45);
+    expect(a.tenure_days).toBeGreaterThanOrEqual(12);
+    expect(a.days_since_last_order).toBeLessThanOrEqual(4);
+    expect(a.days_since_last_order).toBeGreaterThanOrEqual(2);
+    expect(a.frequency_per_month).toBe(2);
+    expect(a.favorite_products.map((product) => product.product_id)).toEqual(["valid-last", "valid-first"]);
+  });
+
+  it("nao atribui compra realizada a cliente com pedidos sem vendas realizadas", () => {
+    const a = CustomerAnalyticsService.compute("c", "r", [
+      { id: "1", total: 10, created_at: daysAgo(30), items: [{ id: "pending", name: "Pending", qty: 1 }], payment_method: "pix", status: "aguardando_pagamento" },
+      { id: "2", total: 20, created_at: daysAgo(25), items: [{ id: "failed", name: "Failed", qty: 1 }], payment_method: "pix", status: "falha_pagamento" },
+      { id: "3", total: 30, created_at: daysAgo(20), items: [{ id: "canceled", name: "Canceled", qty: 1 }], payment_method: "cash", status: "cancelado" },
+    ]);
+
+    expect(a.total_orders).toBe(0);
+    expect(a.total_spent).toBe(0);
+    expect(a.avg_ticket).toBe(0);
+    expect(a.frequency_per_month).toBe(0);
+    expect(a.tenure_days).toBe(0);
+    expect(a.days_since_last_order).toBe(9999);
+    expect(a.favorite_products).toEqual([]);
+    expect(a.favorite_channel).toBeNull();
+  });
 });
 
 describe("CustomerScoreService", () => {
@@ -43,7 +80,7 @@ describe("CustomerScoreService", () => {
 
   it("scores inactive low", () => {
     const a = CustomerAnalyticsService.compute("c", "r", [
-      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix", status: "entregue" },
     ]);
     const s = CustomerScoreService.compute(a);
     expect(s.breakdown.recency).toBe(0);
@@ -60,8 +97,8 @@ describe("CustomerSegmentationService", () => {
 
   it("classifies INACTIVE when >90d", () => {
     const a = CustomerAnalyticsService.compute("c", "r", [
-      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
-      { id: "2", total: 30, created_at: daysAgo(200), items: [], payment_method: "pix" },
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix", status: "entregue" },
+      { id: "2", total: 30, created_at: daysAgo(200), items: [], payment_method: "pix", status: "concluido" },
     ]);
     const s = CustomerScoreService.compute(a);
     const seg = CustomerSegmentationService.resolve(a, s);
@@ -70,7 +107,7 @@ describe("CustomerSegmentationService", () => {
 
   it("classifies VIP by spend", () => {
     const many = Array.from({ length: 10 }, (_, i) => ({
-      id: `o${i}`, total: 120, created_at: daysAgo(i * 3), items: [], payment_method: "pix",
+      id: `o${i}`, total: 120, created_at: daysAgo(i * 3), items: [], payment_method: "pix", status: "entregue",
     }));
     const a = CustomerAnalyticsService.compute("c", "r", many);
     const s = CustomerScoreService.compute(a);
@@ -82,7 +119,7 @@ describe("CustomerSegmentationService", () => {
 describe("CustomerRecommendationService", () => {
   it("recommends REACTIVATE for inactive", () => {
     const a = CustomerAnalyticsService.compute("c", "r", [
-      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix" },
+      { id: "1", total: 30, created_at: daysAgo(120), items: [], payment_method: "pix", status: "entregue" },
     ]);
     const s = CustomerScoreService.compute(a);
     const recs = CustomerRecommendationService.recommend(a, s, "INACTIVE");
@@ -100,7 +137,7 @@ describe("CustomerRecommendationService", () => {
 describe("CustomerIntelligenceService.buildInsights", () => {
   it("flags VIP_INACTIVE", () => {
     const a = CustomerAnalyticsService.compute("c", "r", [
-      { id: "1", total: 800, created_at: daysAgo(45), items: [], payment_method: "pix" },
+      { id: "1", total: 800, created_at: daysAgo(45), items: [], payment_method: "pix", status: "entregue" },
     ]);
     const s = CustomerScoreService.compute(a);
     const ins = CustomerIntelligenceService.buildInsights("r", "c", a, s, "VIP");

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { isOrderRealizedSaleEligible } from "./orders/order-metrics-contract";
 
 const schema = z.object({
   restaurantId: z.string().uuid(),
@@ -9,6 +10,20 @@ const schema = z.object({
 });
 
 const DAY = 24 * 60 * 60 * 1000;
+
+type DashboardOrderForMetrics = {
+  status?: unknown;
+  total?: unknown;
+  discount?: unknown;
+};
+
+export function getDashboardRealizedOrders<T extends DashboardOrderForMetrics>(orders: T[]): T[] {
+  return orders.filter((order) => isOrderRealizedSaleEligible(order.status));
+}
+
+export function sumDashboardOrderTotals<T extends DashboardOrderForMetrics>(orders: T[]): number {
+  return orders.reduce((sum, order) => sum + Number(order.total ?? 0), 0);
+}
 
 export const getDashboardData = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => schema.parse(d))
@@ -71,6 +86,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
     ]);
 
     const allOrders = (orders ?? []).filter((o) => o.status !== "cancelado");
+    const realizedOrders = getDashboardRealizedOrders(orders ?? []);
 
     // KPIs today vs yesterday
     const todayOrders = allOrders.filter((o) => new Date(o.created_at) >= startToday);
@@ -78,11 +94,16 @@ export const getDashboardData = createServerFn({ method: "POST" })
       const t = new Date(o.created_at);
       return t >= startYesterday && t < startToday;
     });
-    const sum = (a: typeof allOrders) => a.reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const revToday = sum(todayOrders);
-    const revY = sum(yOrders);
-    const ticketToday = todayOrders.length ? revToday / todayOrders.length : 0;
-    const ticketY = yOrders.length ? revY / yOrders.length : 0;
+    const realizedTodayOrders = realizedOrders.filter((o) => new Date(o.created_at) >= startToday);
+    const realizedYOrders = realizedOrders.filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= startYesterday && t < startToday;
+    });
+    const sum = sumDashboardOrderTotals;
+    const revToday = sum(realizedTodayOrders);
+    const revY = sum(realizedYOrders);
+    const ticketToday = realizedTodayOrders.length ? revToday / realizedTodayOrders.length : 0;
+    const ticketY = realizedYOrders.length ? revY / realizedYOrders.length : 0;
 
     const pct = (curr: number, prev: number) =>
       prev > 0 ? ((curr - prev) / prev) * 100 : curr > 0 ? 100 : 0;
@@ -104,7 +125,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
     for (let t = startBucket.getTime(); t <= toDate.getTime(); t += stepDays * DAY) {
       const d = new Date(t);
       const next = new Date(t + stepDays * DAY);
-      const slice = allOrders.filter((o) => {
+      const slice = realizedOrders.filter((o) => {
         const ot = new Date(o.created_at);
         return ot >= d && ot < next;
       });
@@ -139,8 +160,8 @@ export const getDashboardData = createServerFn({ method: "POST" })
     };
 
     // Top 5 products (within selected period)
-    const last30 = allOrders.filter((o) => new Date(o.created_at) >= since30);
-    const periodForTop = allOrders.filter((o) => {
+    const last30 = realizedOrders.filter((o) => new Date(o.created_at) >= since30);
+    const periodForTop = realizedOrders.filter((o) => {
       const t = new Date(o.created_at);
       return t >= sincePeriod && t <= toDate;
     });
@@ -219,7 +240,11 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Financial summary (selected period)
     const mvs = movements ?? [];
-    const grossRevenue = periodOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const realizedPeriodOrders = realizedOrders.filter((o) => {
+      const t = new Date(o.created_at);
+      return t >= sincePeriod && t <= toDate;
+    });
+    const grossRevenue = sum(realizedPeriodOrders);
     const expenses = mvs
       .filter((m) => m.type === "despesa" || m.type === "expense")
       .reduce((s, m) => s + Number(m.amount ?? 0), 0);
@@ -231,7 +256,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Loyalty summary
     const couponsUsed = (coupons ?? []).reduce((s, c) => s + Number(c.uses_count ?? 0), 0);
-    const discountDistributed = periodOrders.reduce((s, o) => s + Number(o.discount ?? 0), 0);
+    const discountDistributed = realizedPeriodOrders.reduce((s, o) => s + Number(o.discount ?? 0), 0);
     const pointsIssued = Math.floor(grossRevenue); // 1 ponto por R$1
 
     // Recent activities (timeline)
