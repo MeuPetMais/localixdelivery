@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { loadMercadoPago } from "@mercadopago/sdk-js";
 import { CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   sanitizeMercadoPagoCardFormData,
+  sanitizeMercadoPagoTokenizationError,
   type MercadoPagoCardFormData,
   type TransparentCardInput,
 } from "@/lib/payments/transparent-card";
 
 type CardFormController = {
   getCardFormData: () => MercadoPagoCardFormData;
+  submit?: () => unknown;
+  createCardToken?: () => unknown;
   unmount?: () => void;
 };
 
@@ -37,7 +40,8 @@ export interface MercadoPagoCardPaymentProps {
 function friendlyTokenizationError(error: unknown): string {
   const code = error instanceof Error ? error.message : String(error ?? "");
   if (code.includes("card_token_required")) return "Confira os dados do cartao e tente novamente.";
-  if (code.includes("payment_method_required")) return "Nao foi possivel identificar a bandeira do cartao.";
+  if (code.includes("payment_method_required"))
+    return "Nao foi possivel identificar a bandeira do cartao.";
   if (code.includes("installments_required")) return "Selecione a quantidade de parcelas.";
   return "Nao foi possivel validar o cartao. Confira os dados e tente novamente.";
 }
@@ -53,9 +57,52 @@ export function MercadoPagoCardPayment({
   const reactId = useId().replace(/:/g, "");
   const formId = `mp-card-form-${reactId}`;
   const controllerRef = useRef<CardFormController | null>(null);
+  const tokenizingRef = useRef(false);
+  const onTokenizedRef = useRef(onTokenized);
+  const onTokenizingChangeRef = useRef(onTokenizingChange);
   const [ready, setReady] = useState(false);
   const [tokenizing, setTokenizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onTokenizedRef.current = onTokenized;
+    onTokenizingChangeRef.current = onTokenizingChange;
+  });
+
+  const setTokenizingState = useCallback((next: boolean) => {
+    tokenizingRef.current = next;
+    setTokenizing(next);
+    onTokenizingChangeRef.current?.(next);
+  }, []);
+
+  const handleTokenizationError = useCallback((tokenError: unknown) => {
+    console.warn("[mp-card-tokenization]", sanitizeMercadoPagoTokenizationError(tokenError));
+    setError(friendlyTokenizationError(tokenError));
+  }, []);
+
+  const readTokenizedCardData = useCallback((source?: MercadoPagoCardFormData | Event | null) => {
+    if (source && "token" in source) {
+      return sanitizeMercadoPagoCardFormData(source);
+    }
+    const controller = controllerRef.current;
+    if (!controller) throw new Error("mercado_pago_card_form_unavailable");
+    return sanitizeMercadoPagoCardFormData(controller.getCardFormData());
+  }, []);
+
+  const finishTokenization = useCallback(
+    (source?: MercadoPagoCardFormData | Event | null) => {
+      try {
+        const card = readTokenizedCardData(source);
+        setError(null);
+        onTokenizedRef.current(card);
+      } catch (tokenError) {
+        handleTokenizationError(tokenError);
+      } finally {
+        setTokenizingState(false);
+      }
+    },
+    [handleTokenizationError, readTokenizedCardData, setTokenizingState],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +178,12 @@ export function MercadoPagoCardPayment({
             },
             onSubmit: (event: Event) => {
               event.preventDefault();
+              if (cancelled) return;
+              finishTokenization(event);
+            },
+            onCardTokenReceived: (tokenData: MercadoPagoCardFormData) => {
+              if (cancelled) return;
+              finishTokenization(tokenData);
             },
             onFetching: () => {
               return () => {};
@@ -144,29 +197,30 @@ export function MercadoPagoCardPayment({
 
     return () => {
       cancelled = true;
+      setTokenizingState(false);
       controllerRef.current?.unmount?.();
       controllerRef.current = null;
     };
-  }, [amount, formId, publicKey]);
+  }, [amount, finishTokenization, formId, publicKey, setTokenizingState]);
 
   async function tokenizeCard() {
-    if (tokenizing || disabled) return;
+    if (tokenizingRef.current || disabled) return;
     const controller = controllerRef.current;
     if (!controller) {
       setError("Pagamento por cartao indisponivel no momento.");
       return;
     }
-    setTokenizing(true);
-    onTokenizingChange?.(true);
+    setTokenizingState(true);
     setError(null);
     try {
-      const card = sanitizeMercadoPagoCardFormData(controller.getCardFormData());
-      onTokenized(card);
+      const result = controller.submit ? controller.submit() : controller.createCardToken?.();
+      if (!controller.submit && !controller.createCardToken) {
+        throw new Error("mercado_pago_card_tokenization_unavailable");
+      }
+      await Promise.resolve(result);
     } catch (tokenError) {
-      setError(friendlyTokenizationError(tokenError));
-    } finally {
-      setTokenizing(false);
-      onTokenizingChange?.(false);
+      handleTokenizationError(tokenError);
+      setTokenizingState(false);
     }
   }
 
@@ -176,10 +230,13 @@ export function MercadoPagoCardPayment({
         <CreditCard className="h-4 w-4" />
         Cartao de credito
       </div>
-      <form id={formId} className="grid gap-3" onSubmit={(event) => event.preventDefault()}>
+      <form id={formId} className="grid gap-3">
         <div className="grid gap-1.5">
           <Label>Numero do cartao</Label>
-          <div id={`${formId}__cardNumber`} className="h-10 rounded-md border bg-background px-3 py-2" />
+          <div
+            id={`${formId}__cardNumber`}
+            className="h-10 rounded-md border bg-background px-3 py-2"
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
@@ -204,7 +261,11 @@ export function MercadoPagoCardPayment({
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}__identificationType`}>Documento</Label>
-            <select id={`${formId}__identificationType`} className="h-10 rounded-md border bg-background px-3 text-sm" disabled={disabled} />
+            <select
+              id={`${formId}__identificationType`}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              disabled={disabled}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}__identificationNumber`}>Numero</Label>
@@ -214,15 +275,28 @@ export function MercadoPagoCardPayment({
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}__issuer`}>Banco</Label>
-            <select id={`${formId}__issuer`} className="h-10 rounded-md border bg-background px-3 text-sm" disabled={disabled} />
+            <select
+              id={`${formId}__issuer`}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              disabled={disabled}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}__installments`}>Parcelas</Label>
-            <select id={`${formId}__installments`} className="h-10 rounded-md border bg-background px-3 text-sm" disabled={disabled} />
+            <select
+              id={`${formId}__installments`}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              disabled={disabled}
+            />
           </div>
         </div>
         <input id={`${formId}__cardholderEmail`} type="email" value={payerEmail} readOnly hidden />
-        <Button type="button" variant="outline" onClick={tokenizeCard} disabled={!ready || tokenizing || disabled}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={tokenizeCard}
+          disabled={!ready || tokenizing || disabled}
+        >
           {tokenizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Validar cartao
         </Button>
