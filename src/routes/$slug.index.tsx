@@ -106,6 +106,8 @@ import {
   type SelectedAddress,
 } from "@/components/checkout/AddressAutocomplete";
 import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
+import { MercadoPagoCardPayment } from "@/components/checkout/MercadoPagoCardPayment";
+import type { TransparentCardInput } from "@/lib/payments/transparent-card";
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -1383,6 +1385,8 @@ function CheckoutSheet({
 
   const [paymentId, setPaymentId] = useState<string>(paymentOptions[0]?.id ?? "cash");
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
+  const isTransparentCardPayment =
+    !!selectedPayment?.online && selectedPayment.method === "credit_card";
   const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -1485,6 +1489,19 @@ function CheckoutSheet({
   const [pricingLoading, setPricingLoading] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cardPayment, setCardPayment] = useState<TransparentCardInput | null>(null);
+  const [cardTokenizing, setCardTokenizing] = useState(false);
+
+  const { data: mercadoPagoPublicKey } = useQuery({
+    queryKey: ["mp-public-key", restaurant.id],
+    enabled: isTransparentCardPayment && !!restaurant?.id,
+    queryFn: () => PaymentService.getMercadoPagoPublicKey(restaurant.id),
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    setCardPayment(null);
+  }, [paymentId, pricing?.customerTotal, user?.email]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1595,6 +1612,20 @@ function CheckoutSheet({
       toast.error("Não foi possível calcular o valor final do pedido. Tente novamente.");
       return;
     }
+    if (isTransparentCardPayment) {
+      if (!mercadoPagoPublicKey) {
+        toast.error("Pagamento por cartao indisponivel no momento.");
+        return;
+      }
+      if (cardTokenizing) {
+        toast.error("Aguarde a validacao do cartao.");
+        return;
+      }
+      if (!cardPayment?.token) {
+        toast.error("Valide os dados do cartao antes de finalizar.");
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       let checkoutUser = user;
@@ -1625,7 +1656,6 @@ function CheckoutSheet({
       }
 
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
-      console.log("[checkout-payment-debug]", paymentPayload);
 
       const res = await create({
         data: {
@@ -1699,6 +1729,7 @@ function CheckoutSheet({
             customerEmail: email,
             successUrl: `${origin}/pedido-sucesso/${res.orderId}?paid=1`,
             cancelUrl: `${origin}/${restaurant.slug}`,
+            card: isTransparentCardPayment ? cardPayment ?? undefined : undefined,
           });
 
           if (result.redirectUrl) {
@@ -1713,6 +1744,12 @@ function CheckoutSheet({
             onClose();
             onCreated(res.orderId, { navigate: false });
             window.location.assign(result.redirectUrl);
+            return;
+          }
+          if (isTransparentCardPayment) {
+            toast.success(`Pedido #${res.orderNumber ?? ""} criado - cartao validado`);
+            onClose();
+            onCreated(res.orderId);
             return;
           }
           throw new Error("Gateway não retornou URL de pagamento");
@@ -2010,7 +2047,20 @@ function CheckoutSheet({
               </button>
             ))}
           </div>
-          {selectedPayment.online && (
+          {isTransparentCardPayment && (
+            <MercadoPagoCardPayment
+              publicKey={mercadoPagoPublicKey ?? null}
+              amount={Number(pricing?.customerTotal ?? 0)}
+              payerEmail={user?.email ?? ""}
+              disabled={submitting}
+              onTokenized={(card) => {
+                setCardPayment(card);
+                toast.success("Cartao validado com seguranca.");
+              }}
+              onTokenizingChange={setCardTokenizing}
+            />
+          )}
+          {selectedPayment.online && selectedPayment.method === "pix" && (
             <p className="text-xs text-muted-foreground">
               Você será redirecionado para um ambiente seguro de pagamento.
             </p>
@@ -2099,7 +2149,14 @@ function CheckoutSheet({
           size="lg"
           className="w-full shadow-glow"
           onClick={confirmOrder}
-          disabled={!effectiveOpen || belowMin || submitting || !canSubmitPricing}
+          disabled={
+            !effectiveOpen ||
+            belowMin ||
+            submitting ||
+            !canSubmitPricing ||
+            cardTokenizing ||
+            (isTransparentCardPayment && !cardPayment?.token)
+          }
         >
           {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
           {!user && createAccount

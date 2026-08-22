@@ -4,54 +4,137 @@ import { describe, expect, it } from "vitest";
 const sourcePath = new URL("../../../supabase/functions/mp-payment-intent/index.ts", import.meta.url);
 const source = readFileSync(sourcePath, "utf8");
 
-describe("mp-payment-intent PIX split", () => {
-  it("usa application_fee vindo do order_pricing_snapshot", () => {
-    expect(source).toContain('.from("order_pricing_snapshot")');
-    expect(source).toContain('.select("platform_fee")');
-    expect(source).toContain('.eq("order_id", orderId)');
-    expect(source).toContain("application_fee: Number(params.platformFee.toFixed(2))");
-    expect(source).toContain("platformFee,");
-    expect(source).not.toContain("application_fee: 0.99");
+const accessTokenFunction = source.slice(
+  source.indexOf("async function getAccessToken"),
+  source.indexOf("function sanitizeMpCause"),
+);
+const createPixPaymentFunction = source.slice(
+  source.indexOf("async function createPixPayment"),
+  source.indexOf("async function hashShort"),
+);
+const transparentCardFunction = source.slice(
+  source.indexOf("async function createTransparentCardPayment"),
+  source.indexOf("function toMoney"),
+);
+const cardCreateFlow = source.slice(
+  source.indexOf('if (method !== "pix")'),
+  source.indexOf("// PIX"),
+);
+const transparentCardCreateFlow = source.slice(
+  source.indexOf("let transparentCard;"),
+  source.indexOf("// 1) Garante linha em order_payment ANTES de chamar o MP."),
+);
+const pixCreateFlow = source.slice(
+  source.indexOf("const rawPlatformFee"),
+  source.indexOf("// ---------- STATUS ----------"),
+);
+
+describe("mp-payment-intent seller OAuth", () => {
+  it("usa somente OAuth do seller, sem fallback MP_ACCESS_TOKEN", () => {
+    expect(accessTokenFunction).toContain('.from("mercado_pago_accounts")');
+    expect(accessTokenFunction).toContain('.select("access_token, connected")');
+    expect(accessTokenFunction).toContain("!data?.connected || !data.access_token");
+    expect(accessTokenFunction).toContain("const token = await decryptToken(data.access_token)");
+    expect(accessTokenFunction).toContain('throw new Error("mercado_pago_seller_not_connected")');
+    expect(source).not.toContain("MP_ACCESS_TOKEN");
   });
+});
 
-  it("bloqueia PIX quando snapshot estiver ausente ou platform_fee for invalido", () => {
-    const snapshotLookup = source.indexOf('.from("order_pricing_snapshot")');
-    const invalidGuard = source.indexOf('return json({ error: "invalid_platform_fee" }');
-    const mpCreate = source.indexOf("mp = await createPixPayment");
-
-    expect(snapshotLookup).toBeGreaterThan(-1);
-    expect(source).toContain("rawPlatformFee === null");
-    expect(source).toContain("rawPlatformFee === undefined");
-    expect(source).toContain('rawPlatformFee === ""');
-    expect(source).toContain("!Number.isFinite(platformFee)");
-    expect(source).toContain("platformFee < 0");
-    expect(invalidGuard).toBeGreaterThan(snapshotLookup);
-    expect(mpCreate).toBeGreaterThan(invalidGuard);
-  });
-
-  it("gera idempotency key deterministica por order_id no PIX", () => {
-    const idempotencyKey = (orderId: string) => `localix-mp-pix-${orderId}`;
-
-    expect(idempotencyKey("order-1")).toBe(idempotencyKey("order-1"));
-    expect(idempotencyKey("order-1")).not.toBe(idempotencyKey("order-2"));
-    expect(source).toContain("idempotencyKey: `localix-mp-pix-${orderId}`");
-    expect(source).toContain('"X-Idempotency-Key": params.idempotencyKey');
-
-    const pixFunction = source.slice(
-      source.indexOf("async function createPixPayment"),
-      source.indexOf("type MpPayer"),
+describe("mp-payment-intent transparent card", () => {
+  it("cria cartao pelo /v1/payments e nao por Checkout Pro", () => {
+    expect(transparentCardFunction).toContain('fetch("https://api.mercadopago.com/v1/payments"');
+    expect(transparentCardFunction).toContain('"X-Idempotency-Key": params.idempotencyKey');
+    expect(transparentCardCreateFlow).toContain("createTransparentCardPayment(token");
+    expect(transparentCardCreateFlow.indexOf("createTransparentCardPayment(token")).toBeLessThan(
+      transparentCardCreateFlow.lastIndexOf("return json({")
     );
-    expect(pixFunction).not.toContain("crypto.randomUUID()");
+    expect(transparentCardCreateFlow).not.toContain("payment_url: paymentUrl");
   });
 
-  it("envia application_fee no body PIX", () => {
-    const pixFunction = source.slice(
-      source.indexOf("async function createPixPayment"),
-      source.indexOf("type MpPayer"),
-    );
+  it("retorna do fluxo transparente antes do legado Checkout Pro", () => {
+    const transparentCall = cardCreateFlow.indexOf("createTransparentCardPayment(token");
+    const transparentReturn = cardCreateFlow.indexOf("payment_id: String(transparentMp.id)");
+    const legacyPreferenceCall = cardCreateFlow.indexOf("createCardPreference(token");
 
-    expect(pixFunction).toContain("const body: Record<string, unknown>");
-    expect(pixFunction).toContain("application_fee: Number(params.platformFee.toFixed(2))");
-    expect(pixFunction).toContain('fetch("https://api.mercadopago.com/v1/payments"');
+    expect(transparentCall).toBeGreaterThan(-1);
+    expect(transparentReturn).toBeGreaterThan(transparentCall);
+    expect(legacyPreferenceCall).toBeGreaterThan(transparentReturn);
+    expect(cardCreateFlow.slice(transparentReturn, legacyPreferenceCall)).toContain("return json({");
+  });
+
+  it("usa snapshot como fonte financeira autoritativa", () => {
+    expect(cardCreateFlow).toContain('.from("order_pricing_snapshot")');
+    expect(cardCreateFlow).toContain('.select("customer_total, platform_fee, service_fee_payer")');
+    expect(transparentCardCreateFlow).toContain("cardFinancials.customerTotal");
+    expect(transparentCardFunction).toContain("transaction_amount: Number(params.amount.toFixed(2))");
+    expect(transparentCardFunction).toContain("application_fee: Number(params.platformFee.toFixed(2))");
+    expect(transparentCardFunction).not.toContain("payload?.amount");
+  });
+
+  it("falha fechado com snapshot ausente ou valores invalidos", () => {
+    expect(cardCreateFlow).toContain('return json({');
+    expect(cardCreateFlow).toContain('error: "missing_card_pricing_snapshot"');
+    expect(source).toContain("customerTotal === null || customerTotal <= 0");
+    expect(source).toContain('throw new Error("invalid_card_customer_total")');
+    expect(source).toContain("platformFee === null || platformFee < 0");
+    expect(source).toContain('throw new Error("invalid_card_platform_fee")');
+    expect(source).toContain('throw new Error("invalid_card_service_fee_payer")');
+  });
+
+  it("encaminha somente campos necessarios do cartao", () => {
+    expect(transparentCardFunction).toContain("token: params.card.token");
+    expect(transparentCardFunction).toContain("payment_method_id: params.card.paymentMethodId");
+    expect(transparentCardFunction).toContain("installments: params.card.installments");
+    expect(transparentCardFunction).toContain("if (params.card.issuerId) body.issuer_id = params.card.issuerId");
+    expect(transparentCardFunction).toContain("body.payer.identification = params.card.payerIdentification");
+    expect(transparentCardFunction).not.toMatch(/card_number|security_code|cvv|expiration_date/i);
+  });
+
+  it("define external_reference como order.id e notification_url do webhook", () => {
+    expect(transparentCardFunction).toContain("external_reference: params.externalReference");
+    expect(transparentCardCreateFlow).toContain("externalReference: order.id");
+    expect(transparentCardCreateFlow).toContain("mp-webhook");
+  });
+
+  it("usa idempotencia deterministica por pedido e token sem persistir token", () => {
+    expect(source).toContain("async function buildCardIdempotencyKey(orderId, cardToken)");
+    expect(source).toContain("await hashShort(cardToken)");
+    expect(transparentCardFunction).not.toContain("crypto.randomUUID()");
+    expect(transparentCardCreateFlow).toContain("transparentIdempotencyKey");
+    expect(transparentCardCreateFlow).toContain("idempotencyKey: transparentIdempotencyKey");
+  });
+
+  it("persiste payment_id/status/raw sanitizado sem token", () => {
+    expect(transparentCardCreateFlow).toContain("payment_id: String(transparentMp.id)");
+    expect(transparentCardCreateFlow).toContain("payment_intent: String(transparentMp.id)");
+    expect(transparentCardCreateFlow).toContain("status: transparentStatus");
+    expect(transparentCardCreateFlow).toContain("raw: transparentRaw");
+    expect(transparentCardCreateFlow).not.toContain("raw: transparentMp");
+    expect(transparentCardCreateFlow).not.toContain("token:");
+  });
+
+  it("erro rejected preserva status_detail sanitizado e nao marca pedido como pago", () => {
+    expect(transparentCardCreateFlow).toContain('last_error: transparentStatus === "REJECTED"');
+    expect(transparentCardCreateFlow).toContain("status_detail: transparentMp?.status_detail ?? null");
+    expect(transparentCardCreateFlow).not.toContain("syncOrderStatusFromPayment(orderId, transparentStatus");
+    expect(transparentCardCreateFlow).not.toContain("PAYMENT_APPROVED");
+    expect(transparentCardCreateFlow).not.toContain("financial_ledger");
+  });
+
+  it("resposta de cartao novo nao retorna redirect obrigatorio", () => {
+    expect(transparentCardCreateFlow).toContain("payment_url: null");
+    expect(transparentCardCreateFlow).toContain("payment_id: String(transparentMp.id)");
+    expect(transparentCardCreateFlow).toContain("status: transparentStatus");
+  });
+});
+
+describe("mp-payment-intent PIX preservado", () => {
+  it("mantem PIX semanticamente inalterado", () => {
+    expect(createPixPaymentFunction).toContain('fetch("https://api.mercadopago.com/v1/payments"');
+    expect(createPixPaymentFunction).toContain('payment_method_id: "pix"');
+    expect(createPixPaymentFunction).toContain("application_fee: Number(params.platformFee.toFixed(2))");
+    expect(createPixPaymentFunction).toContain("date_of_expiration: params.expirationDate");
+    expect(pixCreateFlow).toContain("amount: Number(order.total)");
+    expect(pixCreateFlow).toContain("idempotencyKey: `localix-mp-pix-${orderId}`");
   });
 });

@@ -11,6 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { PaymentService } from "./PaymentService";
 import { paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
+import { buildMercadoPagoPaymentIntentBody } from "./providers/MercadoPagoProvider";
 import { supabase } from "@/integrations/supabase/client";
 
 const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
@@ -102,6 +103,112 @@ describe("PaymentService.createPayment", () => {
     expect(r.pix?.qrCode).toBe("qr");
   });
 
+  it("mantem payload PIX inalterado no Mercado Pago", async () => {
+    const body = buildMercadoPagoPaymentIntentBody({
+      restaurantId: "r1",
+      orderId: "o1",
+      method: "pix",
+      amount: 49.9,
+      customerEmail: "cliente@exemplo.com",
+      successUrl: "https://app.test/ok",
+      cancelUrl: "https://app.test/cancel",
+    });
+    expect(body).toEqual({
+      action: "create",
+      order_id: "o1",
+      payment_method: "pix",
+      payer_email: "cliente@exemplo.com",
+      success_url: "https://app.test/ok",
+      cancel_url: "https://app.test/cancel",
+    });
+  });
+
+  it("aceita payload tokenizado de cartao Mercado Pago chamando backend transparente", async () => {
+    invoke.mockResolvedValueOnce({
+      data: {
+        payment_id: "mp-card-1",
+        status: "PENDING",
+        payment_url: null,
+      },
+      error: null,
+    });
+    const r = await PaymentService.createPayment({
+      ...baseInput,
+      providerId: "mercado_pago",
+      method: "card",
+      card: {
+        token: "card-token",
+        paymentMethodId: "visa",
+        issuerId: "25",
+        installments: 1,
+        payer: {
+          identificationType: "CPF",
+          identificationNumber: "12345678909",
+        },
+      },
+    });
+
+    expect(invoke).toHaveBeenCalledWith("mp-payment-intent", expect.objectContaining({
+      body: expect.objectContaining({
+        action: "create",
+        order_id: "o1",
+        payment_method: "credit_card",
+        transparent_card_phase: "backend_payment_enabled",
+      }),
+    }));
+    expect(r).toMatchObject({
+      provider: "mercado_pago",
+      redirectUrl: null,
+      externalId: "mp-card-1",
+      status: "PENDING",
+    });
+  });
+
+  it("monta contrato de cartao para mp-payment-intent sem PAN/CVV", () => {
+    const body = buildMercadoPagoPaymentIntentBody({
+      restaurantId: "r1",
+      orderId: "o1",
+      method: "card",
+      amount: 49.9,
+      customerEmail: "cliente@exemplo.com",
+      successUrl: "https://app.test/ok",
+      cancelUrl: "https://app.test/cancel",
+      card: {
+        token: "card-token",
+        paymentMethodId: "visa",
+        issuerId: "25",
+        installments: 1,
+        payer: {
+          identificationType: "CPF",
+          identificationNumber: "12345678909",
+        },
+      },
+    });
+    const serialized = JSON.stringify(body);
+    expect(body).toMatchObject({
+      payment_method: "credit_card",
+      card: {
+        token: "card-token",
+        payment_method_id: "visa",
+        issuer_id: "25",
+        installments: 1,
+      },
+      transparent_card_phase: "backend_payment_enabled",
+    });
+    expect(serialized).not.toMatch(/card_number|security_code|cvv|expiration_date/i);
+  });
+
+  it("cartao Mercado Pago sem token nao chama mp-payment-intent", async () => {
+    await expect(
+      PaymentService.createPayment({
+        ...baseInput,
+        providerId: "mercado_pago",
+        method: "card",
+      }),
+    ).rejects.toThrow(/card_token_required/);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it("propaga erros do provider", async () => {
     invoke.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
     await expect(PaymentService.createPayment(baseInput)).rejects.toThrow(/boom/);
@@ -111,5 +218,14 @@ describe("PaymentService.createPayment", () => {
     await expect(
       PaymentService.createPayment({ ...baseInput, providerId: "inexistente" }),
     ).rejects.toThrow(/desconhecido/i);
+  });
+
+  it("busca Public Key Mercado Pago por funcao dedicada sem secrets", async () => {
+    invoke.mockResolvedValueOnce({ data: { public_key: "APP_USR-public" }, error: null });
+    const publicKey = await PaymentService.getMercadoPagoPublicKey("r1");
+    expect(publicKey).toBe("APP_USR-public");
+    expect(invoke).toHaveBeenCalledWith("mp-public-key", {
+      body: { restaurant_id: "r1" },
+    });
   });
 });

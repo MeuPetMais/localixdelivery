@@ -8,6 +8,7 @@
 import { paymentsRepo, platformFeesRepo } from "./repositories";
 import { getProvider, paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
 import type { CreateCheckoutInput, CreateCheckoutResult, PaymentProvider } from "./providers/PaymentProvider";
+import { assertTransparentCardReady, type TransparentCardInput } from "./transparent-card";
 import type { PaymentMethod, PlatformFees } from "./types";
 
 export interface CreatePaymentInput {
@@ -19,6 +20,7 @@ export interface CreatePaymentInput {
   customerEmail: string;
   successUrl: string;
   cancelUrl: string;
+  card?: TransparentCardInput;
 }
 
 export interface FeeBreakdown {
@@ -44,6 +46,15 @@ export const PaymentService = {
   },
   async connectionStatus(providerId: string, restaurantId: string) {
     return this.provider(providerId).getStatus(restaurantId);
+  },
+  async getMercadoPagoPublicKey(restaurantId: string): Promise<string | null> {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.functions.invoke("mp-public-key", {
+      body: { restaurant_id: restaurantId },
+    });
+    if (error) throw new Error(error.message);
+    if ((data as any)?.error) throw new Error(String((data as any).error));
+    return (data as any)?.public_key ?? null;
   },
   async disconnect(providerId: string, restaurantId: string) {
     return this.provider(providerId).disconnect(restaurantId);
@@ -113,6 +124,7 @@ export const PaymentService = {
     const method: "pix" | "card" = input.method === "pix" ? "pix" : "card";
     const providerId = input.providerId ?? (await this.getPrimaryProvider(input.restaurantId));
     const provider = this.provider(providerId);
+    if (method === "card" && provider.id === "mercado_pago") assertTransparentCardReady(input.card);
     const checkoutInput: CreateCheckoutInput = {
       orderId: input.orderId,
       restaurantId: input.restaurantId,
@@ -121,6 +133,7 @@ export const PaymentService = {
       customerEmail: input.customerEmail,
       successUrl: input.successUrl,
       cancelUrl: input.cancelUrl,
+      card: input.card,
     };
     return provider.createCheckout(checkoutInput);
   },

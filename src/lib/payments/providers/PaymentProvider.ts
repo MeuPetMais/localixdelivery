@@ -2,6 +2,8 @@
 // Novos providers implementam a mesma interface e são registrados em
 // `providers/index.ts` — o restante do app usa apenas PaymentService.
 
+import type { TransparentCardInput } from "../transparent-card";
+
 export interface OAuthStartResult {
   authorizeUrl: string;
 }
@@ -27,6 +29,7 @@ export interface CreateCheckoutInput {
   customerEmail: string;
   successUrl: string;
   cancelUrl: string;
+  card?: TransparentCardInput;
 }
 
 export interface CreateCheckoutResult {
