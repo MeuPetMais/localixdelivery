@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { brl } from "@/lib/format";
-import { transitionOrderStatus } from "@/lib/orders/orders.functions";
+import { cancelRestaurantOrder, transitionOrderStatus } from "@/lib/orders/orders.functions";
 
 import {
   Loader2,
@@ -43,7 +43,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { printOrder as printOrderSvc, type PrintableOrder } from "@/lib/print-service";
-
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Pedidos — Localix" }] }),
@@ -74,7 +73,6 @@ type DeliveryAssignmentSummary = {
   assigned_at: string | null;
   driver_name: string | null;
 };
-
 
 // RC4.4 — Modelo Kanban baseado nos 14 estados oficiais do OrderStateMachine.
 // Cada coluna representa uma etapa operacional e agrega um ou mais estados.
@@ -206,16 +204,15 @@ const COLUMNS: Array<{
 
 // Botão "Avançar" por estado atual do pedido. Segue exatamente o
 // ALLOWED_TRANSITIONS do OrderStateMachine — nenhum atalho.
-const NEXT_BY_STATUS: Partial<
-  Record<OrderStatus, { to: OrderStatus; label: string; icon: any }>
-> = {
-  pago: { to: "aceito", label: "Aceitar", icon: Check },
-  aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
-  em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
-  pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
-  saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
-  entregue: { to: "concluido", label: "Concluir", icon: Check },
-};
+const NEXT_BY_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string; icon: any }>> =
+  {
+    pago: { to: "aceito", label: "Aceitar", icon: Check },
+    aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
+    em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
+    pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
+    saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
+    entregue: { to: "concluido", label: "Concluir", icon: Check },
+  };
 
 const TERMINAL_STATUSES: OrderStatus[] = [
   "concluido",
@@ -230,12 +227,12 @@ function columnOf(order: Order): ColumnKey {
   const status = order.status as OrderStatus;
 
   if (status === "novo") {
-  const method = (order.payment_method ?? "").toLowerCase().trim();
+    const method = (order.payment_method ?? "").toLowerCase().trim();
 
-  if (method === "cash" || method === "dinheiro" || method === "especie") {
-    return "paid";
+    if (method === "cash" || method === "dinheiro" || method === "especie") {
+      return "paid";
+    }
   }
-}
 
   return STATUS_TO_COLUMN[status] ?? "pending_payment";
 }
@@ -273,16 +270,46 @@ function dispatchHref(orderId: string) {
 
 /** Urgency tone based on wait time (only meaningful for active orders). */
 function urgencyTone(mins: number) {
-  if (mins < 5) return { ring: "ring-emerald-500/40", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", label: "novo", pulse: "" };
-  if (mins < 10) return { ring: "ring-amber-500/50", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-400", label: "aguardando", pulse: "" };
-  if (mins < 15) return { ring: "ring-orange-500/60", chip: "bg-orange-500/20 text-orange-700 dark:text-orange-400", label: "atenção", pulse: "" };
-  return { ring: "ring-2 ring-destructive", chip: "bg-destructive text-destructive-foreground", label: "atrasado", pulse: "animate-pulse" };
+  if (mins < 5)
+    return {
+      ring: "ring-emerald-500/40",
+      chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+      label: "novo",
+      pulse: "",
+    };
+  if (mins < 10)
+    return {
+      ring: "ring-amber-500/50",
+      chip: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+      label: "aguardando",
+      pulse: "",
+    };
+  if (mins < 15)
+    return {
+      ring: "ring-orange-500/60",
+      chip: "bg-orange-500/20 text-orange-700 dark:text-orange-400",
+      label: "atenção",
+      pulse: "",
+    };
+  return {
+    ring: "ring-2 ring-destructive",
+    chip: "bg-destructive text-destructive-foreground",
+    label: "atrasado",
+    pulse: "animate-pulse",
+  };
 }
 
 type FilterKey =
-  | "all" | "delivery" | "retirada" | "mesa"
-  | "pix" | "cartao" | "dinheiro"
-  | "urgentes" | "hoje" | "ontem";
+  | "all"
+  | "delivery"
+  | "retirada"
+  | "mesa"
+  | "pix"
+  | "cartao"
+  | "dinheiro"
+  | "urgentes"
+  | "hoje"
+  | "ontem";
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "all", label: "Todos" },
@@ -299,7 +326,11 @@ const FILTERS: Array<{ key: FilterKey; label: string }> = [
 
 function isSameDay(iso: string, ref: Date) {
   const d = new Date(iso);
-  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+  return (
+    d.getFullYear() === ref.getFullYear() &&
+    d.getMonth() === ref.getMonth() &&
+    d.getDate() === ref.getDate()
+  );
 }
 
 function OrdersPage() {
@@ -311,6 +342,7 @@ function OrdersPage() {
   const [search, setSearch] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [visibleCount, setVisibleCount] = useState(50);
+  const [cancelingIds, setCancelingIds] = useState<Set<string>>(() => new Set());
 
   // Live timer — tick every 30s to refresh elapsed labels and urgency colors.
   useEffect(() => {
@@ -318,8 +350,11 @@ function OrdersPage() {
     return () => clearInterval(t);
   }, []);
 
-
-  const { data: orders, isLoading: loading, isFetching } = useQuery({
+  const {
+    data: orders,
+    isLoading: loading,
+    isFetching,
+  } = useQuery({
     enabled: !!restaurant?.id,
     queryKey: ["orders", restaurant?.id, visibleCount],
     queryFn: async () => {
@@ -350,14 +385,16 @@ function OrdersPage() {
         .in("status", ACTIVE_ASSIGNMENT_STATUSES)
         .order("assigned_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row: any): DeliveryAssignmentSummary => ({
-        id: row.id,
-        order_id: row.order_id,
-        driver_id: row.driver_id,
-        status: row.status,
-        assigned_at: row.assigned_at,
-        driver_name: row.delivery_drivers?.name ?? null,
-      }));
+      return (data ?? []).map(
+        (row: any): DeliveryAssignmentSummary => ({
+          id: row.id,
+          order_id: row.order_id,
+          driver_id: row.driver_id,
+          status: row.status,
+          assigned_at: row.assigned_at,
+          driver_name: row.delivery_drivers?.name ?? null,
+        }),
+      );
     },
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -385,34 +422,87 @@ function OrdersPage() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const display = message.includes(":") ? message.split(":").slice(1).join(":") : "Nao foi possivel atualizar";
+      const display = message.includes(":")
+        ? message.split(":").slice(1).join(":")
+        : "Nao foi possivel atualizar";
       toast.error(display || "Nao foi possivel atualizar");
       snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
       console.error("[orders] transition failed", err);
     }
   }
 
+  async function cancelOrder(order: Order) {
+    if (cancelingIds.has(order.id)) return;
+    setCancelingIds((prev) => new Set(prev).add(order.id));
+    const keyPrefix = ["orders", restaurant.id];
+    const snapshots = qc.getQueriesData<Order[]>({ queryKey: keyPrefix });
+    try {
+      const result = await cancelRestaurantOrder({ data: { orderId: order.id } });
+      const nextStatus = result.status as OrderStatus;
+      qc.setQueriesData<Order[]>({ queryKey: keyPrefix }, (prev) =>
+        Array.isArray(prev)
+          ? prev.map((o) => (o.id === order.id ? { ...o, status: nextStatus } : o))
+          : prev,
+      );
+      toast.success(
+        result.refunded
+          ? `Pedido #${order.order_number ?? ""} reembolsado`
+          : `Pedido #${order.order_number ?? ""} cancelado`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const display = message.includes(":")
+        ? message.split(":").slice(1).join(":")
+        : "Nao foi possivel cancelar";
+      toast.error(display || "Nao foi possivel cancelar");
+      snapshots.forEach(([k, v]) => qc.setQueryData(k, v));
+      console.error("[orders] cancel failed", err);
+    } finally {
+      setCancelingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(order.id);
+        return next;
+      });
+    }
+  }
+
   const filtered = useMemo(() => {
     const list = orders ?? [];
     const today = new Date();
-    const yest = new Date(); yest.setDate(today.getDate() - 1);
+    const yest = new Date();
+    yest.setDate(today.getDate() - 1);
     const q = search.trim().toLowerCase();
     const qDigits = q.replace(/\D+/g, "");
     return list.filter((o) => {
       // filter chip
       switch (filter) {
-        case "delivery": if (!o.address) return false; break;
-        case "retirada": if (o.address) return false; break;
-        case "mesa": return false; // sem suporte de mesa no schema atual
-        case "pix": if (!/pix/i.test(o.payment_method ?? "")) return false; break;
-        case "cartao": if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false; break;
-        case "dinheiro": if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false; break;
+        case "delivery":
+          if (!o.address) return false;
+          break;
+        case "retirada":
+          if (o.address) return false;
+          break;
+        case "mesa":
+          return false; // sem suporte de mesa no schema atual
+        case "pix":
+          if (!/pix/i.test(o.payment_method ?? "")) return false;
+          break;
+        case "cartao":
+          if (!/cart|credit|debit/i.test(o.payment_method ?? "")) return false;
+          break;
+        case "dinheiro":
+          if (!/dinheiro|cash|especie/i.test(o.payment_method ?? "")) return false;
+          break;
         case "urgentes":
           if (!ACTIVE_STATUSES.includes(o.status as OrderStatus)) return false;
           if (minutesSince(o.created_at, nowMs) < 10) return false;
           break;
-        case "hoje": if (!isSameDay(o.created_at, today)) return false; break;
-        case "ontem": if (!isSameDay(o.created_at, yest)) return false; break;
+        case "hoje":
+          if (!isSameDay(o.created_at, today)) return false;
+          break;
+        case "ontem":
+          if (!isSameDay(o.created_at, yest)) return false;
+          break;
       }
       // search
       if (q) {
@@ -482,7 +572,8 @@ function OrdersPage() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const el = document.activeElement as HTMLElement | null;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable))
+        return;
       if (!detailOrder) return;
       // Atalhos avançam o pedido conforme sua situação atual — nunca pulam etapas.
       const next = NEXT_BY_STATUS[detailOrder.status as OrderStatus];
@@ -508,8 +599,6 @@ function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailOrder]);
 
-
-
   // Summary (base: today's orders, ignoring active filters).
   const summary = useMemo(() => {
     const today = new Date();
@@ -523,17 +612,22 @@ function OrdersPage() {
     const avgMin = finished.length
       ? Math.round(
           finished.reduce(
-            (s, o) => s + (new Date(o.updated_at ?? o.created_at).getTime() - new Date(o.created_at).getTime()) / 60000,
+            (s, o) =>
+              s +
+              (new Date(o.updated_at ?? o.created_at).getTime() -
+                new Date(o.created_at).getTime()) /
+                60000,
             0,
           ) / finished.length,
         )
       : 0;
     const overdue = (orders ?? []).filter(
-      (o) => ACTIVE_STATUSES.includes(o.status as OrderStatus) && minutesSince(o.created_at, nowMs) >= 15,
+      (o) =>
+        ACTIVE_STATUSES.includes(o.status as OrderStatus) &&
+        minutesSince(o.created_at, nowMs) >= 15,
     ).length;
     return { count: list.length, revenue, avgTicket, avgMin, overdue };
   }, [orders, nowMs]);
-
 
   function onDragStart(e: React.DragEvent, orderId: string) {
     draggingId.current = orderId;
@@ -590,10 +684,12 @@ function OrdersPage() {
 
   function whatsappOrder(o: Order) {
     const phone = normalizePhone(o.customer_phone);
-    if (!phone) { toast.error("Cliente sem telefone"); return; }
+    if (!phone) {
+      toast.error("Cliente sem telefone");
+      return;
+    }
     const num = phone.startsWith("55") ? phone : `55${phone}`;
-    const msg =
-      `Olá, ${o.customer_name.split(" ")[0]}! Sobre seu pedido #${o.order_number ?? ""} no ${restaurant.name}. `;
+    const msg = `Olá, ${o.customer_name.split(" ")[0]}! Sobre seu pedido #${o.order_number ?? ""} no ${restaurant.name}. `;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   }
 
@@ -628,11 +724,37 @@ function OrdersPage() {
 
       {/* Resumo */}
       <div className="mb-4 grid grid-cols-2 gap-2 px-4 sm:grid-cols-3 lg:grid-cols-5 lg:px-8">
-        <SummaryCard icon={<ShoppingBag className="h-4 w-4" />} label="Pedidos Hoje" value={String(summary.count)} tone="primary" />
-        <SummaryCard icon={<DollarSign className="h-4 w-4" />} label="Receita" value={brl(summary.revenue)} tone="emerald" />
-        <SummaryCard icon={<Receipt className="h-4 w-4" />} label="Ticket Médio" value={brl(summary.avgTicket)} tone="blue" />
-        <SummaryCard icon={<TimerIcon className="h-4 w-4" />} label="Tempo Médio" value={`${summary.avgMin} min`} tone="amber" />
-        <SummaryCard icon={<AlertTriangle className="h-4 w-4" />} label="Em atraso" value={String(summary.overdue)} tone={summary.overdue > 0 ? "destructive" : "muted"} pulse={summary.overdue > 0} />
+        <SummaryCard
+          icon={<ShoppingBag className="h-4 w-4" />}
+          label="Pedidos Hoje"
+          value={String(summary.count)}
+          tone="primary"
+        />
+        <SummaryCard
+          icon={<DollarSign className="h-4 w-4" />}
+          label="Receita"
+          value={brl(summary.revenue)}
+          tone="emerald"
+        />
+        <SummaryCard
+          icon={<Receipt className="h-4 w-4" />}
+          label="Ticket Médio"
+          value={brl(summary.avgTicket)}
+          tone="blue"
+        />
+        <SummaryCard
+          icon={<TimerIcon className="h-4 w-4" />}
+          label="Tempo Médio"
+          value={`${summary.avgMin} min`}
+          tone="amber"
+        />
+        <SummaryCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="Em atraso"
+          value={String(summary.overdue)}
+          tone={summary.overdue > 0 ? "destructive" : "muted"}
+          pulse={summary.overdue > 0}
+        />
       </div>
 
       {/* Busca + Filtros */}
@@ -670,7 +792,6 @@ function OrdersPage() {
         </div>
       </div>
 
-
       {/* Desktop / Tablet: Kanban horizontal */}
       <div className="hidden overflow-x-auto px-4 pb-4 md:block lg:px-8">
         <div className="flex min-w-max gap-4">
@@ -687,7 +808,10 @@ function OrdersPage() {
                 className={`flex w-[360px] shrink-0 flex-col rounded-2xl border bg-muted/30 transition ${isOver ? col.dropCls : ""}`}
               >
                 <ColumnHeader col={col} count={list.length} total={total} />
-                <div className="flex-1 space-y-3 overflow-y-auto p-3" style={{ maxHeight: "calc(100vh - 240px)" }}>
+                <div
+                  className="flex-1 space-y-3 overflow-y-auto p-3"
+                  style={{ maxHeight: "calc(100vh - 240px)" }}
+                >
                   {list.length === 0 && (
                     <p className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
                       Nenhum pedido
@@ -696,7 +820,8 @@ function OrdersPage() {
                   {list.map((o) => {
                     const next = NEXT_BY_STATUS[o.status as OrderStatus];
                     const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
-                    const shouldUseDeliveryCenter = !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
+                    const shouldUseDeliveryCenter =
+                      !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
                     return (
                       <OrderCard
                         key={o.id}
@@ -706,10 +831,15 @@ function OrdersPage() {
                         nowMs={nowMs}
                         isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
                         onDragStart={(e) => onDragStart(e, o.id)}
-                        onAdvance={next && !shouldUseDeliveryCenter ? () => updateStatus(o.id, next.to) : undefined}
+                        onAdvance={
+                          next && !shouldUseDeliveryCenter
+                            ? () => updateStatus(o.id, next.to)
+                            : undefined
+                        }
                         advanceLabel={shouldUseDeliveryCenter ? undefined : next?.label}
                         AdvanceIcon={shouldUseDeliveryCenter ? undefined : next?.icon}
-                        onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                        onCancel={canCancel ? () => cancelOrder(o) : undefined}
+                        isCancelling={cancelingIds.has(o.id)}
                         onPrint={() => printOrder(o)}
                         onWhatsapp={() => whatsappOrder(o)}
                         isNew={col.key === "paid"}
@@ -752,7 +882,8 @@ function OrdersPage() {
                 {list.map((o) => {
                   const next = NEXT_BY_STATUS[o.status as OrderStatus];
                   const canCancel = !TERMINAL_STATUSES.includes(o.status as OrderStatus);
-                  const shouldUseDeliveryCenter = !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
+                  const shouldUseDeliveryCenter =
+                    !!o.address && (o.status === "pronto" || o.status === "saiu_para_entrega");
                   return (
                     <OrderCard
                       key={o.id}
@@ -762,10 +893,15 @@ function OrdersPage() {
                       nowMs={nowMs}
                       isActiveStatus={ACTIVE_COLUMNS.includes(col.key)}
                       onDragStart={() => {}}
-                      onAdvance={next && !shouldUseDeliveryCenter ? () => updateStatus(o.id, next.to) : undefined}
+                      onAdvance={
+                        next && !shouldUseDeliveryCenter
+                          ? () => updateStatus(o.id, next.to)
+                          : undefined
+                      }
                       advanceLabel={shouldUseDeliveryCenter ? undefined : next?.label}
                       AdvanceIcon={shouldUseDeliveryCenter ? undefined : next?.icon}
-                      onCancel={canCancel ? () => updateStatus(o.id, "cancelado") : undefined}
+                      onCancel={canCancel ? () => cancelOrder(o) : undefined}
+                      isCancelling={cancelingIds.has(o.id)}
                       onPrint={() => printOrder(o)}
                       onWhatsapp={() => whatsappOrder(o)}
                       isNew={col.key === "paid"}
@@ -794,7 +930,6 @@ function OrdersPage() {
         </div>
       )}
 
-
       <OrderDetailsDrawer
         order={detailOrder}
         onOpenChange={(open) => !open && setDetailOrder(null)}
@@ -805,7 +940,6 @@ function OrdersPage() {
     </div>
   );
 }
-
 
 function OrderCard({
   order: o,
@@ -818,6 +952,7 @@ function OrderCard({
   advanceLabel,
   AdvanceIcon,
   onCancel,
+  isCancelling = false,
   onPrint,
   onWhatsapp,
   isNew,
@@ -834,6 +969,7 @@ function OrderCard({
   advanceLabel?: string;
   AdvanceIcon?: any;
   onCancel?: () => void;
+  isCancelling?: boolean;
   onPrint: () => void;
   onWhatsapp: () => void;
   isNew: boolean;
@@ -847,7 +983,8 @@ function OrderCard({
   const stop = (e: React.MouseEvent) => e.stopPropagation();
   const isDelivery = !!o.address;
   const needsDispatch = isDelivery && o.status === "pronto" && !assignment;
-  const hasDeliveryFlowAction = isDelivery && (o.status === "pronto" || o.status === "saiu_para_entrega");
+  const hasDeliveryFlowAction =
+    isDelivery && (o.status === "pronto" || o.status === "saiu_para_entrega");
   return (
     <Card
       draggable
@@ -861,7 +998,6 @@ function OrderCard({
         isFresh ? "animate-fade-in ring-2 ring-primary" : ""
       }`}
     >
-
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-display text-lg font-extrabold leading-none">
@@ -873,13 +1009,18 @@ function OrderCard({
           <p className="font-display text-lg font-extrabold text-primary">{brl(Number(o.total))}</p>
           <p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] text-muted-foreground">
             <Clock className="h-3 w-3" />
-            {new Date(o.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            {new Date(o.created_at).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </div>
       </div>
 
       {tone && (
-        <div className={`flex items-center justify-between rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.chip}`}>
+        <div
+          className={`flex items-center justify-between rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.chip}`}
+        >
           <span className="flex items-center gap-1">
             <TimerIcon className="h-3 w-3" /> {mins} min
           </span>
@@ -887,21 +1028,29 @@ function OrderCard({
         </div>
       )}
 
-
       <div className="space-y-1 text-xs text-muted-foreground">
         {o.customer_phone && (
-          <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /> {formatPhone(o.customer_phone)}</p>
+          <p className="flex items-center gap-1.5">
+            <Phone className="h-3 w-3 shrink-0" /> {formatPhone(o.customer_phone)}
+          </p>
         )}
         {o.address && (
-          <p className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3 w-3 shrink-0" /> <span className="truncate">{o.address}</span></p>
+          <p className="flex items-start gap-1.5">
+            <MapPin className="mt-0.5 h-3 w-3 shrink-0" />{" "}
+            <span className="truncate">{o.address}</span>
+          </p>
         )}
         {o.payment_method && (
-          <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3 shrink-0" /> {paymentMethodLabel(o.payment_method)}</p>
+          <p className="flex items-center gap-1.5">
+            <CreditCard className="h-3 w-3 shrink-0" /> {paymentMethodLabel(o.payment_method)}
+          </p>
         )}
       </div>
 
       {isDelivery && o.status === "pronto" && (
-        <div className={`rounded-md border p-2 text-xs ${needsDispatch ? "border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "bg-muted/50"}`}>
+        <div
+          className={`rounded-md border p-2 text-xs ${needsDispatch ? "border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "bg-muted/50"}`}
+        >
           {assignment ? (
             <div className="space-y-1">
               <p className="font-semibold">Motoboy: {assignment.driver_name ?? "Designado"}</p>
@@ -916,7 +1065,9 @@ function OrderCard({
       <ul className="rounded-md bg-muted/60 p-2 text-xs">
         {items.map((it, i) => (
           <li key={i} className="flex justify-between gap-2">
-            <span className="truncate">{it.qty}x {it.name}</span>
+            <span className="truncate">
+              {it.qty}x {it.name}
+            </span>
             <span className="shrink-0 tabular-nums">{brl(Number(it.price) * it.qty)}</span>
           </li>
         ))}
@@ -939,12 +1090,27 @@ function OrderCard({
           </Button>
         )}
         {onAdvance && (
-          <Button size="sm" className="col-span-2 h-8 gap-1 text-xs" onClick={(e) => { stop(e); onAdvance(); }}>
+          <Button
+            size="sm"
+            className="col-span-2 h-8 gap-1 text-xs"
+            onClick={(e) => {
+              stop(e);
+              onAdvance();
+            }}
+          >
             {AdvanceIcon ? <AdvanceIcon className="h-3.5 w-3.5" /> : null}
             {advanceLabel}
           </Button>
         )}
-        <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={(e) => { stop(e); onPrint(); }}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1 text-xs"
+          onClick={(e) => {
+            stop(e);
+            onPrint();
+          }}
+        >
           <Printer className="h-3.5 w-3.5" /> Imprimir
         </Button>
         <Button
@@ -952,7 +1118,10 @@ function OrderCard({
           variant="outline"
           className="h-8 gap-1 text-xs"
           disabled={!hasPhone}
-          onClick={(e) => { stop(e); onWhatsapp(); }}
+          onClick={(e) => {
+            stop(e);
+            onWhatsapp();
+          }}
         >
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
         </Button>
@@ -961,9 +1130,18 @@ function OrderCard({
             size="sm"
             variant="outline"
             className="col-span-2 h-8 gap-1 border-destructive/30 text-xs text-destructive hover:bg-destructive/5"
-            onClick={(e) => { stop(e); onCancel(); }}
+            disabled={isCancelling}
+            onClick={(e) => {
+              stop(e);
+              onCancel();
+            }}
           >
-            <X className="h-3.5 w-3.5" /> Cancelar
+            {isCancelling ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <X className="h-3.5 w-3.5" />
+            )}
+            Cancelar
           </Button>
         )}
       </div>
@@ -1019,7 +1197,9 @@ function OrderDetailsDrawer({
 
               {order.payment_method && (
                 <section className="rounded-lg border p-3">
-                  <h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">Pagamento</h3>
+                  <h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">
+                    Pagamento
+                  </h3>
                   <p className="flex items-center gap-1.5">
                     <CreditCard className="h-4 w-4" /> {paymentMethodLabel(order.payment_method)}
                   </p>
@@ -1032,9 +1212,13 @@ function OrderDetailsDrawer({
                   {items.map((it, i) => (
                     <li key={i} className="flex justify-between gap-3">
                       <div>
-                        <p className="font-medium">{it.qty}x {it.name}</p>
+                        <p className="font-medium">
+                          {it.qty}x {it.name}
+                        </p>
                       </div>
-                      <p className="shrink-0 tabular-nums">{brl(Number(it.price) * Number(it.qty))}</p>
+                      <p className="shrink-0 tabular-nums">
+                        {brl(Number(it.price) * Number(it.qty))}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -1061,7 +1245,8 @@ function OrderDetailsDrawer({
 
               <section className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
-                Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
+                Atualizado em{" "}
+                {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
               </section>
 
               <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3">
@@ -1071,7 +1256,11 @@ function OrderDetailsDrawer({
                 <Button variant="outline" className="gap-1.5" onClick={onPrint}>
                   <Printer className="h-4 w-4" /> Cupom
                 </Button>
-                <Button variant="outline" className="col-span-2 gap-1.5 sm:col-span-1" onClick={onWhatsapp}>
+                <Button
+                  variant="outline"
+                  className="col-span-2 gap-1.5 sm:col-span-1"
+                  onClick={onWhatsapp}
+                >
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </Button>
               </div>
@@ -1082,7 +1271,6 @@ function OrderDetailsDrawer({
     </Sheet>
   );
 }
-
 
 function ColumnHeader({
   col,
@@ -1103,13 +1291,14 @@ function ColumnHeader({
         <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-bold">{count}</span>
       </div>
       <div className="mt-1 flex items-center justify-between text-xs opacity-90">
-        <span>{count} {count === 1 ? "pedido" : "pedidos"}</span>
+        <span>
+          {count} {count === 1 ? "pedido" : "pedidos"}
+        </span>
         <span className="font-semibold">{brl(total)}</span>
       </div>
     </header>
   );
 }
-
 
 function SummaryCard({
   icon,
@@ -1137,7 +1326,9 @@ function SummaryCard({
       <div className="flex items-center gap-2">
         <span className={`grid h-8 w-8 place-items-center rounded-lg ${tones[tone]}`}>{icon}</span>
         <div className="min-w-0">
-          <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
           <p className="font-display text-lg font-extrabold leading-tight">{value}</p>
         </div>
       </div>

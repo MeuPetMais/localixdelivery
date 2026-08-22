@@ -9,11 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { brl } from "@/lib/format";
 import {
-  Loader2, Maximize, Minimize, ChefHat, Clock, Utensils, Bike, CheckCircle2, X,
+  Loader2,
+  Maximize,
+  Minimize,
+  ChefHat,
+  Clock,
+  Utensils,
+  Bike,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { computeEtaMinutes, computeEtaLabel } from "@/lib/smart-eta";
 import { toast } from "sonner";
-import { transitionOrderStatus } from "@/lib/orders/orders.functions";
+import { cancelRestaurantOrder, transitionOrderStatus } from "@/lib/orders/orders.functions";
 import type { OrderState } from "@/lib/orders/OrderStateMachine";
 
 export const Route = createFileRoute("/_authenticated/kitchen")({
@@ -35,11 +43,31 @@ type Order = {
 type Col = { key: Order["status"]; title: string; emoji: string; accent: string };
 
 const COLUMNS: Col[] = [
-  { key: "aceito",            title: "Aceitos",    emoji: "🆕", accent: "bg-red-500/10 border-red-500/30" },
-  { key: "em_preparo",        title: "Preparando", emoji: "👨‍🍳", accent: "bg-amber-500/10 border-amber-500/30" },
-  { key: "pronto",            title: "Pronto",     emoji: "✅", accent: "bg-emerald-500/10 border-emerald-500/30" },
-  { key: "saiu_para_entrega", title: "Entrega",    emoji: "🛵", accent: "bg-blue-500/10 border-blue-500/30" },
-  { key: "entregue",          title: "Entregue",   emoji: "🏁", accent: "bg-slate-500/10 border-slate-500/30" },
+  { key: "aceito", title: "Aceitos", emoji: "🆕", accent: "bg-red-500/10 border-red-500/30" },
+  {
+    key: "em_preparo",
+    title: "Preparando",
+    emoji: "👨‍🍳",
+    accent: "bg-amber-500/10 border-amber-500/30",
+  },
+  {
+    key: "pronto",
+    title: "Pronto",
+    emoji: "✅",
+    accent: "bg-emerald-500/10 border-emerald-500/30",
+  },
+  {
+    key: "saiu_para_entrega",
+    title: "Entrega",
+    emoji: "🛵",
+    accent: "bg-blue-500/10 border-blue-500/30",
+  },
+  {
+    key: "entregue",
+    title: "Entregue",
+    emoji: "🏁",
+    accent: "bg-slate-500/10 border-slate-500/30",
+  },
 ];
 
 const NEXT_STATUS: Record<string, string> = {
@@ -60,6 +88,7 @@ function KitchenPage() {
   const qc = useQueryClient();
   const [tv, setTv] = useState(false);
   const [, tick] = useState(0);
+  const [cancelingIds, setCancelingIds] = useState<Set<string>>(() => new Set());
 
   // Re-render a cada 30s para atualizar o tempo decorrido.
   useEffect(() => {
@@ -89,11 +118,18 @@ function KitchenPage() {
       .channel(`kitchen-${restaurant.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurant.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey: ["kitchen", restaurant.id] }),
       )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [restaurant?.id, qc]);
 
   const grouped = useMemo(() => {
@@ -120,7 +156,11 @@ function KitchenPage() {
     if (!restaurant?.id) return;
     const target = computeEtaLabel(etaMinutes);
     if (restaurant.delivery_time === target) return;
-    supabase.from("restaurants").update({ delivery_time: target }).eq("id", restaurant.id).then(() => {});
+    supabase
+      .from("restaurants")
+      .update({ delivery_time: target })
+      .eq("id", restaurant.id)
+      .then(() => {});
   }, [etaMinutes, restaurant?.id, restaurant?.delivery_time]);
 
   async function advance(o: Order) {
@@ -135,17 +175,37 @@ function KitchenPage() {
 
   async function cancel(o: Order) {
     try {
-      await transitionOrderStatus({ data: { orderId: o.id, to: "cancelado" } });
+      await cancelWithRefund(o);
     } catch {
       toast.error("Não foi possível cancelar");
+    }
+  }
+
+  async function cancelWithRefund(o: Order) {
+    if (cancelingIds.has(o.id)) return;
+    setCancelingIds((prev) => new Set(prev).add(o.id));
+    try {
+      const result = await cancelRestaurantOrder({ data: { orderId: o.id } });
+      toast.success(result.refunded ? "Pedido reembolsado" : "Pedido cancelado");
+      qc.invalidateQueries({ queryKey: ["kitchen", restaurant?.id] });
+    } catch {
+      toast.error("Não foi possível cancelar");
+    } finally {
+      setCancelingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(o.id);
+        return next;
+      });
     }
   }
 
   function toggleFullscreen() {
     const doc: any = document;
     if (!document.fullscreenElement) {
-      (document.documentElement.requestFullscreen?.() ??
-        doc.documentElement.webkitRequestFullscreen?.())?.catch?.(() => {});
+      (
+        document.documentElement.requestFullscreen?.() ??
+        doc.documentElement.webkitRequestFullscreen?.()
+      )?.catch?.(() => {});
       setTv(true);
     } else {
       (document.exitFullscreen?.() ?? doc.webkitExitFullscreen?.())?.catch?.(() => {});
@@ -182,7 +242,15 @@ function KitchenPage() {
           </div>
         </div>
         <Button onClick={toggleFullscreen} variant={tv ? "default" : "outline"}>
-          {tv ? <><Minimize className="mr-2 h-4 w-4" /> Sair do Modo TV</> : <><Maximize className="mr-2 h-4 w-4" /> Modo Cozinha</>}
+          {tv ? (
+            <>
+              <Minimize className="mr-2 h-4 w-4" /> Sair do Modo TV
+            </>
+          ) : (
+            <>
+              <Maximize className="mr-2 h-4 w-4" /> Modo Cozinha
+            </>
+          )}
         </Button>
       </div>
 
@@ -236,15 +304,40 @@ function KitchenPage() {
                     <div className="flex gap-2">
                       {NEXT_STATUS[o.status] && (
                         <Button size="sm" className="flex-1" onClick={() => advance(o)}>
-                          {o.status === "aceito" && (<><Utensils className="mr-1 h-4 w-4" /> Preparar</>)}
-                          {o.status === "em_preparo" && (<><CheckCircle2 className="mr-1 h-4 w-4" /> Pronto</>)}
-                          {o.status === "pronto" && (<><Bike className="mr-1 h-4 w-4" /> Saiu</>)}
-                          {o.status === "saiu_para_entrega" && (<><CheckCircle2 className="mr-1 h-4 w-4" /> Entregue</>)}
+                          {o.status === "aceito" && (
+                            <>
+                              <Utensils className="mr-1 h-4 w-4" /> Preparar
+                            </>
+                          )}
+                          {o.status === "em_preparo" && (
+                            <>
+                              <CheckCircle2 className="mr-1 h-4 w-4" /> Pronto
+                            </>
+                          )}
+                          {o.status === "pronto" && (
+                            <>
+                              <Bike className="mr-1 h-4 w-4" /> Saiu
+                            </>
+                          )}
+                          {o.status === "saiu_para_entrega" && (
+                            <>
+                              <CheckCircle2 className="mr-1 h-4 w-4" /> Entregue
+                            </>
+                          )}
                         </Button>
                       )}
                       {o.status === "aceito" && (
-                        <Button size="sm" variant="ghost" onClick={() => cancel(o)}>
-                          <X className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={cancelingIds.has(o.id)}
+                          onClick={() => cancel(o)}
+                        >
+                          {cancelingIds.has(o.id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                       )}
                     </div>

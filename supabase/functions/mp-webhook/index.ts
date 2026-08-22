@@ -13,30 +13,53 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 
-
-type MpStatus = "approved"|"pending"|"in_process"|"rejected"|"cancelled"|"refunded"|"charged_back"|"expired";
-type LocalStatus = "PENDING"|"PROCESSING"|"APPROVED"|"REJECTED"|"CANCELLED"|"EXPIRED"|"REFUNDED"|"CHARGEBACK";
+type MpStatus =
+  | "approved"
+  | "pending"
+  | "in_process"
+  | "rejected"
+  | "cancelled"
+  | "refunded"
+  | "charged_back"
+  | "expired";
+type LocalStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "REFUNDED"
+  | "CHARGEBACK";
 
 function admin(): SupabaseClient {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function mapStatus(s: string | null | undefined): LocalStatus {
   switch ((s ?? "").toLowerCase() as MpStatus) {
-    case "approved": return "APPROVED";
-    case "in_process": return "PROCESSING";
-    case "pending": return "PENDING";
-    case "rejected": return "REJECTED";
-    case "cancelled": return "CANCELLED";
-    case "expired": return "EXPIRED";
-    case "refunded": return "REFUNDED";
-    case "charged_back": return "CHARGEBACK";
-    default: return "PENDING";
+    case "approved":
+      return "APPROVED";
+    case "in_process":
+      return "PROCESSING";
+    case "pending":
+      return "PENDING";
+    case "rejected":
+      return "REJECTED";
+    case "cancelled":
+      return "CANCELLED";
+    case "expired":
+      return "EXPIRED";
+    case "refunded":
+      return "REFUNDED";
+    case "charged_back":
+      return "CHARGEBACK";
+    default:
+      return "PENDING";
   }
 }
 
@@ -95,22 +118,39 @@ async function verifySignature(opts: {
     ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(manifest));
-  const hex = [...new Uint8Array(sig)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
   if (hex.length !== v1.length) {
-    return { ok: false, reason: "length_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+    return {
+      ok: false,
+      reason: "length_mismatch",
+      manifest,
+      dataId,
+      ts,
+      calculated: hex,
+      received: v1,
+    };
   }
   let diff = 0;
   for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ v1.charCodeAt(i);
   if (diff !== 0) {
-    return { ok: false, reason: "hmac_mismatch", manifest, dataId, ts, calculated: hex, received: v1 };
+    return {
+      ok: false,
+      reason: "hmac_mismatch",
+      manifest,
+      dataId,
+      ts,
+      calculated: hex,
+      received: v1,
+    };
   }
   return { ok: true, manifest, dataId, ts, calculated: hex, received: v1 };
 }
 
-async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string | null): Promise<string | null> {
+async function getAccessTokenForOrder(
+  sb: SupabaseClient,
+  restaurantId: string | null,
+): Promise<string | null> {
   console.log("[mp-webhook] getAccessTokenForOrder restaurant_id", restaurantId);
   if (restaurantId) {
     const { data } = await sb
@@ -120,14 +160,20 @@ async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string |
       .maybeSingle();
     console.log("[mp-webhook] mercado_pago_accounts row_found", Boolean(data));
     console.log("[mp-webhook] mercado_pago_accounts connected", data?.connected ?? null);
-    console.log("[mp-webhook] mercado_pago_accounts access_token_exists", Boolean(data?.access_token));
+    console.log(
+      "[mp-webhook] mercado_pago_accounts access_token_exists",
+      Boolean(data?.access_token),
+    );
     if (data?.connected && data.access_token) {
       try {
         const tok = await decryptToken(data.access_token);
         console.log("[mp-webhook] decryptToken result", tok ? "success" : "null");
         if (tok) return tok;
       } catch (err) {
-        console.error("[mp-webhook] decryptToken error", err instanceof Error ? err.message : String(err));
+        console.error(
+          "[mp-webhook] decryptToken error",
+          err instanceof Error ? err.message : String(err),
+        );
       }
     }
   }
@@ -138,10 +184,36 @@ async function getAccessTokenForOrder(sb: SupabaseClient, restaurantId: string |
 
 async function fetchMpPayment(token: string, paymentId: string) {
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    headers: { "Authorization": `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;
   return await res.json();
+}
+
+function latestRefund(mp: any): any | null {
+  const refunds = Array.isArray(mp?.refunds) ? mp.refunds : [];
+  if (refunds.length === 0) return null;
+  return refunds[refunds.length - 1] ?? null;
+}
+
+function refundLedgerReference(
+  mp: any,
+  amount: number,
+): { referenceType: string; referenceId: string; refundId: string | null } {
+  const refund = latestRefund(mp);
+  const refundId = refund?.id ? String(refund.id) : null;
+  if (refundId) {
+    return {
+      referenceType: "mp_refund",
+      referenceId: `${String(mp.id)}:refund:${refundId}`,
+      refundId,
+    };
+  }
+  return {
+    referenceType: "mp_refund",
+    referenceId: `${String(mp.id)}:refund:full:${Number(amount).toFixed(2)}`,
+    refundId: null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -150,7 +222,13 @@ Deno.serve(async (req) => {
 
   const sb = admin();
   const rawBody = await req.text();
-  const body = (() => { try { return JSON.parse(rawBody); } catch { return {}; } })();
+  const body = (() => {
+    try {
+      return JSON.parse(rawBody);
+    } catch {
+      return {};
+    }
+  })();
 
   const url = new URL(req.url);
   const dataIdFromQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
@@ -160,7 +238,8 @@ Deno.serve(async (req) => {
   const action = String(body?.action ?? "").toLowerCase() || null;
   const dataIdFromBody = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
   const resourceId = dataIdFromBody ?? dataIdFromQuery;
-  const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
+  const eventId =
+    String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
 
   // Persistência com idempotência por (provider, event_id)
@@ -225,10 +304,9 @@ Deno.serve(async (req) => {
     x_request_id: xRequestId,
     calculated_hmac: sigResult.calculated ?? null,
     received_hmac: sigResult.received ?? null,
-    diverged_field:
-      sigResult.ok
-        ? null
-        : sigResult.reason === "hmac_mismatch" || sigResult.reason === "length_mismatch"
+    diverged_field: sigResult.ok
+      ? null
+      : sigResult.reason === "hmac_mismatch" || sigResult.reason === "length_mismatch"
         ? "v1"
         : sigResult.reason,
   });
@@ -245,18 +323,24 @@ Deno.serve(async (req) => {
       reason: sigResult.reason,
       resource_id: resourceId,
     });
-    await sb.from("payment_webhook_events").update({
-      error_message: `signature_bypass:${sigResult.reason ?? "unknown"}`,
-    }).eq("id", eventPk);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        error_message: `signature_bypass:${sigResult.reason ?? "unknown"}`,
+      })
+      .eq("id", eventPk);
   }
 
-  const isPayment = (eventType?.includes("payment")) || (action?.startsWith("payment."));
+  const isPayment = eventType?.includes("payment") || action?.startsWith("payment.");
   if (!isPayment || !resourceId) {
-    await sb.from("payment_webhook_events").update({
-      processed: true,
-      processed_at: new Date().toISOString(),
-      error_message: "ignored: not a payment event",
-    }).eq("id", eventPk);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        error_message: "ignored: not a payment event",
+      })
+      .eq("id", eventPk);
     return json({ ok: true, ignored: true });
   }
 
@@ -265,9 +349,8 @@ Deno.serve(async (req) => {
     const { data: op } = await sb
       .from("order_payment")
       .select("order_id, orders:order_id(id, restaurant_id)")
-        .eq("payment_id", resourceId)
-        .maybeSingle();
-
+      .eq("payment_id", resourceId)
+      .maybeSingle();
 
     let orderId: string | null = op?.order_id ?? null;
     let restaurantId: string | null = (op as any)?.orders?.restaurant_id ?? null;
@@ -303,60 +386,81 @@ Deno.serve(async (req) => {
     }
 
     if (!orderId) {
-      await sb.from("payment_webhook_events").update({
-        processed: true,
-        processed_at: new Date().toISOString(),
-        error_message: "order_not_found",
-      }).eq("id", eventPk);
+      await sb
+        .from("payment_webhook_events")
+        .update({
+          processed: true,
+          processed_at: new Date().toISOString(),
+          error_message: "order_not_found",
+        })
+        .eq("id", eventPk);
       return json({ ok: true, warning: "order_not_found" });
     }
 
     const amount = Number(mp.transaction_amount ?? 0) || 0;
-    const ticketUrl = mp?.point_of_interaction?.transaction_data?.ticket_url
-      ?? mp?.transaction_details?.external_resource_url
-      ?? null;
+    const ticketUrl =
+      mp?.point_of_interaction?.transaction_data?.ticket_url ??
+      mp?.transaction_details?.external_resource_url ??
+      null;
     const qr = mp?.point_of_interaction?.transaction_data ?? {};
 
     // order_payment — upsert (garante linha mesmo se checkout não criou)
-    const { data: opUp, error: opErr } = await sb.from("order_payment").upsert({
-      order_id: orderId,
-      restaurant_id: restaurantId!,
-      provider: "mercado_pago",
-      payment_method: mp?.payment_type_id === "credit_card" ? "credit_card" : "pix",
-      status: local,
-      transaction_amount: amount,
-      payment_id: String(mp.id),
-      payment_intent: String(mp.id),
-      external_reference: mp?.external_reference ?? orderId,
-      payment_url: ticketUrl,
-      qr_code: qr.qr_code ?? null,
-      qr_code_base64: qr.qr_code_base64 ?? null,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "order_id" }).select("id");
+    const { data: opUp, error: opErr } = await sb
+      .from("order_payment")
+      .upsert(
+        {
+          order_id: orderId,
+          restaurant_id: restaurantId!,
+          provider: "mercado_pago",
+          payment_method: mp?.payment_type_id === "credit_card" ? "credit_card" : "pix",
+          status: local,
+          transaction_amount: amount,
+          payment_id: String(mp.id),
+          payment_intent: String(mp.id),
+          external_reference: mp?.external_reference ?? orderId,
+          payment_url: ticketUrl,
+          qr_code: qr.qr_code ?? null,
+          qr_code_base64: qr.qr_code_base64 ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "order_id" },
+      )
+      .select("id");
     if (opErr || !opUp || opUp.length === 0) {
-      console.error("[mp-webhook] order_payment upsert failed", { orderId, error: opErr?.message, rows: opUp?.length ?? 0 });
+      console.error("[mp-webhook] order_payment upsert failed", {
+        orderId,
+        error: opErr?.message,
+        rows: opUp?.length ?? 0,
+      });
     }
 
     // payments — mesma estrutura que Stripe (cross-gateway).
-    const { error: payErr } = await sb.from("payments").upsert({
-      order_id: orderId,
-      restaurant_id: restaurantId!,
-      provider: "mercado_pago",
-      external_id: String(mp.id),
-      method: mp?.payment_type_id === "credit_card" ? "card" : "pix",
-      status: local.toLowerCase(),
-      amount,
-      currency: mp?.currency_id ?? "BRL",
-      qr_code: qr.qr_code ?? null,
-      qr_code_base64: qr.qr_code_base64 ?? null,
-      ticket_url: ticketUrl,
-      payer_email: mp?.payer?.email ?? null,
-      paid_at: local === "APPROVED" ? (mp?.date_approved ?? new Date().toISOString()) : null,
-      raw: mp,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "provider,external_id" });
-    if (payErr) console.error("[mp-webhook] payments upsert failed", { orderId, mpId: String(mp.id), error: payErr.message });
-
+    const { error: payErr } = await sb.from("payments").upsert(
+      {
+        order_id: orderId,
+        restaurant_id: restaurantId!,
+        provider: "mercado_pago",
+        external_id: String(mp.id),
+        method: mp?.payment_type_id === "credit_card" ? "card" : "pix",
+        status: local.toLowerCase(),
+        amount,
+        currency: mp?.currency_id ?? "BRL",
+        qr_code: qr.qr_code ?? null,
+        qr_code_base64: qr.qr_code_base64 ?? null,
+        ticket_url: ticketUrl,
+        payer_email: mp?.payer?.email ?? null,
+        paid_at: local === "APPROVED" ? (mp?.date_approved ?? new Date().toISOString()) : null,
+        raw: mp,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "provider,external_id" },
+    );
+    if (payErr)
+      console.error("[mp-webhook] payments upsert failed", {
+        orderId,
+        mpId: String(mp.id),
+        error: payErr.message,
+      });
 
     // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
     const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;
@@ -379,66 +483,119 @@ Deno.serve(async (req) => {
         actorType: "webhook",
         service: "mp-webhook",
         correlationId,
-        metadata: { mp_status: mp.status, mp_status_detail: mp.status_detail ?? null, event_id: eventId },
+        metadata: {
+          mp_status: mp.status,
+          mp_status_detail: mp.status_detail ?? null,
+          event_id: eventId,
+        },
       });
       if (!tr.ok) {
-        console.warn("[mp-webhook] order transition rejected", { orderId, correlationId, reason: tr.reason ?? tr.error });
+        console.warn("[mp-webhook] order transition rejected", {
+          orderId,
+          correlationId,
+          reason: tr.reason ?? tr.error,
+        });
       }
     }
 
     if (local === "APPROVED") {
-      await sb.from("financial_ledger").insert({
-        order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
-        transaction_type: "PAYMENT_APPROVED", amount, currency: mp.currency_id ?? "BRL",
-        status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Pagamento aprovado", metadata: { status_detail: mp.status_detail ?? null, correlation_id: correlationId },
+      await recordMercadoPagoLedger(sb, {
+        order_id: orderId,
+        restaurant_id: restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "PAYMENT_APPROVED",
+        amount,
+        currency: mp.currency_id ?? "BRL",
+        status: "COMPLETED",
+        reference_type: "mp_payment",
+        reference_id: String(mp.id),
+        description: "Pagamento aprovado",
+        metadata: { status_detail: mp.status_detail ?? null, correlation_id: correlationId },
       });
     } else if (local === "PENDING" || local === "PROCESSING") {
-      await sb.from("financial_ledger").insert({
-        order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
-        transaction_type: "PAYMENT_PENDING", amount, currency: mp.currency_id ?? "BRL",
-        status: "PENDING", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Pagamento pendente", metadata: { correlation_id: correlationId },
+      await recordMercadoPagoLedger(sb, {
+        order_id: orderId,
+        restaurant_id: restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "PAYMENT_PENDING",
+        amount,
+        currency: mp.currency_id ?? "BRL",
+        status: "PENDING",
+        reference_type: "mp_payment",
+        reference_id: String(mp.id),
+        description: "Pagamento pendente",
+        metadata: { correlation_id: correlationId },
       });
     } else if (local === "REJECTED" || local === "CANCELLED" || local === "EXPIRED") {
       await sb.from("financial_ledger").insert({
-        order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
-        transaction_type: "PAYMENT_FAILED", amount, currency: mp.currency_id ?? "BRL",
-        status: "FAILED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: `Pagamento ${local.toLowerCase()}`, metadata: { correlation_id: correlationId },
+        order_id: orderId,
+        restaurant_id: restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "PAYMENT_FAILED",
+        amount,
+        currency: mp.currency_id ?? "BRL",
+        status: "FAILED",
+        reference_type: "mp_payment",
+        reference_id: String(mp.id),
+        description: `Pagamento ${local.toLowerCase()}`,
+        metadata: { correlation_id: correlationId },
       });
     } else if (local === "REFUNDED") {
-      await sb.from("financial_ledger").insert({
-        order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
-        transaction_type: "REFUND", amount, currency: mp.currency_id ?? "BRL",
-        status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Estorno", metadata: { correlation_id: correlationId },
+      const refundRef = refundLedgerReference(mp, amount);
+      await recordMercadoPagoLedger(sb, {
+        order_id: orderId,
+        restaurant_id: restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "REFUND",
+        amount,
+        currency: mp.currency_id ?? "BRL",
+        status: "COMPLETED",
+        reference_type: refundRef.referenceType,
+        reference_id: refundRef.referenceId,
+        description: "Estorno",
+        metadata: {
+          correlation_id: correlationId,
+          payment_id: String(mp.id),
+          refund_id: refundRef.refundId,
+        },
       });
     } else if (local === "CHARGEBACK") {
-      await sb.from("financial_ledger").insert({
-        order_id: orderId, restaurant_id: restaurantId, provider: "mercado_pago",
-        transaction_type: "CHARGEBACK", amount, currency: mp.currency_id ?? "BRL",
-        status: "COMPLETED", reference_type: "mp_payment", reference_id: String(mp.id),
-        description: "Chargeback", metadata: { correlation_id: correlationId },
+      await recordMercadoPagoLedger(sb, {
+        order_id: orderId,
+        restaurant_id: restaurantId,
+        provider: "mercado_pago",
+        transaction_type: "CHARGEBACK",
+        amount,
+        currency: mp.currency_id ?? "BRL",
+        status: "COMPLETED",
+        reference_type: "mp_payment",
+        reference_id: String(mp.id),
+        description: "Chargeback",
+        metadata: { correlation_id: correlationId },
       });
     }
 
-
-    await sb.from("payment_webhook_events").update({
-      processed: true,
-      processed_at: new Date().toISOString(),
-      processing_attempts: 1,
-    }).eq("id", eventPk);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        processing_attempts: 1,
+      })
+      .eq("id", eventPk);
 
     return json({ ok: true, status: local, orderId });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[mp-webhook] processing error", msg);
-    await sb.from("payment_webhook_events").update({
-      processed: false,
-      error_message: msg,
-      processing_attempts: 1,
-    }).eq("id", eventPk);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: false,
+        error_message: msg,
+        processing_attempts: 1,
+      })
+      .eq("id", eventPk);
     const nextRetry = new Date(Date.now() + 60_000).toISOString();
     await sb.from("payment_event_queue").insert({
       event_id: eventPk,

@@ -10,14 +10,7 @@ import { createOrchestrator, type OrderSnapshot } from "./OrderOrchestrator";
 import type { OrderActorType } from "./OrderPermissions";
 import { validateDirectDeliveryStatusTransition } from "./delivery-transition-guard";
 
-const ActorSchema = z.enum([
-  "customer",
-  "restaurant",
-  "admin",
-  "system",
-  "webhook",
-  "courier",
-]);
+const ActorSchema = z.enum(["customer", "restaurant", "admin", "system", "webhook", "courier"]);
 
 const InputSchema = z.object({
   orderId: z.string().uuid(),
@@ -25,6 +18,17 @@ const InputSchema = z.object({
   reason: z.string().max(500).optional(),
   actorType: ActorSchema.optional(),
 });
+const CancelInputSchema = z.object({
+  orderId: z.string().uuid(),
+});
+
+function isApprovedMercadoPagoPayment(payment: any): boolean {
+  return (
+    String(payment?.provider ?? "") === "mercado_pago" &&
+    String(payment?.status ?? "").toUpperCase() === "APPROVED" &&
+    !!String(payment?.payment_id ?? "").trim()
+  );
+}
 
 export const transitionOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -92,16 +96,11 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
         };
       },
       updateOrderStatus: async (id, next) => {
-        const { error } = await supabaseAdmin
-          .from("orders")
-          .update({ status: next })
-          .eq("id", id);
+        const { error } = await supabaseAdmin.from("orders").update({ status: next }).eq("id", id);
         if (error) throw new Error(error.message);
       },
       insertHistory: async (row) => {
-        const { error } = await supabaseAdmin
-          .from("order_status_history")
-          .insert(row as never);
+        const { error } = await supabaseAdmin.from("order_status_history").insert(row as never);
         if (error) throw new Error(error.message);
       },
     });
@@ -122,13 +121,16 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
     }
     if (result.to === "pronto" && order.restaurant_id) {
       const correlationId = randomUUID();
-      const { error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
-        _order_id: data.orderId,
-        _reason: "ORDER_READY",
-        _correlation_id: correlationId,
-        _forced_driver_id: null,
-        _actor_id: userId,
-      } as never);
+      const { error: assignErr } = await supabaseAdmin.rpc(
+        "delivery_auto_assign_order" as never,
+        {
+          _order_id: data.orderId,
+          _reason: "ORDER_READY",
+          _correlation_id: correlationId,
+          _forced_driver_id: null,
+          _actor_id: userId,
+        } as never,
+      );
       if (assignErr) {
         console.error("[orders.transitionOrderStatus] auto assignment failed", {
           orderId: data.orderId,
@@ -139,4 +141,100 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
       }
     }
     return result;
+  });
+
+export const cancelRestaurantOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => CancelInputSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userId = context.userId;
+
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from("orders")
+      .select("id, restaurant_id, status")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (orderErr) throw new Error(orderErr.message);
+    if (!order) throw new Error("ORDER_NOT_FOUND");
+
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    const actorType: OrderActorType = isAdmin ? "admin" : "restaurant";
+    if (!isAdmin) {
+      const { data: rest } = await supabaseAdmin
+        .from("restaurants")
+        .select("owner_id")
+        .eq("id", order.restaurant_id!)
+        .maybeSingle();
+      if (!rest || rest.owner_id !== userId) throw new Error("FORBIDDEN");
+    }
+
+    const { data: payment, error: paymentErr } = await supabaseAdmin
+      .from("order_payment")
+      .select("provider, status, payment_id, payment_method")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (paymentErr) throw new Error(paymentErr.message);
+
+    if (isApprovedMercadoPagoPayment(payment)) {
+      const { data: refund, error: refundErr } = await supabaseAdmin.functions.invoke(
+        "mp-payment-intent",
+        {
+          body: { action: "refund", order_id: data.orderId },
+        },
+      );
+      if (refundErr) throw new Error(refundErr.message);
+      if (refund?.error) throw new Error(String(refund.error));
+      if (refund?.status !== "REFUNDED") throw new Error("REFUND_NOT_CONFIRMED");
+      return {
+        ok: true as const,
+        status: "reembolsado" as OrderState,
+        refunded: true,
+        payment_id: refund.payment_id ?? null,
+        refund_id: refund.refund_id ?? null,
+      };
+    }
+
+    const orchestrator = createOrchestrator({
+      getOrder: async (id): Promise<OrderSnapshot | null> => {
+        const { data: o } = await supabaseAdmin
+          .from("orders")
+          .select("id, restaurant_id, status")
+          .eq("id", id)
+          .maybeSingle();
+        if (!o) return null;
+        return {
+          id: o.id,
+          restaurant_id: o.restaurant_id,
+          status: o.status as OrderState,
+        };
+      },
+      updateOrderStatus: async (id, next) => {
+        const { error } = await supabaseAdmin.from("orders").update({ status: next }).eq("id", id);
+        if (error) throw new Error(error.message);
+      },
+      insertHistory: async (row) => {
+        const { error } = await supabaseAdmin.from("order_status_history").insert(row as never);
+        if (error) throw new Error(error.message);
+      },
+    });
+
+    const result = await orchestrator.transition({
+      orderId: data.orderId,
+      to: "cancelado",
+      reason: "restaurant_cancelled",
+      audit: {
+        actorType,
+        userId,
+        service: "orders.cancelRestaurantOrder",
+      },
+    });
+
+    if (!result.ok) {
+      throw new Error(`TRANSITION_REJECTED:${result.reason ?? "UNKNOWN"}`);
+    }
+    return { ok: true as const, status: "cancelado" as OrderState, refunded: false };
   });
