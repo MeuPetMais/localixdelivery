@@ -12,7 +12,8 @@ export type AppRole =
   | "analista"
   | "delivery_driver"
   | "support_manager"
-  | "support_agent";
+  | "support_agent"
+  | "partner_growth";
 
 export function useRoles(userId: string | undefined) {
   return useQuery({
