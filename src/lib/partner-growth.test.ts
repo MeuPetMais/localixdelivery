@@ -16,10 +16,11 @@ import {
 const routeSource = readFileSync("src/routes/partner-growth.tsx", "utf8");
 const libSource = readFileSync("src/lib/partner-growth.ts", "utf8");
 const rootSource = readFileSync("src/routes/__root.tsx", "utf8");
-const dashboardMigration = readFileSync(
+const normalizeLineEndings = (source: string) => source.replace(/\r\n/g, "\n");
+const dashboardMigration = normalizeLineEndings(readFileSync(
   "supabase/migrations/20260824124834_partner_growth_dashboard_minimal.sql",
   "utf8",
-);
+));
 const priorityAlertsMigration = readFileSync(
   "supabase/migrations/20260824152520_partner_growth_exception_alerts.sql",
   "utf8",

@@ -27,6 +27,7 @@ type ProjectionOrder = {
 };
 
 const REALIZED_SALE_STATUSES = new Set<OrderStatus>(["entregue", "concluido"]);
+const normalizeLineEndings = (source: string) => source.replace(/\r\n/g, "\n");
 const ALL_STATUSES: OrderStatus[] = [
   "novo",
   "aguardando_pagamento",
@@ -202,10 +203,10 @@ describe("customers order metrics projection", () => {
   });
 
   it("keeps the migration scoped to status-triggered customer projection", () => {
-    const migration = readFileSync(
+    const migration = normalizeLineEndings(readFileSync(
       resolve(process.cwd(), "supabase/migrations/20260819222920_customers_order_metrics_projection_rebuild.sql"),
       "utf8",
-    );
+    ));
 
     expect(migration.indexOf("customers duplicated by normalized key")).toBeLessThan(migration.indexOf("CREATE UNIQUE INDEX IF NOT EXISTS customers_restaurant_normalized_phone_uidx"));
     expect(migration.indexOf("customers_restaurant_normalized_phone_uidx")).toBeLessThan(migration.indexOf("CREATE OR REPLACE FUNCTION private.rebuild_customer_order_metrics"));
