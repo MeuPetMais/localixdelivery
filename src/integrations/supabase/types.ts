@@ -5349,6 +5349,59 @@ export type Database = {
           },
         ]
       }
+      partner_growth_tasks: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          created_by: string
+          due_at: string | null
+          id: string
+          notes: string | null
+          priority: string
+          restaurant_id: string
+          source_signal: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string
+          created_by: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          priority: string
+          restaurant_id: string
+          source_signal?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          created_by?: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          restaurant_id?: string
+          source_signal?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_growth_tasks_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           active: boolean
@@ -6809,6 +6862,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_partner_growth_dashboard: {
+        Args: { _as_of?: string }
+        Returns: Json
+      }
       delivery_assignment_apply_transition: {
         Args: {
           _actor: string

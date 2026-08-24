@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SupabaseRawFetchTempRouteImport } from './routes/supabase-raw-fetch-temp'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as PartnerGrowthRouteImport } from './routes/partner-growth'
 import { Route as MotoboyRouteImport } from './routes/motoboy'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
@@ -98,6 +99,11 @@ const SupabaseRawFetchTempRoute = SupabaseRawFetchTempRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerGrowthRoute = PartnerGrowthRouteImport.update({
+  id: '/partner-growth',
+  path: '/partner-growth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MotoboyRoute = MotoboyRouteImport.update({
@@ -513,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -592,6 +599,7 @@ export interface FileRoutesByTo {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -675,6 +683,7 @@ export interface FileRoutesById {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
@@ -758,6 +767,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
@@ -837,6 +847,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
@@ -919,6 +930,7 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
@@ -1002,6 +1014,7 @@ export interface RootRouteChildren {
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   MotoboyRoute: typeof MotoboyRoute
+  PartnerGrowthRoute: typeof PartnerGrowthRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -1033,6 +1046,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner-growth': {
+      id: '/partner-growth'
+      path: '/partner-growth'
+      fullPath: '/partner-growth'
+      preLoaderRoute: typeof PartnerGrowthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/motoboy': {
@@ -1734,6 +1754,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   MotoboyRoute: MotoboyRoute,
+  PartnerGrowthRoute: PartnerGrowthRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,
   AdminLoginRoute: AdminLoginRoute,

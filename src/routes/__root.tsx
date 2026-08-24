@@ -122,6 +122,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isPartnerGrowthArea = pathname === "/partner-growth" || pathname.startsWith("/partner-growth/");
 
   useEffect(() => {
     const isDriverAppRoute = pathname.startsWith("/motoboy") || pathname.startsWith("/entregador");
@@ -149,6 +150,15 @@ function RootComponent() {
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
 
+  if (isPartnerGrowthArea) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <RestaurantSessionProvider>
@@ -173,7 +183,7 @@ const RESERVED_TOP = new Set([
   "inventory", "loyalty", "promotions", "reviews", "suppliers", "units",
   "builders", "r", "featured", "kitchen", "perfil", "print-settings",
   "support", "escolher-ambiente", "pagamentos", "analytics", "relatorios",
-  "entregador", "motoboy", "supabase-raw-fetch-temp",
+  "entregador", "motoboy", "partner-growth", "supabase-raw-fetch-temp",
 ]);
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
