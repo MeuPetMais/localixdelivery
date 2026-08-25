@@ -95,13 +95,23 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
           status: o.status as OrderState,
         };
       },
-      updateOrderStatus: async (id, next) => {
-        const { error } = await supabaseAdmin.from("orders").update({ status: next }).eq("id", id);
-        if (error) throw new Error(error.message);
-      },
-      insertHistory: async (row) => {
-        const { error } = await supabaseAdmin.from("order_status_history").insert(row as never);
-        if (error) throw new Error(error.message);
+      updateOrderStatus: async () => {},
+      insertHistory: async () => {},
+      applyAtomic: async (row) => {
+        const { data: applied, error } = await supabaseAdmin.rpc("order_apply_transition", {
+          _order_id: row.order_id,
+          _expected_from: row.expected_from,
+          _next_status: row.next_status,
+          _reason: row.reason,
+          _actor_type: row.performed_by_type,
+          _actor_id: row.performed_by,
+          _metadata: row.metadata,
+        } as never);
+        if (error) throw new Error(`RPC_FAILED:${error.message}`);
+        const result = applied as unknown as { ok?: boolean; reason?: string } | null;
+        if (!result?.ok) {
+          throw new Error(`RPC_REJECTED:${result?.reason ?? "UNKNOWN"}`);
+        }
       },
     });
 
@@ -212,13 +222,23 @@ export const cancelRestaurantOrder = createServerFn({ method: "POST" })
           status: o.status as OrderState,
         };
       },
-      updateOrderStatus: async (id, next) => {
-        const { error } = await supabaseAdmin.from("orders").update({ status: next }).eq("id", id);
-        if (error) throw new Error(error.message);
-      },
-      insertHistory: async (row) => {
-        const { error } = await supabaseAdmin.from("order_status_history").insert(row as never);
-        if (error) throw new Error(error.message);
+      updateOrderStatus: async () => {},
+      insertHistory: async () => {},
+      applyAtomic: async (row) => {
+        const { data: applied, error } = await supabaseAdmin.rpc("order_apply_transition", {
+          _order_id: row.order_id,
+          _expected_from: row.expected_from,
+          _next_status: row.next_status,
+          _reason: row.reason,
+          _actor_type: row.performed_by_type,
+          _actor_id: row.performed_by,
+          _metadata: row.metadata,
+        } as never);
+        if (error) throw new Error(`RPC_FAILED:${error.message}`);
+        const result = applied as unknown as { ok?: boolean; reason?: string } | null;
+        if (!result?.ok) {
+          throw new Error(`RPC_REJECTED:${result?.reason ?? "UNKNOWN"}`);
+        }
       },
     });
 
