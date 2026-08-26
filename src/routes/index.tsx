@@ -8,6 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { PartnerWhatsAppFloatingButton } from "@/components/landing/PartnerWhatsAppFloatingButton";
 import {
   ArrowRight,
   BarChart3,
@@ -81,6 +82,7 @@ function Landing() {
       <FAQ />
       <FinalCTA />
       <Footer />
+      <PartnerWhatsAppFloatingButton />
     </div>
   );
 }
