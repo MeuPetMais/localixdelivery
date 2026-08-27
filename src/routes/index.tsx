@@ -461,7 +461,7 @@ function DeliveryOperation() {
     {
       icon: Store,
       title: "Mais autonomia na entrega",
-      desc: "Organize sua própria operação de entrega e reduza a dependência de marketplaces.",
+      desc: "Organize sua própria operação de entrega e acompanhe tudo pelo Localix, sem depender exclusivamente de marketplaces.",
     },
     {
       icon: PackageCheck,

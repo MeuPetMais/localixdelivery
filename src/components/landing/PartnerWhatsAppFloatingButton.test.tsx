@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  PARTNER_WHATSAPP_MOBILE_QUERY,
   PARTNER_WHATSAPP_MESSAGE,
+  PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS,
   PartnerWhatsAppFloatingButton,
   buildPartnerWhatsAppUrl,
   normalizePartnerWhatsAppPhone,
@@ -78,6 +80,39 @@ describe("PartnerWhatsAppFloatingButton", () => {
     expect(componentSource).toContain('target="_blank"');
     expect(componentSource).toContain('rel="noopener noreferrer"');
     expect(componentSource).toContain('aria-label="Falar com a Localix pelo WhatsApp"');
+  });
+
+  it("keeps desktop layout unchanged while using the compact mobile placement", () => {
+    expect(componentSource).toContain(
+      "bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-[calc(env(safe-area-inset-right)+1.25rem)]",
+    );
+    expect(componentSource).toContain("h-12 w-12");
+    expect(componentSource).toContain("sm:bottom-6 sm:right-6 sm:h-12 sm:w-auto sm:px-5");
+    expect(PARTNER_WHATSAPP_MOBILE_QUERY).toBe("(max-width: 639px)");
+  });
+
+  it("collapses on mobile scroll and restores after a controlled debounce", () => {
+    expect(componentSource).toContain('window.addEventListener("scroll", handleScroll, { passive: true })');
+    expect(componentSource).toContain("setIsHiddenOnMobileScroll(true)");
+    expect(componentSource).toContain(
+      "window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS)",
+    );
+    expect(componentSource).toContain("setIsHiddenOnMobileScroll(false)");
+    expect(PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS).toBe(220);
+  });
+
+  it("limits the scroll behavior to mobile and cleans listeners and timers", () => {
+    expect(componentSource).toContain("window.matchMedia(PARTNER_WHATSAPP_MOBILE_QUERY)");
+    expect(componentSource).toContain("if (!mobileQuery.matches)");
+    expect(componentSource).toContain('mobileQuery.addEventListener("change", handleMobileQueryChange)');
+    expect(componentSource).toContain('window.removeEventListener("scroll", handleScroll)');
+    expect(componentSource).toContain('mobileQuery.removeEventListener("change", handleMobileQueryChange)');
+    expect(componentSource).toContain("window.clearTimeout(scrollIdleTimerRef.current)");
+  });
+
+  it("respects reduced motion without changing the WhatsApp link semantics", () => {
+    expect(componentSource).toContain("motion-reduce:transition-none");
+    expect(componentSource).not.toContain("VITE_LOCALIX_SUPPORT_WHATSAPP");
   });
 
   it("is wired only in the public landing route", () => {

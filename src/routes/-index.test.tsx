@@ -23,6 +23,9 @@ describe("public landing delivery operation section", () => {
     expect(landingSource).toContain("Para o parceiro");
     expect(landingSource).toContain("Painel operacional dedicado");
     expect(landingSource).toContain("Mais autonomia na entrega");
+    expect(landingSource).toContain(
+      "Organize sua própria operação de entrega e acompanhe tudo pelo Localix, sem depender exclusivamente de marketplaces.",
+    );
     expect(landingSource).not.toContain("Independência operacional");
     expect(landingSource).toContain("Para o entregador");
     expect(landingSource).toContain("Área própria do entregador");

@@ -1,6 +1,10 @@
+import { useEffect, useRef, useState } from "react";
+
 export const PARTNER_WHATSAPP_ENV = "VITE_LOCALIX_PARTNER_WHATSAPP";
 export const PARTNER_WHATSAPP_MESSAGE =
   "Olá! Vim pelo site do Localix e quero saber mais sobre como cadastrar meu estabelecimento.";
+export const PARTNER_WHATSAPP_MOBILE_QUERY = "(max-width: 639px)";
+export const PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS = 220;
 
 export function normalizePartnerWhatsAppPhone(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -17,6 +21,45 @@ export function buildPartnerWhatsAppUrl(value: unknown): string | null {
 
 export function PartnerWhatsAppFloatingButton() {
   const href = buildPartnerWhatsAppUrl(import.meta.env[PARTNER_WHATSAPP_ENV]);
+  const [isHiddenOnMobileScroll, setIsHiddenOnMobileScroll] = useState(false);
+  const scrollIdleTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("matchMedia" in window)) return undefined;
+
+    const mobileQuery = window.matchMedia(PARTNER_WHATSAPP_MOBILE_QUERY);
+    const clearScrollIdleTimer = () => {
+      if (!scrollIdleTimerRef.current) return;
+      window.clearTimeout(scrollIdleTimerRef.current);
+      scrollIdleTimerRef.current = null;
+    };
+    const showButton = () => {
+      setIsHiddenOnMobileScroll(false);
+      clearScrollIdleTimer();
+    };
+    const handleScroll = () => {
+      if (!mobileQuery.matches) {
+        showButton();
+        return;
+      }
+
+      setIsHiddenOnMobileScroll(true);
+      clearScrollIdleTimer();
+      scrollIdleTimerRef.current = window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS);
+    };
+    const handleMobileQueryChange = () => {
+      if (!mobileQuery.matches) showButton();
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    mobileQuery.addEventListener("change", handleMobileQueryChange);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      mobileQuery.removeEventListener("change", handleMobileQueryChange);
+      clearScrollIdleTimer();
+    };
+  }, []);
 
   if (!href) return null;
 
@@ -26,7 +69,11 @@ export function PartnerWhatsAppFloatingButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a Localix pelo WhatsApp"
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-[calc(env(safe-area-inset-right)+1.25rem)] z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E] sm:bottom-6 sm:right-6 sm:h-12 sm:w-auto sm:px-5"
+      className={`fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-[calc(env(safe-area-inset-right)+1.25rem)] z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E] motion-reduce:transition-none sm:bottom-6 sm:right-6 sm:h-12 sm:w-auto sm:px-5 ${
+        isHiddenOnMobileScroll
+          ? "pointer-events-none translate-y-4 opacity-0 sm:pointer-events-auto sm:translate-y-0 sm:opacity-100"
+          : "opacity-100"
+      }`}
     >
       <WhatsAppIcon />
       <span className="hidden text-sm font-bold sm:ml-2 sm:inline">Fale com a Localix</span>
