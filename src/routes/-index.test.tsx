@@ -22,7 +22,8 @@ describe("public landing delivery operation section", () => {
   it("includes partner and driver benefit blocks", () => {
     expect(landingSource).toContain("Para o parceiro");
     expect(landingSource).toContain("Painel operacional dedicado");
-    expect(landingSource).toContain("Independência operacional");
+    expect(landingSource).toContain("Mais autonomia na entrega");
+    expect(landingSource).not.toContain("Independência operacional");
     expect(landingSource).toContain("Para o entregador");
     expect(landingSource).toContain("Área própria do entregador");
     expect(landingSource).toContain("Ajuda e suporte");

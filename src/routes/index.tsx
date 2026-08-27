@@ -460,8 +460,8 @@ function DeliveryOperation() {
     },
     {
       icon: Store,
-      title: "Independência operacional",
-      desc: "Organize sua operação de entrega sem depender exclusivamente de marketplaces.",
+      title: "Mais autonomia na entrega",
+      desc: "Organize sua própria operação de entrega e reduza a dependência de marketplaces.",
     },
     {
       icon: PackageCheck,

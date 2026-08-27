@@ -26,7 +26,7 @@ export function PartnerWhatsAppFloatingButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a Localix pelo WhatsApp"
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-[calc(env(safe-area-inset-right)+1rem)] z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E] sm:bottom-6 sm:right-6 sm:h-12 sm:w-auto sm:px-5"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-[calc(env(safe-area-inset-right)+1.25rem)] z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E] sm:bottom-6 sm:right-6 sm:h-12 sm:w-auto sm:px-5"
     >
       <WhatsAppIcon />
       <span className="hidden text-sm font-bold sm:ml-2 sm:inline">Fale com a Localix</span>
