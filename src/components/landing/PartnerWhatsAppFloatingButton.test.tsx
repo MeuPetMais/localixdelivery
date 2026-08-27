@@ -20,7 +20,7 @@ function routeFiles(dir = "src/routes"): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) return routeFiles(path);
-    return path.endsWith(".tsx") ? [path] : [];
+    return path.endsWith(".tsx") && !path.endsWith(".test.tsx") ? [path] : [];
   });
 }
 

@@ -12,15 +12,21 @@ import { PartnerWhatsAppFloatingButton } from "@/components/landing/PartnerWhats
 import {
   ArrowRight,
   BarChart3,
+  Bike,
   Check,
   CircleCheck,
+  Clock,
   Gift,
+  Headphones,
   ImagePlus,
   LayoutDashboard,
   LineChart,
   ListOrdered,
   Megaphone,
+  Navigation,
+  PackageCheck,
   Repeat,
+  Route as RouteIcon,
   Sparkles,
   Store,
   Tag,
@@ -76,6 +82,7 @@ function Landing() {
       <Pillars />
       <Growth />
       <HowItWorks />
+      <DeliveryOperation />
       <ControlPanel />
       <Benefits />
       <Evolution />
@@ -151,6 +158,7 @@ function Header() {
         <nav className="hidden gap-8 text-sm font-medium text-muted-foreground md:flex">
           <a href="#plataforma" className="hover:text-foreground">Plataforma</a>
           <a href="#growth" className="hover:text-foreground">Crescimento</a>
+          <a href="#entregas" className="hover:text-foreground">Entregas</a>
           <a href="#beneficios" className="hover:text-foreground">Benefícios</a>
           <a href="#duvidas" className="hover:text-foreground">Dúvidas</a>
         </nav>
@@ -435,6 +443,151 @@ function HowItWorks() {
         </div>
       </div>
     </section>
+  );
+}
+
+function DeliveryOperation() {
+  const partnerBenefits = [
+    {
+      icon: LayoutDashboard,
+      title: "Painel operacional dedicado",
+      desc: "Acompanhe pedidos e o andamento das entregas em um só lugar.",
+    },
+    {
+      icon: RouteIcon,
+      title: "Mais controle da operação",
+      desc: "Tenha visibilidade do fluxo do pedido até a conclusão da entrega.",
+    },
+    {
+      icon: Store,
+      title: "Independência operacional",
+      desc: "Organize sua operação de entrega sem depender exclusivamente de marketplaces.",
+    },
+    {
+      icon: PackageCheck,
+      title: "Operação integrada",
+      desc: "Pedidos e entregas conectados ao mesmo fluxo do estabelecimento.",
+    },
+    {
+      icon: Clock,
+      title: "Histórico e acompanhamento",
+      desc: "Use dados operacionais para identificar atrasos e gargalos.",
+    },
+  ];
+
+  const driverBenefits = [
+    {
+      icon: Bike,
+      title: "Área própria do entregador",
+      desc: "Acesso separado da área do parceiro e do cliente.",
+    },
+    {
+      icon: ListOrdered,
+      title: "Entregas organizadas",
+      desc: "Visualize as entregas atribuídas de forma simples.",
+    },
+    {
+      icon: Navigation,
+      title: "Atualização de status",
+      desc: "Acompanhe e atualize as etapas da entrega dentro do fluxo operacional.",
+    },
+    {
+      icon: UserCircle,
+      title: "Perfil do entregador",
+      desc: "Gerencie suas informações dentro da própria área.",
+    },
+    {
+      icon: Headphones,
+      title: "Ajuda e suporte",
+      desc: "Conte com uma central própria para dúvidas e suporte durante a operação.",
+    },
+  ];
+
+  const timeline = ["Pedido recebido", "Em preparação", "Entregador", "Em rota", "Entregue"];
+
+  return (
+    <section id="entregas" className="mx-auto max-w-6xl px-3 py-16 sm:px-4 sm:py-24">
+      <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div>
+          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-left text-xs font-semibold leading-snug text-primary">
+            <Bike className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Operação de entrega conectada
+          </span>
+          <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+            Sua operação de entrega, conectada ao Localix
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Do pedido à entrega, o Localix ajuda o estabelecimento a organizar a operação e dá ao entregador uma experiência própria para acompanhar suas entregas.
+          </p>
+          <p className="mt-3 text-sm font-semibold text-primary">
+            Mais controle para o restaurante. Mais organização para quem entrega.
+          </p>
+          <div className="mt-8">
+            <SignupButton className="h-auto min-h-10 w-full px-4 py-2 sm:w-auto sm:px-8" mobileLabel="Quero ser parceiro">
+              Quero ser parceiro
+            </SignupButton>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <RouteIcon className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-muted-foreground">Fluxo visual</p>
+              <h3 className="font-display text-xl font-extrabold">Do pedido até a entrega</h3>
+            </div>
+          </div>
+          <ol className="mt-6 grid gap-3 sm:grid-cols-5">
+            {timeline.map((step, index) => (
+              <li key={step} className="relative flex min-w-0 items-center gap-3 sm:flex-col sm:items-start">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+                  {index + 1}
+                </span>
+                <span className="min-w-0 text-sm font-bold leading-snug">{step}</span>
+                {index < timeline.length - 1 && (
+                  <span
+                    className="absolute left-4 top-10 h-3 w-px bg-border sm:left-10 sm:top-4 sm:h-px sm:w-[calc(100%-2.5rem)]"
+                    aria-hidden="true"
+                  />
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <DeliveryBenefitCard title="Para o parceiro" items={partnerBenefits} />
+        <DeliveryBenefitCard title="Para o entregador" items={driverBenefits} />
+      </div>
+    </section>
+  );
+}
+
+function DeliveryBenefitCard({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<{ icon: typeof LayoutDashboard; title: string; desc: string }>;
+}) {
+  return (
+    <Card className="rounded-lg border-border/60 p-5 shadow-sm sm:p-6">
+      <h3 className="font-display text-xl font-extrabold">{title}</h3>
+      <div className="mt-5 grid gap-3">
+        {items.map(({ icon: Icon, title: itemTitle, desc }) => (
+          <div key={itemTitle} className="flex min-w-0 items-start gap-3 rounded-lg border border-border/60 bg-background px-3 py-3 sm:px-4">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold leading-snug">{itemTitle}</h4>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
