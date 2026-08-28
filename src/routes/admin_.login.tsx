@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ADMIN_AUTH_VALIDATION_ERROR, validateAdminLogin } from "@/lib/admin-login";
 
 export const Route = createFileRoute("/admin_/login")({
   ssr: false,
@@ -37,23 +38,17 @@ function AdminLogin() {
     setError(null);
     setLoading(true);
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (signInError || !data.user) {
+      const result = await validateAdminLogin(supabase, email, password);
+      if (!result.ok && result.reason === "invalid_credentials") {
         setError("Credenciais inválidas.");
         return;
       }
-      const { data: role } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", data.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!role) {
-        await supabase.auth.signOut();
+      if (!result.ok && result.reason === "forbidden") {
         setError("403 — Acesso negado.");
+        return;
+      }
+      if (!result.ok) {
+        setError(ADMIN_AUTH_VALIDATION_ERROR);
         return;
       }
       toast.success("Bem-vindo, administrador.");
