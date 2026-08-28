@@ -3,24 +3,44 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getSuperadminOverview } from "@/lib/superadmin.functions";
+import { adminPresetRangeUTC } from "@/lib/admin-finance-contract";
 import { brl } from "@/lib/format";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
 } from "recharts";
-import { ShoppingBag, DollarSign, Building2, Users, TrendingUp, Percent, Receipt, CircleDollarSign } from "lucide-react";
+import {
+  ShoppingBag,
+  DollarSign,
+  Building2,
+  Users,
+  TrendingUp,
+  Receipt,
+  CircleDollarSign,
+} from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
-  head: () => ({ meta: [{ title: "Admin — Dashboard Geral" }] }),
+  head: () => ({ meta: [{ title: "Admin - Dashboard Geral" }] }),
   component: AdminDashboard,
 });
 
 const RANGES: Record<string, () => { from: string; to: string }> = {
-  today: () => { const d = new Date().toISOString().slice(0,10); return { from: d, to: d }; },
-  "7d":  () => { const to = new Date(); const from = new Date(to.getTime() - 6*86400000); return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) }; },
-  "30d": () => { const to = new Date(); const from = new Date(to.getTime() - 29*86400000); return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) }; },
-  month: () => { const to = new Date(); const from = new Date(to.getFullYear(), to.getMonth(), 1); return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) }; },
-  year:  () => { const to = new Date(); const from = new Date(to.getFullYear(), 0, 1); return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) }; },
+  today: () => adminPresetRangeUTC("today"),
+  "7d": () => adminPresetRangeUTC("week"),
+  "30d": () => adminPresetRangeUTC("30d"),
+  month: () => adminPresetRangeUTC("month"),
+  year: () => adminPresetRangeUTC("year"),
 };
 
 const COLORS = ["#f97316", "#22c55e", "#3b82f6", "#a855f7", "#eab308", "#ef4444"];
@@ -42,10 +62,15 @@ function AdminDashboard() {
           <p className="text-sm text-slate-400">Indicadores em tempo real da plataforma.</p>
         </div>
         <div className="flex gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
-          {Object.keys(RANGES).map(k => (
-            <button key={k} onClick={() => setRange(k as any)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ${range===k ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"}`}>
-              {k === "today" ? "Hoje" : k === "month" ? "Este mês" : k === "year" ? "Este ano" : k}
+          {Object.keys(RANGES).map((key) => (
+            <button
+              key={key}
+              onClick={() => setRange(key as keyof typeof RANGES)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                range === key ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"
+              }`}
+            >
+              {key === "today" ? "Hoje" : key === "month" ? "Este mes" : key === "year" ? "Este ano" : key}
             </button>
           ))}
         </div>
@@ -53,22 +78,27 @@ function AdminDashboard() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Pedidos hoje" value={String(data?.ordersToday ?? 0)} icon={ShoppingBag} loading={isLoading} />
-        <Kpi label="Pedidos do mês" value={String(data?.ordersMonth ?? 0)} icon={ShoppingBag} loading={isLoading} />
-        <Kpi label="Receita bruta (GMV)" value={brl(data?.gmv ?? 0)} icon={CircleDollarSign} loading={isLoading} />
+        <Kpi label="Pedidos do mes" value={String(data?.ordersMonth ?? 0)} icon={ShoppingBag} loading={isLoading} />
+        <Kpi label="Total cliente (GMV)" value={brl(data?.gmv ?? 0)} icon={CircleDollarSign} loading={isLoading} />
         <Kpi label="Receita da plataforma" value={brl(data?.platformRevenue ?? 0)} icon={DollarSign} loading={isLoading} />
-        <Kpi label="Receita comissões (5%)" value={brl(data?.commissionRevenue ?? 0)} icon={Percent} loading={isLoading} />
-        <Kpi label="Receita taxa fixa (R$0,99/pedido)" value={brl(data?.fixedRevenue ?? 0)} icon={Receipt} loading={isLoading} />
+        <Kpi label="Receita realizada" value={brl(data?.realizedPlatformRevenue ?? 0)} icon={Receipt} loading={isLoading} />
         <Kpi label="Restaurantes ativos" value={String(data?.restaurantsActive ?? 0)} icon={Building2} loading={isLoading} />
         <Kpi label="Restaurantes inativos" value={String(data?.restaurantsInactive ?? 0)} icon={Building2} loading={isLoading} />
         <Kpi label="Clientes cadastrados" value={String(data?.customersTotal ?? 0)} icon={Users} loading={isLoading} />
-        <Kpi label="Novos cadastros (período)" value={String(data?.customersNew ?? 0)} icon={Users} loading={isLoading} />
-        <Kpi label="Ticket médio" value={brl(data?.avgTicket ?? 0)} icon={CircleDollarSign} loading={isLoading} />
-        <Kpi label="Crescimento diário" value={`${(data?.dailyGrowth ?? 0).toFixed(1)}%`} icon={TrendingUp} loading={isLoading}
-          tone={(data?.dailyGrowth ?? 0) >= 0 ? "up" : "down"} />
+        <Kpi label="Novos cadastros (periodo)" value={String(data?.customersNew ?? 0)} icon={Users} loading={isLoading} />
+        <Kpi label="Ticket medio" value={brl(data?.avgTicket ?? 0)} icon={CircleDollarSign} loading={isLoading} />
+        <Kpi label="Pedidos sem snapshot" value={String(data?.missingSnapshotOrders ?? 0)} icon={ShoppingBag} loading={isLoading} />
+        <Kpi
+          label="Crescimento diario"
+          value={`${(data?.dailyGrowth ?? 0).toFixed(1)}%`}
+          icon={TrendingUp}
+          loading={isLoading}
+          tone={(data?.dailyGrowth ?? 0) >= 0 ? "up" : "down"}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Faturamento diário">
+        <Panel title="Faturamento diario">
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={data?.dailyRevenue ?? []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -120,7 +150,19 @@ function AdminDashboard() {
   );
 }
 
-function Kpi({ label, value, icon: Icon, loading, tone }: { label: string; value: string; icon: any; loading?: boolean; tone?: "up" | "down" }) {
+function Kpi({
+  label,
+  value,
+  icon: Icon,
+  loading,
+  tone,
+}: {
+  label: string;
+  value: string;
+  icon: any;
+  loading?: boolean;
+  tone?: "up" | "down";
+}) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <div className="flex items-center justify-between">
@@ -128,7 +170,7 @@ function Kpi({ label, value, icon: Icon, loading, tone }: { label: string; value
         <Icon className={`h-4 w-4 ${tone === "down" ? "text-red-400" : "text-primary"}`} />
       </div>
       <div className={`mt-2 text-2xl font-bold ${tone === "down" ? "text-red-400" : tone === "up" ? "text-green-400" : ""}`}>
-        {loading ? "…" : value}
+        {loading ? "..." : value}
       </div>
     </div>
   );

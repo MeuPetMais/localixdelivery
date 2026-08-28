@@ -1,10 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import {
+  buildAdminDailyRevenue,
+  buildAdminFinanceByRestaurant,
+  money,
+  resolveAdminDateRangeUTC,
+  snapshotByOrderId,
+  sumSnapshots,
+  type AdminOrderMetricRow,
+  type AdminRestaurantMetricRow,
+  type AdminSnapshotMetricRow,
+} from "./admin-finance-contract";
 
-// Modelo de receita da plataforma (padrão MVP): 5% de comissão + R$0,99 por pedido.
-const COMMISSION_RATE = 0.05;
-const FIXED_FEE = 0.99;
+const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function assertAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -23,13 +33,20 @@ const rangeSchema = z.object({
   to: z.string().optional(),
 });
 
+const snapshotSelect =
+  "order_id, customer_total, restaurant_gross, restaurant_net, platform_fee, platform_revenue, realized_platform_revenue, gateway_fee, service_fee_payer, coupon_discount, cashback, loyalty_discount";
+
 function resolveRange(from?: string, to?: string) {
-  const now = new Date();
-  const toDate = to ? new Date(`${to}T23:59:59.999`) : now;
-  const fromDate = from
-    ? new Date(`${from}T00:00:00`)
-    : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  return { fromDate, toDate };
+  return resolveAdminDateRangeUTC(from, to);
+}
+
+async function loadSnapshotsForOrders(sb: any, orderIds: string[]) {
+  const { data, error } = await sb
+    .from("order_pricing_snapshot")
+    .select(snapshotSelect)
+    .in("order_id", orderIds.length ? orderIds : [EMPTY_UUID]);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AdminSnapshotMetricRow[];
 }
 
 export const getSuperadminOverview = createServerFn({ method: "POST" })
@@ -39,9 +56,12 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
     const sb = await assertAdmin(context.userId);
     const { fromDate, toDate } = resolveRange(data.from, data.to);
 
-    const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
-    const startMonth = new Date(startToday.getFullYear(), startToday.getMonth(), 1);
-    const startYesterday = new Date(startToday.getTime() - 86400000);
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEnd = new Date(todayStart.getTime() + DAY_MS - 1);
+    const yesterdayStart = new Date(todayStart.getTime() - DAY_MS);
+    const yesterdayEnd = new Date(todayStart.getTime() - 1);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
     const [
       restaurantsAll,
@@ -54,81 +74,86 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
     ] = await Promise.all([
       sb.from("restaurants").select("id, active, is_open, created_at"),
       sb.from("customer_profiles").select("id, created_at"),
-      sb.from("orders").select("total, status, created_at, payment_method, items")
+      sb.from("orders").select("id, restaurant_id, status, created_at, payment_method, items")
         .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString()),
-      sb.from("orders").select("total, status").gte("created_at", startToday.toISOString()),
-      sb.from("orders").select("total").gte("created_at", startYesterday.toISOString()).lt("created_at", startToday.toISOString()),
-      sb.from("orders").select("total").gte("created_at", startMonth.toISOString()),
+      sb.from("orders").select("id").gte("created_at", todayStart.toISOString()).lte("created_at", todayEnd.toISOString()),
+      sb.from("orders").select("id").gte("created_at", yesterdayStart.toISOString()).lte("created_at", yesterdayEnd.toISOString()),
+      sb.from("orders").select("id").gte("created_at", monthStart.toISOString()).lte("created_at", todayEnd.toISOString()),
       sb.from("customer_profiles").select("id").gte("created_at", fromDate.toISOString()),
     ]);
 
-    const orders = ordersRange.data ?? [];
-    const gmv = orders.reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const commissionRevenue = gmv * COMMISSION_RATE;
-    const fixedRevenue = orders.length * FIXED_FEE;
-    const platformRevenue = commissionRevenue + fixedRevenue;
-    const avgTicket = orders.length ? gmv / orders.length : 0;
+    if (ordersRange.error) throw new Error(ordersRange.error.message);
+
+    const orders = (ordersRange.data ?? []) as AdminOrderMetricRow[];
+    const snapshots = await loadSnapshotsForOrders(sb, orders.map((order) => order.id));
+    const snapshotsByOrder = snapshotByOrderId(snapshots);
+    const snapshotTotals = sumSnapshots(snapshots);
 
     const restaurants = restaurantsAll.data ?? [];
-    const active = restaurants.filter(r => r.active !== false).length;
+    const active = restaurants.filter((r) => r.active !== false).length;
     const inactive = restaurants.length - active;
 
-    // pedidos por hora (últimas 24h dentro do range)
     const hourly = Array.from({ length: 24 }, (_, h) => ({ h: `${h}h`, count: 0, revenue: 0 }));
-    orders.forEach(o => {
-      const d = new Date(o.created_at as string);
-      const hh = d.getHours();
-      hourly[hh].count += 1;
-      hourly[hh].revenue += Number(o.total ?? 0);
+    orders.forEach((order) => {
+      const hour = new Date(order.created_at).getUTCHours();
+      hourly[hour].count += 1;
+      hourly[hour].revenue += money(snapshotsByOrder.get(order.id)?.customer_total) ?? 0;
     });
 
-    // faturamento por dia
-    const dayMap = new Map<string, number>();
-    orders.forEach(o => {
-      const key = new Date(o.created_at as string).toISOString().slice(0, 10);
-      dayMap.set(key, (dayMap.get(key) ?? 0) + Number(o.total ?? 0));
-    });
-    const dailyRevenue = Array.from(dayMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, revenue]) => ({ date: date.slice(5), revenue }));
-
-    // meios de pagamento
     const pmMap = new Map<string, number>();
-    orders.forEach(o => {
-      const k = (o.payment_method as string) || "outros";
-      pmMap.set(k, (pmMap.get(k) ?? 0) + 1);
+    orders.forEach((order) => {
+      const key = order.payment_method || "outros";
+      pmMap.set(key, (pmMap.get(key) ?? 0) + 1);
     });
-    const paymentMethods = Array.from(pmMap.entries()).map(([name, value]) => ({ name, value }));
 
-    // categorias/itens mais vendidos
     const itemMap = new Map<string, number>();
-    orders.forEach(o => {
-      const items = Array.isArray(o.items) ? (o.items as any[]) : [];
-      items.forEach(it => {
-        const n = String(it?.name ?? "Item");
-        itemMap.set(n, (itemMap.get(n) ?? 0) + Number(it?.qty ?? 1));
+    orders.forEach((order) => {
+      const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+      items.forEach((item) => {
+        const name = String(item?.name ?? "Item");
+        itemMap.set(name, (itemMap.get(name) ?? 0) + Number(item?.qty ?? 1));
       });
     });
-    const topItems = Array.from(itemMap.entries())
-      .sort(([, a], [, b]) => b - a).slice(0, 8)
-      .map(([name, qty]) => ({ name, qty }));
 
-    // crescimento
-    const todayRev = (ordersToday.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const ydayRev = (ordersYesterday.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const monthRev = (ordersMonth.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const sumCustomerTotalForWindow = (start: Date, end: Date) =>
+      orders
+        .filter((order) => {
+          const createdAt = new Date(order.created_at);
+          return createdAt >= start && createdAt <= end;
+        })
+        .reduce((sum, order) => sum + (money(snapshotsByOrder.get(order.id)?.customer_total) ?? 0), 0);
+
+    const todayRev = sumCustomerTotalForWindow(todayStart, todayEnd);
+    const ydayRev = sumCustomerTotalForWindow(yesterdayStart, yesterdayEnd);
     const dailyGrowth = ydayRev ? ((todayRev - ydayRev) / ydayRev) * 100 : 0;
 
     return {
       ordersToday: (ordersToday.data ?? []).length,
       ordersMonth: (ordersMonth.data ?? []).length,
-      todayRev, monthRev,
-      gmv, commissionRevenue, fixedRevenue, platformRevenue, avgTicket,
-      restaurantsActive: active, restaurantsInactive: inactive,
+      todayRev,
+      monthRev: sumCustomerTotalForWindow(monthStart, todayEnd),
+      gmv: snapshotTotals.customerTotal,
+      platformFee: snapshotTotals.platformFee,
+      platformRevenue: snapshotTotals.platformRevenue,
+      realizedPlatformRevenue: snapshotTotals.realizedPlatformRevenue,
+      gatewayFee: snapshotTotals.gatewayFee,
+      restaurantGross: snapshotTotals.restaurantGross,
+      restaurantNet: snapshotTotals.restaurantNet,
+      avgTicket: snapshotTotals.orders ? snapshotTotals.customerTotal / snapshotTotals.orders : 0,
+      ordersWithSnapshot: snapshotTotals.orders,
+      missingSnapshotOrders: orders.length - snapshotTotals.orders,
+      restaurantsActive: active,
+      restaurantsInactive: inactive,
       customersTotal: (customersAll.data ?? []).length,
       customersNew: (customersNew.data ?? []).length,
       dailyGrowth,
-      hourly, dailyRevenue, paymentMethods, topItems,
+      hourly,
+      dailyRevenue: buildAdminDailyRevenue(orders, snapshots),
+      paymentMethods: Array.from(pmMap.entries()).map(([name, value]) => ({ name, value })),
+      topItems: Array.from(itemMap.entries())
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 8)
+        .map(([name, qty]) => ({ name, qty })),
     };
   });
 
@@ -141,32 +166,40 @@ export const getPlatformFinance = createServerFn({ method: "POST" })
 
     const [restaurantsQ, ordersQ] = await Promise.all([
       sb.from("restaurants").select("id, name, category, city"),
-      sb.from("orders").select("restaurant_id, total, created_at, delivery_fee:total")
+      sb.from("orders").select("id, restaurant_id, status, created_at")
         .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString()),
     ]);
-    const restaurants = restaurantsQ.data ?? [];
-    const orders = ordersQ.data ?? [];
 
-    const rows = restaurants.map(r => {
-      const rOrders = orders.filter(o => o.restaurant_id === r.id);
-      const gross = rOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
-      const commission = gross * COMMISSION_RATE;
-      const fees = rOrders.length * FIXED_FEE;
-      const platform = commission + fees;
-      const partnerBalance = gross - platform;
-      return {
-        id: r.id, name: r.name, category: r.category, city: r.city,
-        orders: rOrders.length, gross, commission, fees, platform, partnerBalance,
-      };
-    }).sort((a, b) => b.gross - a.gross);
+    if (ordersQ.error) throw new Error(ordersQ.error.message);
 
-    const totals = rows.reduce((acc, r) => ({
-      orders: acc.orders + r.orders,
-      gross: acc.gross + r.gross,
-      commission: acc.commission + r.commission,
-      fees: acc.fees + r.fees,
-      platform: acc.platform + r.platform,
-    }), { orders: 0, gross: 0, commission: 0, fees: 0, platform: 0 });
+    const restaurants = (restaurantsQ.data ?? []) as AdminRestaurantMetricRow[];
+    const orders = (ordersQ.data ?? []) as AdminOrderMetricRow[];
+    const snapshots = await loadSnapshotsForOrders(sb, orders.map((order) => order.id));
+    const rows = buildAdminFinanceByRestaurant(restaurants, orders, snapshots);
+
+    const totals = rows.reduce((acc, row) => ({
+      orders: acc.orders + row.orders,
+      ordersWithSnapshot: acc.ordersWithSnapshot + row.ordersWithSnapshot,
+      customerTotal: acc.customerTotal + row.customerTotal,
+      restaurantGross: acc.restaurantGross + row.restaurantGross,
+      restaurantNet: acc.restaurantNet + row.restaurantNet,
+      platformFee: acc.platformFee + row.platformFee,
+      platformRevenue: acc.platformRevenue + row.platformRevenue,
+      realizedPlatformRevenue: acc.realizedPlatformRevenue + row.realizedPlatformRevenue,
+      gatewayFee: acc.gatewayFee + row.gatewayFee,
+      missingSnapshotOrders: acc.missingSnapshotOrders + row.missingSnapshotOrders,
+    }), {
+      orders: 0,
+      ordersWithSnapshot: 0,
+      customerTotal: 0,
+      restaurantGross: 0,
+      restaurantNet: 0,
+      platformFee: 0,
+      platformRevenue: 0,
+      realizedPlatformRevenue: 0,
+      gatewayFee: 0,
+      missingSnapshotOrders: 0,
+    });
 
     return { rows, totals };
   });
@@ -175,24 +208,25 @@ export const listAdminPartners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = await assertAdmin(context.userId);
-    const { data: restaurants } = await sb.from("restaurants")
+    const { data } = await sb.from("restaurants")
       .select("id, name, category, city, whatsapp_phone, is_open, active, created_at")
       .order("created_at", { ascending: false });
     const { data: orders } = await sb.from("orders").select("restaurant_id, total");
     const stats = new Map<string, { count: number; gross: number }>();
-    (orders ?? []).forEach(o => {
-      const k = o.restaurant_id as string;
-      const s = stats.get(k) ?? { count: 0, gross: 0 };
-      s.count += 1; s.gross += Number(o.total ?? 0);
-      stats.set(k, s);
+    (orders ?? []).forEach((order) => {
+      const key = order.restaurant_id as string;
+      const current = stats.get(key) ?? { count: 0, gross: 0 };
+      current.count += 1;
+      current.gross += Number(order.total ?? 0);
+      stats.set(key, current);
     });
-    return (restaurants ?? []).map(r => {
-      const s = stats.get(r.id) ?? { count: 0, gross: 0 };
+    return (data ?? []).map((restaurant) => {
+      const stat = stats.get(restaurant.id) ?? { count: 0, gross: 0 };
       return {
-        ...r,
-        orders: s.count,
-        gross: s.gross,
-        commission: s.gross * COMMISSION_RATE + s.count * FIXED_FEE,
+        ...restaurant,
+        orders: stat.count,
+        gross: stat.gross,
+        commission: null,
       };
     });
   });
@@ -205,21 +239,23 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
       .select("id, full_name, email, phone, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
-    const ids = (data ?? []).map(c => c.id);
+    const ids = (data ?? []).map((customer) => customer.id);
     const { data: orders } = await sb.from("orders")
-      .select("customer_id, total, created_at").in("customer_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      .select("customer_id, total, created_at")
+      .in("customer_id", ids.length ? ids : [EMPTY_UUID]);
     const stats = new Map<string, { count: number; spent: number; last: string | null }>();
-    (orders ?? []).forEach(o => {
-      const k = o.customer_id as string;
-      const s = stats.get(k) ?? { count: 0, spent: 0, last: null };
-      s.count += 1; s.spent += Number(o.total ?? 0);
-      const d = o.created_at as string;
-      if (!s.last || d > s.last) s.last = d;
-      stats.set(k, s);
+    (orders ?? []).forEach((order) => {
+      const key = order.customer_id as string;
+      const current = stats.get(key) ?? { count: 0, spent: 0, last: null };
+      current.count += 1;
+      current.spent += Number(order.total ?? 0);
+      const createdAt = order.created_at as string;
+      if (!current.last || createdAt > current.last) current.last = createdAt;
+      stats.set(key, current);
     });
-    return (data ?? []).map(c => {
-      const s = stats.get(c.id) ?? { count: 0, spent: 0, last: null };
-      return { ...c, orders: s.count, spent: s.spent, last_order_at: s.last };
+    return (data ?? []).map((customer) => {
+      const stat = stats.get(customer.id) ?? { count: 0, spent: 0, last: null };
+      return { ...customer, orders: stat.count, spent: stat.spent, last_order_at: stat.last };
     });
   });
 
@@ -233,25 +269,47 @@ export const listAdminTransactions = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const sb = await assertAdmin(context.userId);
     const { fromDate, toDate } = resolveRange(data.from, data.to);
-    let q = sb.from("orders")
-      .select("id, order_number, total, payment_method, status, created_at, restaurant_id, customer_name")
+    let query = sb.from("orders")
+      .select("id, order_number, payment_method, status, created_at, restaurant_id, customer_name")
       .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString())
-      .order("created_at", { ascending: false }).limit(500);
-    if (data.payment && data.payment !== "all") q = q.eq("payment_method", data.payment);
-    const { data: orders } = await q;
-    const restIds = Array.from(new Set((orders ?? []).map(o => o.restaurant_id)));
-    const { data: rests } = await sb.from("restaurants").select("id, name")
-      .in("id", restIds.length ? restIds : ["00000000-0000-0000-0000-000000000000"]);
-    const rMap = new Map((rests ?? []).map(r => [r.id, r.name]));
-    return (orders ?? []).map(o => {
-      const gross = Number(o.total ?? 0);
-      const fee = FIXED_FEE;
-      const commission = gross * COMMISSION_RATE;
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (data.payment && data.payment !== "all") query = query.eq("payment_method", data.payment);
+
+    const { data: orders, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const orderRows = (orders ?? []) as Array<AdminOrderMetricRow & {
+      order_number: number | null;
+      customer_name: string | null;
+    }>;
+    const restIds = Array.from(new Set(orderRows.map((order) => order.restaurant_id).filter(Boolean)));
+    const [restsQ, snapshots] = await Promise.all([
+      sb.from("restaurants").select("id, name").in("id", restIds.length ? restIds : [EMPTY_UUID]),
+      loadSnapshotsForOrders(sb, orderRows.map((order) => order.id)),
+    ]);
+
+    const restaurantNameById = new Map((restsQ.data ?? []).map((restaurant) => [restaurant.id, restaurant.name]));
+    const snapshotsByOrder = snapshotByOrderId(snapshots);
+
+    return orderRows.map((order) => {
+      const snapshot = snapshotsByOrder.get(order.id);
       return {
-        id: o.id, order_number: o.order_number, status: o.status, created_at: o.created_at,
-        payment_method: o.payment_method, customer_name: o.customer_name,
-        restaurant_name: rMap.get(o.restaurant_id as string) ?? "—",
-        gross, fee, commission, net: gross - fee - commission,
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        created_at: order.created_at,
+        payment_method: order.payment_method,
+        customer_name: order.customer_name,
+        restaurant_name: restaurantNameById.get(order.restaurant_id as string) ?? "-",
+        financialSnapshotAvailable: Boolean(snapshot),
+        gross: money(snapshot?.customer_total),
+        restaurant_gross: money(snapshot?.restaurant_gross),
+        fee: money(snapshot?.platform_fee),
+        platform_revenue: money(snapshot?.platform_revenue),
+        realized_platform_revenue: money(snapshot?.realized_platform_revenue),
+        gateway_fee: money(snapshot?.gateway_fee),
+        net: money(snapshot?.restaurant_net),
       };
     });
   });
