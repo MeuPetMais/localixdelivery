@@ -1,5 +1,6 @@
 import { recommendProducts } from "../recommendation/recommend-products";
 import type {
+  ChefContext,
   ChefRankingProfile,
   ChefRecommendationIntent,
   ChefRecommendationResult,
@@ -7,7 +8,6 @@ import type {
 import type { ChefCatalogService } from "../catalog/catalog-service";
 
 export type RecommendMenuItemsInput = {
-  restaurantId: string;
   intent: ChefRecommendationIntent;
   rankingProfile?: ChefRankingProfile;
   limit?: number;
@@ -15,17 +15,18 @@ export type RecommendMenuItemsInput = {
 };
 
 export async function recommendMenuItems(
+  context: Pick<ChefContext, "restaurantId">,
   input: RecommendMenuItemsInput,
   catalogService: ChefCatalogService,
 ): Promise<ChefRecommendationResult> {
   const candidates = await catalogService.listRecommendationCandidates({
-    restaurantId: input.restaurantId,
+    restaurantId: context.restaurantId,
     now: input.now,
   });
 
   return recommendProducts(
     {
-      restaurantId: input.restaurantId,
+      restaurantId: context.restaurantId,
       intent: input.intent,
       rankingProfile: input.rankingProfile,
       limit: input.limit,
