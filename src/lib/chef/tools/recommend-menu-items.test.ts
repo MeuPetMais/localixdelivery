@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { recommendMenuItems } from "./recommend-menu-items";
 import type { ChefCatalogService } from "../catalog/catalog-service";
-import type { ChefRecommendationCandidate } from "../types";
+import type { ChefContext, ChefRecommendationCandidate } from "../types";
 
 const restaurantId = "restaurant-a";
+const context: Pick<ChefContext, "restaurantId"> = { restaurantId };
 
 function candidate(overrides: Partial<ChefRecommendationCandidate>): ChefRecommendationCandidate {
   return {
@@ -24,7 +25,7 @@ function candidate(overrides: Partial<ChefRecommendationCandidate>): ChefRecomme
 }
 
 describe("Chef recommend-menu-items tool", () => {
-  it("encaminha somente o tenant confiável para o Catalog Service", async () => {
+  it("encaminha somente o tenant do contexto confiável para o Catalog Service", async () => {
     const calls: Array<{ restaurantId: string }> = [];
     const catalogService: ChefCatalogService = {
       async listRecommendationCandidates(input) {
@@ -33,12 +34,14 @@ describe("Chef recommend-menu-items tool", () => {
       },
     };
 
-    await recommendMenuItems(
-      { restaurantId, intent: { desiredTerms: ["bacon"] } },
-      catalogService,
-    );
+    await recommendMenuItems(context, { intent: { desiredTerms: ["bacon"] } }, catalogService);
 
     expect(calls).toEqual([{ restaurantId }]);
+  });
+
+  it("não permite restaurantId no input model-facing", () => {
+    const input = { intent: {}, limit: 3 };
+    expect("restaurantId" in input).toBe(false);
   });
 
   it("mantém o hard filter de tenant mesmo se o repositório devolver dado contaminado", async () => {
@@ -51,7 +54,7 @@ describe("Chef recommend-menu-items tool", () => {
       },
     };
 
-    const result = await recommendMenuItems({ restaurantId, intent: {}, limit: 5 }, catalogService);
+    const result = await recommendMenuItems(context, { intent: {}, limit: 5 }, catalogService);
 
     expect(result.recommendations.map((item) => item.productId)).toContain("safe");
     expect(result.recommendations.map((item) => item.productId)).not.toContain("foreign");
@@ -68,7 +71,8 @@ describe("Chef recommend-menu-items tool", () => {
     };
 
     const result = await recommendMenuItems(
-      { restaurantId, intent: { budgetMax: 35 }, limit: 5 },
+      context,
+      { intent: { budgetMax: 35 }, limit: 5 },
       catalogService,
     );
 
