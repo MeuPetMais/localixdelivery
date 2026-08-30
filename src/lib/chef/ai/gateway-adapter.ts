@@ -41,6 +41,14 @@ type ChatCompletionResponse = {
   };
 };
 
+const RANKING_PROFILES = new Set<ChefRankingProfile>([
+  "DEFAULT",
+  "BUDGET",
+  "PROMOTION",
+  "CATEGORY_SPECIFIC",
+  "MATCH_PREFERENCES",
+]);
+
 const INTENT_JSON_SCHEMA = {
   name: "chef_intent",
   strict: true,
@@ -102,7 +110,8 @@ function toIntentResult(value: unknown): ChefIntentParseResult {
   const data = value as Record<string, unknown>;
 
   const rankingProfile =
-    typeof data.rankingProfile === "string"
+    typeof data.rankingProfile === "string" &&
+    RANKING_PROFILES.has(data.rankingProfile as ChefRankingProfile)
       ? (data.rankingProfile as ChefRankingProfile)
       : undefined;
 
