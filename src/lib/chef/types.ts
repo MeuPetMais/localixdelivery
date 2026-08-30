@@ -7,6 +7,17 @@ export type ChefRankingProfile =
 
 export type ChefRecommendationConfidence = "HIGH" | "MEDIUM" | "LOW";
 
+export interface ChefContext {
+  restaurantId: string;
+  slug?: string;
+  journeyId?: string;
+  sessionId?: string;
+  customerId?: string | null;
+  anonymousId?: string | null;
+  channel: "text";
+  locale?: string;
+}
+
 export type ChefRecommendationReasonCode =
   | "CATEGORY_MATCH"
   | "NAME_MATCH"
