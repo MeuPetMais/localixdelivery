@@ -42,7 +42,9 @@ create table public.chef_journeys (
   constraint chef_journeys_actor_present
     check (customer_id is not null or anonymous_id is not null),
   constraint chef_journeys_time_order
-    check (ended_at is null or ended_at >= started_at)
+    check (ended_at is null or ended_at >= started_at),
+  constraint chef_journeys_id_restaurant_unique
+    unique (id, restaurant_id)
 );
 
 comment on table public.chef_journeys is
@@ -62,10 +64,11 @@ create index chef_journeys_experiment_idx
 -- -----------------------------------------------------------------------------
 -- chef_sessions
 -- Created only when the Chef experience is actually opened/started.
+-- Composite FK prevents a journey from another restaurant being attached.
 -- -----------------------------------------------------------------------------
 create table public.chef_sessions (
   id uuid primary key default gen_random_uuid(),
-  journey_id uuid not null references public.chef_journeys(id) on delete cascade,
+  journey_id uuid not null,
   restaurant_id uuid not null references public.restaurants(id) on delete cascade,
   customer_id uuid null,
   anonymous_id text null,
@@ -82,7 +85,13 @@ create table public.chef_sessions (
   constraint chef_sessions_actor_present
     check (customer_id is not null or anonymous_id is not null),
   constraint chef_sessions_time_order
-    check (ended_at is null or ended_at >= started_at)
+    check (ended_at is null or ended_at >= started_at),
+  constraint chef_sessions_id_restaurant_unique
+    unique (id, restaurant_id),
+  constraint chef_sessions_journey_tenant_fk
+    foreign key (journey_id, restaurant_id)
+    references public.chef_journeys(id, restaurant_id)
+    on delete cascade
 );
 
 comment on table public.chef_sessions is
@@ -100,12 +109,13 @@ create index chef_sessions_customer_idx
 -- chef_events
 -- Structured telemetry only. Raw conversation text is not part of this model.
 -- Critical/economic events are intended to be produced server-side.
+-- Composite FKs bind journey/session to the same restaurant as the event.
 -- -----------------------------------------------------------------------------
 create table public.chef_events (
   id uuid primary key default gen_random_uuid(),
   event_key text null,
-  journey_id uuid not null references public.chef_journeys(id) on delete cascade,
-  session_id uuid null references public.chef_sessions(id) on delete cascade,
+  journey_id uuid not null,
+  session_id uuid null,
   restaurant_id uuid not null references public.restaurants(id) on delete cascade,
   customer_id uuid null,
   anonymous_id text null,
@@ -138,7 +148,14 @@ create table public.chef_events (
   constraint chef_events_actor_present
     check (customer_id is not null or anonymous_id is not null),
   constraint chef_events_metadata_object
-    check (jsonb_typeof(metadata) = 'object')
+    check (jsonb_typeof(metadata) = 'object'),
+  constraint chef_events_journey_tenant_fk
+    foreign key (journey_id, restaurant_id)
+    references public.chef_journeys(id, restaurant_id)
+    on delete cascade,
+  constraint chef_events_session_tenant_fk
+    foreign key (session_id, restaurant_id)
+    references public.chef_sessions(id, restaurant_id)
 );
 
 comment on table public.chef_events is
@@ -165,8 +182,8 @@ create index chef_events_recommendation_idx
 create table public.chef_ai_usage (
   id uuid primary key default gen_random_uuid(),
   usage_key text null,
-  journey_id uuid not null references public.chef_journeys(id) on delete cascade,
-  session_id uuid null references public.chef_sessions(id) on delete cascade,
+  journey_id uuid not null,
+  session_id uuid null,
   restaurant_id uuid not null references public.restaurants(id) on delete cascade,
   provider text not null,
   model text not null,
@@ -178,7 +195,14 @@ create table public.chef_ai_usage (
   estimated_cost numeric(14,8) null check (estimated_cost is null or estimated_cost >= 0),
   success boolean not null,
   error_code text null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint chef_ai_usage_journey_tenant_fk
+    foreign key (journey_id, restaurant_id)
+    references public.chef_journeys(id, restaurant_id)
+    on delete cascade,
+  constraint chef_ai_usage_session_tenant_fk
+    foreign key (session_id, restaurant_id)
+    references public.chef_sessions(id, restaurant_id)
 );
 
 comment on table public.chef_ai_usage is
