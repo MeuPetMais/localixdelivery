@@ -22,7 +22,7 @@ export const PERMISSIONS: Record<OrderState, OrderActorType[]> = {
   pronto: ["restaurant", "admin"],
   saiu_para_entrega: ["restaurant", "courier", "admin"],
   entregue: ["courier", "restaurant", "admin"],
-  concluido: ["system", "admin"],
+  concluido: ["restaurant", "system", "admin"],
   cancelado: ["customer", "restaurant", "admin", "system"],
   reembolsado: ["admin", "webhook", "system"],
   chargeback: ["webhook", "admin", "system"],
