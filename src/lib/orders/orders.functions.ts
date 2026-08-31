@@ -50,7 +50,7 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
       _user_id: userId,
       _role: "admin",
     });
-    let actorType: OrderActorType = data.actorType ?? "restaurant";
+    let actorType: OrderActorType;
     if (isAdmin) {
       actorType = data.actorType ?? "admin";
     } else {
@@ -60,6 +60,8 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
         .eq("id", order.restaurant_id!)
         .maybeSingle();
       if (!rest || rest.owner_id !== userId) throw new Error("FORBIDDEN");
+      // Fluxo desta server function é do painel do estabelecimento: o cliente não escolhe o ator.
+      actorType = "restaurant";
     }
 
     if (data.to === "saiu_para_entrega" || data.to === "entregue") {
