@@ -1,6 +1,6 @@
 // Server function oficial para transitar status de pedidos.
 // TODA mudança em orders.status vinda do frontend passa por aqui.
-// Persistência via supabaseAdmin (autor já verificado por requireSupabaseAuth).
+// Persistência da transição usa o cliente autenticado do middleware para preservar auth.uid() na RPC.
 import { createServerFn } from "@tanstack/react-start";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -98,7 +98,8 @@ export const transitionOrderStatus = createServerFn({ method: "POST" })
       updateOrderStatus: async () => {},
       insertHistory: async () => {},
       applyAtomic: async (row) => {
-        const { data: applied, error } = await supabaseAdmin.rpc("order_apply_transition", {
+        // A RPC valida auth.uid() novamente; preserve o JWT do usuário autenticado.
+        const { data: applied, error } = await context.supabase.rpc("order_apply_transition", {
           _order_id: row.order_id,
           _expected_from: row.expected_from,
           _next_status: row.next_status,
@@ -225,7 +226,8 @@ export const cancelRestaurantOrder = createServerFn({ method: "POST" })
       updateOrderStatus: async () => {},
       insertHistory: async () => {},
       applyAtomic: async (row) => {
-        const { data: applied, error } = await supabaseAdmin.rpc("order_apply_transition", {
+        // A RPC valida auth.uid() novamente; preserve o JWT do usuário autenticado.
+        const { data: applied, error } = await context.supabase.rpc("order_apply_transition", {
           _order_id: row.order_id,
           _expected_from: row.expected_from,
           _next_status: row.next_status,
