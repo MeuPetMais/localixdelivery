@@ -49,7 +49,7 @@ function DriverLogin() {
       if (error) throw error;
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente novamente.");
-      nav({ to: "/motoboy/estabelecimentos", replace: true });
+      nav({ to: "/motoboy-estabelecimentos", replace: true });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
