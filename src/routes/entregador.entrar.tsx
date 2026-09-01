@@ -1,6 +1,6 @@
 // RC6.2 — Login próprio do Entregador (separado do restaurante)
 // Aceita CPF ou Telefone + senha. Resolve o e-mail no servidor e faz
-// signInWithPassword. Após login, redireciona para /motoboy.
+// signInWithPassword. Após login, segue para a seleção de estabelecimento.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -49,7 +49,7 @@ function DriverLogin() {
       if (error) throw error;
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente novamente.");
-      nav({ to: "/motoboy", replace: true });
+      nav({ to: "/motoboy/estabelecimentos", replace: true });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -111,8 +111,7 @@ function DriverLogin() {
         </Card>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          Este acesso é exclusivo para entregadores cadastrados por um
-          restaurante parceiro.
+          Uma única conta pode operar em mais de um estabelecimento parceiro.
         </p>
       </div>
     </div>
