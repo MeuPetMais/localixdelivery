@@ -225,10 +225,24 @@ function BuildYourOwnPage() {
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
 
+    const selections = groups.flatMap((g) =>
+      Object.entries(sel[g.id] ?? {})
+        .filter(([, qty]) => qty > 0)
+        .map(([optionId, qty]) => ({
+          groupId: g.id,
+          optionId,
+          qty,
+        })),
+    );
+
     const item = {
       id: `builder:${activeBuilder.id}:${Date.now()}`,
       name: `${activeBuilder.emoji ?? ""} ${activeBuilder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim(),
       price: subtotal,
+      kind: "builder" as const,
+      builderId: activeBuilder.id,
+      selections,
+      notes: notes.trim() || undefined,
     };
 
     try {
