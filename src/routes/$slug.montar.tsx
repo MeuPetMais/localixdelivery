@@ -79,7 +79,18 @@ function BuildYourOwnPage() {
         throw buildError;
       }
 
-      return { restaurant, builders: (buildConfig ?? []) as Builder[] };
+      const sanitizedBuilders = (buildConfig ?? []).map((builder: any) => ({
+        ...builder,
+        builder_groups: (builder.builder_groups ?? []).map((group: any) => ({
+          ...group,
+          builder_options: (group.builder_options ?? []).filter((option: any) => {
+            const name = String(option?.name ?? "").trim();
+            return name.length > 0 && name.toLocaleLowerCase("pt-BR") !== "nova opção";
+          }),
+        })),
+      }));
+
+      return { restaurant, builders: sanitizedBuilders as Builder[] };
     },
   });
 
