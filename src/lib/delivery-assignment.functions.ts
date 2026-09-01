@@ -71,7 +71,7 @@ async function requireAssignmentOwnerOrAdmin(
   return { actor, actorId: userId };
 }
 
-async function buildOrchestrator() {
+async function buildOrchestrator(callerSupabase: any) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return {
     admin: supabaseAdmin,
@@ -86,7 +86,9 @@ async function buildOrchestrator() {
         return data as AssignmentSnapshot;
       },
       applyAtomic: async (input) => {
-        const { data, error } = await supabaseAdmin.rpc("delivery_assignment_apply_transition" as never, {
+        // User-originated delivery transitions must preserve the caller JWT/auth.uid.
+        // The DB function synchronizes the order and validates courier ownership.
+        const { data, error } = await callerSupabase.rpc("delivery_assignment_apply_transition" as never, {
           _assignment_id: input.assignmentId,
           _expected_from: input.expectedFrom,
           _next_status: input.nextStatus,
@@ -111,27 +113,12 @@ async function buildOrchestrator() {
         void a;
       },
       onDeparted: async (a) => {
-        // Order Domain: saiu_para_entrega
-        await supabaseAdmin.rpc("order_apply_transition", {
-          _order_id: a.order_id,
-          _expected_from: "pronto",
-          _next_status: "saiu_para_entrega",
-          _reason: "Motoboy iniciou a rota",
-          _actor_type: "courier",
-          _actor_id: null as unknown as string,
-          _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },
-        });
+        // O sync do Order Domain ocorre atomicamente dentro de
+        // delivery_assignment_apply_transition. Nao duplicar a transicao aqui.
+        void a;
       },
       onDelivered: async (a) => {
-        await supabaseAdmin.rpc("order_apply_transition", {
-          _order_id: a.order_id,
-          _expected_from: "saiu_para_entrega",
-          _next_status: "entregue",
-          _reason: "Entrega concluída",
-          _actor_type: "courier",
-          _actor_id: null as unknown as string,
-          _metadata: { assignment_id: a.id, correlation_id: a.correlation_id },
-        });
+        // O status do pedido ja foi sincronizado atomicamente pela RPC.
         // Entrega concluida: motoboy entra em retorno; a volta a fila ocorre ao finalizar o retorno.
         await supabaseAdmin.rpc("queue_start_return" as never, {
           _restaurant_id: a.restaurant_id, _driver_id: a.driver_id,
@@ -234,7 +221,7 @@ export const collectDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { orchestrator, admin } = await buildOrchestrator();
+    const { orchestrator, admin } = await buildOrchestrator(context.supabase);
     const snap = await orchestrator["transition"]; // keep types happy
     void snap;
     const { data: existing } = await admin
@@ -259,7 +246,7 @@ export const departDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { orchestrator, admin } = await buildOrchestrator();
+    const { orchestrator, admin } = await buildOrchestrator(context.supabase);
     const { data: existing } = await admin
       .from("delivery_assignments")
       .select("id, order_id, restaurant_id, driver_id, status, correlation_id")
@@ -282,7 +269,7 @@ export const deliverDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { orchestrator, admin } = await buildOrchestrator();
+    const { orchestrator, admin } = await buildOrchestrator(context.supabase);
     const { data: existing } = await admin
       .from("delivery_assignments")
       .select("id, order_id, restaurant_id, driver_id, status, correlation_id")
@@ -305,7 +292,7 @@ export const cancelDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => CancelInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { orchestrator, admin } = await buildOrchestrator();
+    const { orchestrator, admin } = await buildOrchestrator(context.supabase);
     const { data: existing } = await admin
       .from("delivery_assignments")
       .select("id, order_id, restaurant_id, driver_id, status, correlation_id")
