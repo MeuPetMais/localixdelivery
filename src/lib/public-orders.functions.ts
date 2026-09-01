@@ -44,20 +44,25 @@ export const getMyOrders = createServerFn({ method: "GET" })
   });
 
 // Cancelamento pelo cliente enquanto o pedido está aguardando pagamento.
+// - Exige cliente autenticado e dono do pedido.
 // - Só permite quando status = 'aguardando_pagamento'.
 // - Cancela o payment intent no provider (MP) e transiciona a ordem para 'cancelado'.
 export const cancelOrderByCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: order, error: ordErr } = await supabaseAdmin
       .from("orders")
-      .select("id, status, restaurant_id")
+      .select("id, status, restaurant_id, customer_id")
       .eq("id", data.orderId)
       .maybeSingle();
     if (ordErr) throw new Error(ordErr.message);
     if (!order) throw new Error("Pedido não encontrado");
+    if (!order.customer_id || order.customer_id !== context.userId) {
+      throw new Error("ACTOR_NOT_AUTHORIZED");
+    }
     if (order.status !== "aguardando_pagamento") {
       throw new Error(
         order.status === "cancelado"
@@ -67,6 +72,7 @@ export const cancelOrderByCustomer = createServerFn({ method: "POST" })
     }
 
     // 1) Cancela o payment intent no provider (idempotente — ignora erros do provider).
+    // A autorização/ownership já foi validada antes de qualquer efeito externo.
     try {
       await supabaseAdmin.functions.invoke("mp-payment-intent", {
         body: { action: "cancel", order_id: data.orderId },
@@ -75,14 +81,14 @@ export const cancelOrderByCustomer = createServerFn({ method: "POST" })
       console.warn("[cancelOrderByCustomer] provider cancel failed", e);
     }
 
-    // 2) Transiciona a ordem de forma atômica (CAS).
-    const { data: tr, error: trErr } = await supabaseAdmin.rpc("order_apply_transition", {
+    // 2) Transiciona a ordem com o JWT do próprio cliente, preservando auth.uid().
+    const { data: tr, error: trErr } = await context.supabase.rpc("order_apply_transition", {
       _order_id: data.orderId,
       _expected_from: "aguardando_pagamento",
       _next_status: "cancelado",
       _reason: "customer_cancelled_before_payment",
       _actor_type: "customer",
-      _actor_id: null as unknown as string,
+      _actor_id: context.userId,
       _metadata: { source: "customer_ui" },
     } as never);
     if (trErr) throw new Error(trErr.message);
