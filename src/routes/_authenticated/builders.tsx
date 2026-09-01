@@ -62,7 +62,6 @@ function BuildersPage() {
 
   const restaurant = useRestaurant();
 
-
   const { data: builders, refetch } = useQuery({
     queryKey: ["builders", restaurant?.id],
     enabled: !!restaurant?.id,
@@ -193,7 +192,6 @@ function BuildersPage() {
         );
       })()}
 
-      {/* Templates */}
       <Card className="rounded-2xl p-5">
         <h2 className="mb-3 font-display text-lg font-bold">Comece a partir de um modelo</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -210,7 +208,6 @@ function BuildersPage() {
         </div>
       </Card>
 
-      {/* List */}
       <div className="space-y-3">
         {(builders ?? []).map((b: any) => (
           <Card key={b.id} className="flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center">
@@ -249,6 +246,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   const [form, setForm] = useState<any>(null);
   const [groups, setGroups] = useState<any[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
 
   useEffect(() => {
     if (!builder) return;
@@ -271,8 +269,29 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
       if ((g.builder_options ?? []).some((o: any) => isDraftOption(o))) return `Salve ou exclua a nova opção da etapa "${g.name}" antes de continuar.`;
       if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
       if (min > max) return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
-      if (g.is_required && savedOptions.length === 0)
-        return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
+      if (g.is_required && savedOptions.length === 0) return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+    }
+    return null;
+  }
+
+  function validateAllForConclude(): string | null {
+    if (!form.name?.trim()) return "Informe um nome para o modelo.";
+    if (parseBuilderCurrencyInput(form.base_price) < 0) return "O Preço Inicial não pode ser negativo.";
+    if (groups.length === 0) return "Adicione ao menos uma etapa antes de concluir.";
+    for (const g of groups) {
+      const min = Number(g.min_select) || 0;
+      const max = Number(g.max_select) || 0;
+      if (!String(g.name ?? "").trim()) return "Informe o nome de todas as etapas antes de concluir.";
+      if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
+      if (min > max) return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
+      const options = g.builder_options ?? [];
+      for (const o of options) {
+        const name = String(o.name ?? "").trim();
+        if (!name || name.toLowerCase() === "nova opção") return `Preencha ou exclua a opção incompleta da etapa "${g.name}" antes de concluir.`;
+        if ((Number(o.max_qty) || 0) < 1) return `A opção "${name}" precisa de quantidade máxima ≥ 1.`;
+      }
+      if (g.is_required && options.length === 0) return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
       if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
@@ -298,17 +317,22 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     }).select("*").single();
     if (data) setGroups((g) => [...g, { ...data, builder_options: [] }]);
   }
+
   async function saveGroup(g: any) {
-    await supabase.from("builder_groups").update({
+    const { error } = await supabase.from("builder_groups").update({
       name: g.name, min_select: Number(g.min_select) || 0, max_select: Number(g.max_select) || 1, is_required: !!g.is_required,
     }).eq("id", g.id);
+    if (error) return toast.error(error.message);
     toast.success("Etapa salva");
   }
+
   async function deleteGroup(id: string) {
     if (!confirm("Excluir etapa?")) return;
-    await supabase.from("builder_groups").delete().eq("id", id);
+    const { error } = await supabase.from("builder_groups").delete().eq("id", id);
+    if (error) return toast.error(error.message);
     setGroups((gs) => gs.filter((g) => g.id !== id));
   }
+
   function addOption(g: any) {
     const draft = {
       id: `draft:${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`,
@@ -321,6 +345,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     };
     setGroups((gs) => gs.map((x) => x.id === g.id ? { ...x, builder_options: [...x.builder_options, draft] } : x));
   }
+
   async function saveOption(gid: string, o: any) {
     const name = String(o.name ?? "").trim();
     if (!name || name.toLowerCase() === "nova opção") return toast.error("Informe um nome válido para a opção antes de salvar.");
@@ -354,6 +379,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     } : g));
     toast.success("Opção salva");
   }
+
   async function deleteOption(gid: string, oid: string) {
     const draft = String(oid).startsWith("draft:");
     if (!draft) {
@@ -361,6 +387,59 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
       if (error) return toast.error(error.message);
     }
     setGroups((gs) => gs.map((g) => g.id === gid ? { ...g, builder_options: g.builder_options.filter((o: any) => o.id !== oid) } : g));
+  }
+
+  async function concludeAndSave() {
+    if (savingAll) return;
+    const validationError = validateAllForConclude();
+    if (validationError) return toast.error(validationError);
+
+    setSavingAll(true);
+    try {
+      const { error: metaError } = await supabase.from("builders").update(buildBuilderMetaPayload(form)).eq("id", builder.id);
+      if (metaError) throw metaError;
+
+      for (const g of groups) {
+        const { error: groupError } = await supabase.from("builder_groups").update({
+          name: String(g.name ?? "").trim(),
+          min_select: Number(g.min_select) || 0,
+          max_select: Number(g.max_select) || 1,
+          is_required: !!g.is_required,
+        }).eq("id", g.id);
+        if (groupError) throw groupError;
+
+        for (const o of g.builder_options ?? []) {
+          const payload = {
+            name: String(o.name ?? "").trim(),
+            price_delta: parseBuilderCurrencyInput(o.price_delta),
+            max_qty: Number(o.max_qty) || 1,
+          };
+
+          if (isDraftOption(o)) {
+            const { data, error } = await supabase.from("builder_options").insert({
+              group_id: g.id,
+              ...payload,
+              position: Number(o.position) || 0,
+            }).select("*").single();
+            if (error || !data) throw error ?? new Error("Não foi possível salvar uma das opções.");
+            setGroups((gs) => gs.map((group) => group.id === g.id ? {
+              ...group,
+              builder_options: group.builder_options.map((item: any) => item.id === o.id ? data : item),
+            } : group));
+          } else {
+            const { error } = await supabase.from("builder_options").update(payload).eq("id", o.id);
+            if (error) throw error;
+          }
+        }
+      }
+
+      toast.success("Alterações salvas");
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error?.message ?? "Não foi possível salvar todas as alterações.");
+    } finally {
+      setSavingAll(false);
+    }
   }
 
   return (
@@ -392,7 +471,6 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           </div>
         </div>
 
-        {/* Explanation card */}
         <Card className="rounded-xl border-dashed bg-muted/30 p-4 text-sm">
           <p className="mb-2 font-bold">💡 Como o preço é calculado?</p>
           <p className="text-muted-foreground">
@@ -406,7 +484,6 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           </div>
         </Card>
 
-        {/* Live price summary */}
         {(() => {
           const base = parseBuilderCurrencyInput(form.base_price);
           let minExtra = 0;
@@ -418,10 +495,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             const minSel = Number(g.min_select) || 0;
             const maxSel = Number(g.max_select) || 0;
             const sortedAsc = [...opts].sort((a, b) => a - b);
-            const sortedDesc = [...opts].sort((a, b) => b - a);
-            // min cost: cheapest minSel options (>=0 contributions only if min>0)
             for (let i = 0; i < Math.min(minSel, sortedAsc.length); i++) minExtra += sortedAsc[i];
-            // max cost: most expensive maxSel options, considering max_qty
             let taken = 0;
             for (const o of saved.slice().sort((a: any, b: any) => parseBuilderCurrencyInput(b.price_delta) - parseBuilderCurrencyInput(a.price_delta))) {
               const q = Math.min(Number(o.max_qty) || 1, maxSel - taken);
@@ -479,20 +553,10 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                       <div className="rounded-lg border bg-muted/30 p-2">
                         <p className="mb-1 text-xs font-bold">O cliente é obrigado a escolher?</p>
                         <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: false } : x))}
-                            className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${!g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}
-                          >Não</button>
-                          <button
-                            type="button"
-                            onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: true, min_select: Number(x.min_select) < 1 ? 1 : x.min_select } : x))}
-                            className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}
-                          >Sim</button>
+                          <button type="button" onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: false } : x))} className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${!g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}>Não</button>
+                          <button type="button" onClick={() => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, is_required: true, min_select: Number(x.min_select) < 1 ? 1 : x.min_select } : x))} className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}>Sim</button>
                         </div>
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                          {g.is_required ? "O cliente deve escolher nesta etapa." : "O cliente pode ignorar esta etapa."}
-                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">{g.is_required ? "O cliente deve escolher nesta etapa." : "O cliente pode ignorar esta etapa."}</p>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">{g.is_required ? "Escolha mínima" : "Mínimo"}</Label>
@@ -516,10 +580,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                 </div>
                 <div className="mt-3 space-y-2 pl-6">
                   <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_140px_90px_auto]">
-                    <span>Nome</span>
-                    <span>Acrescenta ao preço (+R$)</span>
-                    <span>Qtd. máx</span>
-                    <span></span>
+                    <span>Nome</span><span>Acrescenta ao preço (+R$)</span><span>Qtd. máx</span><span></span>
                   </div>
                   {g.builder_options.map((o: any, oi: number) => {
                     const delta = parseBuilderCurrencyInput(o.price_delta);
@@ -527,17 +588,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                       <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_140px_90px_auto]">
                         <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
                         <div className="relative">
-                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                            {delta >= 0 ? "+ R$" : "R$"}
-                          </span>
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            className="pl-12"
-                            value={o.price_delta}
-                            onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))}
-                            placeholder="0,00"
-                          />
+                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{delta >= 0 ? "+ R$" : "R$"}</span>
+                          <Input type="text" inputMode="decimal" className="pl-12" value={o.price_delta} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))} placeholder="0,00" />
                         </div>
                         <Input type="number" min={1} value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
                         <div className="flex gap-1">
@@ -549,7 +601,6 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                   })}
                   <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
 
-                  {/* Stage simulator */}
                   {g.builder_options.filter((o: any) => !isDraftOption(o)).length > 0 && (
                     <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
                       <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
@@ -577,7 +628,10 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           <Button variant="outline" onClick={openPreview} className="sm:mr-auto">
             <Eye className="mr-2 h-4 w-4" /> Visualizar como cliente
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Concluir</Button>
+          <Button onClick={concludeAndSave} disabled={savingAll}>
+            {savingAll && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Concluir
+          </Button>
         </DialogFooter>
       </DialogContent>
 
@@ -625,7 +679,6 @@ function BuilderImageUpload({
     try {
       setProgress(5);
       const { storage_path, url } = await uploadProductImage(f, restaurantId, setProgress);
-      // remove previous upload from this session
       if (path) deleteProductImage(path).catch(() => {});
       setPath(storage_path);
       await onChange(url);
@@ -645,25 +698,19 @@ function BuilderImageUpload({
 
   return (
     <div className="space-y-2">
-      <input ref={fileRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
 
       {value ? (
         <div className="relative h-32 w-full overflow-hidden rounded-xl border bg-muted">
           <img src={value} alt="" className="h-full w-full object-cover" />
-          <button type="button" onClick={clear}
-            className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80">
+          <button type="button" onClick={clear} className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : (
         <div className="grid h-32 w-full place-items-center rounded-xl border-2 border-dashed border-muted-foreground/25 text-muted-foreground">
-          <div className="text-center text-xs">
-            <ImagePlus className="mx-auto mb-1 h-5 w-5" />
-            Sem imagem
-          </div>
+          <div className="text-center text-xs"><ImagePlus className="mx-auto mb-1 h-5 w-5" />Sem imagem</div>
         </div>
       )}
 
