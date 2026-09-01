@@ -69,6 +69,27 @@ export function createDeliveryOrchestrator(deps: OrchestratorDeps) {
     const a = await deps.getAssignment(input.assignmentId);
     if (!a) return { ok: false, from: null, to: input.to, reason: "ASSIGNMENT_NOT_FOUND" };
 
+    // Recuperação segura de estado intermediário: se a UI antiga deixou o assignment
+    // em COLETANDO e o entregador tenta concluir a entrega, preserve a state machine
+    // executando primeiro COLETANDO -> EM_ROTA e só então EM_ROTA -> ENTREGUE.
+    // Isso evita aceitar o salto inválido COLETANDO -> ENTREGUE e mantém timeline,
+    // sincronização do pedido e callbacks em suas transições oficiais.
+    if (a.status === "COLETANDO" && input.to === "ENTREGUE") {
+      const departed = await transition({
+        ...input,
+        to: "EM_ROTA",
+        reason: input.reason ?? "Recuperação de entrega coletada antes da conclusão",
+        metadata: {
+          ...(input.metadata ?? {}),
+          recovery: "collecting_to_route_before_delivered",
+        },
+      });
+      if (!departed.ok) {
+        return { ok: false, from: a.status, to: input.to, reason: departed.reason ?? "RECOVERY_DEPART_FAILED" };
+      }
+      return transition(input);
+    }
+
     if (!canTransition(a.status, input.to)) {
       return { ok: false, from: a.status, to: input.to, reason: "INVALID_TRANSITION" };
     }
