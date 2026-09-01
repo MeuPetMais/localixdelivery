@@ -39,6 +39,25 @@ from public.delivery_drivers d
 where d.owner_id is not null
 on conflict (driver_id) do nothing;
 
+-- Reconciliacao de perfis operacionais ja cadastrados em outro parceiro antes desta migration.
+-- CPF e a identidade civil autoritativa; telefone pode ter sido alterado entre cadastros.
+insert into public.driver_restaurant_memberships (owner_id, driver_id, restaurant_id, status)
+select identity.owner_id, candidate.id, candidate.restaurant_id, 'ativo'
+from public.delivery_drivers candidate
+cross join lateral (
+  select source.owner_id
+  from public.delivery_drivers source
+  where source.owner_id is not null
+    and source.id <> candidate.id
+    and regexp_replace(coalesce(source.cpf, ''), '\D', '', 'g') <> ''
+    and regexp_replace(coalesce(source.cpf, ''), '\D', '', 'g') = regexp_replace(coalesce(candidate.cpf, ''), '\D', '', 'g')
+  order by source.created_at asc
+  limit 1
+) identity
+where candidate.owner_id is null
+  and candidate.status::text = 'ativo'
+on conflict (driver_id) do nothing;
+
 -- Mantem o vinculo em sincronia quando uma conta nova e ativada normalmente.
 create or replace function public.tg_sync_driver_restaurant_membership()
 returns trigger
@@ -65,8 +84,8 @@ create trigger trg_sync_driver_restaurant_membership
 after insert or update of owner_id on public.delivery_drivers
 for each row execute function public.tg_sync_driver_restaurant_membership();
 
--- Se o parceiro cadastrar CPF+telefone que ja pertencem a uma conta Localix ativa,
--- o novo registro vira um perfil operacional do novo restaurante sem criar outro Auth user.
+-- Se o parceiro cadastrar um CPF que ja pertence a uma conta Localix ativa,
+-- o novo registro vira perfil operacional do novo restaurante sem criar outro Auth user.
 create or replace function public.tg_reuse_existing_driver_identity()
 returns trigger
 language plpgsql
@@ -76,10 +95,8 @@ as $$
 declare
   v_existing record;
   v_cpf text := regexp_replace(coalesce(new.cpf, ''), '\D', '', 'g');
-  v_phone text := regexp_replace(coalesce(new.phone, ''), '\D', '', 'g');
 begin
-  if new.owner_id is null and new.status::text = 'aguardando_ativacao'
-     and v_cpf <> '' and v_phone <> '' then
+  if new.owner_id is null and new.status::text = 'aguardando_ativacao' and v_cpf <> '' then
     select d.owner_id, d.email
       into v_existing
       from public.delivery_drivers d
@@ -87,7 +104,6 @@ begin
        and d.status::text = 'ativo'
        and d.restaurant_id <> new.restaurant_id
        and regexp_replace(coalesce(d.cpf, ''), '\D', '', 'g') = v_cpf
-       and regexp_replace(coalesce(d.phone, ''), '\D', '', 'g') = v_phone
      order by d.created_at asc
      limit 1;
 
@@ -115,10 +131,8 @@ as $$
 declare
   v_owner uuid;
   v_cpf text := regexp_replace(coalesce(new.cpf, ''), '\D', '', 'g');
-  v_phone text := regexp_replace(coalesce(new.phone, ''), '\D', '', 'g');
 begin
-  if new.owner_id is null and new.status::text = 'ativo'
-     and v_cpf <> '' and v_phone <> '' then
+  if new.owner_id is null and new.status::text = 'ativo' and v_cpf <> '' then
     select d.owner_id
       into v_owner
       from public.delivery_drivers d
@@ -126,7 +140,6 @@ begin
        and d.owner_id is not null
        and d.status::text = 'ativo'
        and regexp_replace(coalesce(d.cpf, ''), '\D', '', 'g') = v_cpf
-       and regexp_replace(coalesce(d.phone, ''), '\D', '', 'g') = v_phone
      order by d.created_at asc
      limit 1;
 
