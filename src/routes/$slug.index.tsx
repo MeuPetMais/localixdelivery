@@ -1209,8 +1209,12 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         <MobileCategorySheet
           open={catsSheetOpen}
           onOpenChange={setCatsSheetOpen}
+          slug={slug}
           categories={categories}
           items={items}
+          promoCount={(items as any[]).filter((i) => isPromoActiveNow(i) && matchesQuery(i)).length}
+          builderCount={restaurant.builders_enabled && !q ? (builders?.length ?? 0) : 0}
+          query={query}
           matchesQuery={matchesQuery}
           hasCart={totalQty > 0}
         />
@@ -2307,10 +2311,89 @@ function FeaturedSections({
 
 type CategoryMenuItem = {
   id: string;
-  name: string;
+  label: string;
   count: number;
   targetId: string;
 };
+
+function buildCategoryMenuItems({
+  categories,
+  items,
+  matchesQuery,
+  promoCount,
+  builderCount,
+  featuredSections,
+  hasQuery,
+}: {
+  categories: any[];
+  items: any[];
+  matchesQuery: (it: any) => boolean;
+  promoCount: number;
+  builderCount: number;
+  featuredSections?: FeaturedSection[];
+  hasQuery: boolean;
+}) {
+  const arr: CategoryMenuItem[] = [];
+  if (!hasQuery && promoCount > 0)
+    arr.push({ id: "promos", targetId: "sec-promos", label: "🔥 Promoções", count: promoCount });
+  if (!hasQuery && builderCount > 0)
+    arr.push({
+      id: "monte",
+      targetId: "sec-monte",
+      label: "🍕 Monte do Seu Jeito",
+      count: builderCount,
+    });
+  if (!hasQuery) {
+    for (const section of featuredSections ?? []) {
+      if (section.key === "promotions" || section.key === "half_half_pizza") continue;
+      if (!section.items?.length) continue;
+      arr.push({
+        id: `feat-${section.key}`,
+        targetId: `feat-${section.key}`,
+        label: `${section.emoji} ${section.title}`,
+        count: section.items.length,
+      });
+    }
+  }
+  for (const category of categories) {
+    const count = items.filter(
+      (item) => item.category_id === category.id && matchesQuery(item),
+    ).length;
+    if (count === 0) continue;
+    arr.push({
+      id: `cat-${category.id}`,
+      targetId: `cat-${category.id}`,
+      label: String(category.name ?? "Categoria"),
+      count,
+    });
+  }
+  return arr;
+}
+
+function useExistingCategoryMenuItems(menuItems: CategoryMenuItem[]) {
+  const [existingTargetIds, setExistingTargetIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setExistingTargetIds(
+        new Set(
+          menuItems
+            .map((item) => item.targetId)
+            .filter((targetId) => Boolean(document.getElementById(targetId))),
+        ),
+      );
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [menuItems]);
+
+  return useMemo(
+    () =>
+      existingTargetIds
+        ? menuItems.filter((item) => existingTargetIds.has(item.targetId))
+        : [],
+    [menuItems, existingTargetIds],
+  );
+}
 
 const categoryIconRules: Array<{ pattern: RegExp; icon: LucideIcon }> = [
   { pattern: /hamburg|burger|smash|x-?burg|lanche|sandu/i, icon: Hamburger },
@@ -2353,36 +2436,53 @@ function scrollToMenuSection(targetId: string) {
 function MobileCategorySheet({
   open,
   onOpenChange,
+  slug,
   categories,
   items,
+  promoCount,
+  builderCount,
+  query,
   matchesQuery,
   hasCart,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  slug: string;
   categories: any[];
   items: any[];
+  promoCount: number;
+  builderCount: number;
+  query: string;
   matchesQuery: (it: any) => boolean;
   hasCart: boolean;
 }) {
+  const fetchFeatured = useServerFn(getFeaturedSections);
+  const { data: featData } = useQuery({
+    queryKey: ["featured-sections", slug],
+    queryFn: () => fetchFeatured({ data: { slug } }),
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const hasQuery = query.trim().length > 0;
   const categoryItems = useMemo<CategoryMenuItem[]>(
     () =>
-      categories
-        .map((category) => ({
-          id: category.id,
-          name: String(category.name ?? "Categoria"),
-          count: items.filter((item) => item.category_id === category.id && matchesQuery(item))
-            .length,
-          targetId: `cat-${category.id}`,
-        }))
-        .filter((category) => category.count > 0),
-    [categories, items, matchesQuery],
+      buildCategoryMenuItems({
+        categories,
+        items,
+        matchesQuery,
+        promoCount,
+        builderCount,
+        featuredSections: featData?.sections as FeaturedSection[] | undefined,
+        hasQuery,
+      }),
+    [categories, items, matchesQuery, promoCount, builderCount, featData, hasQuery],
   );
-  const [activeId, setActiveId] = useState<string | null>(categoryItems[0]?.targetId ?? null);
+  const menuItems = useExistingCategoryMenuItems(categoryItems);
+  const [activeId, setActiveId] = useState<string | null>(menuItems[0]?.targetId ?? null);
 
   useEffect(() => {
-    if (!categoryItems.length) return;
-    const targets = categoryItems
+    if (!menuItems.length) return;
+    const targets = menuItems
       .map((category) => document.getElementById(category.targetId))
       .filter(Boolean) as HTMLElement[];
     if (!targets.length) return;
@@ -2397,14 +2497,14 @@ function MobileCategorySheet({
     );
     for (const target of targets) observer.observe(target);
     return () => observer.disconnect();
-  }, [categoryItems]);
+  }, [menuItems]);
 
   useEffect(() => {
-    if (activeId || !categoryItems[0]) return;
-    setActiveId(categoryItems[0].targetId);
-  }, [activeId, categoryItems]);
+    if (activeId || !menuItems[0]) return;
+    setActiveId(menuItems[0].targetId);
+  }, [activeId, menuItems]);
 
-  if (!categoryItems.length) return null;
+  if (!menuItems.length) return null;
 
   const bottom = hasCart
     ? "calc(140px + env(safe-area-inset-bottom))"
@@ -2415,29 +2515,29 @@ function MobileCategorySheet({
       <SheetTrigger asChild>
         <button
           type="button"
-          aria-label="Abrir categorias"
+          aria-label="Abrir menu"
           className="fixed right-4 z-30 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-float transition hover:scale-105 active:scale-95 sm:hidden"
           style={{ bottom }}
         >
           <LayoutGrid className="h-5 w-5" />
-          <span className="text-sm font-bold">Categorias</span>
+          <span className="text-sm font-bold">Menu</span>
         </button>
       </SheetTrigger>
       <SheetContent
         side="bottom"
-        closeAriaLabel="Fechar categorias"
+        closeAriaLabel="Fechar menu"
         className="max-h-[78dvh] overflow-hidden rounded-t-3xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3"
       >
         <div aria-hidden className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/25" />
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="flex items-center gap-2 font-display text-xl">
             <LayoutGrid className="h-5 w-5 text-primary" />
-            Categorias
+            Menu
           </SheetTitle>
         </SheetHeader>
         <div className="mt-4 grid max-h-[calc(78dvh-6.5rem)] grid-cols-2 gap-2 overflow-y-auto overscroll-contain pb-2">
-          {categoryItems.map((category) => {
-            const Icon = getCategoryIcon(category.name);
+          {menuItems.map((category) => {
+            const Icon = getCategoryIcon(category.label);
             const isActive = activeId === category.targetId;
             const countLabel = `${category.count} ${category.count === 1 ? "item" : "itens"}`;
             return (
@@ -2462,7 +2562,7 @@ function MobileCategorySheet({
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
-                  {category.name}
+                  {category.label}
                 </span>
                 <span
                   className={`mt-0.5 block text-xs font-semibold ${
@@ -2510,25 +2610,17 @@ function SmartCategoryMenu({
   const hasQuery = query.trim().length > 0;
 
   const menuItems = useMemo(() => {
-    const arr: { id: string; label: string; count: number }[] = [];
-    if (!hasQuery && promoCount > 0)
-      arr.push({ id: "sec-promos", label: "🔥 Promoções", count: promoCount });
-    if (!hasQuery && builderCount > 0)
-      arr.push({ id: "sec-monte", label: "🍕 Monte do Seu Jeito", count: builderCount });
-    if (!hasQuery) {
-      for (const s of (featData?.sections ?? []) as FeaturedSection[]) {
-        if (s.key === "promotions" || s.key === "half_half_pizza") continue;
-        if (!s.items?.length) continue;
-        arr.push({ id: `feat-${s.key}`, label: `${s.emoji} ${s.title}`, count: s.items.length });
-      }
-    }
-    for (const c of categories) {
-      const count = items.filter((i) => i.category_id === c.id && matchesQuery(i)).length;
-      if (count === 0) continue;
-      arr.push({ id: `cat-${c.id}`, label: c.name, count });
-    }
-    return arr;
+    return buildCategoryMenuItems({
+      categories,
+      items,
+      matchesQuery,
+      promoCount,
+      builderCount,
+      featuredSections: featData?.sections as FeaturedSection[] | undefined,
+      hasQuery,
+    });
   }, [featData, categories, items, promoCount, builderCount, hasQuery, matchesQuery]);
+  const visibleMenuItems = useExistingCategoryMenuItems(menuItems);
 
   const [active, setActive] = useState<string | null>(null);
   const activePillRef = useRef<HTMLAnchorElement | null>(null);
@@ -2536,8 +2628,8 @@ function SmartCategoryMenu({
   const clickLockRef = useRef(0);
 
   useEffect(() => {
-    if (menuItems.length === 0) return;
-    const ids = menuItems.map((m) => m.id);
+    if (visibleMenuItems.length === 0) return;
+    const ids = visibleMenuItems.map((m) => m.targetId);
     const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
     if (els.length === 0) return;
     const io = new IntersectionObserver(
@@ -2552,14 +2644,14 @@ function SmartCategoryMenu({
     );
     for (const el of els) io.observe(el);
     return () => io.disconnect();
-  }, [menuItems]);
+  }, [visibleMenuItems]);
 
   // Auto-highlight first matching category when searching
   useEffect(() => {
     if (!hasQuery) return;
-    const first = menuItems.find((m) => m.id.startsWith("cat-"));
-    if (first) setActive(first.id);
-  }, [hasQuery, menuItems]);
+    const first = visibleMenuItems.find((m) => m.targetId.startsWith("cat-"));
+    if (first) setActive(first.targetId);
+  }, [hasQuery, visibleMenuItems]);
 
   // Center the active pill by scrolling ONLY the horizontal pill row.
   // Never use scrollIntoView here: on mobile it also scrolls the page
@@ -2611,19 +2703,19 @@ function SmartCategoryMenu({
           </button>
         )}
       </div>
-      {menuItems.length > 0 && (
+      {visibleMenuItems.length > 0 && (
         <div
           ref={pillsRowRef}
           className="hidden gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] sm:flex [&::-webkit-scrollbar]:hidden"
         >
-          {menuItems.map((m) => {
-            const isActive = active === m.id;
+          {visibleMenuItems.map((m) => {
+            const isActive = active === m.targetId;
             return (
               <a
                 key={m.id}
-                href={`#${m.id}`}
+                href={`#${m.targetId}`}
                 ref={isActive ? activePillRef : undefined}
-                onClick={(e) => go(e, m.id)}
+                onClick={(e) => go(e, m.targetId)}
                 className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${isActive ? "border-primary bg-primary text-primary-foreground shadow-elegant" : "bg-card text-foreground hover:border-primary/40"}`}
               >
                 <span>{m.label}</span>
