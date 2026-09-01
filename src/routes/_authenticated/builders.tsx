@@ -258,6 +258,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
 
   if (!builder || !form) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
 
+  const isDraftOption = (o: any) => !!o?.__draft || String(o?.id ?? "").startsWith("draft:");
+
   function validate(): string | null {
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0) return "O Preço Inicial não pode ser negativo.";
@@ -265,9 +267,11 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     for (const g of groups) {
       const min = Number(g.min_select) || 0;
       const max = Number(g.max_select) || 0;
+      const savedOptions = (g.builder_options ?? []).filter((o: any) => !isDraftOption(o) && String(o.name ?? "").trim() && String(o.name ?? "").trim().toLowerCase() !== "nova opção");
+      if ((g.builder_options ?? []).some((o: any) => isDraftOption(o))) return `Salve ou exclua a nova opção da etapa "${g.name}" antes de continuar.`;
       if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
       if (min > max) return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
-      if (g.is_required && (g.builder_options?.length ?? 0) === 0)
+      if (g.is_required && savedOptions.length === 0)
         return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
       if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
@@ -305,17 +309,57 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     await supabase.from("builder_groups").delete().eq("id", id);
     setGroups((gs) => gs.filter((g) => g.id !== id));
   }
-  async function addOption(g: any) {
-    const { data } = await supabase.from("builder_options").insert({
-      group_id: g.id, name: "Nova opção", price_delta: 0, max_qty: 1, position: (g.builder_options?.length ?? 0),
-    }).select("*").single();
-    if (data) setGroups((gs) => gs.map((x) => x.id === g.id ? { ...x, builder_options: [...x.builder_options, data] } : x));
+  function addOption(g: any) {
+    const draft = {
+      id: `draft:${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`,
+      group_id: g.id,
+      name: "",
+      price_delta: 0,
+      max_qty: 1,
+      position: (g.builder_options?.length ?? 0),
+      __draft: true,
+    };
+    setGroups((gs) => gs.map((x) => x.id === g.id ? { ...x, builder_options: [...x.builder_options, draft] } : x));
   }
-  async function saveOption(o: any) {
-    await supabase.from("builder_options").update({ name: o.name, price_delta: parseBuilderCurrencyInput(o.price_delta), max_qty: Number(o.max_qty) || 1 }).eq("id", o.id);
+  async function saveOption(gid: string, o: any) {
+    const name = String(o.name ?? "").trim();
+    if (!name || name.toLowerCase() === "nova opção") return toast.error("Informe um nome válido para a opção antes de salvar.");
+
+    const payload = {
+      name,
+      price_delta: parseBuilderCurrencyInput(o.price_delta),
+      max_qty: Number(o.max_qty) || 1,
+    };
+
+    if (isDraftOption(o)) {
+      const { data, error } = await supabase.from("builder_options").insert({
+        group_id: gid,
+        ...payload,
+        position: Number(o.position) || 0,
+      }).select("*").single();
+      if (error || !data) return toast.error(error?.message ?? "Não foi possível salvar a opção.");
+      setGroups((gs) => gs.map((g) => g.id === gid ? {
+        ...g,
+        builder_options: g.builder_options.map((item: any) => item.id === o.id ? data : item),
+      } : g));
+      toast.success("Opção salva");
+      return;
+    }
+
+    const { error } = await supabase.from("builder_options").update(payload).eq("id", o.id);
+    if (error) return toast.error(error.message);
+    setGroups((gs) => gs.map((g) => g.id === gid ? {
+      ...g,
+      builder_options: g.builder_options.map((item: any) => item.id === o.id ? { ...item, ...payload } : item),
+    } : g));
+    toast.success("Opção salva");
   }
   async function deleteOption(gid: string, oid: string) {
-    await supabase.from("builder_options").delete().eq("id", oid);
+    const draft = String(oid).startsWith("draft:");
+    if (!draft) {
+      const { error } = await supabase.from("builder_options").delete().eq("id", oid);
+      if (error) return toast.error(error.message);
+    }
     setGroups((gs) => gs.map((g) => g.id === gid ? { ...g, builder_options: g.builder_options.filter((o: any) => o.id !== oid) } : g));
   }
 
@@ -368,7 +412,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           let minExtra = 0;
           let maxExtra = 0;
           for (const g of groups) {
-            const opts = (g.builder_options ?? []).map((o: any) => parseBuilderCurrencyInput(o.price_delta));
+            const saved = (g.builder_options ?? []).filter((o: any) => !isDraftOption(o));
+            const opts = saved.map((o: any) => parseBuilderCurrencyInput(o.price_delta));
             if (opts.length === 0) continue;
             const minSel = Number(g.min_select) || 0;
             const maxSel = Number(g.max_select) || 0;
@@ -378,7 +423,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             for (let i = 0; i < Math.min(minSel, sortedAsc.length); i++) minExtra += sortedAsc[i];
             // max cost: most expensive maxSel options, considering max_qty
             let taken = 0;
-            for (const o of (g.builder_options ?? []).slice().sort((a: any, b: any) => parseBuilderCurrencyInput(b.price_delta) - parseBuilderCurrencyInput(a.price_delta))) {
+            for (const o of saved.slice().sort((a: any, b: any) => parseBuilderCurrencyInput(b.price_delta) - parseBuilderCurrencyInput(a.price_delta))) {
               const q = Math.min(Number(o.max_qty) || 1, maxSel - taken);
               if (q <= 0) break;
               maxExtra += q * parseBuilderCurrencyInput(o.price_delta);
@@ -496,7 +541,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                         </div>
                         <Input type="number" min={1} value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
                         <div className="flex gap-1">
-                          <Button size="sm" variant="outline" onClick={() => saveOption(o)}>Salvar</Button>
+                          <Button size="sm" variant="outline" onClick={() => saveOption(g.id, o)}>Salvar</Button>
                           <Button size="sm" variant="outline" onClick={() => deleteOption(g.id, o.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                         </div>
                       </div>
@@ -505,11 +550,11 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                   <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
 
                   {/* Stage simulator */}
-                  {g.builder_options.length > 0 && (
+                  {g.builder_options.filter((o: any) => !isDraftOption(o)).length > 0 && (
                     <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
                       <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
                       <div className="space-y-0.5">
-                        {g.builder_options.slice(0, 5).map((o: any) => {
+                        {g.builder_options.filter((o: any) => !isDraftOption(o)).slice(0, 5).map((o: any) => {
                           const base = parseBuilderCurrencyInput(form.base_price);
                           const delta = parseBuilderCurrencyInput(o.price_delta);
                           return (
@@ -553,7 +598,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             max_select: Number(g.max_select) || 1,
             is_required: !!g.is_required,
             position: g.position ?? i,
-            builder_options: (g.builder_options ?? []).map((o: any, j: number) => ({
+            builder_options: (g.builder_options ?? []).filter((o: any) => !isDraftOption(o)).map((o: any, j: number) => ({
               id: o.id,
               name: o.name,
               price_delta: parseBuilderCurrencyInput(o.price_delta),
