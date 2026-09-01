@@ -80,7 +80,7 @@ function DriverLanding() {
         <Card className="mt-6 w-full space-y-3 rounded-3xl border-none p-6 shadow-sm">
           {hasSession ? (
             <>
-              <Button size="lg" className="w-full rounded-2xl" onClick={() => nav({ to: "/motoboy/estabelecimentos" })}>
+              <Button size="lg" className="w-full rounded-2xl" onClick={() => nav({ to: "/motoboy-estabelecimentos" })}>
                 <LogIn className="mr-2 h-4 w-4" />
                 Continuar
               </Button>
