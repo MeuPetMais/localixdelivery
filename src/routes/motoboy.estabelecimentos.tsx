@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, CheckCircle2, Loader2, Store } from "lucide-react";
@@ -32,10 +33,22 @@ function DriverRestaurantsPage() {
         qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
       ]);
       toast.success("Estabelecimento selecionado");
-      navigate({ to: "/motoboy" });
+      navigate({ to: "/motoboy", replace: true });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const contexts = q.data?.contexts ?? [];
+
+  useEffect(() => {
+    if (q.isLoading || q.isError || contexts.length !== 1 || switchMut.isPending) return;
+    const only = contexts[0];
+    if (only.selected) {
+      navigate({ to: "/motoboy", replace: true });
+      return;
+    }
+    switchMut.mutate(only.driverId);
+  }, [q.isLoading, q.isError, contexts, switchMut.isPending, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 px-4 py-6">
@@ -60,7 +73,7 @@ function DriverRestaurantsPage() {
           <Card className="p-4 text-sm text-destructive">Não foi possível carregar seus vínculos.</Card>
         )}
 
-        {!q.isLoading && !q.isError && (q.data?.contexts ?? []).length === 0 && (
+        {!q.isLoading && !q.isError && contexts.length === 0 && (
           <Card className="p-5 text-center">
             <Store className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
             <p className="font-semibold">Nenhum estabelecimento vinculado</p>
@@ -69,7 +82,7 @@ function DriverRestaurantsPage() {
         )}
 
         <div className="space-y-3">
-          {(q.data?.contexts ?? []).map((ctx) => (
+          {contexts.map((ctx) => (
             <Card key={ctx.driverId} className="flex items-center gap-3 rounded-2xl p-4">
               <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
                 {ctx.restaurantLogoUrl ? (
@@ -101,9 +114,11 @@ function DriverRestaurantsPage() {
           ))}
         </div>
 
-        <p className="mt-5 text-xs text-muted-foreground">
-          Para trocar de estabelecimento, você precisa estar offline, fora da fila e sem entrega em andamento.
-        </p>
+        {contexts.length > 1 && (
+          <p className="mt-5 text-xs text-muted-foreground">
+            Para trocar de estabelecimento, você precisa estar offline, fora da fila e sem entrega em andamento.
+          </p>
+        )}
       </div>
     </div>
   );
