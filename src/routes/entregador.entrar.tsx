@@ -1,5 +1,5 @@
 // RC6.2 — Login próprio do Entregador (separado do restaurante)
-// Aceita CPF ou Telefone + senha. Resolve o e-mail no servidor e faz
+// Aceita CPF ou Telefone + senha. Resolve a identidade global no servidor e faz
 // signInWithPassword. Após login, segue para a seleção de estabelecimento.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveDriverEmail } from "@/lib/driver-activation.functions";
+import { resolveUniversalDriverEmail } from "@/lib/driver-login.functions";
 
 export const Route = createFileRoute("/entregador/entrar")({
   ssr: false,
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/entregador/entrar")({
 
 function DriverLogin() {
   const nav = useNavigate();
-  const resolve = useServerFn(resolveDriverEmail);
+  const resolve = useServerFn(resolveUniversalDriverEmail);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
