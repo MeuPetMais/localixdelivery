@@ -1,13 +1,14 @@
 {
-  "name": "Localix Entregador",
+  "id": "/localix-delivery",
+  "name": "Localix Delivery",
   "short_name": "Localix",
-  "description": "App do entregador Localix — receba corridas e acompanhe seus ganhos.",
-  "start_url": "/entregador",
+  "description": "Cardápio digital e pedidos no Localix Delivery.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/icons/icon-192.png",
