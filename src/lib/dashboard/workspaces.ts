@@ -56,6 +56,7 @@ export const NAVIGATION: NavigationItem[] = [
     requiredRoles: ["OWNER", "MANAGER"],
     children: [
       { id: "inventory", label: "Estoque", to: "/inventory", workspace: "products", requiredRoles: ["OWNER", "MANAGER"] },
+      { id: "builder-stock", label: "Estoque do Builder", to: "/builder-stock", workspace: "products", requiredRoles: ["OWNER", "MANAGER"] },
       { id: "suppliers", label: "Fornecedores", to: "/suppliers", workspace: "products", requiredRoles: ["OWNER", "MANAGER"] },
     ],
   },
