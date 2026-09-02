@@ -3,7 +3,7 @@
   "name": "Localix Entregador",
   "short_name": "Entregador",
   "description": "App do entregador Localix — receba corridas e acompanhe seus ganhos.",
-  "start_url": "/entregador",
+  "start_url": "/motoboy",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
