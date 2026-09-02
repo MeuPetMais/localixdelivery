@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 const SW_URL = "/driver-sw.js";
+const DRIVER_MANIFEST_URL = "/driver-manifest.webmanifest";
 const DISMISS_KEY = "localix-driver-pwa-dismissed";
 
 export type BeforeInstallPromptEvent = Event & {
@@ -141,6 +142,17 @@ export function useDriverPwaInstall(): PwaInstallState {
   const [serviceWorkerControlled, setServiceWorkerControlled] = useState<boolean>(() =>
     typeof navigator !== "undefined" && !!navigator.serviceWorker?.controller,
   );
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (!manifest) return;
+    const previousHref = manifest.getAttribute("href") ?? "/manifest.webmanifest";
+    manifest.setAttribute("href", DRIVER_MANIFEST_URL);
+    return () => {
+      manifest.setAttribute("href", previousHref);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
