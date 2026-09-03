@@ -72,3 +72,11 @@
 - **Consequences:** ao atingir uma meta, Rewards chama `benefits_grant` server-side e idempotentemente; Rewards não mantém saldo monetário próprio.
 - **Status:** aprovada para staging; produção condicionada aos gates de reversão/refund/chargeback e integração durável de eventos de pedido.
 - **Detalhes:** `docs/decisions/DEC-010-localix-rewards-benefits-separation.md`.
+
+## 2026-09-03 — DEC-011 — Eventos financeiros de Rewards usam fila durável no banco
+
+- **Decision:** mudanças relevantes de `orders.status` persistem eventos em `reward_order_event_queue`; efeitos econômicos são processados depois por worker idempotente com retry e `FOR UPDATE SKIP LOCKED`.
+- **Rationale:** o EventBus in-process não é fonte durável suficiente para concessão ou reversão de crédito, e executar Benefits dentro da transação do pedido aumentaria o acoplamento e o risco operacional.
+- **Consequences:** o trigger de pedido apenas enfileira; o worker chama Rewards/Benefits. Falha de Rewards não impede a transição do pedido e pode ser reprocessada.
+- **Status:** aprovada e validada em staging; produção ainda não liberada.
+- **Detalhes:** `docs/decisions/DEC-011-rewards-durable-order-events.md`.
