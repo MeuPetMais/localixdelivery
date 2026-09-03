@@ -64,3 +64,11 @@
   protegidas por flag (evita rollback de release inteiro).
 - Observability e EventBus permanecem in-process em v1.0; persistência
   durável fica formalmente registrada como pré-requisito de v1.1.
+
+## 2026-09-03 — DEC-010 — Separação entre Localix Rewards e Localix Benefits
+
+- **Decision:** Localix Rewards controla mérito, regras e progresso comportamental; Localix Benefits é a infraestrutura econômica dos créditos financiados pelo Localix.
+- **Rationale:** evita uma terceira carteira financeira, concentra saldo/orçamento/reserva/resgate em Benefits e mantém Loyalty/Coupons com suas semânticas próprias.
+- **Consequences:** ao atingir uma meta, Rewards chama `benefits_grant` server-side e idempotentemente; Rewards não mantém saldo monetário próprio.
+- **Status:** aprovada para staging; produção condicionada aos gates de reversão/refund/chargeback e integração durável de eventos de pedido.
+- **Detalhes:** `docs/decisions/DEC-010-localix-rewards-benefits-separation.md`.
