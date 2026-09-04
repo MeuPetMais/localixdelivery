@@ -9,13 +9,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2, FolderPlus, Sparkles, Flame } from "lucide-react";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
 import { ProductImageUploader, type ProductImage } from "@/components/ProductImageUploader";
 import { deleteProductImage } from "@/lib/image-upload";
+import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
+import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
+import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
 
 export const Route = createFileRoute("/_authenticated/menu")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -45,21 +61,38 @@ function MenuPage() {
   const qc = useQueryClient();
   const restaurant = useRestaurant();
 
-
   const { data: categories = [] } = useQuery<Category[]>({
     enabled: !!restaurant?.id,
     queryKey: ["categories", restaurant?.id],
-    queryFn: async () => (await supabase.from("menu_categories").select("*").eq("restaurant_id", restaurant!.id).order("position")).data as Category[] ?? [],
+    queryFn: async () =>
+      ((
+        await supabase
+          .from("menu_categories")
+          .select("*")
+          .eq("restaurant_id", restaurant!.id)
+          .order("position")
+      ).data as Category[]) ?? [],
   });
 
   const { data: items = [] } = useQuery<Item[]>({
     enabled: !!restaurant?.id,
     queryKey: ["items", restaurant?.id],
-    queryFn: async () => (await supabase.from("menu_items").select("*").eq("restaurant_id", restaurant!.id).order("position")).data as Item[] ?? [],
+    queryFn: async () =>
+      ((
+        await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("restaurant_id", restaurant!.id)
+          .order("position")
+      ).data as Item[]) ?? [],
   });
 
   if (!restaurant) {
-    return <Card className="p-8 text-center">Você precisa criar seu restaurante primeiro no painel.</Card>;
+    return (
+      <Card className="p-8 text-center">
+        Você precisa criar seu restaurante primeiro no painel.
+      </Card>
+    );
   }
 
   const invalidate = async () => {
@@ -93,7 +126,9 @@ function MenuPage() {
         <Card className="p-12 text-center">
           <FolderPlus className="mx-auto h-10 w-10 text-muted-foreground" />
           <h3 className="mt-3 font-display text-xl font-bold">Comece criando uma categoria</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Por exemplo: Pizzas, Hambúrgueres, Bebidas, Sobremesas.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Por exemplo: Pizzas, Hambúrgueres, Bebidas, Sobremesas.
+          </p>
         </Card>
       ) : (
         <div className="space-y-6">
@@ -102,24 +137,50 @@ function MenuPage() {
             return (
               <section key={cat.id}>
                 <div className="mb-3 flex items-center justify-between">
-                  <h2 className="font-display text-xl font-bold">{cat.name} <span className="ml-2 text-sm font-normal text-muted-foreground">({catItems.length})</span></h2>
+                  <h2 className="font-display text-xl font-bold">
+                    {cat.name}{" "}
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      ({catItems.length})
+                    </span>
+                  </h2>
                   <div className="flex gap-1">
-                    <CategoryDialog restaurantId={restaurant.id} category={cat} onSaved={invalidate} />
-                    <Button size="icon" variant="ghost" onClick={async () => {
-                      if (!confirm(`Excluir a categoria "${cat.name}"?`)) return;
-                      const { error } = await supabase.from("menu_categories").delete().eq("id", cat.id);
-                      if (error) return toast.error(error.message);
-                      toast.success("Categoria excluída");
-                      invalidate();
-                    }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <CategoryDialog
+                      restaurantId={restaurant.id}
+                      category={cat}
+                      onSaved={invalidate}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={async () => {
+                        if (!confirm(`Excluir a categoria "${cat.name}"?`)) return;
+                        const { error } = await supabase
+                          .from("menu_categories")
+                          .delete()
+                          .eq("id", cat.id);
+                        if (error) return toast.error(error.message);
+                        toast.success("Categoria excluída");
+                        invalidate();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </div>
                 {catItems.length === 0 ? (
-                  <Card className="p-6 text-center text-sm text-muted-foreground">Nenhum item nesta categoria ainda.</Card>
+                  <Card className="p-6 text-center text-sm text-muted-foreground">
+                    Nenhum item nesta categoria ainda.
+                  </Card>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {catItems.map((it) => (
-                      <ItemRow key={it.id} item={it} restaurantId={restaurant.id} categories={categories} onChange={invalidate} />
+                      <ItemRow
+                        key={it.id}
+                        item={it}
+                        restaurantId={restaurant.id}
+                        categories={categories}
+                        onChange={invalidate}
+                      />
                     ))}
                   </div>
                 )}
@@ -130,9 +191,17 @@ function MenuPage() {
             <section>
               <h2 className="mb-3 font-display text-xl font-bold">Sem categoria</h2>
               <div className="grid gap-3 md:grid-cols-2">
-                {items.filter((i) => !i.category_id).map((it) => (
-                  <ItemRow key={it.id} item={it} restaurantId={restaurant.id} categories={categories} onChange={invalidate} />
-                ))}
+                {items
+                  .filter((i) => !i.category_id)
+                  .map((it) => (
+                    <ItemRow
+                      key={it.id}
+                      item={it}
+                      restaurantId={restaurant.id}
+                      categories={categories}
+                      onChange={invalidate}
+                    />
+                  ))}
               </div>
             </section>
           )}
@@ -142,27 +211,54 @@ function MenuPage() {
   );
 }
 
-function ItemRow({ item, restaurantId, categories, onChange }: { item: Item; restaurantId: string; categories: Category[]; onChange: () => void }) {
+function ItemRow({
+  item,
+  restaurantId,
+  categories,
+  onChange,
+}: {
+  item: Item;
+  restaurantId: string;
+  categories: Category[];
+  onChange: () => void;
+}) {
   async function toggleAvailable() {
-    const { error } = await supabase.from("menu_items").update({ is_available: !item.is_available }).eq("id", item.id);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ is_available: !item.is_available })
+      .eq("id", item.id);
     if (error) return toast.error(error.message);
     onChange();
   }
   async function remove() {
     if (!confirm(`Excluir "${item.name}"?`)) return;
     // remove gallery files from storage to avoid orphans
-    const { data: imgs } = await supabase.from("menu_item_images").select("storage_path").eq("menu_item_id", item.id);
-    if (imgs?.length) await Promise.all(imgs.map((i: any) => deleteProductImage(i.storage_path)));
+    const { data: imgs } = await supabase
+      .from("menu_item_images")
+      .select("storage_path")
+      .eq("menu_item_id", item.id);
+    if (imgs?.length) {
+      await Promise.all(
+        imgs.map((i: { storage_path: string }) => deleteProductImage(i.storage_path)),
+      );
+    }
     const { error } = await supabase.from("menu_items").delete().eq("id", item.id);
     if (error) return toast.error(error.message);
     toast.success("Item excluído");
     onChange();
   }
-  const hasPromo = item.promo_price && Number(item.promo_price) > 0 && Number(item.promo_price) < Number(item.price);
+  const hasPromo =
+    item.promo_price &&
+    Number(item.promo_price) > 0 &&
+    Number(item.promo_price) < Number(item.price);
   return (
     <Card className={`flex gap-3 overflow-hidden p-3 ${!item.is_available ? "opacity-60" : ""}`}>
       {item.image_url ? (
-        <img src={item.image_url} alt={item.name} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+        <img
+          src={item.image_url}
+          alt={item.name}
+          className="h-20 w-20 shrink-0 rounded-lg object-cover"
+        />
       ) : (
         <div className="h-20 w-20 shrink-0 rounded-lg bg-muted" />
       )}
@@ -174,7 +270,11 @@ function ItemRow({ item, restaurantId, categories, onChange }: { item: Item; res
               {item.is_featured && <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
               {item.is_bestseller && <Flame className="h-3.5 w-3.5 text-orange-500" />}
             </div>
-            {item.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{item.description}</p>}
+            {item.description && (
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                {item.description}
+              </p>
+            )}
           </div>
           <div className="text-right">
             {hasPromo ? (
@@ -190,11 +290,25 @@ function ItemRow({ item, restaurantId, categories, onChange }: { item: Item; res
         <div className="mt-auto flex items-center justify-between pt-2">
           <div className="flex items-center gap-2 text-xs">
             <Switch checked={item.is_available} onCheckedChange={toggleAvailable} />
-            <span className="text-muted-foreground">{item.is_available ? "Disponível" : "Indisponível"}</span>
+            <span className="text-muted-foreground">
+              {item.is_available ? "Disponível" : "Indisponível"}
+            </span>
           </div>
           <div className="flex gap-1">
-            <ItemDialog restaurantId={restaurantId} categories={categories} item={item} onSaved={onChange} trigger={<Button size="icon" variant="ghost"><Pencil className="h-3.5 w-3.5" /></Button>} />
-            <Button size="icon" variant="ghost" onClick={remove}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+            <ItemDialog
+              restaurantId={restaurantId}
+              categories={categories}
+              item={item}
+              onSaved={onChange}
+              trigger={
+                <Button size="icon" variant="ghost">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+            <Button size="icon" variant="ghost" onClick={remove}>
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
           </div>
         </div>
       </div>
@@ -202,7 +316,15 @@ function ItemRow({ item, restaurantId, categories, onChange }: { item: Item; res
   );
 }
 
-function CategoryDialog({ restaurantId, category, onSaved }: { restaurantId: string; category?: Category; onSaved: () => void }) {
+function CategoryDialog({
+  restaurantId,
+  category,
+  onSaved,
+}: {
+  restaurantId: string;
+  category?: Category;
+  onSaved: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(category?.name ?? "");
   const [loading, setLoading] = useState(false);
@@ -225,20 +347,33 @@ function CategoryDialog({ restaurantId, category, onSaved }: { restaurantId: str
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {category ? (
-          <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost">
+            <Pencil className="h-4 w-4" />
+          </Button>
         ) : (
-          <Button variant="outline"><FolderPlus className="mr-2 h-4 w-4" /> Categoria</Button>
+          <Button variant="outline">
+            <FolderPlus className="mr-2 h-4 w-4" /> Categoria
+          </Button>
         )}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>{category ? "Editar categoria" : "Nova categoria"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{category ? "Editar categoria" : "Nova categoria"}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Pizzas" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="Pizzas"
+            />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -246,14 +381,26 @@ function CategoryDialog({ restaurantId, category, onSaved }: { restaurantId: str
   );
 }
 
-function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { restaurantId: string; categories: Category[]; item?: Item; onSaved: () => void; trigger?: React.ReactNode }) {
+function ItemDialog({
+  restaurantId,
+  categories,
+  item,
+  onSaved,
+  trigger,
+}: {
+  restaurantId: string;
+  categories: Category[];
+  item?: Item;
+  onSaved: () => void;
+  trigger?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<ProductImage[]>([]);
   const [form, setForm] = useState({
     name: item?.name ?? "",
     description: item?.description ?? "",
-    category_id: item?.category_id ?? (categories[0]?.id ?? ""),
+    category_id: item?.category_id ?? categories[0]?.id ?? "",
     price: item ? String(item.price) : "",
     promo_price: item?.promo_price ? String(item.promo_price) : "",
     prep_time_minutes: item?.prep_time_minutes ? String(item.prep_time_minutes) : "",
@@ -266,7 +413,10 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
 
   // Load existing gallery on edit
   useEffect(() => {
-    if (!open || !item) { if (!item) setImages([]); return; }
+    if (!open || !item) {
+      if (!item) setImages([]);
+      return;
+    }
     (async () => {
       const { data } = await supabase
         .from("menu_item_images")
@@ -316,7 +466,11 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
         const { error } = await supabase.from("menu_items").update(payload).eq("id", item.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("menu_items").insert(payload).select("id").single();
+        const { data, error } = await supabase
+          .from("menu_items")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
         itemId = data.id;
       }
@@ -324,40 +478,60 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
       // Sync gallery
       const toDelete = images.filter((i) => i._delete && i.id);
       if (toDelete.length) {
-        await supabase.from("menu_item_images").delete().in("id", toDelete.map((i) => i.id!));
+        await supabase
+          .from("menu_item_images")
+          .delete()
+          .in(
+            "id",
+            toDelete.map((i) => i.id!),
+          );
         await Promise.all(toDelete.map((i) => deleteProductImage(i.storage_path)));
       }
-      const toInsert = images.filter((i) => i._new && !i._delete && i.storage_path).map((i, idx) => ({
-        menu_item_id: itemId!,
-        restaurant_id: restaurantId,
-        storage_path: i.storage_path,
-        url: i.url,
-        is_primary: i.is_primary,
-        position: idx,
-      }));
+      const toInsert = images
+        .filter((i) => i._new && !i._delete && i.storage_path)
+        .map((i, idx) => ({
+          menu_item_id: itemId!,
+          restaurant_id: restaurantId,
+          storage_path: i.storage_path,
+          url: i.url,
+          is_primary: i.is_primary,
+          position: idx,
+        }));
       if (toInsert.length) await supabase.from("menu_item_images").insert(toInsert);
 
       const toUpdate = images.filter((i) => !i._new && !i._delete && i.id);
       if (toUpdate.length) {
-        await Promise.all(toUpdate.map((i, idx) =>
-          supabase.from("menu_item_images").update({ is_primary: i.is_primary, position: idx }).eq("id", i.id!),
-        ));
+        await Promise.all(
+          toUpdate.map((i, idx) =>
+            supabase
+              .from("menu_item_images")
+              .update({ is_primary: i.is_primary, position: idx })
+              .eq("id", i.id!),
+          ),
+        );
       }
 
       toast.success(item ? "✅ Produto atualizado com sucesso" : "✅ Produto salvo com sucesso");
       setOpen(false);
       if (!item) {
         setForm({
-          name: "", description: "", category_id: categories[0]?.id ?? "",
-          price: "", promo_price: "", prep_time_minutes: "",
-          available_delivery: true, available_pickup: true,
-          is_featured: false, is_bestseller: false, is_active: true,
+          name: "",
+          description: "",
+          category_id: categories[0]?.id ?? "",
+          price: "",
+          promo_price: "",
+          prep_time_minutes: "",
+          available_delivery: true,
+          available_pickup: true,
+          is_featured: false,
+          is_bestseller: false,
+          is_active: true,
         });
         setImages([]);
       }
       await onSaved();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao salvar");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
       setLoading(false);
     }
@@ -366,36 +540,65 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger ?? <Button><Plus className="mr-2 h-4 w-4" /> Item</Button>}
+        {trigger ?? (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Item
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader><DialogTitle>{item ? "Editar produto" : "Novo produto"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{item ? "Editar produto" : "Novo produto"}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={save} className="space-y-4">
           {/* 1. Foto */}
           <div className="space-y-1.5">
             <Label>Foto do produto</Label>
-            <ProductImageUploader restaurantId={restaurantId} images={images} onChange={setImages} />
+            <ProductImageUploader
+              restaurantId={restaurantId}
+              images={images}
+              onChange={setImages}
+            />
           </div>
 
           {/* 2. Nome */}
           <div className="space-y-1.5">
             <Label>Nome do produto</Label>
-            <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Pizza Margherita" />
+            <Input
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Pizza Margherita"
+            />
           </div>
 
           {/* 3. Descrição */}
           <div className="space-y-1.5">
             <Label>Descrição</Label>
-            <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Molho de tomate, mussarela e manjericão fresco" />
+            <Textarea
+              rows={2}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Molho de tomate, mussarela e manjericão fresco"
+            />
           </div>
 
           {/* 4. Categoria */}
           <div className="space-y-1.5">
             <Label>Categoria</Label>
-            <Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <Select
+              value={form.category_id}
+              onValueChange={(v) => setForm({ ...form, category_id: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -404,31 +607,70 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Preço (R$)</Label>
-              <Input required value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="49,90" />
+              <Input
+                required
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                placeholder="49,90"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Promoção (R$)</Label>
-              <Input value={form.promo_price} onChange={(e) => setForm({ ...form, promo_price: e.target.value })} placeholder="opcional" />
+              <Input
+                value={form.promo_price}
+                onChange={(e) => setForm({ ...form, promo_price: e.target.value })}
+                placeholder="opcional"
+              />
             </div>
           </div>
 
           {/* 7. Tempo de preparo */}
           <div className="space-y-1.5">
             <Label>Tempo de preparo (min)</Label>
-            <Input type="number" min={0} value={form.prep_time_minutes} onChange={(e) => setForm({ ...form, prep_time_minutes: e.target.value })} placeholder="ex.: 20" />
+            <Input
+              type="number"
+              min={0}
+              value={form.prep_time_minutes}
+              onChange={(e) => setForm({ ...form, prep_time_minutes: e.target.value })}
+              placeholder="ex.: 20"
+            />
           </div>
 
           {/* 8-12. Toggles */}
           <div className="space-y-2 rounded-xl border p-3">
-            <ToggleRow label="Disponível para entrega" checked={form.available_delivery} onChange={(v) => setForm({ ...form, available_delivery: v })} />
-            <ToggleRow label="Disponível para retirada" checked={form.available_pickup} onChange={(v) => setForm({ ...form, available_pickup: v })} />
-            <ToggleRow label="Destaque do cardápio" checked={form.is_featured} onChange={(v) => setForm({ ...form, is_featured: v })} />
-            <ToggleRow label="Produto mais vendido" checked={form.is_bestseller} onChange={(v) => setForm({ ...form, is_bestseller: v })} />
-            <ToggleRow label="Ativo" checked={form.is_active} onChange={(v) => setForm({ ...form, is_active: v })} />
+            <ToggleRow
+              label="Disponível para entrega"
+              checked={form.available_delivery}
+              onChange={(v) => setForm({ ...form, available_delivery: v })}
+            />
+            <ToggleRow
+              label="Disponível para retirada"
+              checked={form.available_pickup}
+              onChange={(v) => setForm({ ...form, available_pickup: v })}
+            />
+            <ToggleRow
+              label="Destaque do cardápio"
+              checked={form.is_featured}
+              onChange={(v) => setForm({ ...form, is_featured: v })}
+            />
+            <ToggleRow
+              label="Produto mais vendido"
+              checked={form.is_bestseller}
+              onChange={(v) => setForm({ ...form, is_bestseller: v })}
+            />
+            <ToggleRow
+              label="Ativo"
+              checked={form.is_active}
+              onChange={(v) => setForm({ ...form, is_active: v })}
+            />
           </div>
 
+          {item && <ProductOptionsSection productId={item.id} />}
+
           <DialogFooter>
-            <Button type="submit" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar produto</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar produto
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -436,7 +678,180 @@ function ItemDialog({ restaurantId, categories, item, onSaved, trigger }: { rest
   );
 }
 
-function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function ProductOptionsSection({ productId }: { productId: string }) {
+  const qc = useQueryClient();
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const { data = { groups: [], options: [] }, isLoading } = useQuery<{
+    groups: ProductOptionGroup[];
+    options: ProductOption[];
+  }>({
+    queryKey: ["product-configuration", productId],
+    queryFn: async () => {
+      const { data: groups, error: groupsError } = await supabase
+        .from("product_option_groups")
+        .select("*")
+        .eq("product_id", productId)
+        .order("display_order");
+      if (groupsError) throw groupsError;
+
+      const groupIds = ((groups ?? []) as Array<{ id: string }>).map((group) => group.id);
+      if (groupIds.length === 0) return { groups: [], options: [] };
+
+      const { data: options, error: optionsError } = await supabase
+        .from("product_options")
+        .select("*")
+        .in("group_id", groupIds)
+        .order("display_order");
+      if (optionsError) throw optionsError;
+
+      return {
+        groups: (groups ?? []) as ProductOptionGroup[],
+        options: (options ?? []) as ProductOption[],
+      };
+    },
+  });
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["product-configuration", productId] });
+
+  async function addGroup() {
+    setSavingId("new-group");
+    const { error } = await supabase.from("product_option_groups").insert({
+      product_id: productId,
+      name: "Adicionais",
+      type: "MULTIPLE",
+      min_selection: 0,
+      max_selection: 4,
+      required: false,
+      price_strategy: "SUM",
+      display_order: data.groups.length,
+    } as never);
+    setSavingId(null);
+    if (error) return toast.error(error.message);
+    await refresh();
+  }
+
+  async function addOption(group: ProductOptionGroup) {
+    setSavingId(`new-option:${group.id}`);
+    const { error } = await supabase.from("product_options").insert({
+      group_id: group.id,
+      name: "Novo adicional",
+      price_adjustment: 0,
+      max_quantity: 1,
+      display_order: data.options.filter((option) => option.group_id === group.id).length,
+      active: true,
+      metadata: {},
+    } as never);
+    setSavingId(null);
+    if (error) return toast.error(error.message);
+    await refresh();
+  }
+
+  async function saveOption(option: ProductOption, patch: Partial<ProductOption>) {
+    setSavingId(option.id);
+    const payload = { ...patch };
+    if (patch.metadata) {
+      payload.metadata = { ...(option.metadata ?? {}), ...patch.metadata };
+    }
+    const { error } = await supabase
+      .from("product_options")
+      .update(payload as never)
+      .eq("id", option.id);
+    setSavingId(null);
+    if (error) return toast.error(error.message);
+    await refresh();
+  }
+
+  async function toggleUpsell(option: ProductOption, enabled: boolean) {
+    await saveOption(option, {
+      metadata: mergeOptionUpsellMetadata(option.metadata, { upsell_enabled: enabled }),
+    });
+  }
+
+  async function setUpsellPriority(option: ProductOption, value: string) {
+    const priority = value.trim() ? Math.max(1, Math.floor(Number(value))) : null;
+    if (value.trim() && !Number.isFinite(priority)) {
+      toast.error("Prioridade deve ser um número inteiro.");
+      return;
+    }
+    await saveOption(option, {
+      metadata: mergeOptionUpsellMetadata(option.metadata, { upsell_priority: priority }),
+    });
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <Label>Adicionais do produto</Label>
+          <p className="text-xs text-muted-foreground">
+            Configure as opções que podem aparecer após o cliente adicionar este item.
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={addGroup}
+          disabled={savingId === "new-group"}
+        >
+          <Plus className="mr-2 h-3.5 w-3.5" /> Grupo
+        </Button>
+      </div>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Carregando adicionais...</p>}
+
+      {!isLoading && data.groups.length === 0 && (
+        <p className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
+          Nenhum grupo de adicionais cadastrado.
+        </p>
+      )}
+
+      {data.groups.map((group) => {
+        const options = data.options.filter((option) => option.group_id === group.id);
+        return (
+          <div key={group.id} className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">{group.name}</p>
+                <p className="text-xs text-muted-foreground">Até {group.max_selection} opções.</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => addOption(group)}
+                disabled={savingId === `new-option:${group.id}`}
+              >
+                <Plus className="mr-2 h-3.5 w-3.5" /> Adicional
+              </Button>
+            </div>
+
+            {options.map((option) => (
+              <ProductOptionUpsellControls
+                key={option.id}
+                option={option}
+                saving={savingId === option.id}
+                onSave={saveOption}
+                onToggleUpsell={toggleUpsell}
+                onSetUpsellPriority={setUpsellPriority}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
       <span className="text-sm">{label}</span>
