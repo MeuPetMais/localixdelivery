@@ -27,6 +27,8 @@ import {
   CheckoutValidationError,
   resolveAuthoritativeCheckoutPricing,
   type AuthoritativePricingRepository,
+  type CheckoutItemInput,
+  type ProductRecord,
 } from "./authoritative-pricing";
 
 // Checkout â€” testes puros de regras financeiras usadas pelo OrderService.
@@ -529,6 +531,31 @@ describe("Checkout authoritative pricing", () => {
     expect(r.items[0]).toMatchObject({ id: "prod-1", price: 25, qty: 2, total: 50 });
   });
 
+  it("keeps lineId out of authoritative product identity", async () => {
+    const seenProductIds: string[][] = [];
+    const item = {
+      id: "prod-1",
+      lineId: "line-browser-only",
+      price: 25,
+      qty: 1,
+    } satisfies CheckoutItemInput & { lineId: string };
+    const r = await resolveAuthoritativeCheckoutPricing({
+      restaurantId: "rest-1",
+      items: [item],
+      repository: repo({
+        async getProducts(ids, restaurantId) {
+          seenProductIds.push(ids);
+          return [product()].filter(
+            (p) => ids.includes(p.id) && p.restaurant_id === restaurantId,
+          ) as ProductRecord[];
+        },
+      }),
+    });
+
+    expect(seenProductIds).toEqual([["prod-1"]]);
+    expect(r.items[0]).toMatchObject({ id: "prod-1", productId: "prod-1", qty: 1 });
+  });
+
   it("rejects lower frontend price manipulation", async () => {
     await expect(
       resolveAuthoritativeCheckoutPricing({
@@ -641,6 +668,103 @@ describe("Checkout authoritative pricing", () => {
         }),
       }),
     ).rejects.toMatchObject({ code: "checkout_item_invalid" });
+  });
+
+  it("prices valid Turbine product selections from server-side option config", async () => {
+    const r = await resolveAuthoritativeCheckoutPricing({
+      restaurantId: "rest-1",
+      items: [
+        {
+          id: "prod-1",
+          price: 33,
+          qty: 1,
+          selections: [{ group_id: "addon-group", option_id: "allowed-addon", quantity: 2 }],
+        },
+      ],
+      repository: repo({
+        async getProductOptionConfig() {
+          return {
+            groups: [
+              {
+                id: "addon-group",
+                product_id: "prod-1",
+                name: "Adicionais",
+                type: "QUANTITY",
+                min_selection: 0,
+                max_selection: 3,
+                required: false,
+                price_strategy: "SUM",
+                display_order: 0,
+              },
+            ],
+            options: [
+              {
+                id: "allowed-addon",
+                group_id: "addon-group",
+                name: "Bacon",
+                price_adjustment: 4,
+                max_quantity: 2,
+                display_order: 0,
+                active: true,
+              },
+            ],
+          };
+        },
+      }),
+    });
+
+    expect(r.items[0]).toMatchObject({
+      id: "prod-1",
+      productId: "prod-1",
+      price: 33,
+      selections: [{ group_id: "addon-group", option_id: "allowed-addon", quantity: 2 }],
+    });
+  });
+
+  it("rejects stale Turbine preview price when server-side option price changes", async () => {
+    await expect(
+      resolveAuthoritativeCheckoutPricing({
+        restaurantId: "rest-1",
+        items: [
+          {
+            id: "prod-1",
+            price: 29,
+            qty: 1,
+            selections: [{ group_id: "addon-group", option_id: "allowed-addon", quantity: 1 }],
+          },
+        ],
+        repository: repo({
+          async getProductOptionConfig() {
+            return {
+              groups: [
+                {
+                  id: "addon-group",
+                  product_id: "prod-1",
+                  name: "Adicionais",
+                  type: "MULTIPLE",
+                  min_selection: 0,
+                  max_selection: 3,
+                  required: false,
+                  price_strategy: "SUM",
+                  display_order: 0,
+                },
+              ],
+              options: [
+                {
+                  id: "allowed-addon",
+                  group_id: "addon-group",
+                  name: "Bacon",
+                  price_adjustment: 5,
+                  max_quantity: 1,
+                  display_order: 0,
+                  active: true,
+                },
+              ],
+            };
+          },
+        }),
+      }),
+    ).rejects.toMatchObject({ code: "checkout_price_changed" });
   });
 
   it("rejects manipulated builder selection", async () => {

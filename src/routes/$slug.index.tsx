@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { brl } from "@/lib/format";
-import { isPromoActiveNow } from "@/lib/promotions";
+import { isPromoActiveNow, type PromoLike } from "@/lib/promotions";
 import {
   createCheckoutOrder,
   previewCheckoutPricing,
@@ -108,6 +108,23 @@ import {
 import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
 import { MercadoPagoCardPayment } from "@/components/checkout/MercadoPagoCardPayment";
 import type { TransparentCardInput } from "@/lib/payments/transparent-card";
+import {
+  addCartItemWithResult,
+  decrementCartLine,
+  incrementCartLine,
+  normalizeCartItems,
+  type CartItem,
+  type CartItemInput,
+} from "@/lib/cart/cart-lines";
+import {
+  addOptionToCartLine,
+  decrementOptionQuantity,
+  incrementOptionQuantity,
+  removeOptionFromCartLine,
+  updateCartLineOption,
+} from "@/lib/cart/cart-line-options";
+import { getTurbineDisplayCandidates, type TurbineCandidate } from "@/lib/cart/turbine-candidates";
+import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -127,16 +144,21 @@ export const Route = createFileRoute("/$slug/")({
   component: PublicMenu,
 });
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  qty: number;
-  kind?: "product" | "builder";
-  builderId?: string;
-  selections?: Array<{ groupId: string; optionId: string; qty: number }>;
-  notes?: string;
+type PublicOptionsQuery<T> = PromiseLike<{ data: T[] | null; error: unknown }> & {
+  select(columns: string): PublicOptionsQuery<T>;
+  in(column: string, values: string[]): PublicOptionsQuery<T>;
+  eq(column: string, value: unknown): PublicOptionsQuery<T>;
+  order(column: string, options?: { ascending?: boolean }): PublicOptionsQuery<T>;
 };
+
+type PublicOptionsSupabase = {
+  from(table: "product_option_groups"): PublicOptionsQuery<ProductOptionGroup>;
+  from(table: "product_options"): PublicOptionsQuery<ProductOption>;
+};
+
+type MenuPriceItem = PromoLike & { id: string };
+
+const publicOptionsSupabase = supabase as unknown as PublicOptionsSupabase;
 
 function PublicMenu() {
   const { slug } = Route.useParams();
@@ -214,6 +236,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   }, [
     data?.restaurant?.slug,
     data?.restaurant?.id,
+    data?.restaurant?.name,
+    data?.restaurant?.logo_url,
     rememberRestaurantRoute,
     restoreRestaurantScroll,
     setActiveRestaurant,
@@ -278,6 +302,16 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           table: "menu_item_images",
           filter: `restaurant_id=eq.${restaurantId}`,
         },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "product_option_groups" },
+        invalidateAll,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "product_options" },
         invalidateAll,
       )
       .on(
@@ -348,10 +382,57 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const saved = sessionStorage.getItem(`cart:${slug}`);
       const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? normalizeCartItems(parsed) : [];
     } catch {
       return [];
     }
+  });
+  const productIds = useMemo(
+    () =>
+      Array.from(new Set(cart.filter((item) => item.kind !== "builder").map((item) => item.id))),
+    [cart],
+  );
+  const { data: productOptionConfig } = useQuery<{
+    groups: ProductOptionGroup[];
+    options: ProductOption[];
+  }>({
+    queryKey: ["public-product-options", restaurantId, productIds],
+    enabled: !!restaurantId && productIds.length > 0,
+    queryFn: async () => {
+      const { data: groups, error: groupsError } = await publicOptionsSupabase
+        .from("product_option_groups")
+        .select("*")
+        .in("product_id", productIds)
+        .order("display_order", { ascending: true });
+      if (groupsError) {
+        console.warn("[turbine] product option groups unavailable", groupsError);
+        return { groups: [], options: [] };
+      }
+
+      const safeGroups = ((groups ?? []) as ProductOptionGroup[]).filter((group) =>
+        productIds.includes(group.product_id),
+      );
+      const groupIds = safeGroups.map((group) => group.id);
+      if (!groupIds.length) return { groups: safeGroups, options: [] };
+
+      const { data: options, error: optionsError } = await publicOptionsSupabase
+        .from("product_options")
+        .select("*")
+        .in("group_id", groupIds)
+        .eq("active", true)
+        .order("display_order", { ascending: true });
+      if (optionsError) {
+        console.warn("[turbine] product options unavailable", optionsError);
+        return { groups: safeGroups, options: [] };
+      }
+
+      return {
+        groups: safeGroups,
+        options: ((options ?? []) as ProductOption[]).filter((option) =>
+          groupIds.includes(option.group_id),
+        ),
+      };
+    },
   });
   const [openSheet, setOpenSheet] = useState(false);
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
@@ -387,9 +468,13 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     if (item) {
       const price = isPromoActiveNow(item) ? Number(item.promo_price) : Number(item.price);
       setCart((c) => {
-        const found = c.find((x) => x.id === item.id);
-        if (found) return c.map((x) => (x.id === item.id ? { ...x, qty: x.qty + 1 } : x));
-        return [...c, { id: item.id, name: item.name, price, qty: 1 }];
+        const result = addCartItemWithResult(c, {
+          id: item.id,
+          name: item.name,
+          price,
+          kind: "product",
+        });
+        return result.cart;
       });
       setOpenSheet(true);
       toast.success(`${item.name} adicionado`);
@@ -406,9 +491,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const raw = sessionStorage.getItem(`repeat:${slug}`);
       if (raw) {
-        const items = JSON.parse(raw) as CartItem[];
-        if (Array.isArray(items) && items.length) {
-          setCart(items);
+        const items = JSON.parse(raw);
+        const normalized = Array.isArray(items) ? normalizeCartItems(items) : [];
+        if (normalized.length) {
+          setCart(normalized);
           setOpenSheet(true);
           toast.success("Carrinho preenchido com seu pedido anterior");
         }
@@ -433,9 +519,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     try {
       const raw = sessionStorage.getItem(`builder:add:${slug}`);
       if (!raw) return;
-      const item = JSON.parse(raw) as Omit<CartItem, "qty">;
+      const item = JSON.parse(raw) as CartItemInput;
       if (item?.id && item?.name && Number.isFinite(Number(item.price))) {
-        setCart((c) => [...c, { ...item, price: Number(item.price), qty: 1 }]);
+        setCart((c) => addCartItemWithResult(c, { ...item, price: Number(item.price) }).cart);
         setOpenSheet(true);
         toast.success("Item personalizado adicionado ao carrinho");
       }
@@ -513,16 +599,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     }
   }
 
-  const add = (it: { id: string; name: string; price: number }) =>
-    setCart((c) => {
-      const found = c.find((x) => x.id === it.id);
-      if (found) return c.map((x) => (x.id === it.id ? { ...x, qty: x.qty + 1 } : x));
-      return [...c, { ...it, qty: 1 }];
-    });
-  const dec = (id: string) =>
-    setCart((c) =>
-      c.flatMap((x) => (x.id === id ? (x.qty <= 1 ? [] : [{ ...x, qty: x.qty - 1 }]) : [x])),
-    );
+  const dec = (lineId: string) => setCart((c) => decrementCartLine(c, lineId));
+  const inc = (lineId: string) => setCart((c) => incrementCartLine(c, lineId));
 
   const subtotal = useMemo(() => cart.reduce((s, x) => s + x.price * x.qty, 0), [cart]);
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
@@ -534,11 +612,18 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
     price: number;
     image_url?: string | null;
   }) => {
-    add({ id: raw.id, name: raw.name, price: raw.price });
-    setAddedSheet({
+    const result = addCartItemWithResult(cart, {
       id: raw.id,
       name: raw.name,
       price: raw.price,
+      kind: "product",
+    });
+    setCart(result.cart);
+    setAddedSheet({
+      lineId: result.line.lineId,
+      id: raw.id,
+      name: raw.name,
+      price: result.line.price,
       qty: 1,
       image_url: raw.image_url ?? null,
     });
@@ -569,6 +654,61 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       .sort((a, b) => a.score - b.score);
     return scored.slice(0, 6).map((s) => s.item);
   }, [data?.items, data?.categories, data?.restaurant?.min_order, cart, subtotal, addedSheet?.id]);
+
+  const lastAddedLine = useMemo(
+    () => cart.find((item) => item.lineId === addedSheet?.lineId) ?? null,
+    [cart, addedSheet?.lineId],
+  );
+  const turbineCandidates = useMemo(
+    () =>
+      getTurbineDisplayCandidates({
+        line: lastAddedLine,
+        groups: productOptionConfig?.groups ?? [],
+        options: productOptionConfig?.options ?? [],
+      }),
+    [lastAddedLine, productOptionConfig?.groups, productOptionConfig?.options],
+  );
+  const applyTurbineAction = (
+    candidate: TurbineCandidate,
+    action: "add" | "remove" | "increment" | "decrement",
+  ) => {
+    const lineId = addedSheet?.lineId;
+    if (!lineId) return;
+    setCart((current) => {
+      const line = current.find((item) => item.lineId === lineId);
+      if (!line) return current;
+      const group = productOptionConfig?.groups.find((item) => item.id === candidate.groupId);
+      const option = productOptionConfig?.options.find((item) => item.id === candidate.id);
+      const product = ((data?.items ?? []) as MenuPriceItem[]).find((item) => item.id === line.id);
+      const basePrice = product
+        ? Number(isPromoActiveNow(product) ? product.promo_price : product.price)
+        : line.price;
+      if (!group || !option) return current;
+      const result = updateCartLineOption(current, lineId, (item) => {
+        const input = {
+          line: item,
+          group,
+          option,
+          groups: productOptionConfig?.groups ?? [],
+          options: productOptionConfig?.options ?? [],
+          basePrice,
+        };
+        if (action === "add") return addOptionToCartLine(input);
+        if (action === "remove") return removeOptionFromCartLine(input);
+        if (action === "increment") return incrementOptionQuantity(input);
+        return decrementOptionQuantity(input);
+      });
+      if (result.changed) {
+        const updatedLine = result.cart.find((item) => item.lineId === lineId);
+        if (updatedLine) {
+          setAddedSheet((prev) =>
+            prev && prev.lineId === lineId ? { ...prev, price: updatedLine.price } : prev,
+          );
+        }
+      }
+      return result.cart;
+    });
+  };
 
   const openBuilder = (builder: Builder) => {
     const builderStatus = getRestaurantStatus({
@@ -1262,7 +1402,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                 cart={cart}
                 subtotal={subtotal}
                 dec={dec}
-                add={add}
+                inc={inc}
                 onClose={() => setOpenSheet(false)}
                 onCreated={(orderId, options) => {
                   setCart([]);
@@ -1286,17 +1426,31 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         onOpenChange={(o) => {
           if (!o) setAddedSheet(null);
         }}
-        lastAdded={addedSheet}
+        lastAdded={
+          addedSheet ? { ...addedSheet, price: lastAddedLine?.price ?? addedSheet.price } : null
+        }
         subtotal={subtotal}
         minOrder={Number(restaurant.min_order ?? 0)}
+        turbineCandidates={turbineCandidates}
+        onAddTurbineCandidate={(candidate) => applyTurbineAction(candidate, "add")}
+        onRemoveTurbineCandidate={(candidate) => applyTurbineAction(candidate, "remove")}
+        onIncrementTurbineCandidate={(candidate) => applyTurbineAction(candidate, "increment")}
+        onDecrementTurbineCandidate={(candidate) => applyTurbineAction(candidate, "decrement")}
         suggestions={suggestions}
         onAddSuggestion={(it: any) => {
           const price = Number(isPromoActiveNow(it) ? it.promo_price : it.price);
-          add({ id: it.id, name: it.name, price });
-          setAddedSheet({
+          const result = addCartItemWithResult(cart, {
             id: it.id,
             name: it.name,
             price,
+            kind: "product",
+          });
+          setCart(result.cart);
+          setAddedSheet({
+            lineId: result.line.lineId,
+            id: it.id,
+            name: it.name,
+            price: result.line.price,
             qty: 1,
             image_url: it.image_url ?? null,
           });
@@ -1316,15 +1470,15 @@ function CheckoutSheet({
   cart,
   subtotal,
   dec,
-  add,
+  inc,
   onClose,
   onCreated,
 }: {
   restaurant: any;
   cart: CartItem[];
   subtotal: number;
-  dec: (id: string) => void;
-  add: (it: { id: string; name: string; price: number }) => void;
+  dec: (lineId: string) => void;
+  inc: (lineId: string) => void;
   onClose: () => void;
   onCreated: (orderId: string, options?: { navigate?: boolean }) => void;
 }) {
@@ -1733,7 +1887,7 @@ function CheckoutSheet({
             customerEmail: email,
             successUrl: `${origin}/pedido-sucesso/${res.orderId}?paid=1`,
             cancelUrl: `${origin}/${restaurant.slug}`,
-            card: isTransparentCardPayment ? cardPayment ?? undefined : undefined,
+            card: isTransparentCardPayment ? (cardPayment ?? undefined) : undefined,
           });
 
           if (result.redirectUrl) {
@@ -1786,13 +1940,18 @@ function CheckoutSheet({
       </SheetHeader>
       <div className="mt-4 space-y-2">
         {cart.map((c) => (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
+          <div key={c.lineId} className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <p className="font-medium">{c.name}</p>
               <p className="text-sm text-muted-foreground">{brl(c.price)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => dec(c.id)}>
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-7 w-7"
+                onClick={() => dec(c.lineId)}
+              >
                 <Minus className="h-3 w-3" />
               </Button>
               <span className="w-6 text-center font-semibold">{c.qty}</span>
@@ -1800,7 +1959,7 @@ function CheckoutSheet({
                 size="icon"
                 variant="outline"
                 className="h-7 w-7"
-                onClick={() => add({ id: c.id, name: c.name, price: c.price })}
+                onClick={() => inc(c.lineId)}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -2388,9 +2547,7 @@ function useExistingCategoryMenuItems(menuItems: CategoryMenuItem[]) {
 
   return useMemo(
     () =>
-      existingTargetIds
-        ? menuItems.filter((item) => existingTargetIds.has(item.targetId))
-        : [],
+      existingTargetIds ? menuItems.filter((item) => existingTargetIds.has(item.targetId)) : [],
     [menuItems, existingTargetIds],
   );
 }

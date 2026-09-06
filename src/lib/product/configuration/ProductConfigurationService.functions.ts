@@ -2,6 +2,21 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ProductOption, ProductOptionGroup } from "./types";
 
+type UpsertOptionData = Partial<ProductOption> & { group_id: string; name: string };
+
+export function mergeExistingOptionMetadata(
+  existing: ProductOption["metadata"] | null | undefined,
+  incoming: ProductOption["metadata"] | null | undefined,
+) {
+  if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
+    return incoming;
+  }
+  if (!existing || typeof existing !== "object" || Array.isArray(existing)) {
+    return incoming;
+  }
+  return { ...existing, ...incoming };
+}
+
 export const listConfiguration = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { product_id: string }) => d)
@@ -32,9 +47,7 @@ export const listConfiguration = createServerFn({ method: "GET" })
 
 export const upsertGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: Partial<ProductOptionGroup> & { product_id: string; name: string }) => d,
-  )
+  .inputValidator((d: Partial<ProductOptionGroup> & { product_id: string; name: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("product_option_groups")
@@ -47,13 +60,25 @@ export const upsertGroup = createServerFn({ method: "POST" })
 
 export const upsertOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: Partial<ProductOption> & { group_id: string; name: string }) => d,
-  )
+  .inputValidator((d: UpsertOptionData) => d)
   .handler(async ({ data, context }) => {
+    const payload: UpsertOptionData = { ...data };
+    if (payload.id && payload.metadata !== undefined) {
+      const { data: existing, error: existingErr } = await context.supabase
+        .from("product_options")
+        .select("metadata")
+        .eq("id", payload.id)
+        .single();
+      if (existingErr) throw existingErr;
+      payload.metadata = mergeExistingOptionMetadata(
+        (existing as { metadata?: ProductOption["metadata"] } | null)?.metadata,
+        payload.metadata,
+      );
+    }
+
     const { data: row, error } = await context.supabase
       .from("product_options")
-      .upsert(data as never)
+      .upsert(payload as never)
       .select()
       .single();
     if (error) throw error;
@@ -76,10 +101,7 @@ export const deleteOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("product_options")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("product_options").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
