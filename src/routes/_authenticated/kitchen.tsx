@@ -23,6 +23,7 @@ import { computeEtaMinutes, computeEtaLabel } from "@/lib/smart-eta";
 import { toast } from "sonner";
 import { cancelRestaurantOrder, transitionOrderStatus } from "@/lib/orders/orders.functions";
 import type { OrderState } from "@/lib/orders/OrderStateMachine";
+import { groupOrderItemAddons, formatOrderItemAddonLabel } from "@/lib/orders/order-item-options";
 
 export const Route = createFileRoute("/_authenticated/kitchen")({
   head: () => ({ meta: [{ title: "Painel da Cozinha — Localix" }] }),
@@ -33,7 +34,7 @@ type Order = {
   id: string;
   order_number: number | null;
   customer_name: string;
-  items: Array<{ name: string; qty: number; price: number; notes?: string | null }>;
+  items: Array<{ name: string; qty: number; price: number; notes?: string | null; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> }>;
   total: number;
   status: string;
   payment_method: string | null;
@@ -288,6 +289,15 @@ function KitchenPage() {
                           <span className="font-bold text-primary">{it.qty}x</span>
                           <span className="flex-1">
                             {it.name}
+                            {groupOrderItemAddons(it).map(({ groupName, addons }) => (
+                              <span
+                                key={groupName}
+                                className="mt-0.5 block text-xs text-muted-foreground"
+                              >
+                                <strong>{groupName}:</strong>{" "}
+                                {addons.map((addon) => formatOrderItemAddonLabel(addon)).join(", ")}
+                              </span>
+                            ))}
                             {it.notes && (
                               <span className="mt-0.5 block text-xs text-muted-foreground">
                                 obs.: {it.notes}
