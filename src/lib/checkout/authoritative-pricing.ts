@@ -90,6 +90,16 @@ export type AuthoritativePricingRepository = {
   getCoupon?(code: string, restaurantId: string): Promise<CouponRecord | null>;
 };
 
+export type AuthoritativeOptionSnapshot = {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+};
+
 export type AuthoritativeCartItem = {
   id: string;
   name: string;
@@ -100,6 +110,7 @@ export type AuthoritativeCartItem = {
   productId?: string;
   builderId?: string;
   selections?: SelectedOption[];
+  addons?: AuthoritativeOptionSnapshot[];
   notes?: string;
 };
 
@@ -186,6 +197,62 @@ function validateBuilder(builder: BuilderRecord | undefined, restaurantId: strin
     throw new CheckoutValidationError("checkout_item_invalid", "Item invalido");
   }
   return builder;
+}
+
+function buildProductOptionSnapshot(
+  groups: ProductOptionGroup[],
+  options: ProductOption[],
+  selections: SelectedOption[],
+): AuthoritativeOptionSnapshot[] {
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const optionsById = new Map(options.map((option) => [option.id, option]));
+
+  return selections.map((selection) => {
+    const group = groupsById.get(selection.group_id);
+    const option = optionsById.get(selection.option_id);
+    if (!group || !option || option.group_id !== group.id) {
+      throw new CheckoutValidationError("checkout_item_invalid", "Item invalido");
+    }
+    const unitPrice = fromCents(toCents(option.price_adjustment));
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      optionId: option.id,
+      name: option.name,
+      quantity: selection.quantity,
+      unitPrice,
+      total: fromCents(toCents(unitPrice) * selection.quantity),
+    };
+  });
+}
+
+function buildBuilderOptionSnapshot(
+  builder: BuilderRecord,
+  selections: SelectedOption[],
+): AuthoritativeOptionSnapshot[] {
+  const groups = builder.builder_groups ?? [];
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const optionsById = new Map(
+    groups.flatMap((group) => (group.builder_options ?? []).map((option) => [option.id, option] as const)),
+  );
+
+  return selections.map((selection) => {
+    const group = groupsById.get(selection.group_id);
+    const option = optionsById.get(selection.option_id);
+    if (!group || !option || option.group_id !== group.id) {
+      throw new CheckoutValidationError("checkout_item_invalid", "Item invalido");
+    }
+    const unitPrice = fromCents(toCents(option.price_delta));
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      optionId: option.id,
+      name: option.name,
+      quantity: selection.quantity,
+      unitPrice,
+      total: fromCents(toCents(unitPrice) * selection.quantity),
+    };
+  });
 }
 
 function calculateBuilderPrice(builder: BuilderRecord, selections: SelectedOption[]) {
@@ -314,6 +381,7 @@ export async function resolveAuthoritativeCheckoutPricing(input: {
       total: fromCents(lineCents),
       kind: "product",
       selections,
+      addons: buildProductOptionSnapshot(groups, options, selections),
       notes: item.notes,
     });
   }
@@ -334,6 +402,7 @@ export async function resolveAuthoritativeCheckoutPricing(input: {
       total: fromCents(lineCents),
       kind: "builder",
       selections,
+      addons: buildBuilderOptionSnapshot(builder, selections),
       notes: item.notes,
     });
   }
