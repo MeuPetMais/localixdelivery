@@ -17,7 +17,7 @@ const option = (overrides: Partial<ProductOption> = {}): ProductOption => ({
 });
 
 describe("menu product option Turbine controls", () => {
-  it("renders partner-facing upsell controls without technical metadata copy", () => {
+  it("renders clear partner-facing labels and a customer preview", () => {
     const html = renderToStaticMarkup(
       <ProductOptionUpsellControls
         option={option()}
@@ -28,14 +28,18 @@ describe("menu product option Turbine controls", () => {
       />,
     );
 
-    expect(html).toContain("Exibir em");
-    expect(html).toContain("Turbine seu lanche");
-    expect(html).toContain("Prioridade no Turbine");
-    expect(html).toContain("Números menores aparecem primeiro.");
+    expect(html).toContain("Nome do adicional");
+    expect(html).toContain("Preço adicional (R$)");
+    expect(html).toContain("Quantidade máxima");
+    expect(html).toContain("Oferecer este adicional no Turbine");
+    expect(html).toContain("Ordem de exibição");
+    expect(html).toContain("1 aparece primeiro, 2 aparece depois");
+    expect(html).toContain("Como o cliente verá");
+    expect(html).toContain("Bacon");
     expect(html).not.toContain("metadata");
   });
 
-  it("hides priority input until Turbine is enabled", () => {
+  it("hides priority and preview until Turbine is enabled", () => {
     const html = renderToStaticMarkup(
       <ProductOptionUpsellControls
         option={option({ metadata: {} })}
@@ -47,6 +51,8 @@ describe("menu product option Turbine controls", () => {
     );
 
     expect(html).toContain("Turbine seu lanche");
-    expect(html).not.toContain("Prioridade no Turbine");
+    expect(html).toContain("Oferecer este adicional no Turbine");
+    expect(html).not.toContain("Ordem de exibição");
+    expect(html).not.toContain("Como o cliente verá");
   });
 });
