@@ -674,6 +674,11 @@ function OrderCard({ order: o, assignment, accent, nowMs, isActiveStatus, onDrag
                 {addons.map((addon) => formatOrderItemAddonLabel(addon)).join(", ")}
               </div>
             ))}
+            {it.notes && (
+              <div className="mt-1 pl-2 text-[11px] font-semibold italic text-amber-700 dark:text-amber-300">
+                Obs.: {it.notes}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -707,6 +712,11 @@ function OrderDetailsDrawer({ order, onOpenChange, onPrint, onPrintKitchen, onWh
                         ))}
                       </div>
                     ))}
+                    {it.notes && (
+                      <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-50 px-2 py-1.5 text-xs font-semibold italic text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                        Obs.: {it.notes}
+                      </p>
+                    )}
                   </div>
                   <p className="shrink-0 tabular-nums">{brl(Number(it.price) * Number(it.qty))}</p>
                 </li>
