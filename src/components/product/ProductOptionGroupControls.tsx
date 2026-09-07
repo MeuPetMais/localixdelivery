@@ -16,10 +16,12 @@ export function ProductOptionGroupControls({
   group,
   saving,
   onSave,
+  onCancel,
 }: {
   group: ProductOptionGroup;
   saving: boolean;
   onSave: (group: ProductOptionGroup, patch: Partial<ProductOptionGroup>) => Promise<void>;
+  onCancel?: () => void;
 }) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? "");
@@ -50,25 +52,17 @@ export function ProductOptionGroupControls({
   const normalizedMin = required
     ? Math.max(1, Number(minSelection) || 1)
     : Math.max(0, Number(minSelection) || 0);
-
   const normalizedMax =
     type === "SINGLE"
       ? 1
       : Math.max(normalizedMin || 1, Number(maxSelection) || Math.max(normalizedMin, 1));
 
-  const instruction =
-    type === "SINGLE"
-      ? "O cliente poderá escolher apenas 1 opção."
-      : normalizedMin > 0
-        ? `O cliente escolherá de ${normalizedMin} até ${normalizedMax} opções.`
-        : `O cliente poderá escolher até ${normalizedMax} opções.`;
-
   return (
     <div className="space-y-3 rounded-lg bg-muted/30 p-3">
       <div>
-        <p className="text-sm font-semibold">Condição do grupo</p>
+        <p className="text-sm font-semibold">Editar grupo</p>
         <p className="text-xs text-muted-foreground">
-          Defina a pergunta que o cliente verá e quantas opções ele poderá escolher.
+          Defina a pergunta e a regra de escolha exibidas ao cliente.
         </p>
       </div>
 
@@ -82,7 +76,7 @@ export function ProductOptionGroupControls({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Texto de apoio</Label>
+        <Label>Texto de apoio (opcional)</Label>
         <Input
           value={description}
           onChange={(event) => setDescription(event.target.value)}
@@ -92,7 +86,7 @@ export function ProductOptionGroupControls({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>Tipo de escolha</Label>
+          <Label>O cliente pode</Label>
           <Select
             value={type}
             onValueChange={(value) => {
@@ -108,7 +102,7 @@ export function ProductOptionGroupControls({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SINGLE">Escolher uma opção</SelectItem>
+              <SelectItem value="SINGLE">Escolher 1 opção</SelectItem>
               <SelectItem value="MULTIPLE">Escolher várias opções</SelectItem>
             </SelectContent>
           </Select>
@@ -116,7 +110,7 @@ export function ProductOptionGroupControls({
 
         <div className="flex items-end">
           <div className="flex w-full items-center justify-between rounded-md border px-3 py-2">
-            <span className="text-sm">Obrigatório</span>
+            <span className="text-sm">Resposta obrigatória</span>
             <Switch
               checked={required}
               onCheckedChange={(value) => {
@@ -132,7 +126,7 @@ export function ProductOptionGroupControls({
       {type === "MULTIPLE" && (
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Mínimo de escolhas</Label>
+            <Label>Mínimo</Label>
             <Input
               type="number"
               min={required ? 1 : 0}
@@ -141,7 +135,7 @@ export function ProductOptionGroupControls({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Máximo de escolhas</Label>
+            <Label>Máximo</Label>
             <Input
               type="number"
               min={1}
@@ -152,16 +146,12 @@ export function ProductOptionGroupControls({
         </div>
       )}
 
-      <div className="rounded-md bg-background p-3">
-        <p className="text-xs font-medium text-muted-foreground">Como o cliente verá</p>
-        <p className="mt-1 text-sm font-semibold">{name || "Pergunta do grupo"}</p>
-        <p className="text-xs text-muted-foreground">
-          {description.trim() || instruction}
-          {required ? " • Obrigatório" : " • Opcional"}
-        </p>
-      </div>
-
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel && (
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={saving}>
+            Cancelar
+          </Button>
+        )}
         <Button
           type="button"
           size="sm"
@@ -178,11 +168,11 @@ export function ProductOptionGroupControls({
             })
           }
         >
-          Salvar condição
+          Salvar grupo
         </Button>
       </div>
 
-      {saving && <p className="text-xs text-muted-foreground">Salvando condição...</p>}
+      {saving && <p className="text-xs text-muted-foreground">Salvando grupo...</p>}
     </div>
   );
 }
