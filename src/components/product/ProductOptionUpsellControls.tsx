@@ -33,13 +33,15 @@ export function ProductOptionUpsellControls({
   onToggleUpsell,
   onSetUpsellPriority,
   onCancel,
+  showUpsell = true,
 }: {
   option: ProductOption;
   saving: boolean;
   onSave: (option: ProductOption, patch: Partial<ProductOption>) => Promise<void>;
-  onToggleUpsell: (option: ProductOption, enabled: boolean) => Promise<void>;
-  onSetUpsellPriority: (option: ProductOption, value: string) => Promise<void>;
+  onToggleUpsell?: (option: ProductOption, enabled: boolean) => Promise<void>;
+  onSetUpsellPriority?: (option: ProductOption, value: string) => Promise<void>;
   onCancel?: () => void;
+  showUpsell?: boolean;
 }) {
   const [name, setName] = useState(option.name);
   const [price, setPrice] = useState(String(option.price_adjustment));
@@ -86,28 +88,30 @@ export function ProductOptionUpsellControls({
         onChange={(value) => onSave(option, { active: value })}
       />
 
-      <div className="rounded-lg border bg-background p-3">
-        <ToggleRow
-          label="Oferecer também no Turbine"
-          checked={upsellEnabled}
-          onChange={(value) => onToggleUpsell(option, value)}
-        />
-        {upsellEnabled && (
-          <div className="mt-2 space-y-1.5">
-            <Label>Ordem no Turbine</Label>
-            <Input
-              type="number"
-              min={1}
-              value={typeof priority === "number" ? priority : ""}
-              onChange={(event) => onSetUpsellPriority(option, event.target.value)}
-              placeholder="1"
-            />
-            <p className="text-xs text-muted-foreground">
-              Prévia: {name || "Opção"} · + {formatBrl(previewPrice)}
-            </p>
-          </div>
-        )}
-      </div>
+      {showUpsell && (
+        <div className="rounded-lg border bg-background p-3">
+          <ToggleRow
+            label="Oferecer também no Turbine"
+            checked={upsellEnabled}
+            onChange={(value) => onToggleUpsell?.(option, value)}
+          />
+          {upsellEnabled && (
+            <div className="mt-2 space-y-1.5">
+              <Label>Ordem no Turbine</Label>
+              <Input
+                type="number"
+                min={1}
+                value={typeof priority === "number" ? priority : ""}
+                onChange={(event) => onSetUpsellPriority?.(option, event.target.value)}
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">
+                Prévia: {name || "Opção"} · + {formatBrl(previewPrice)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end gap-2">
         {onCancel && (

@@ -32,7 +32,7 @@ import { deleteProductImage } from "@/lib/image-upload";
 import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
 import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
-import { ProductOptionGroupControls } from "@/components/product/ProductOptionGroupControls";
+import { ProductOptionGroupWizard } from "@/components/product/ProductOptionGroupWizard";
 
 export const Route = createFileRoute("/_authenticated/menu")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -683,7 +683,7 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
   const qc = useQueryClient();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [wizardGroupId, setWizardGroupId] = useState<string | null>(null);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const { data = { groups: [], options: [] }, isLoading } = useQuery<{
     groups: ProductOptionGroup[];
@@ -737,7 +737,8 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
     if (error) return toast.error(error.message);
     const createdId = (created as { id: string } | null)?.id ?? null;
     setExpandedGroupId(createdId);
-    setEditingGroupId(createdId);
+    setWizardGroupId(createdId);
+    setEditingOptionId(null);
     await refresh();
   }
 
@@ -748,11 +749,11 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       .update(patch as never)
       .eq("id", group.id);
     setSavingId(null);
-    if (error) return toast.error(error.message);
-    setEditingGroupId(null);
-    setExpandedGroupId(null);
+    if (error) {
+      toast.error(error.message);
+      throw error;
+    }
     await refresh();
-    toast.success("Grupo atualizado");
   }
 
   async function deleteGroup(group: ProductOptionGroup, optionCount: number) {
@@ -766,7 +767,7 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
     setSavingId(null);
     if (error) return toast.error(error.message);
     setExpandedGroupId(null);
-    setEditingGroupId(null);
+    setWizardGroupId(null);
     setEditingOptionId(null);
     await refresh();
     toast.success("Grupo excluído");
@@ -802,7 +803,10 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       .update(payload as never)
       .eq("id", option.id);
     setSavingId(null);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      throw error;
+    }
     setEditingOptionId(null);
     await refresh();
     toast.success("Opção atualizada");
@@ -852,7 +856,7 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
         <div>
           <Label>Opções do produto</Label>
           <p className="text-xs text-muted-foreground">
-            Crie perguntas como ponto da carne, molhos e adicionais. Abra um grupo somente quando precisar editar.
+            Configure em etapas. Depois de concluir, cada grupo fica resumido aqui.
           </p>
         </div>
         <Button
@@ -877,13 +881,18 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       {data.groups.map((group) => {
         const options = data.options.filter((option) => option.group_id === group.id);
         const expanded = expandedGroupId === group.id;
+        const inWizard = wizardGroupId === group.id;
+
         return (
           <div key={group.id} className="overflow-hidden rounded-lg border">
             <div className="flex items-center gap-2 p-3">
               <button
                 type="button"
                 className="min-w-0 flex-1 text-left"
-                onClick={() => setExpandedGroupId(expanded ? null : group.id)}
+                onClick={() => {
+                  if (inWizard) return;
+                  setExpandedGroupId(expanded ? null : group.id);
+                }}
                 aria-expanded={expanded}
               >
                 <div className="flex items-center gap-2">
@@ -898,122 +907,142 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
                   {groupRule(group)} · {options.length} opção(ões)
                 </p>
               </button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setExpandedGroupId(group.id);
-                  setEditingGroupId(group.id);
-                }}
-              >
-                Editar
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                aria-label={`Excluir grupo ${group.name}`}
-                onClick={() => deleteGroup(group, options.length)}
-                disabled={savingId === group.id}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-              <button
-                type="button"
-                className="px-1 text-lg leading-none text-muted-foreground"
-                onClick={() => setExpandedGroupId(expanded ? null : group.id)}
-                aria-label={expanded ? "Recolher grupo" : "Expandir grupo"}
-              >
-                {expanded ? "−" : "+"}
-              </button>
+
+              {!inWizard && (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setExpandedGroupId(group.id);
+                      setWizardGroupId(group.id);
+                      setEditingOptionId(null);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Excluir grupo ${group.name}`}
+                    onClick={() => deleteGroup(group, options.length)}
+                    disabled={savingId === group.id}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                  <button
+                    type="button"
+                    className="px-1 text-lg leading-none text-muted-foreground"
+                    onClick={() => setExpandedGroupId(expanded ? null : group.id)}
+                    aria-label={expanded ? "Recolher grupo" : "Expandir grupo"}
+                  >
+                    {expanded ? "−" : "+"}
+                  </button>
+                </>
+              )}
             </div>
 
             {expanded && (
               <div className="space-y-3 border-t bg-muted/10 p-3">
-                {editingGroupId === group.id && (
-                  <ProductOptionGroupControls
+                {inWizard ? (
+                  <ProductOptionGroupWizard
                     group={group}
-                    saving={savingId === group.id}
-                    onSave={saveGroup}
-                    onCancel={() => setEditingGroupId(null)}
+                    options={options}
+                    savingId={savingId}
+                    editingOptionId={editingOptionId}
+                    onSetEditingOptionId={setEditingOptionId}
+                    onSaveGroup={saveGroup}
+                    onAddOption={addOption}
+                    onSaveOption={saveOption}
+                    onDeleteOption={deleteOption}
+                    onClose={() => {
+                      setWizardGroupId(null);
+                      setExpandedGroupId(null);
+                      setEditingOptionId(null);
+                      toast.success("Grupo configurado");
+                    }}
                   />
-                )}
-
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Opções deste grupo
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => addOption(group)}
-                    disabled={savingId === `new-option:${group.id}`}
-                  >
-                    <Plus className="mr-2 h-3.5 w-3.5" /> Nova opção
-                  </Button>
-                </div>
-
-                {options.length === 0 && (
-                  <p className="rounded-md bg-background p-3 text-sm text-muted-foreground">
-                    Nenhuma opção cadastrada neste grupo.
-                  </p>
-                )}
-
-                {options.map((option) => {
-                  const upsell = option.metadata?.upsell_enabled === true;
-                  return (
-                    <div key={option.id} className="rounded-lg border bg-background">
-                      <div className="flex items-center gap-2 p-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{option.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {option.price_adjustment > 0
-                              ? `+ ${brl(option.price_adjustment)}`
-                              : "Sem acréscimo"}
-                            {" · "}
-                            Máx. {option.max_quantity}
-                            {upsell ? " · Turbine" : ""}
-                            {!option.active ? " · Inativa" : ""}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            setEditingOptionId(editingOptionId === option.id ? null : option.id)
-                          }
-                        >
-                          {editingOptionId === option.id ? "Fechar" : "Editar"}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          aria-label={`Excluir opção ${option.name}`}
-                          onClick={() => deleteOption(option)}
-                          disabled={savingId === option.id}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                      {editingOptionId === option.id && (
-                        <div className="border-t p-3">
-                          <ProductOptionUpsellControls
-                            option={option}
-                            saving={savingId === option.id}
-                            onSave={saveOption}
-                            onToggleUpsell={toggleUpsell}
-                            onSetUpsellPriority={setUpsellPriority}
-                            onCancel={() => setEditingOptionId(null)}
-                          />
-                        </div>
-                      )}
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Opções deste grupo
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => addOption(group)}
+                        disabled={savingId === `new-option:${group.id}`}
+                      >
+                        <Plus className="mr-2 h-3.5 w-3.5" /> Nova opção
+                      </Button>
                     </div>
-                  );
-                })}
+
+                    {options.length === 0 && (
+                      <p className="rounded-md bg-background p-3 text-sm text-muted-foreground">
+                        Nenhuma opção cadastrada neste grupo.
+                      </p>
+                    )}
+
+                    {options.map((option) => {
+                      const upsell = option.metadata?.upsell_enabled === true;
+                      return (
+                        <div key={option.id} className="rounded-lg border bg-background">
+                          <div className="flex items-center gap-2 p-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{option.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {option.price_adjustment > 0
+                                  ? `+ ${brl(option.price_adjustment)}`
+                                  : "Sem acréscimo"}
+                                {" · "}
+                                Máx. {option.max_quantity}
+                                {upsell ? " · Turbine" : ""}
+                                {!option.active ? " · Inativa" : ""}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                setEditingOptionId(editingOptionId === option.id ? null : option.id)
+                              }
+                            >
+                              {editingOptionId === option.id ? "Fechar" : "Editar"}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Excluir opção ${option.name}`}
+                              onClick={() => deleteOption(option)}
+                              disabled={savingId === option.id}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+
+                          {editingOptionId === option.id && (
+                            <div className="border-t p-3">
+                              <ProductOptionUpsellControls
+                                option={option}
+                                saving={savingId === option.id}
+                                onSave={saveOption}
+                                onToggleUpsell={toggleUpsell}
+                                onSetUpsellPriority={setUpsellPriority}
+                                onCancel={() => setEditingOptionId(null)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             )}
           </div>
