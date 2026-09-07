@@ -106,6 +106,10 @@ import {
   type SelectedAddress,
 } from "@/components/checkout/AddressAutocomplete";
 import { AddedToCartSheet, type AddedItem } from "@/components/checkout/AddedToCartSheet";
+import {
+  ProductDetailsDialog,
+  type PublicProductDetailsItem,
+} from "@/components/product/ProductDetailsDialog";
 import { MercadoPagoCardPayment } from "@/components/checkout/MercadoPagoCardPayment";
 import type { TransparentCardInput } from "@/lib/payments/transparent-card";
 import {
@@ -124,7 +128,11 @@ import {
   updateCartLineOption,
 } from "@/lib/cart/cart-line-options";
 import { getTurbineDisplayCandidates, type TurbineCandidate } from "@/lib/cart/turbine-candidates";
-import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
+import type {
+  ProductOption,
+  ProductOptionGroup,
+  SelectedOption,
+} from "@/lib/product/configuration/types";
 
 export const Route = createFileRoute("/$slug/")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -389,10 +397,12 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   });
   const productIds = useMemo(
     () =>
-      Array.from(new Set(cart.filter((item) => item.kind !== "builder").map((item) => item.id))),
-    [cart],
+      Array.from(
+        new Set(((data?.items ?? []) as Array<{ id: string }>).map((item) => item.id).filter(Boolean)),
+      ),
+    [data?.items],
   );
-  const { data: productOptionConfig } = useQuery<{
+  const { data: productOptionConfig, isLoading: productOptionConfigLoading } = useQuery<{
     groups: ProductOptionGroup[];
     options: ProductOption[];
   }>({
@@ -606,17 +616,37 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const totalQty = cart.reduce((s, x) => s + x.qty, 0);
 
   const [addedSheet, setAddedSheet] = useState<AddedItem | null>(null);
-  const addAndPrompt = (raw: {
+  const [detailsItem, setDetailsItem] = useState<PublicProductDetailsItem | null>(null);
+
+  const toDetailsItem = (raw: {
     id: string;
     name: string;
     price: number;
+    description?: string | null;
     image_url?: string | null;
-  }) => {
+  }): PublicProductDetailsItem => ({
+    id: raw.id,
+    name: raw.name,
+    price: raw.price,
+    description: raw.description ?? null,
+    image_url: raw.image_url ?? null,
+  });
+
+  const addAndPrompt = (
+    raw: {
+      id: string;
+      name: string;
+      price: number;
+      image_url?: string | null;
+    },
+    selections: SelectedOption[] = [],
+  ) => {
     const result = addCartItemWithResult(cart, {
       id: raw.id,
       name: raw.name,
       price: raw.price,
       kind: "product",
+      selections,
     });
     setCart(result.cart);
     setAddedSheet({
@@ -626,6 +656,40 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       price: result.line.price,
       qty: 1,
       image_url: raw.image_url ?? null,
+    });
+  };
+
+  const openProductDetails = (item: any, explicitPrice?: number) => {
+    const price = explicitPrice ?? Number(isPromoActiveNow(item) ? item.promo_price : item.price);
+    setDetailsItem(
+      toDetailsItem({
+        id: item.id,
+        name: item.name,
+        description: item.description ?? null,
+        image_url: item.image_url ?? null,
+        price,
+      }),
+    );
+  };
+
+  const quickAddOrConfigure = (item: any, explicitPrice?: number) => {
+    if (productOptionConfigLoading) {
+      openProductDetails(item, explicitPrice);
+      return;
+    }
+    const hasGroups = (productOptionConfig?.groups ?? []).some(
+      (group) => group.product_id === item.id,
+    );
+    if (hasGroups) {
+      openProductDetails(item, explicitPrice);
+      return;
+    }
+    const price = explicitPrice ?? Number(isPromoActiveNow(item) ? item.promo_price : item.price);
+    addAndPrompt({
+      id: item.id,
+      name: item.name,
+      price,
+      image_url: item.image_url ?? null,
     });
   };
   const suggestions = useMemo(() => {
@@ -1095,14 +1159,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         size="sm"
                         className="mt-2 w-full rounded-xl"
                         disabled={!effectiveOpen}
-                        onClick={() =>
-                          addAndPrompt({
-                            id: it.id,
-                            name: it.name,
-                            price: Number(it.promo_price),
-                            image_url: it.image_url,
-                          })
-                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          quickAddOrConfigure(it, Number(it.promo_price));
+                        }}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                       </Button>
@@ -1190,14 +1250,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         <FeaturedSections
           slug={slug}
           effectiveOpen={effectiveOpen}
-          onAdd={(it) =>
-            addAndPrompt({
-              id: it.id,
-              name: it.name,
-              price: getFeaturedItemPrice(it),
-              image_url: (it as any).image_url,
-            })
-          }
+          onAdd={(it) => quickAddOrConfigure(it, getFeaturedItemPrice(it))}
           onOpenBuilder={(builderId) =>
             navigate({
               to: "/$slug/montar",
@@ -1261,7 +1314,13 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                         return (
                           <Card
                             key={it.id}
-                            className="group relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openProductDetails(it)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") openProductDetails(it);
+                            }}
+                            className="group relative flex cursor-pointer items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
                           >
                             <button
                               type="button"
@@ -1318,14 +1377,13 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                                 size="icon"
                                 className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
                                 disabled={!effectiveOpen}
-                                onClick={() =>
-                                  addAndPrompt({
-                                    id: it.id,
-                                    name: it.name,
-                                    price: Number(hasPromo ? it.promo_price : it.price),
-                                    image_url: it.image_url,
-                                  })
-                                }
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  quickAddOrConfigure(
+                                    it,
+                                    Number(hasPromo ? it.promo_price : it.price),
+                                  );
+                                }}
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -1359,6 +1417,29 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           hasCart={totalQty > 0}
         />
       </div>
+
+      <ProductDetailsDialog
+        open={!!detailsItem}
+        onOpenChange={(open) => {
+          if (!open) setDetailsItem(null);
+        }}
+        item={detailsItem}
+        groups={productOptionConfig?.groups ?? []}
+        options={productOptionConfig?.options ?? []}
+        loading={productOptionConfigLoading}
+        onAdd={({ item, selections, finalPrice }) => {
+          addAndPrompt(
+            {
+              id: item.id,
+              name: item.name,
+              price: finalPrice,
+              image_url: item.image_url ?? null,
+            },
+            selections,
+          );
+          setDetailsItem(null);
+        }}
+      />
 
       <Dialog open={builderUnavailableOpen} onOpenChange={setBuilderUnavailableOpen}>
         <DialogContent className="max-w-sm rounded-2xl">
@@ -1438,22 +1519,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         onDecrementTurbineCandidate={(candidate) => applyTurbineAction(candidate, "decrement")}
         suggestions={suggestions}
         onAddSuggestion={(it: any) => {
-          const price = Number(isPromoActiveNow(it) ? it.promo_price : it.price);
-          const result = addCartItemWithResult(cart, {
-            id: it.id,
-            name: it.name,
-            price,
-            kind: "product",
-          });
-          setCart(result.cart);
-          setAddedSheet({
-            lineId: result.line.lineId,
-            id: it.id,
-            name: it.name,
-            price: result.line.price,
-            qty: 1,
-            image_url: it.image_url ?? null,
-          });
+          setAddedSheet(null);
+          quickAddOrConfigure(it);
         }}
         onContinue={() => setAddedSheet(null)}
         onGoToCart={() => {
