@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { printOrder as printOrderSvc, type PrintableOrder } from "@/lib/print-service";
+import { groupOrderItemAddons, formatOrderItemAddonLabel, orderItemAddonPrintLines } from "@/lib/orders/order-item-options";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Pedidos — Localix" }] }),
@@ -58,7 +59,7 @@ type Order = {
   customer_phone: string | null;
   address: string | null;
   payment_method: string | null;
-  items: Array<{ name: string; qty: number; price: number }>;
+  items: Array<{ name: string; qty: number; price: number; notes?: string | null; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> }>;
   total: number;
   status: string;
   notes?: string | null;
@@ -523,7 +524,14 @@ function OrdersPage() {
       customer_name: o.customer_name,
       customer_phone: o.customer_phone,
       address: o.address,
-      items: items.map((it: any) => ({ name: String(it.name ?? ""), qty: Number(it.qty ?? 1), price: Number(it.price ?? 0), notes: it.notes ?? null, options: Array.isArray(it.options) ? it.options : null, removed: Array.isArray(it.removed) ? it.removed : null })),
+      items: items.map((it: any) => ({
+        name: String(it.name ?? ""),
+        qty: Number(it.qty ?? 1),
+        price: Number(it.price ?? 0),
+        notes: it.notes ?? null,
+        options: orderItemAddonPrintLines(it),
+        removed: Array.isArray(it.removed) ? it.removed : null,
+      })),
       notes: o.notes ?? null,
       payment_method: o.payment_method,
       total: Number(o.total),
@@ -653,7 +661,22 @@ function OrderCard({ order: o, assignment, accent, nowMs, isActiveStatus, onDrag
       {tone && <div className={`flex items-center justify-between rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.chip}`}><span className="flex items-center gap-1"><TimerIcon className="h-3 w-3" /> {mins} min</span><span>{tone.label}</span></div>}
       <div className="space-y-1 text-xs text-muted-foreground">{o.customer_phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /> {formatPhone(o.customer_phone)}</p>}{o.address && <p className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3 w-3 shrink-0" /> <span className="truncate">{o.address}</span></p>}{o.payment_method && <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3 shrink-0" /> {paymentMethodLabel(o.payment_method)}</p>}</div>
       {isDelivery && o.status === "pronto" && <div className={`rounded-md border p-2 text-xs ${needsDispatch ? "border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "bg-muted/50"}`}>{assignment ? <div className="space-y-1"><p className="font-semibold">Motoboy: {assignment.driver_name ?? "Designado"}</p><p className="text-muted-foreground">Entrega: {assignment.status}</p></div> : <p className="font-semibold">Motoboy ainda não designado</p>}</div>}
-      <ul className="rounded-md bg-muted/60 p-2 text-xs">{items.map((it, i) => <li key={i} className="flex justify-between gap-2"><span className="truncate">{it.qty}x {it.name}</span><span className="shrink-0 tabular-nums">{brl(Number(it.price) * it.qty)}</span></li>)}</ul>
+      <ul className="rounded-md bg-muted/60 p-2 text-xs">
+        {items.map((it, i) => (
+          <li key={i} className="border-b border-border/40 py-1.5 last:border-0">
+            <div className="flex justify-between gap-2">
+              <span className="truncate font-medium">{it.qty}x {it.name}</span>
+              <span className="shrink-0 tabular-nums">{brl(Number(it.price) * it.qty)}</span>
+            </div>
+            {groupOrderItemAddons(it).map(({ groupName, addons }) => (
+              <div key={groupName} className="mt-1 pl-2 text-[11px] text-muted-foreground">
+                <span className="font-semibold">{groupName}: </span>
+                {addons.map((addon) => formatOrderItemAddonLabel(addon)).join(", ")}
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
       {o.notes && <div className="flex items-start gap-1.5 rounded-md border border-amber-500/30 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"><StickyNote className="mt-0.5 h-3 w-3 shrink-0" /><span className="whitespace-pre-wrap">{o.notes}</span></div>}
       <div className="grid grid-cols-2 gap-1.5 pt-1" onClick={stop}>
         {hasDeliveryFlowAction && <Button asChild size="sm" className="col-span-2 h-8 gap-1 text-xs"><a href={dispatchHref(o.id)} onClick={stop}><Bike className="h-3.5 w-3.5" />{needsDispatch ? "Despachar entrega" : "Acompanhar entrega"}</a></Button>}
@@ -669,7 +692,26 @@ function OrderCard({ order: o, assignment, accent, nowMs, isActiveStatus, onDrag
 function OrderDetailsDrawer({ order, onOpenChange, onPrint, onPrintKitchen, onWhatsapp }: { order: Order | null; onOpenChange: (open: boolean) => void; onPrint: () => void; onPrintKitchen: () => void; onWhatsapp: () => void; }) {
   const items = order && Array.isArray(order.items) ? order.items : [];
   const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
-  return <Sheet open={!!order} onOpenChange={onOpenChange}><SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">{order && <><SheetHeader className="text-left"><SheetTitle className="font-display text-2xl">Pedido #{order.order_number ?? "—"}</SheetTitle><SheetDescription>{new Date(order.created_at).toLocaleString("pt-BR")} · {order.status}</SheetDescription></SheetHeader><div className="mt-4 space-y-4 text-sm"><section className="rounded-lg border p-3"><h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Cliente</h3><p className="font-semibold">{order.customer_name}</p>{order.customer_phone && <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {formatPhone(order.customer_phone)}</p>}{order.address && <p className="mt-1 flex items-start gap-1.5 text-muted-foreground"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{order.address}</span></p>}</section>{order.payment_method && <section className="rounded-lg border p-3"><h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">Pagamento</h3><p className="flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> {paymentMethodLabel(order.payment_method)}</p></section>}<section className="rounded-lg border p-3"><h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Itens</h3><ul className="space-y-2">{items.map((it, i) => <li key={i} className="flex justify-between gap-3"><div><p className="font-medium">{it.qty}x {it.name}</p></div><p className="shrink-0 tabular-nums">{brl(Number(it.price) * Number(it.qty))}</p></li>)}</ul><div className="mt-3 border-t pt-2 text-sm"><div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">{brl(subtotal)}</span></div><div className="mt-1 flex justify-between font-display text-lg font-extrabold"><span>Total</span><span className="tabular-nums text-primary">{brl(Number(order.total))}</span></div></div></section>{order.notes && <section className="rounded-lg border border-amber-500/30 bg-amber-50 p-3 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"><h3 className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase"><StickyNote className="h-3.5 w-3.5" /> Observações</h3><p className="whitespace-pre-wrap">{order.notes}</p></section>}<section className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5" />Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}</section><div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3"><Button variant="outline" className="gap-1.5" onClick={onPrintKitchen}><Printer className="h-4 w-4" /> Cozinha</Button><Button variant="outline" className="gap-1.5" onClick={onPrint}><Printer className="h-4 w-4" /> Cupom</Button><Button variant="outline" className="col-span-2 gap-1.5 sm:col-span-1" onClick={onWhatsapp}><MessageCircle className="h-4 w-4" /> WhatsApp</Button></div></div></>}</SheetContent></Sheet>;
+  return <Sheet open={!!order} onOpenChange={onOpenChange}><SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">{order && <><SheetHeader className="text-left"><SheetTitle className="font-display text-2xl">Pedido #{order.order_number ?? "—"}</SheetTitle><SheetDescription>{new Date(order.created_at).toLocaleString("pt-BR")} · {order.status}</SheetDescription></SheetHeader><div className="mt-4 space-y-4 text-sm"><section className="rounded-lg border p-3"><h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Cliente</h3><p className="font-semibold">{order.customer_name}</p>{order.customer_phone && <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {formatPhone(order.customer_phone)}</p>}{order.address && <p className="mt-1 flex items-start gap-1.5 text-muted-foreground"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{order.address}</span></p>}</section>{order.payment_method && <section className="rounded-lg border p-3"><h3 className="mb-1 text-xs font-bold uppercase text-muted-foreground">Pagamento</h3><p className="flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> {paymentMethodLabel(order.payment_method)}</p></section>}<section className="rounded-lg border p-3"><h3 className="mb-2 text-xs font-bold uppercase text-muted-foreground">Itens</h3><ul className="space-y-2">
+              {items.map((it, i) => (
+                <li key={i} className="flex justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{it.qty}x {it.name}</p>
+                    {groupOrderItemAddons(it).map(({ groupName, addons }) => (
+                      <div key={groupName} className="mt-1 text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground/80">{groupName}</p>
+                        {addons.map((addon, index) => (
+                          <p key={`${addon.optionId || addon.name}-${index}`}>
+                            • {formatOrderItemAddonLabel(addon)}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="shrink-0 tabular-nums">{brl(Number(it.price) * Number(it.qty))}</p>
+                </li>
+              ))}
+            </ul><div className="mt-3 border-t pt-2 text-sm"><div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">{brl(subtotal)}</span></div><div className="mt-1 flex justify-between font-display text-lg font-extrabold"><span>Total</span><span className="tabular-nums text-primary">{brl(Number(order.total))}</span></div></div></section>{order.notes && <section className="rounded-lg border border-amber-500/30 bg-amber-50 p-3 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"><h3 className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase"><StickyNote className="h-3.5 w-3.5" /> Observações</h3><p className="whitespace-pre-wrap">{order.notes}</p></section>}<section className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5" />Atualizado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}</section><div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3"><Button variant="outline" className="gap-1.5" onClick={onPrintKitchen}><Printer className="h-4 w-4" /> Cozinha</Button><Button variant="outline" className="gap-1.5" onClick={onPrint}><Printer className="h-4 w-4" /> Cupom</Button><Button variant="outline" className="col-span-2 gap-1.5 sm:col-span-1" onClick={onWhatsapp}><MessageCircle className="h-4 w-4" /> WhatsApp</Button></div></div></>}</SheetContent></Sheet>;
 }
 
 function ColumnHeader({ col, count, total }: { col: (typeof COLUMNS)[number]; count: number; total: number; }) {
