@@ -56,6 +56,7 @@ describe("ProductDetailsDialog", () => {
       />,
     );
 
+    expect(html).toContain("Voltar");
     expect(html).toContain("Sanliver Clássico");
     expect(html).toContain("Pão brioche");
     expect(html).toContain("Qual o ponto da carne?");
