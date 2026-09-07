@@ -63,6 +63,8 @@ describe("ProductDetailsDialog", () => {
     expect(html).toContain("Obrigatório");
     expect(html).toContain("Mal passada");
     expect(html).toContain("Ao ponto");
+    expect(html).toContain("Observações (opcional)");
+    expect(html).toContain("Ex: tirar a cebola, maionese e etc.");
     expect(html).toContain("Complete as escolhas obrigatórias");
     expect(html).toContain("disabled");
   });
