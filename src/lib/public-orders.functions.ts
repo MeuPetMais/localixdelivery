@@ -15,7 +15,16 @@ export const getPublicOrderById = createServerFn({ method: "POST" })
       .select(ORDER_FIELDS)
       .eq("id", data.id)
       .maybeSingle();
-    return { order };
+
+    const { data: pricing } = order
+      ? await supabaseAdmin
+          .from("order_pricing_snapshot")
+          .select("subtotal, delivery_fee, platform_fee, service_fee_payer, customer_total")
+          .eq("order_id", order.id)
+          .maybeSingle()
+      : { data: null };
+
+    return { order, pricing };
   });
 
 export const getMyOrders = createServerFn({ method: "GET" })
