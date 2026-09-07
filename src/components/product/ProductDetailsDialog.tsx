@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -43,13 +44,18 @@ export function ProductDetailsDialog({
     item: PublicProductDetailsItem;
     selections: SelectedOption[];
     finalPrice: number;
+    notes?: string;
   }) => void;
   loading?: boolean;
 }) {
   const [selections, setSelections] = useState<SelectedOption[]>([]);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (open) setSelections([]);
+    if (open) {
+      setSelections([]);
+      setNotes("");
+    }
   }, [open, item?.id]);
 
   const productGroups = useMemo(
@@ -290,6 +296,22 @@ export function ProductDetailsDialog({
             );
           })}
 
+          <div className="space-y-2 border-t pt-4">
+            <div>
+              <h3 className="font-semibold">Observações (opcional)</h3>
+              <p className="text-xs text-muted-foreground">
+                Informe ajustes específicos para este item.
+              </p>
+            </div>
+            <Textarea
+              rows={3}
+              value={notes}
+              maxLength={300}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Ex: tirar a cebola, maionese e etc."
+            />
+          </div>
+
           {!loading && !validation.valid && productGroups.length > 0 && (
             <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
               Complete as escolhas obrigatórias para adicionar este produto.
@@ -301,7 +323,7 @@ export function ProductDetailsDialog({
             className="h-12 w-full rounded-xl text-base font-bold"
             disabled={loading || !validation.valid}
             onClick={() => {
-              onAdd({ item, selections, finalPrice });
+              onAdd({ item, selections, finalPrice, notes: notes.trim() || undefined });
               onOpenChange(false);
             }}
           >
