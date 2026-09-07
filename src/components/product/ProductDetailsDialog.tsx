@@ -32,6 +32,7 @@ export function ProductDetailsDialog({
   groups,
   options,
   onAdd,
+  loading = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,6 +44,7 @@ export function ProductDetailsDialog({
     selections: SelectedOption[];
     finalPrice: number;
   }) => void;
+  loading?: boolean;
 }) {
   const [selections, setSelections] = useState<SelectedOption[]>([]);
 
@@ -167,7 +169,13 @@ export function ProductDetailsDialog({
             <span className="font-display text-xl font-extrabold text-primary">{brl(item.price)}</span>
           </div>
 
-          {visibleGroups.map((group) => {
+          {loading && (
+            <p className="rounded-lg bg-muted px-3 py-3 text-sm text-muted-foreground">
+              Carregando opções do produto...
+            </p>
+          )}
+
+          {!loading && visibleGroups.map((group) => {
             const groupOptions = productOptions.filter((option) => option.group_id === group.id);
             const totalSelected = groupQuantity(group.id);
             const isSingle = group.type === "SINGLE" || group.type === "BOOLEAN";
@@ -271,7 +279,7 @@ export function ProductDetailsDialog({
             );
           })}
 
-          {!validation.valid && productGroups.length > 0 && (
+          {!loading && !validation.valid && productGroups.length > 0 && (
             <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
               Complete as escolhas obrigatórias para adicionar este produto.
             </p>
@@ -280,7 +288,7 @@ export function ProductDetailsDialog({
           <Button
             type="button"
             className="h-12 w-full rounded-xl text-base font-bold"
-            disabled={!validation.valid}
+            disabled={loading || !validation.valid}
             onClick={() => {
               onAdd({ item, selections, finalPrice });
               onOpenChange(false);
