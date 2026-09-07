@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { ArrowLeft, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -144,6 +144,17 @@ export function ProductDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto rounded-2xl p-0">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => onOpenChange(false)}
+          className="absolute left-3 top-3 z-20 rounded-full bg-background/90 px-3 shadow-md backdrop-blur"
+          aria-label="Voltar ao cardápio"
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Voltar
+        </Button>
         <div className="overflow-hidden rounded-t-2xl bg-muted">
           {item.image_url ? (
             <img src={item.image_url} alt={item.name} className="h-56 w-full object-cover" />
