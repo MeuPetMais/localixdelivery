@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { paymentMethodLabel, orderReceivedNotification } from "@/lib/checkout/paymentMethodLabel";
+import { groupOrderItemAddons, formatOrderItemAddonLabel } from "@/lib/orders/order-item-options";
 
 
 
