@@ -640,6 +640,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       image_url?: string | null;
     },
     selections: SelectedOption[] = [],
+    notes?: string,
   ) => {
     const result = addCartItemWithResult(cart, {
       id: raw.id,
@@ -647,6 +648,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
       price: raw.price,
       kind: "product",
       selections,
+      notes: notes?.trim() || undefined,
     });
     setCart(result.cart);
     setAddedSheet({
@@ -1434,7 +1436,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
         groups={productOptionConfig?.groups ?? []}
         options={productOptionConfig?.options ?? []}
         loading={productOptionConfigLoading}
-        onAdd={({ item, selections, finalPrice }) => {
+        onAdd={({ item, selections, finalPrice, notes }) => {
           addAndPrompt(
             {
               id: item.id,
@@ -1443,6 +1445,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
               image_url: item.image_url ?? null,
             },
             selections,
+            notes,
           );
           setDetailsItem(null);
         }}
@@ -1619,7 +1622,6 @@ function CheckoutSheet({
   const selectedPayment = paymentOptions.find((p) => p.id === paymentId) ?? paymentOptions[0];
   const isTransparentCardPayment =
     !!selectedPayment?.online && selectedPayment.method === "credit_card";
-  const [notes, setNotes] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"list" | "form">("list");
@@ -1892,7 +1894,7 @@ function CheckoutSheet({
       const res = await create({
         data: {
           restaurantSlug: restaurant.slug,
-          customer: { name, phone, address: fullAddress, notes: notes || undefined },
+          customer: { name, phone, address: fullAddress },
           items: cart.map((c) => ({
             id: c.id,
             name: c.name,
@@ -2015,9 +2017,14 @@ function CheckoutSheet({
       <div className="mt-4 space-y-2">
         {cart.map((c) => (
           <div key={c.lineId} className="flex items-center justify-between rounded-lg border p-3">
-            <div>
+            <div className="min-w-0">
               <p className="font-medium">{c.name}</p>
               <p className="text-sm text-muted-foreground">{brl(c.price)}</p>
+              {c.notes && (
+                <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
+                  Obs.: {c.notes}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -2303,11 +2310,6 @@ function CheckoutSheet({
             </p>
           )}
         </div>
-        <div className="space-y-1.5">
-          <Label>Observações (opcional)</Label>
-          <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
-
         <div className="space-y-1.5">
           <Label className="flex items-center gap-1.5">
             <Ticket className="h-4 w-4" /> Cupom de desconto
