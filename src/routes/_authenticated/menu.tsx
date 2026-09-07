@@ -32,6 +32,7 @@ import { deleteProductImage } from "@/lib/image-upload";
 import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
 import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
+import { ProductOptionGroupControls } from "@/components/product/ProductOptionGroupControls";
 
 export const Route = createFileRoute("/_authenticated/menu")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -730,6 +731,17 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
     await refresh();
   }
 
+  async function saveGroup(group: ProductOptionGroup, patch: Partial<ProductOptionGroup>) {
+    setSavingId(group.id);
+    const { error } = await supabase
+      .from("product_option_groups")
+      .update(patch as never)
+      .eq("id", group.id);
+    setSavingId(null);
+    if (error) return toast.error(error.message);
+    await refresh();
+  }
+
   async function addOption(group: ProductOptionGroup) {
     setSavingId(`new-option:${group.id}`);
     const { error } = await supabase.from("product_options").insert({
@@ -809,7 +821,12 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       {data.groups.map((group) => {
         const options = data.options.filter((option) => option.group_id === group.id);
         return (
-          <div key={group.id} className="space-y-2 rounded-lg border p-3">
+          <div key={group.id} className="space-y-3 rounded-lg border p-3">
+            <ProductOptionGroupControls
+              group={group}
+              saving={savingId === group.id}
+              onSave={saveGroup}
+            />
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">{group.name}</p>
