@@ -33,6 +33,7 @@ import type { ProductOption, ProductOptionGroup } from "@/lib/product/configurat
 import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
 import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
 import { ProductOptionGroupWizard } from "@/components/product/ProductOptionGroupWizard";
+import { ProductOptionsCopyDialog } from "@/components/product/ProductOptionsCopyDialog";
 
 export const Route = createFileRoute("/_authenticated/menu")({
   head: () => ({ meta: [{ title: "Cardápio — Localix" }] }),
@@ -681,6 +682,7 @@ function ItemDialog({
 
 export function ProductOptionsSection({ productId }: { productId: string }) {
   const qc = useQueryClient();
+  const restaurant = useRestaurant();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [wizardGroupId, setWizardGroupId] = useState<string | null>(null);
@@ -859,15 +861,24 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
             Configure em etapas. Depois de concluir, cada grupo fica resumido aqui.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={addGroup}
-          disabled={savingId === "new-group"}
-        >
-          <Plus className="mr-2 h-3.5 w-3.5" /> Novo grupo
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          {restaurant?.id && (
+            <ProductOptionsCopyDialog
+              restaurantId={restaurant.id}
+              targetProductId={productId}
+              targetGroups={data.groups}
+            />
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={addGroup}
+            disabled={savingId === "new-group"}
+          >
+            <Plus className="mr-2 h-3.5 w-3.5" /> Novo grupo
+          </Button>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Carregando opções...</p>}
