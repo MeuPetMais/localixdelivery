@@ -750,6 +750,7 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
     setSavingId(null);
     if (error) return toast.error(error.message);
     setEditingGroupId(null);
+    setExpandedGroupId(null);
     await refresh();
     toast.success("Grupo atualizado");
   }
