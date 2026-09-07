@@ -52,8 +52,32 @@ type CloneConfigurationData = {
   group_ids: string[];
 };
 
-function normalizeGroupName(value: string) {
+export function normalizeGroupName(value: string) {
   return value.trim().toLocaleLowerCase("pt-BR");
+}
+
+export function validateCloneDependencies(
+  groups: ProductOptionGroup[],
+  options: ProductOption[],
+) {
+  const selectedGroupIds = new Set(groups.map((group) => group.id));
+  const selectedOptionIds = new Set(options.map((option) => option.id));
+  const errors: string[] = [];
+
+  for (const group of groups) {
+    if (group.depends_on_group_id && !selectedGroupIds.has(group.depends_on_group_id)) {
+      errors.push(
+        `O grupo "${group.name}" depende de outro grupo que também precisa ser selecionado.`,
+      );
+    }
+    if (group.depends_on_option_id && !selectedOptionIds.has(group.depends_on_option_id)) {
+      errors.push(
+        `O grupo "${group.name}" depende de uma opção que também precisa ser copiada.`,
+      );
+    }
+  }
+
+  return errors;
 }
 
 export const cloneConfigurationGroups = createServerFn({ method: "POST" })
@@ -108,20 +132,9 @@ export const cloneConfigurationGroups = createServerFn({ method: "POST" })
     if (sourceOptionsError) throw sourceOptionsError;
     const sourceOptions = (sourceOptionsRaw ?? []) as unknown as ProductOption[];
 
-    const selectedGroupIds = new Set(sourceGroups.map((group) => group.id));
-    const selectedOptionIds = new Set(sourceOptions.map((option) => option.id));
-
-    for (const group of sourceGroups) {
-      if (group.depends_on_group_id && !selectedGroupIds.has(group.depends_on_group_id)) {
-        throw new Error(
-          `O grupo "${group.name}" depende de outro grupo que também precisa ser selecionado.`,
-        );
-      }
-      if (group.depends_on_option_id && !selectedOptionIds.has(group.depends_on_option_id)) {
-        throw new Error(
-          `O grupo "${group.name}" depende de uma opção que também precisa ser copiada.`,
-        );
-      }
+    const dependencyErrors = validateCloneDependencies(sourceGroups, sourceOptions);
+    if (dependencyErrors.length > 0) {
+      throw new Error(dependencyErrors[0]);
     }
 
     const { data: targetGroupsRaw, error: targetGroupsError } = await supabase
