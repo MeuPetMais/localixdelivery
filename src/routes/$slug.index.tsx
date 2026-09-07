@@ -1102,7 +1102,14 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                 {promos.map((it: any) => (
                   <Card
                     key={`promo-${it.id}`}
-                    className="group relative flex w-[200px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border-2 border-destructive/20 bg-card shadow-sm transition hover:shadow-elegant sm:w-[220px]"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openProductDetails(it, Number(it.promo_price))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ")
+                        openProductDetails(it, Number(it.promo_price));
+                    }}
+                    className="group relative flex w-[200px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-2xl border-2 border-destructive/20 bg-card shadow-sm transition hover:shadow-elegant sm:w-[220px]"
                   >
                     <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
                       <span className="rounded-full bg-destructive px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-destructive-foreground shadow">
