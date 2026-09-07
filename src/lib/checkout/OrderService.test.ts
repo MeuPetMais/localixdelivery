@@ -718,6 +718,17 @@ describe("Checkout authoritative pricing", () => {
       productId: "prod-1",
       price: 33,
       selections: [{ group_id: "addon-group", option_id: "allowed-addon", quantity: 2 }],
+      addons: [
+        {
+          groupId: "addon-group",
+          groupName: "Adicionais",
+          optionId: "allowed-addon",
+          name: "Bacon",
+          quantity: 2,
+          unitPrice: 4,
+          total: 8,
+        },
+      ],
     });
   });
 
@@ -844,5 +855,19 @@ describe("Checkout authoritative pricing", () => {
     });
 
     expect(r.subtotal).toBe(27);
+    expect(r.items[0]).toMatchObject({
+      builderId: "builder-1",
+      addons: [
+        {
+          groupId: "group-1",
+          groupName: "Extras",
+          optionId: "opt-1",
+          name: "Borda",
+          quantity: 2,
+          unitPrice: 3.5,
+          total: 7,
+        },
+      ],
+    });
   });
 });
