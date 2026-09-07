@@ -22,6 +22,7 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { ReviewForm } from "@/components/ReviewForm";
 import { paymentMethodLabel, isOfflinePaymentMethod } from "@/lib/checkout/paymentMethodLabel";
+import { groupOrderItemAddons, formatOrderItemAddonLabel } from "@/lib/orders/order-item-options";
 
 export const Route = createFileRoute("/pedido-sucesso/$id")({
   head: () => ({ meta: [{ title: "Pedido recebido — Localix" }] }),
@@ -40,7 +41,7 @@ function statusIndex(status: string) {
   return i === -1 ? 0 : i;
 }
 
-type OrderItem = { id?: string; name: string; qty: number; price: number; notes?: string; addons?: Array<{ name: string }> };
+type OrderItem = { id?: string; name: string; qty: number; price: number; notes?: string; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> };
 
 function SuccessPage() {
   const { id } = Route.useParams();
@@ -50,6 +51,7 @@ function SuccessPage() {
   const cancelOrderFn = useServerFn(cancelOrderByCustomer);
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
+  const [pricingSnapshot, setPricingSnapshot] = useState<any>(null);
   const { user } = useCustomerAuth();
   const { rememberRestaurantRoute, prepareLoginRedirect } = useCustomerNavigation();
   const [waUrl, setWaUrl] = useState<string | null>(null);
@@ -100,6 +102,7 @@ function SuccessPage() {
       const data = res?.order;
       if (!mounted || !data) return;
       setOrder(data);
+      setPricingSnapshot(res?.pricing ?? null);
       const { data: r } = await (supabase as any)
         .from("restaurants_public")
         .select("id, name, slug, logo_url, delivery_time, avg_delivery_minutes")
@@ -141,6 +144,7 @@ function SuccessPage() {
           const refreshed = await fetchOrder({ data: { id } });
           if (cancelled) return;
           if (refreshed?.order) setOrder(refreshed.order);
+          if (refreshed?.pricing) setPricingSnapshot(refreshed.pricing);
           if (payment?.status === "APPROVED" || refreshed?.order?.status !== "aguardando_pagamento") return;
         } catch {
           // Webhook/realtime seguem como fonte principal; este polling é fallback de retorno.
@@ -155,14 +159,23 @@ function SuccessPage() {
     return () => { cancelled = true; };
   }, [order?.id, order?.status, order?.payment_method, id, fetchOrder, syncPaymentStatus]);
 
-  const { subtotal, delivery, items } = useMemo(() => {
+  const { subtotal, delivery, serviceFee, items } = useMemo(() => {
     const its: OrderItem[] = Array.isArray(order?.items) ? order.items : [];
-    const sub = its.reduce((s, it) => s + Number(it.price ?? 0) * Number(it.qty ?? 0), 0);
-    const total = Number(order?.total ?? 0);
-    const discount = Number(order?.discount ?? 0);
-    const del = Math.max(0, +(total + discount - sub).toFixed(2));
-    return { subtotal: sub, delivery: del, items: its };
-  }, [order]);
+    const itemSubtotal = its.reduce(
+      (sum, item) => sum + Number(item.price ?? 0) * Number(item.qty ?? 0),
+      0,
+    );
+    const snapshotSubtotal = Number(pricingSnapshot?.subtotal);
+    const sub = Number.isFinite(snapshotSubtotal) ? snapshotSubtotal : itemSubtotal;
+    const snapshotDelivery = Number(pricingSnapshot?.delivery_fee);
+    const delivery = Number.isFinite(snapshotDelivery) ? snapshotDelivery : 0;
+    const platformFee = Number(pricingSnapshot?.platform_fee);
+    const serviceFee =
+      pricingSnapshot?.service_fee_payer === "customer" && Number.isFinite(platformFee)
+        ? platformFee
+        : 0;
+    return { subtotal: sub, delivery, serviceFee, items: its };
+  }, [order, pricingSnapshot]);
 
   const etaLabel = useMemo(() => {
     const base = Number(order?.estimated_delivery_time ?? restaurant?.avg_delivery_minutes ?? 35) || 35;
@@ -357,11 +370,18 @@ function SuccessPage() {
               <li key={idx} className="flex justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-medium">{it.qty}x {it.name}</p>
-                  {Array.isArray(it.addons) && it.addons.length > 0 && (
-                    <ul className="mt-0.5 pl-3 text-xs text-muted-foreground">
-                      {it.addons.map((a, i) => <li key={i}>• {a.name}</li>)}
-                    </ul>
-                  )}
+                  {groupOrderItemAddons(it).map(({ groupName, addons }) => (
+                    <div key={groupName} className="mt-1 pl-3 text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground/80">{groupName}</p>
+                      <ul>
+                        {addons.map((addon, i) => (
+                          <li key={`${addon.optionId || addon.name}-${i}`}>
+                            • {formatOrderItemAddonLabel(addon)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                   {it.notes && <p className="mt-0.5 text-xs italic text-muted-foreground">Obs: {it.notes}</p>}
                 </div>
                 <span className="shrink-0 font-semibold">{brl(Number(it.price) * Number(it.qty))}</span>
@@ -374,6 +394,12 @@ function SuccessPage() {
               <div className="flex justify-between text-success"><span>Desconto</span><span>-{brl(Number(order.discount))}</span></div>
             )}
             <div className="flex justify-between"><span className="text-muted-foreground">Entrega</span><span>{brl(delivery)}</span></div>
+            {serviceFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxa de serviço Localix</span>
+                <span>{brl(serviceFee)}</span>
+              </div>
+            )}
             <div className="mt-1 flex justify-between border-t pt-2 font-display text-base font-bold">
               <span>Total</span><span className="text-primary">{brl(Number(order.total))}</span>
             </div>
