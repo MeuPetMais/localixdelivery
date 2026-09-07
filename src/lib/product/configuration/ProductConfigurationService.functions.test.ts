@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { mergeExistingOptionMetadata } from "./ProductConfigurationService.functions";
+import {
+  mergeExistingOptionMetadata,
+  normalizeGroupName,
+  validateCloneDependencies,
+} from "./ProductConfigurationService.functions";
 
 describe("ProductConfigurationService option metadata", () => {
   it("merges partial metadata instead of replacing existing keys", () => {
@@ -26,5 +30,77 @@ describe("ProductConfigurationService option metadata", () => {
     expect(sql).toContain('CREATE POLICY "po_public_read" ON public.product_options FOR SELECT');
     expect(sql).toContain('CREATE POLICY "po_owner_all" ON public.product_options FOR ALL');
     expect(sql).toContain("r.owner_id=auth.uid()");
+  });
+});
+
+
+describe("ProductConfigurationService clone helpers", () => {
+  it("normalizes group names for duplicate protection", () => {
+    expect(normalizeGroupName("  Qual Ponto da Carne? ")).toBe("qual ponto da carne?");
+  });
+
+  it("rejects a copied group when its dependency is outside the selection", () => {
+    const groups = [
+      {
+        id: "dependent",
+        product_id: "source",
+        name: "Molhos",
+        type: "MULTIPLE",
+        min_selection: 0,
+        max_selection: 2,
+        required: false,
+        price_strategy: "SUM",
+        display_order: 1,
+        depends_on_group_id: "base",
+        depends_on_option_id: null,
+      },
+    ] as any;
+
+    expect(validateCloneDependencies(groups, [])).toEqual([
+      'O grupo "Molhos" depende de outro grupo que também precisa ser selecionado.',
+    ]);
+  });
+
+  it("accepts dependencies when the referenced group and option are selected", () => {
+    const groups = [
+      {
+        id: "base",
+        product_id: "source",
+        name: "Base",
+        type: "SINGLE",
+        min_selection: 1,
+        max_selection: 1,
+        required: true,
+        price_strategy: "SUM",
+        display_order: 0,
+      },
+      {
+        id: "dependent",
+        product_id: "source",
+        name: "Molhos",
+        type: "MULTIPLE",
+        min_selection: 0,
+        max_selection: 2,
+        required: false,
+        price_strategy: "SUM",
+        display_order: 1,
+        depends_on_group_id: "base",
+        depends_on_option_id: "base-option",
+      },
+    ] as any;
+
+    const options = [
+      {
+        id: "base-option",
+        group_id: "base",
+        name: "Tradicional",
+        price_adjustment: 0,
+        max_quantity: 1,
+        display_order: 0,
+        active: true,
+      },
+    ] as any;
+
+    expect(validateCloneDependencies(groups, options)).toEqual([]);
   });
 });
