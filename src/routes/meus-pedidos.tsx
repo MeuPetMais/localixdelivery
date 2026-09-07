@@ -113,6 +113,9 @@ function MyOrders() {
             name: it.name,
             price: Number(it.price),
             qty: Number(it.qty),
+            kind: it.kind,
+            builderId: it.builderId,
+            selections: Array.isArray(it.selections) ? it.selections : undefined,
           })),
         ),
       );
