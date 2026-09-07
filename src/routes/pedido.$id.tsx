@@ -124,7 +124,7 @@ function TrackOrder() {
 
   const cancelled = order.status === "cancelado";
   const currentIdx = statusIndex(order.status);
-  const items: Array<{ name: string; price: number; qty: number }> = Array.isArray(order.items) ? order.items : [];
+  const items: Array<{ id?: string; name: string; price: number; qty: number; kind?: "product" | "builder"; builderId?: string; selections?: Array<{ group_id?: string; groupId?: string; option_id?: string; optionId?: string; quantity?: number; qty?: number }>; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> }> = Array.isArray(order.items) ? order.items : [];
   const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
   const fee = Math.max(0, Number(order.total) - subtotal + Number(order.discount ?? 0));
 
@@ -133,7 +133,17 @@ function TrackOrder() {
     try {
       sessionStorage.setItem(
         `repeat:${restaurant.slug}`,
-        JSON.stringify(items.map((it: any) => ({ id: it.id, name: it.name, price: Number(it.price), qty: Number(it.qty) }))),
+        JSON.stringify(
+          items.map((it: any) => ({
+            id: it.id,
+            name: it.name,
+            price: Number(it.price),
+            qty: Number(it.qty),
+            kind: it.kind,
+            builderId: it.builderId,
+            selections: Array.isArray(it.selections) ? it.selections : undefined,
+          })),
+        ),
       );
     } catch {}
     navigate({ to: "/$slug", params: { slug: restaurant.slug } });
@@ -197,9 +207,23 @@ function TrackOrder() {
           <h2 className="mb-3 font-display text-lg font-bold">Itens do pedido</h2>
           <ul className="space-y-2 text-sm">
             {items.map((it: any, i: number) => (
-              <li key={i} className="flex items-center justify-between">
-                <span>{it.qty}x {it.name}</span>
-                <span className="text-muted-foreground">{brl(Number(it.price) * Number(it.qty))}</span>
+              <li key={i} className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="font-medium">{it.qty}x {it.name}</span>
+                  {groupOrderItemAddons(it).map(({ groupName, addons }) => (
+                    <div key={groupName} className="mt-1 text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground/80">{groupName}</p>
+                      {addons.map((addon, index) => (
+                        <p key={`${addon.optionId || addon.name}-${index}`}>
+                          • {formatOrderItemAddonLabel(addon)}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <span className="shrink-0 text-muted-foreground">
+                  {brl(Number(it.price) * Number(it.qty))}
+                </span>
               </li>
             ))}
           </ul>
