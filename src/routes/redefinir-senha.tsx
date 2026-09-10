@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, KeyRound, CheckCircle2 } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
+import { hasRecoveryParams, validateRecoveryLink } from "@/lib/password-recovery";
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({ meta: [{ title: "Redefinir senha — Localix" }] }),
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/redefinir-senha")({
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
+  const [checkingToken, setCheckingToken] = useState(true);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,18 +26,40 @@ function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Detect recovery errors from URL hash (expired/invalid token)
     if (typeof window === "undefined") return;
-    const hash = window.location.hash.replace(/^#/, "");
-    const params = new URLSearchParams(hash);
-    const err = params.get("error_description") || params.get("error");
-    if (err) {
-      setTokenError(
-        /expired/i.test(err)
-          ? "O link de redefinição expirou. Solicite um novo."
-          : "Link inválido ou já utilizado. Solicite um novo.",
-      );
+
+    let alive = true;
+
+    async function prepareRecoverySession() {
+      const href = window.location.href;
+      const hadRecoveryParams = hasRecoveryParams(href);
+
+      try {
+        const result = await validateRecoveryLink(supabase.auth, href);
+        if (hadRecoveryParams) window.history.replaceState(null, "", "/redefinir-senha");
+        if (!alive) return;
+
+        if (!result.ok) {
+          const message = result.message ?? "";
+          setTokenError(
+            /expired/i.test(message)
+              ? "O link de redefinição expirou. Solicite um novo."
+              : "Link inválido ou já utilizado. Solicite um novo.",
+          );
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.error("[auth-debug] recovery:prepare-session", err);
+        if (alive) setTokenError("Link inválido ou já utilizado. Solicite um novo.");
+      } finally {
+        if (alive) setCheckingToken(false);
+      }
     }
+
+    prepareRecoverySession();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -93,6 +117,16 @@ function ResetPasswordPage() {
                 <p className="mt-1 text-sm text-muted-foreground">Sua senha foi alterada com sucesso.</p>
               </div>
               <Button className="h-11 w-full" onClick={goToPanel}>Entrar no painel</Button>
+            </div>
+          ) : checkingToken ? (
+            <div className="space-y-5 text-center">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-extrabold">Validando link</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Aguarde um instante.</p>
+              </div>
             </div>
           ) : tokenError ? (
             <div className="space-y-5 text-center">

@@ -143,7 +143,12 @@ function RootComponent() {
       if (import.meta.env.DEV) {
         console.info("[auth-debug] onAuthStateChange(root)", { event, hasSession: !!session, userId: session?.user?.id, expiresAt: session?.expires_at });
       }
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      if (
+        event !== "SIGNED_IN" &&
+        event !== "SIGNED_OUT" &&
+        event !== "USER_UPDATED" &&
+        event !== "PASSWORD_RECOVERY"
+      ) return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
