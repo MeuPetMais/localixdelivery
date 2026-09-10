@@ -52,6 +52,16 @@ type MenuItem = {
   is_paused?: boolean | null;
 };
 
+type SyncedFlavorRow = {
+  option_id: string;
+  option_group_id: string;
+  option_name: string;
+  option_price_delta: number;
+  option_max_qty: number;
+  option_position: number;
+  linked_menu_item_id: string;
+};
+
 function normalize(value: string) {
   return value
     .normalize("NFD")
@@ -166,64 +176,29 @@ export function BuilderCatalogFlavorControls({
     }
 
     setSaving(true);
-    const previousWasCatalog = sourceType === "MENU_ITEMS";
     try {
-      const { error: groupError } = await supabase
-        .from("builder_groups")
-        .update({ source_type: "MENU_ITEMS", price_strategy: "MAX_MENU_ITEM" })
-        .eq("id", groupId);
-      if (groupError) throw groupError;
-
-      const existingByMenuItem = new Map(
-        options.filter((option) => option.menu_item_id).map((option) => [option.menu_item_id!, option]),
+      const { data: syncedRows, error } = await (supabase as any).rpc(
+        "sync_builder_catalog_flavors",
+        {
+          p_group_id: groupId,
+          p_menu_item_ids: selectedItems.map((item) => item.id),
+        },
       );
-      const missing = selectedItems.filter((item) => !existingByMenuItem.has(item.id));
+      if (error) throw error;
 
-      if (missing.length) {
-        const rows = missing.map((item, index) => ({
-          group_id: groupId,
-          name: item.name,
-          price_delta: 0,
-          max_qty: 1,
-          position: options.length + index,
-          menu_item_id: item.id,
-        }));
-        const { error: insertError } = await supabase.from("builder_options").insert(rows);
-        if (insertError) throw insertError;
-      }
-
-      const { data: refreshed, error: refreshError } = await supabase
-        .from("builder_options")
-        .select("id, group_id, name, price_delta, max_qty, position, menu_item_id")
-        .eq("group_id", groupId)
-        .order("position");
-      if (refreshError) throw refreshError;
-
-      const rows = (refreshed ?? []) as BuilderCatalogFlavorOption[];
-      const removeIds = rows
-        .filter((option) => !option.menu_item_id || !selected.has(option.menu_item_id))
-        .map((option) => option.id);
-      if (removeIds.length) {
-        const { error: deleteError } = await supabase
-          .from("builder_options")
-          .delete()
-          .in("id", removeIds);
-        if (deleteError) throw deleteError;
-      }
-
-      const finalOptions: BuilderCatalogFlavorOption[] = selectedItems.map((item, index) => {
-        const existing = rows.find((option) => option.menu_item_id === item.id);
-        return {
-          id: existing?.id ?? `catalog:${item.id}`,
-          group_id: groupId,
-          name: item.name,
-          price_delta: 0,
-          max_qty: 1,
-          position: existing?.position ?? index,
-          menu_item_id: item.id,
-          menu_item: item,
-        };
-      });
+      const menuById = new Map(selectedItems.map((item) => [item.id, item]));
+      const finalOptions: BuilderCatalogFlavorOption[] = ((syncedRows ?? []) as SyncedFlavorRow[])
+        .map((row) => ({
+          id: row.option_id,
+          group_id: row.option_group_id,
+          name: row.option_name,
+          price_delta: Number(row.option_price_delta) || 0,
+          max_qty: Number(row.option_max_qty) || 1,
+          position: Number(row.option_position) || 0,
+          menu_item_id: row.linked_menu_item_id,
+          menu_item: menuById.get(row.linked_menu_item_id) ?? null,
+        }))
+        .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name, "pt-BR"));
 
       onSynced({
         source_type: "MENU_ITEMS",
@@ -232,12 +207,6 @@ export function BuilderCatalogFlavorControls({
       });
       toast.success(`${finalOptions.length} sabores sincronizados com o cardápio.`);
     } catch (error: any) {
-      if (!previousWasCatalog) {
-        await supabase
-          .from("builder_groups")
-          .update({ source_type: "MANUAL", price_strategy: "SUM" })
-          .eq("id", groupId);
-      }
       toast.error(error?.message ?? "Não foi possível sincronizar os sabores.");
     } finally {
       setSaving(false);
