@@ -13,6 +13,11 @@ import { Progress } from "@/components/ui/progress";
 import { brl } from "@/lib/format";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import type { Builder } from "@/components/BuilderConfigurator";
+import {
+  calculateBuilderCatalogUnitPrice,
+  currentBuilderCatalogPrice,
+  type BuilderCatalogProduct,
+} from "@/lib/checkout/builder-catalog-pricing";
 
 type Selection = Record<string, Record<string, number>>;
 
@@ -38,9 +43,6 @@ function BuildYourOwnPage() {
     setSelectedBuilderId(builderId);
   }, [builderId]);
 
-  useEffect(() => {
-  }, [slug]);
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ["build-your-own-page", slug],
     enabled: !!slug,
@@ -51,7 +53,6 @@ function BuildYourOwnPage() {
         .select("id, name, slug, logo_url, is_open, opening_hours, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
-
 
       if (restaurantError) {
         console.error("[Build] restaurant error:", restaurantError);
@@ -73,20 +74,57 @@ function BuildYourOwnPage() {
         .eq("is_active", true)
         .order("position");
 
-
       if (buildError) {
         console.error("[Build] config error:", buildError);
         throw buildError;
       }
 
+      const linkedMenuItemIds = Array.from(
+        new Set(
+          (buildConfig ?? [])
+            .flatMap((builder: any) => builder.builder_groups ?? [])
+            .flatMap((group: any) => group.builder_options ?? [])
+            .map((option: any) => option.menu_item_id)
+            .filter(Boolean),
+        ),
+      ) as string[];
+
+      let linkedMenuItems: BuilderCatalogProduct[] = [];
+      if (linkedMenuItemIds.length > 0) {
+        const { data: menuRows, error: menuError } = await (supabase as any)
+          .from("menu_items")
+          .select(
+            "id, restaurant_id, price, promo_price, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_active, is_available, is_paused",
+          )
+          .eq("restaurant_id", restaurant.id)
+          .in("id", linkedMenuItemIds)
+          .eq("is_active", true)
+          .eq("is_available", true)
+          .eq("is_paused", false);
+        if (menuError) {
+          console.error("[Build] linked menu items error:", menuError);
+          throw menuError;
+        }
+        linkedMenuItems = (menuRows ?? []) as BuilderCatalogProduct[];
+      }
+
+      const menuById = new Map(linkedMenuItems.map((item) => [item.id, item]));
       const sanitizedBuilders = (buildConfig ?? []).map((builder: any) => ({
         ...builder,
+        restaurant_id: restaurant.id,
         builder_groups: (builder.builder_groups ?? []).map((group: any) => ({
           ...group,
-          builder_options: (group.builder_options ?? []).filter((option: any) => {
-            const name = String(option?.name ?? "").trim();
-            return name.length > 0 && name.toLocaleLowerCase("pt-BR") !== "nova opção";
-          }),
+          builder_options: (group.builder_options ?? [])
+            .map((option: any) => ({
+              ...option,
+              menu_item: option.menu_item_id ? menuById.get(option.menu_item_id) ?? null : null,
+            }))
+            .filter((option: any) => {
+              const name = String(option?.name ?? "").trim();
+              if (!name || name.toLocaleLowerCase("pt-BR") === "nova opção") return false;
+              if (group.source_type === "MENU_ITEMS") return !!option.menu_item;
+              return true;
+            }),
         })),
       }));
 
@@ -98,10 +136,12 @@ function BuildYourOwnPage() {
   useEffect(() => {
     const restaurantId = data?.restaurant?.id;
     if (!restaurantId) return;
+    const invalidate = () => qc.invalidateQueries({ queryKey: ["build-your-own-page", slug] });
     const channel = supabase
       .channel(`build-your-own:${restaurantId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["build-your-own-page", slug] }))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "builders", filter: `restaurant_id=eq.${restaurantId}` }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `restaurant_id=eq.${restaurantId}` }, invalidate)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [data?.restaurant?.id, qc, slug]);
@@ -133,14 +173,33 @@ function BuildYourOwnPage() {
     return minimumRequired > 0 && totalNow - removeQty < minimumRequired;
   };
 
+  const normalizedSelections = useMemo(
+    () => groups.flatMap((group) =>
+      Object.entries(sel[group.id] ?? {})
+        .filter(([, qty]) => qty > 0)
+        .map(([optionId, quantity]) => ({
+          group_id: group.id,
+          option_id: optionId,
+          quantity,
+        })),
+    ),
+    [groups, sel],
+  );
+
   const subtotal = useMemo(() => {
-    let s = Number(activeBuilder?.base_price ?? 0) || 0;
-    for (const g of groups) {
-      const picks = sel[g.id] ?? {};
-      for (const o of g.builder_options) s += (picks[o.id] ?? 0) * Number(o.price_delta);
+    if (!activeBuilder || !data?.restaurant?.id) return 0;
+    try {
+      return calculateBuilderCatalogUnitPrice({
+        restaurantId: data.restaurant.id,
+        basePrice: Number(activeBuilder.base_price ?? 0) || 0,
+        groups,
+        selections: normalizedSelections,
+      });
+    } catch (error) {
+      console.error("[Build] pricing error:", error);
+      return Number(activeBuilder.base_price ?? 0) || 0;
     }
-    return s;
-  }, [activeBuilder?.base_price, groups, sel]);
+  }, [activeBuilder, data?.restaurant?.id, groups, normalizedSelections]);
 
   const updateQty = (groupId: string, optionId: string, qty: number) => {
     setSel((prev) => {
@@ -236,15 +295,11 @@ function BuildYourOwnPage() {
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
 
-    const selections = groups.flatMap((g) =>
-      Object.entries(sel[g.id] ?? {})
-        .filter(([, qty]) => qty > 0)
-        .map(([optionId, qty]) => ({
-          groupId: g.id,
-          optionId,
-          qty,
-        })),
-    );
+    const selections = normalizedSelections.map((selection) => ({
+      groupId: selection.group_id,
+      optionId: selection.option_id,
+      qty: selection.quantity,
+    }));
 
     const item = {
       id: `builder:${activeBuilder.id}:${Date.now()}`,
@@ -342,11 +397,17 @@ function BuildYourOwnPage() {
                 {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
                 máx {currentGroup.max_select}
               </p>
+              {currentGroup.price_strategy === "MAX_MENU_ITEM" && (
+                <p className="mt-1 text-xs font-semibold text-primary">O preço da pizza será o maior preço entre os sabores escolhidos.</p>
+              )}
               <div className="mt-4 space-y-2">
                 {currentGroup.builder_options.slice().sort((a, b) => a.position - b.position).map((o) => {
                   const qty = sel[currentGroup.id]?.[o.id] ?? 0;
                   const selected = qty > 0;
                   const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
+                  const catalogPrice = currentGroup.price_strategy === "MAX_MENU_ITEM" && o.menu_item
+                    ? currentBuilderCatalogPrice(o.menu_item)
+                    : null;
                   return (
                     <button
                       key={o.id}
@@ -361,7 +422,11 @@ function BuildYourOwnPage() {
                         <span className="font-semibold">{o.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {Number(o.price_delta) > 0 && <span className="text-sm font-bold text-primary">+ {brl(Number(o.price_delta))}</span>}
+                        {catalogPrice !== null ? (
+                          <span className="text-sm font-bold text-primary">{brl(catalogPrice)}</span>
+                        ) : Number(o.price_delta) > 0 ? (
+                          <span className="text-sm font-bold text-primary">+ {brl(Number(o.price_delta))}</span>
+                        ) : null}
                         {currentGroup.max_select > 1 && o.max_qty > 1 && selected && (
                           <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <span onClick={() => dec(currentGroup, o)} className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border"><Minus className="h-3.5 w-3.5" /></span>
