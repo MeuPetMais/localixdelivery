@@ -40,7 +40,7 @@ export type BuilderPricingGroup = {
 const toCents = (value: number) => Math.round((Number(value) || 0) * 100);
 const fromCents = (value: number) => Math.round(value) / 100;
 
-function currentCatalogPrice(product: BuilderCatalogProduct): number {
+export function currentBuilderCatalogPrice(product: BuilderCatalogProduct): number {
   if (product.is_active === false || product.is_available === false || product.is_paused === true) {
     throw new Error("builder_catalog_item_unavailable");
   }
@@ -53,7 +53,8 @@ export function calculateBuilderCatalogUnitPrice(input: {
   groups: BuilderPricingGroup[];
   selections: BuilderPricingSelection[];
 }) {
-  let totalCents = toCents(input.basePrice);
+  let anchorCents = toCents(input.basePrice);
+  let extrasCents = 0;
 
   for (const group of input.groups) {
     const optionById = new Map(group.builder_options.map((option) => [option.id, option]));
@@ -64,7 +65,6 @@ export function calculateBuilderCatalogUnitPrice(input: {
         throw new Error("builder_catalog_group_invalid");
       }
 
-      let highestCatalogPriceCents = 0;
       for (const selection of selected) {
         const option = optionById.get(selection.option_id);
         if (!option?.menu_item_id || !option.menu_item) {
@@ -76,14 +76,7 @@ export function calculateBuilderCatalogUnitPrice(input: {
         if (option.menu_item.restaurant_id !== input.restaurantId) {
           throw new Error("builder_catalog_item_wrong_restaurant");
         }
-        highestCatalogPriceCents = Math.max(
-          highestCatalogPriceCents,
-          toCents(currentCatalogPrice(option.menu_item)),
-        );
-      }
-
-      if (highestCatalogPriceCents > 0) {
-        totalCents = Math.max(totalCents, highestCatalogPriceCents);
+        anchorCents = Math.max(anchorCents, toCents(currentBuilderCatalogPrice(option.menu_item)));
       }
       continue;
     }
@@ -91,9 +84,9 @@ export function calculateBuilderCatalogUnitPrice(input: {
     for (const selection of selected) {
       const option = optionById.get(selection.option_id);
       if (!option) throw new Error("builder_option_invalid");
-      totalCents += toCents(option.price_delta) * selection.quantity;
+      extrasCents += toCents(option.price_delta) * selection.quantity;
     }
   }
 
-  return fromCents(totalCents);
+  return fromCents(anchorCents + extrasCents);
 }
