@@ -54,6 +54,7 @@ export function calculateBuilderCatalogUnitPrice(input: {
   selections: BuilderPricingSelection[];
 }) {
   let anchorCents = toCents(input.basePrice);
+  let catalogAnchorCents: number | null = null;
   let extrasCents = 0;
 
   for (const group of input.groups) {
@@ -65,6 +66,7 @@ export function calculateBuilderCatalogUnitPrice(input: {
         throw new Error("builder_catalog_group_invalid");
       }
 
+      let highestGroupPriceCents = 0;
       for (const selection of selected) {
         const option = optionById.get(selection.option_id);
         if (!option?.menu_item_id || !option.menu_item) {
@@ -76,8 +78,12 @@ export function calculateBuilderCatalogUnitPrice(input: {
         if (option.menu_item.restaurant_id !== input.restaurantId) {
           throw new Error("builder_catalog_item_wrong_restaurant");
         }
-        anchorCents = Math.max(anchorCents, toCents(currentBuilderCatalogPrice(option.menu_item)));
+        highestGroupPriceCents = Math.max(
+          highestGroupPriceCents,
+          toCents(currentBuilderCatalogPrice(option.menu_item)),
+        );
       }
+      if (selected.length > 0) catalogAnchorCents = highestGroupPriceCents;
       continue;
     }
 
@@ -88,5 +94,6 @@ export function calculateBuilderCatalogUnitPrice(input: {
     }
   }
 
+  if (catalogAnchorCents !== null) anchorCents = catalogAnchorCents;
   return fromCents(anchorCents + extrasCents);
 }
