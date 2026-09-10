@@ -124,4 +124,5 @@ end;
 $$;
 
 revoke all on function public.sync_builder_catalog_flavors(uuid, uuid[]) from public;
+revoke all on function public.sync_builder_catalog_flavors(uuid, uuid[]) from anon;
 grant execute on function public.sync_builder_catalog_flavors(uuid, uuid[]) to authenticated;
