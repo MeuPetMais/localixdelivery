@@ -1,6 +1,7 @@
 import { isPromoActiveNow } from "@/lib/promotions";
 import { ConfigurationRuleEngine } from "@/lib/product/configuration/ConfigurationRuleEngine";
 import { PriceCalculationStrategy } from "@/lib/product/configuration/PriceCalculationStrategy";
+import { calculateBuilderCatalogUnitPrice, type BuilderCatalogProduct } from "./builder-catalog-pricing";
 import type {
   ProductOption,
   ProductOptionGroup,
@@ -51,6 +52,8 @@ export type BuilderOptionRecord = {
   name: string;
   price_delta: number;
   max_qty: number;
+  menu_item_id?: string | null;
+  menu_item?: BuilderCatalogProduct | null;
 };
 
 export type BuilderGroupRecord = {
@@ -60,6 +63,8 @@ export type BuilderGroupRecord = {
   is_required: boolean;
   min_select: number;
   max_select: number;
+  source_type?: "MANUAL" | "MENU_ITEMS" | null;
+  price_strategy?: "SUM" | "MAX_MENU_ITEM" | null;
   builder_options: BuilderOptionRecord[];
 };
 
@@ -242,7 +247,8 @@ function buildBuilderOptionSnapshot(
     if (!group || !option || option.group_id !== group.id) {
       throw new CheckoutValidationError("checkout_item_invalid", "Item invalido");
     }
-    const unitPrice = fromCents(toCents(option.price_delta));
+    const additive = (group.price_strategy ?? "SUM") === "SUM";
+    const unitPrice = additive ? fromCents(toCents(option.price_delta)) : 0;
     return {
       groupId: group.id,
       groupName: group.name,
@@ -285,13 +291,19 @@ function calculateBuilderPrice(builder: BuilderRecord, selections: SelectedOptio
     }
   }
 
-  const totalCents =
-    toCents(builder.base_price) +
-    selections.reduce((sum, s) => {
-      const option = optionsById.get(s.option_id)!;
-      return sum + toCents(option.price_delta) * s.quantity;
-    }, 0);
-  return fromCents(totalCents);
+  try {
+    return calculateBuilderCatalogUnitPrice({
+      restaurantId: builder.restaurant_id,
+      basePrice: builder.base_price,
+      groups,
+      selections,
+    });
+  } catch (error) {
+    throw new CheckoutValidationError(
+      "checkout_item_invalid",
+      error instanceof Error ? error.message : "Item invalido",
+    );
+  }
 }
 
 function validCoupon(coupon: CouponRecord | null): coupon is CouponRecord {
