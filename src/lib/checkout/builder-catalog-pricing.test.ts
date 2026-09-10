@@ -84,6 +84,15 @@ describe("calculateBuilderCatalogUnitPrice", () => {
     })).toBe(66.9);
   });
 
+  it("lets the selected catalog flavor replace a stale higher builder base", () => {
+    expect(calculateBuilderCatalogUnitPrice({
+      restaurantId,
+      basePrice: 79.9,
+      groups: [flavorGroup],
+      selections: [{ group_id: "flavors", option_id: "calabresa", quantity: 1 }],
+    })).toBe(49.9);
+  });
+
   it("rejects linked catalog items from another restaurant", () => {
     const invalidGroup = {
       ...flavorGroup,
