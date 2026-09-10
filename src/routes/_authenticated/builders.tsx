@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ import { buildBuilderMetaPayload, parseBuilderCurrencyInput } from "@/lib/builde
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
-  component: BuildersPage,
+  component: BuildersRoute,
 });
 
 const TEMPLATES = [
@@ -54,6 +54,11 @@ const TEMPLATES = [
   { emoji: "🍟", name: "Monte sua Porção", groups: [] },
   { emoji: "🥤", name: "Monte sua Bebida", groups: [] },
 ];
+
+function BuildersRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return pathname === "/builders" ? <BuildersPage /> : <Outlet />;
+}
 
 function BuildersPage() {
   const qc = useQueryClient();

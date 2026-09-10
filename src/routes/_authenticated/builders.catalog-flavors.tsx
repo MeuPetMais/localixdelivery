@@ -98,7 +98,7 @@ function BuilderCatalogFlavorsPage() {
           <div>
             <p className="text-xs font-semibold text-muted-foreground">Monte do Seu Jeito</p>
             <h1 className="flex items-center gap-2 font-display text-2xl font-extrabold">
-              <Pizza className="h-6 w-6 text-primary" /> Sabores puxados do cardápio
+              <Pizza className="h-6 w-6 text-primary" /> Sabores do cardápio
             </h1>
           </div>
         </div>
