@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { readRecoveryParams, validateRecoveryLink } from "./password-recovery";
+import { readRecoveryParams, validateRecoveryLink, verifyRecoveryOtp } from "./password-recovery";
 
 function createAuthMock() {
   return {
@@ -23,16 +23,25 @@ describe("password recovery link validation", () => {
     expect(params.type).toBe("recovery");
   });
 
-  it("uses verifyOtp for token_hash recovery links", async () => {
+  it("keeps token_hash recovery links pending to avoid prefetch consumption", async () => {
     const auth = createAuthMock();
     const result = await validateRecoveryLink(
       auth,
       "https://localixdelivery-staging.vercel.app/redefinir-senha?token_hash=abc&type=recovery",
     );
 
-    expect(result).toEqual({ ok: true, mode: "token_hash" });
-    expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "abc", type: "recovery" });
+    expect(result).toEqual({ ok: true, mode: "token_hash", tokenHash: "abc" });
+    expect(auth.verifyOtp).not.toHaveBeenCalled();
     expect(auth.getSession).not.toHaveBeenCalled();
+  });
+
+  it("verifies token_hash only when the user submits the new password", async () => {
+    const auth = createAuthMock();
+
+    const result = await verifyRecoveryOtp(auth, "abc");
+
+    expect(result).toEqual({ ok: true });
+    expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "abc", type: "recovery" });
   });
 
   it("keeps fallback for legacy access_token links", async () => {

@@ -13,7 +13,8 @@ type RecoveryAuthClient = {
 };
 
 export type RecoveryValidationResult =
-  | { ok: true; mode: "token_hash" | "legacy_tokens" | "existing_session" }
+  | { ok: true; mode: "token_hash"; tokenHash: string }
+  | { ok: true; mode: "legacy_tokens" | "existing_session" }
   | { ok: false; reason: "invalid_or_expired"; code?: string; message?: string };
 
 export function readRecoveryParams(href: string) {
@@ -62,16 +63,7 @@ export async function validateRecoveryLink(
 
   if (params.tokenHash) {
     if (params.type !== "recovery") return { ok: false, reason: "invalid_or_expired" };
-    const { error } = await auth.verifyOtp({ token_hash: params.tokenHash, type: "recovery" });
-    if (error) {
-      return {
-        ok: false,
-        reason: "invalid_or_expired",
-        code: error.code,
-        message: error.message,
-      };
-    }
-    return { ok: true, mode: "token_hash" };
+    return { ok: true, mode: "token_hash", tokenHash: params.tokenHash };
   }
 
   if (params.accessToken && params.refreshToken) {
@@ -111,4 +103,18 @@ export async function validateRecoveryLink(
   }
 
   return { ok: true, mode: "existing_session" };
+}
+
+export async function verifyRecoveryOtp(auth: RecoveryAuthClient, tokenHash: string) {
+  const { error } = await auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+  if (error) {
+    return {
+      ok: false as const,
+      reason: "invalid_or_expired" as const,
+      code: error.code,
+      message: error.message,
+    };
+  }
+
+  return { ok: true as const };
 }

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, KeyRound, CheckCircle2 } from "lucide-react";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
-import { hasRecoveryParams, validateRecoveryLink } from "@/lib/password-recovery";
+import { hasRecoveryParams, validateRecoveryLink, verifyRecoveryOtp } from "@/lib/password-recovery";
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({ meta: [{ title: "Redefinir senha — Localix" }] }),
@@ -19,6 +19,7 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
   const { currentRestaurantSlug, lastRestaurantSlug } = useCustomerNavigation();
   const [checkingToken, setCheckingToken] = useState(true);
+  const [pendingTokenHash, setPendingTokenHash] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,8 @@ function ResetPasswordPage() {
               ? "O link de redefinição expirou. Solicite um novo."
               : "Link inválido ou já utilizado. Solicite um novo.",
           );
+        } else if (result.mode === "token_hash") {
+          setPendingTokenHash(result.tokenHash);
         }
       } catch (err) {
         if (import.meta.env.DEV) console.error("[auth-debug] recovery:prepare-session", err);
@@ -73,8 +76,22 @@ function ResetPasswordPage() {
       return;
     }
     setLoading(true);
-    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/redefinir-senha", reason: "password reset", fields: ["password"], passwordLength: password.length });
     try {
+      if (pendingTokenHash) {
+        const result = await verifyRecoveryOtp(supabase.auth, pendingTokenHash);
+        if (!result.ok) {
+          const message = result.message ?? "";
+          setTokenError(
+            /expired/i.test(message)
+              ? "O link de redefinição expirou. Solicite um novo."
+              : "Link inválido ou já utilizado. Solicite um novo.",
+          );
+          return;
+        }
+        setPendingTokenHash(null);
+      }
+
+      if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/redefinir-senha", reason: "password reset", fields: ["password"], passwordLength: password.length });
       const { data, error } = await supabase.auth.updateUser({ password });
       if (import.meta.env.DEV) {
         const er = error as { code?: string; status?: number; message?: string } | null;
