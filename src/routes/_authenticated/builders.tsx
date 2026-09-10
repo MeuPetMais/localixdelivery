@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRef } from "react";
 import { BuilderConfigurator } from "@/components/BuilderConfigurator";
 import { buildBuilderMetaPayload, parseBuilderCurrencyInput } from "@/lib/builders-currency";
+import { isPromoActiveNow } from "@/lib/promotions";
 
 export const Route = createFileRoute("/_authenticated/builders")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
@@ -71,8 +72,41 @@ function BuildersPage() {
     queryKey: ["builders", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("builders").select("*, builder_groups(*, builder_options(*))").eq("restaurant_id", restaurant!.id).order("position");
-      return data ?? [];
+      const { data, error } = await supabase
+        .from("builders")
+        .select("*, builder_groups(*, builder_options(*))")
+        .eq("restaurant_id", restaurant!.id)
+        .order("position");
+      if (error) throw error;
+
+      const rows = data ?? [];
+      const menuItemIds = Array.from(new Set(
+        rows.flatMap((builder: any) =>
+          (builder.builder_groups ?? []).flatMap((group: any) =>
+            (group.builder_options ?? []).map((option: any) => option.menu_item_id).filter(Boolean),
+          ),
+        ),
+      ));
+
+      if (menuItemIds.length === 0) return rows;
+
+      const { data: menuItems, error: menuError } = await supabase
+        .from("menu_items")
+        .select("id,name,price,promo_price,promo_starts_at,promo_ends_at,recurrence_days,recurrence_start_time,recurrence_end_time,is_active,is_available,is_paused")
+        .in("id", menuItemIds);
+      if (menuError) throw menuError;
+
+      const menuById = new Map((menuItems ?? []).map((item: any) => [item.id, item]));
+      return rows.map((builder: any) => ({
+        ...builder,
+        builder_groups: (builder.builder_groups ?? []).map((group: any) => ({
+          ...group,
+          builder_options: (group.builder_options ?? []).map((option: any) => ({
+            ...option,
+            menu_item: option.menu_item_id ? menuById.get(option.menu_item_id) ?? null : null,
+          })),
+        })),
+      }));
     },
   });
 
@@ -129,10 +163,17 @@ function BuildersPage() {
       const { data: ng } = await supabase.from("builder_groups").insert({
         builder_id: nb.id, name: g.name, min_select: g.min_select, max_select: g.max_select,
         is_required: g.is_required, position: g.position,
+        source_type: g.source_type ?? "MANUAL",
+        price_strategy: g.price_strategy ?? "SUM",
       }).select("id").single();
       if (!ng) continue;
       const opts = (g.builder_options ?? []).map((o: any) => ({
-        group_id: ng.id, name: o.name, price_delta: o.price_delta, max_qty: o.max_qty, position: o.position,
+        group_id: ng.id,
+        name: o.name,
+        price_delta: o.price_delta,
+        max_qty: o.max_qty,
+        position: o.position,
+        menu_item_id: o.menu_item_id ?? null,
       }));
       if (opts.length) await supabase.from("builder_options").insert(opts);
     }
@@ -262,6 +303,12 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   if (!builder || !form) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
 
   const isDraftOption = (o: any) => !!o?.__draft || String(o?.id ?? "").startsWith("draft:");
+  const isCatalogGroup = (g: any) => g?.source_type === "MENU_ITEMS" && g?.price_strategy === "MAX_MENU_ITEM";
+  const catalogPrice = (o: any) => {
+    const item = o?.menu_item;
+    if (!item) return null;
+    return isPromoActiveNow(item) ? Number(item.promo_price) : Number(item.price);
+  };
 
   function validate(): string | null {
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
@@ -271,7 +318,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
       const min = Number(g.min_select) || 0;
       const max = Number(g.max_select) || 0;
       const savedOptions = (g.builder_options ?? []).filter((o: any) => !isDraftOption(o) && String(o.name ?? "").trim() && String(o.name ?? "").trim().toLowerCase() !== "nova opção");
-      if ((g.builder_options ?? []).some((o: any) => isDraftOption(o))) return `Salve ou exclua a nova opção da etapa "${g.name}" antes de continuar.`;
+      if (!isCatalogGroup(g) && (g.builder_options ?? []).some((o: any) => isDraftOption(o))) return `Salve ou exclua a nova opção da etapa "${g.name}" antes de continuar.`;
       if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
       if (min > max) return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
       if (g.is_required && savedOptions.length === 0) return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
@@ -295,6 +342,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
         const name = String(o.name ?? "").trim();
         if (!name || name.toLowerCase() === "nova opção") return `Preencha ou exclua a opção incompleta da etapa "${g.name}" antes de concluir.`;
         if ((Number(o.max_qty) || 0) < 1) return `A opção "${name}" precisa de quantidade máxima ≥ 1.`;
+        if (isCatalogGroup(g) && !o.menu_item_id) return `O sabor "${name}" perdeu o vínculo com o cardápio. Sincronize os sabores novamente.`;
       }
       if (g.is_required && options.length === 0) return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
       if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
@@ -339,6 +387,10 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   }
 
   function addOption(g: any) {
+    if (isCatalogGroup(g)) {
+      toast.info("Os sabores vinculados ao cardápio são gerenciados em Sabores do cardápio.");
+      return;
+    }
     const draft = {
       id: `draft:${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`,
       group_id: g.id,
@@ -352,6 +404,9 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   }
 
   async function saveOption(gid: string, o: any) {
+    const group = groups.find((g) => g.id === gid);
+    if (isCatalogGroup(group)) return toast.error("Sabores vinculados ao cardápio não podem ser editados manualmente aqui.");
+
     const name = String(o.name ?? "").trim();
     if (!name || name.toLowerCase() === "nova opção") return toast.error("Informe um nome válido para a opção antes de salvar.");
 
@@ -386,6 +441,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
   }
 
   async function deleteOption(gid: string, oid: string) {
+    const group = groups.find((g) => g.id === gid);
+    if (isCatalogGroup(group)) return toast.error("Gerencie sabores vinculados pela tela Sabores do cardápio.");
     const draft = String(oid).startsWith("draft:");
     if (!draft) {
       const { error } = await supabase.from("builder_options").delete().eq("id", oid);
@@ -412,6 +469,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           is_required: !!g.is_required,
         }).eq("id", g.id);
         if (groupError) throw groupError;
+
+        if (isCatalogGroup(g)) continue;
 
         for (const o of g.builder_options ?? []) {
           const payload = {
@@ -447,6 +506,8 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
     }
   }
 
+  const hasCatalogFlavorGroup = groups.some(isCatalogGroup);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
@@ -472,24 +533,36 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           <div className="space-y-1.5">
             <Label>Preço Inicial (R$)</Label>
             <Input type="text" inputMode="decimal" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} />
-            <p className="text-xs text-muted-foreground">É o valor inicial do produto antes da escolha dos complementos e personalizações.</p>
+            <p className="text-xs text-muted-foreground">
+              {hasCatalogFlavorGroup
+                ? "Usado apenas como fallback. Para sabores vinculados, o preço vem do cardápio."
+                : "É o valor inicial do produto antes da escolha dos complementos e personalizações."}
+            </p>
           </div>
         </div>
 
         <Card className="rounded-xl border-dashed bg-muted/30 p-4 text-sm">
           <p className="mb-2 font-bold">💡 Como o preço é calculado?</p>
-          <p className="text-muted-foreground">
-            <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente + diferenças de preço entre opções (quando existirem).
-          </p>
-          <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
-            <div className="flex justify-between"><span>Preço Inicial</span><span>R$ 18,90</span></div>
-            <div className="flex justify-between"><span>Cheddar</span><span>+ R$ 4,00</span></div>
-            <div className="flex justify-between"><span>Bacon</span><span>+ R$ 5,00</span></div>
-            <div className="mt-1 flex justify-between border-t pt-1 font-bold"><span>Total</span><span>R$ 27,90</span></div>
-          </div>
+          {hasCatalogFlavorGroup ? (
+            <p className="text-muted-foreground">
+              Nos sabores vinculados ao cardápio, o preço da pizza é o <strong>maior preço vigente entre os sabores escolhidos</strong>. Depois, bordas, adicionais e demais etapas somáveis são acrescentados normalmente.
+            </p>
+          ) : (
+            <>
+              <p className="text-muted-foreground">
+                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente + diferenças de preço entre opções (quando existirem).
+              </p>
+              <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
+                <div className="flex justify-between"><span>Preço Inicial</span><span>R$ 18,90</span></div>
+                <div className="flex justify-between"><span>Cheddar</span><span>+ R$ 4,00</span></div>
+                <div className="flex justify-between"><span>Bacon</span><span>+ R$ 5,00</span></div>
+                <div className="mt-1 flex justify-between border-t pt-1 font-bold"><span>Total</span><span>R$ 27,90</span></div>
+              </div>
+            </>
+          )}
         </Card>
 
-        {(() => {
+        {!hasCatalogFlavorGroup && (() => {
           const base = parseBuilderCurrencyInput(form.base_price);
           let minExtra = 0;
           let maxExtra = 0;
@@ -539,7 +612,9 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             <Button size="sm" variant="outline" onClick={addGroup}><Plus className="mr-1 h-3.5 w-3.5" />Etapa</Button>
           </div>
           <div className="space-y-3">
-            {groups.map((g, gi) => (
+            {groups.map((g, gi) => {
+              const catalog = isCatalogGroup(g);
+              return (
               <Card key={g.id} className="rounded-xl p-3">
                 <div className="flex items-start gap-2">
                   <GripVertical className="mt-2 h-4 w-4 text-muted-foreground" />
@@ -578,54 +653,105 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
                       <summary className="cursor-pointer font-bold">💡 Como funciona esta etapa?</summary>
                       <div className="mt-2 space-y-1 text-muted-foreground">
                         <p>O cliente {g.is_required ? "deverá" : "poderá"} escolher {Number(g.min_select) > 0 ? `de ${g.min_select} a ${g.max_select || 1}` : `até ${g.max_select || 1}`} {(Number(g.max_select) || 1) > 1 ? "opções" : "opção"} abaixo.</p>
-                        <p>Cada opção poderá: <strong>✔ não alterar o preço</strong> ou <strong>✔ acrescentar um valor ao preço inicial do produto</strong>.</p>
+                        {catalog ? (
+                          <p><strong>✔ Sabores vinculados ao cardápio.</strong> O preço não é editado aqui; prevalece o maior preço vigente entre os sabores selecionados.</p>
+                        ) : (
+                          <p>Cada opção poderá: <strong>✔ não alterar o preço</strong> ou <strong>✔ acrescentar um valor ao preço inicial do produto</strong>.</p>
+                        )}
                       </div>
                     </details>
                   </div>
                 </div>
-                <div className="mt-3 space-y-2 pl-6">
-                  <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_140px_90px_auto]">
-                    <span>Nome</span><span>Acrescenta ao preço (+R$)</span><span>Qtd. máx</span><span></span>
-                  </div>
-                  {g.builder_options.map((o: any, oi: number) => {
-                    const delta = parseBuilderCurrencyInput(o.price_delta);
-                    return (
-                      <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_140px_90px_auto]">
-                        <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{delta >= 0 ? "+ R$" : "R$"}</span>
-                          <Input type="text" inputMode="decimal" className="pl-12" value={o.price_delta} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))} placeholder="0,00" />
-                        </div>
-                        <Input type="number" min={1} value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="outline" onClick={() => saveOption(g.id, o)}>Salvar</Button>
-                          <Button size="sm" variant="outline" onClick={() => deleteOption(g.id, o.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
 
-                  {g.builder_options.filter((o: any) => !isDraftOption(o)).length > 0 && (
-                    <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
-                      <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
-                      <div className="space-y-0.5">
-                        {g.builder_options.filter((o: any) => !isDraftOption(o)).slice(0, 5).map((o: any) => {
-                          const base = parseBuilderCurrencyInput(form.base_price);
-                          const delta = parseBuilderCurrencyInput(o.price_delta);
+                <div className="mt-3 space-y-2 pl-6">
+                  {catalog ? (
+                    <>
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <div>
+                          <p className="text-xs font-bold">🔗 Vinculado ao cardápio</p>
+                          <p className="text-[11px] text-muted-foreground">Nome, preço, promoção e disponibilidade vêm do produto real.</p>
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <a href="/builders/catalog-flavors">Gerenciar sabores do cardápio</a>
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {(g.builder_options ?? []).map((o: any) => {
+                          const item = o.menu_item;
+                          const effective = catalogPrice(o);
+                          const promo = item ? isPromoActiveNow(item) : false;
                           return (
-                            <div key={o.id} className="flex justify-between">
-                              <span>✔ {o.name || "(sem nome)"} {delta > 0 && <span className="text-muted-foreground">(+{brl(delta)})</span>}</span>
-                              <span className="font-bold">Preço Final: {brl(base + delta)}</span>
+                            <div key={o.id} className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="font-medium">{o.name}</p>
+                                <p className="text-[11px] text-muted-foreground">Vinculado ao cardápio</p>
+                              </div>
+                              {item && effective != null ? (
+                                <div className="text-left sm:text-right">
+                                  {promo && <p className="text-[11px] text-muted-foreground line-through">{brl(Number(item.price))}</p>}
+                                  <p className="font-bold text-primary">{brl(effective)}</p>
+                                  {promo && <p className="text-[10px] font-medium text-success">Promoção ativa</p>}
+                                </div>
+                              ) : (
+                                <p className="text-xs font-medium text-destructive">Produto vinculado indisponível. Sincronize novamente.</p>
+                              )}
                             </div>
                           );
                         })}
                       </div>
-                    </Card>
+
+                      <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
+                        <p className="mb-1 font-bold">🧪 Regra desta etapa</p>
+                        <p className="text-muted-foreground">Com 1 sabor, vale o preço vigente desse sabor. Com 2 ou 3 sabores, prevalece o maior preço entre os sabores selecionados.</p>
+                      </Card>
+                    </>
+                  ) : (
+                    <>
+                      <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_140px_90px_auto]">
+                        <span>Nome</span><span>Acrescenta ao preço (+R$)</span><span>Qtd. máx</span><span></span>
+                      </div>
+                      {g.builder_options.map((o: any, oi: number) => {
+                        const delta = parseBuilderCurrencyInput(o.price_delta);
+                        return (
+                          <div key={o.id} className="grid gap-2 sm:grid-cols-[1fr_140px_90px_auto]">
+                            <Input value={o.name} placeholder="Ex: Cheddar" onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, name: e.target.value } : y) } : x))} />
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">{delta >= 0 ? "+ R$" : "R$"}</span>
+                              <Input type="text" inputMode="decimal" className="pl-12" value={o.price_delta} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, price_delta: e.target.value } : y) } : x))} placeholder="0,00" />
+                            </div>
+                            <Input type="number" min={1} value={o.max_qty} onChange={(e) => setGroups((gs) => gs.map((x, i) => i === gi ? { ...x, builder_options: x.builder_options.map((y: any, j: number) => j === oi ? { ...y, max_qty: e.target.value } : y) } : x))} placeholder="Qtd" />
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" onClick={() => saveOption(g.id, o)}>Salvar</Button>
+                              <Button size="sm" variant="outline" onClick={() => deleteOption(g.id, o.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <Button size="sm" variant="ghost" onClick={() => addOption(g)}><Plus className="mr-1 h-3.5 w-3.5" />Opção</Button>
+
+                      {g.builder_options.filter((o: any) => !isDraftOption(o)).length > 0 && (
+                        <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
+                          <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
+                          <div className="space-y-0.5">
+                            {g.builder_options.filter((o: any) => !isDraftOption(o)).slice(0, 5).map((o: any) => {
+                              const base = parseBuilderCurrencyInput(form.base_price);
+                              const delta = parseBuilderCurrencyInput(o.price_delta);
+                              return (
+                                <div key={o.id} className="flex justify-between">
+                                  <span>✔ {o.name || "(sem nome)"} {delta > 0 && <span className="text-muted-foreground">(+{brl(delta)})</span>}</span>
+                                  <span className="font-bold">Preço Final: {brl(base + delta)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </Card>
+                      )}
+                    </>
                   )}
                 </div>
               </Card>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -650,6 +776,7 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
           description: form.description,
           image_url: form.image_url,
           base_price: parseBuilderCurrencyInput(form.base_price),
+          restaurant_id: builder.restaurant_id,
           builder_groups: groups.map((g: any, i: number) => ({
             id: g.id,
             name: g.name,
@@ -657,12 +784,16 @@ function BuilderEditor({ open, onOpenChange, builder }: { open: boolean; onOpenC
             max_select: Number(g.max_select) || 1,
             is_required: !!g.is_required,
             position: g.position ?? i,
+            source_type: g.source_type ?? "MANUAL",
+            price_strategy: g.price_strategy ?? "SUM",
             builder_options: (g.builder_options ?? []).filter((o: any) => !isDraftOption(o)).map((o: any, j: number) => ({
               id: o.id,
               name: o.name,
               price_delta: parseBuilderCurrencyInput(o.price_delta),
               max_qty: Number(o.max_qty) || 1,
               position: o.position ?? j,
+              menu_item_id: o.menu_item_id ?? null,
+              menu_item: o.menu_item ?? null,
             })),
           })),
         }}
