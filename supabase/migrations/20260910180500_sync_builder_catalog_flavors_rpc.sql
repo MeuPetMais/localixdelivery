@@ -6,13 +6,13 @@ create or replace function public.sync_builder_catalog_flavors(
   p_menu_item_ids uuid[]
 )
 returns table (
-  id uuid,
-  group_id uuid,
-  name text,
-  price_delta numeric,
-  max_qty integer,
-  position integer,
-  menu_item_id uuid
+  option_id uuid,
+  option_group_id uuid,
+  option_name text,
+  option_price_delta numeric,
+  option_max_qty integer,
+  option_position integer,
+  linked_menu_item_id uuid
 )
 language plpgsql
 security definer
