@@ -72,6 +72,18 @@ describe("calculateBuilderCatalogUnitPrice", () => {
     })).toBe(70.9);
   });
 
+  it("is independent of group display order", () => {
+    expect(calculateBuilderCatalogUnitPrice({
+      restaurantId,
+      basePrice: 49.9,
+      groups: [extrasGroup, flavorGroup],
+      selections: [
+        { group_id: "extras", option_id: "borda", quantity: 1 },
+        { group_id: "flavors", option_id: "carne-seca", quantity: 1 },
+      ],
+    })).toBe(66.9);
+  });
+
   it("rejects linked catalog items from another restaurant", () => {
     const invalidGroup = {
       ...flavorGroup,
