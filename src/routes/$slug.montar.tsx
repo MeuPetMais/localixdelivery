@@ -13,8 +13,48 @@ import { Progress } from "@/components/ui/progress";
 import { brl } from "@/lib/format";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
 import type { Builder } from "@/components/BuilderConfigurator";
+import {
+  calculateBuilderCatalogUnitPrice,
+  currentBuilderCatalogPrice,
+  type BuilderCatalogProduct,
+} from "@/lib/checkout/builder-catalog-pricing";
 
 type Selection = Record<string, Record<string, number>>;
+type QueryError = { message?: string };
+type ChainQuery<T> = PromiseLike<{ data: T | null; error: QueryError | null }> & {
+  eq(column: string, value: unknown): ChainQuery<T>;
+  in(column: string, values: readonly string[]): ChainQuery<T>;
+  order(column: string): ChainQuery<T>;
+  maybeSingle(): ChainQuery<T>;
+};
+type ReadClient = {
+  from<T>(table: string): {
+    select(columns: string): ChainQuery<T>;
+  };
+};
+type PublicRestaurant = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  is_open?: boolean | null;
+  opening_hours?: unknown;
+  builders_enabled?: boolean | null;
+};
+type BuildConfigOption = Builder["builder_groups"][number]["builder_options"][number] & {
+  menu_item_id?: string | null;
+};
+type BuildConfigGroup = Omit<Builder["builder_groups"][number], "builder_options"> & {
+  builder_options?: BuildConfigOption[] | null;
+};
+type BuildConfigBuilder = Omit<Builder, "builder_groups"> & {
+  builder_groups?: BuildConfigGroup[] | null;
+};
+type BuildQueryResult = {
+  restaurant: PublicRestaurant | null;
+  builders: Builder[];
+};
+const readClient = supabase as unknown as ReadClient;
 
 export const Route = createFileRoute("/$slug/montar")({
   head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
@@ -38,20 +78,16 @@ function BuildYourOwnPage() {
     setSelectedBuilderId(builderId);
   }, [builderId]);
 
-  useEffect(() => {
-  }, [slug]);
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ["build-your-own-page", slug],
     enabled: !!slug,
     retry: 1,
     queryFn: async () => {
-      const { data: restaurant, error: restaurantError } = await (supabase as any)
-        .from("restaurants_public")
+      const { data: restaurant, error: restaurantError } = await readClient
+        .from<PublicRestaurant>("restaurants_public")
         .select("id, name, slug, logo_url, is_open, opening_hours, builders_enabled")
         .eq("slug", slug)
         .maybeSingle();
-
 
       if (restaurantError) {
         console.error("[Build] restaurant error:", restaurantError);
@@ -66,27 +102,64 @@ function BuildYourOwnPage() {
         return { restaurant, builders: [] as Builder[] };
       }
 
-      const { data: buildConfig, error: buildError } = await (supabase as any)
-        .from("builders")
+      const { data: buildConfig, error: buildError } = await readClient
+        .from<BuildConfigBuilder[]>("builders")
         .select("*, builder_groups(*, builder_options(*))")
         .eq("restaurant_id", restaurant.id)
         .eq("is_active", true)
         .order("position");
-
 
       if (buildError) {
         console.error("[Build] config error:", buildError);
         throw buildError;
       }
 
-      const sanitizedBuilders = (buildConfig ?? []).map((builder: any) => ({
+      const linkedMenuItemIds = Array.from(
+        new Set(
+          (buildConfig ?? [])
+            .flatMap((builder) => builder.builder_groups ?? [])
+            .flatMap((group) => group.builder_options ?? [])
+            .map((option) => option.menu_item_id)
+            .filter((id): id is string => !!id),
+        ),
+      );
+
+      let linkedMenuItems: BuilderCatalogProduct[] = [];
+      if (linkedMenuItemIds.length > 0) {
+        const { data: menuRows, error: menuError } = await readClient
+          .from<BuilderCatalogProduct[]>("menu_items")
+          .select(
+            "id, restaurant_id, price, promo_price, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_active, is_available, is_paused",
+          )
+          .eq("restaurant_id", restaurant.id)
+          .in("id", linkedMenuItemIds)
+          .eq("is_active", true)
+          .eq("is_available", true)
+          .eq("is_paused", false);
+        if (menuError) {
+          console.error("[Build] linked menu items error:", menuError);
+          throw menuError;
+        }
+        linkedMenuItems = menuRows ?? [];
+      }
+
+      const menuById = new Map(linkedMenuItems.map((item) => [item.id, item]));
+      const sanitizedBuilders = (buildConfig ?? []).map((builder) => ({
         ...builder,
-        builder_groups: (builder.builder_groups ?? []).map((group: any) => ({
+        restaurant_id: restaurant.id,
+        builder_groups: (builder.builder_groups ?? []).map((group) => ({
           ...group,
-          builder_options: (group.builder_options ?? []).filter((option: any) => {
-            const name = String(option?.name ?? "").trim();
-            return name.length > 0 && name.toLocaleLowerCase("pt-BR") !== "nova opção";
-          }),
+          builder_options: (group.builder_options ?? [])
+            .map((option) => ({
+              ...option,
+              menu_item: option.menu_item_id ? (menuById.get(option.menu_item_id) ?? null) : null,
+            }))
+            .filter((option) => {
+              const name = String(option?.name ?? "").trim();
+              if (!name || name.toLocaleLowerCase("pt-BR") === "nova opção") return false;
+              if (group.source_type === "MENU_ITEMS") return !!option.menu_item;
+              return true;
+            }),
         })),
       }));
 
@@ -94,16 +167,47 @@ function BuildYourOwnPage() {
     },
   });
 
-  const builders = data?.builders ?? [];
+  const builders = useMemo(() => data?.builders ?? [], [data?.builders]);
   useEffect(() => {
     const restaurantId = data?.restaurant?.id;
     if (!restaurantId) return;
+    const invalidate = () => qc.invalidateQueries({ queryKey: ["build-your-own-page", slug] });
     const channel = supabase
       .channel(`build-your-own:${restaurantId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["build-your-own-page", slug] }))
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "restaurants",
+          filter: `id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "builders",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu_items",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [data?.restaurant?.id, qc, slug]);
 
   const activeBuilder = useMemo(() => {
@@ -126,21 +230,46 @@ function BuildYourOwnPage() {
 
   const totalForGroup = (gid: string) => Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
 
-  const minimumRequiredFor = (g: Builder["builder_groups"][number]) => Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
+  const minimumRequiredFor = (g: Builder["builder_groups"][number]) =>
+    Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
 
-  const removeWouldBreakMinimum = (g: Builder["builder_groups"][number], totalNow: number, removeQty: number) => {
+  const removeWouldBreakMinimum = (
+    g: Builder["builder_groups"][number],
+    totalNow: number,
+    removeQty: number,
+  ) => {
     const minimumRequired = minimumRequiredFor(g);
     return minimumRequired > 0 && totalNow - removeQty < minimumRequired;
   };
 
+  const normalizedSelections = useMemo(
+    () =>
+      groups.flatMap((group) =>
+        Object.entries(sel[group.id] ?? {})
+          .filter(([, qty]) => qty > 0)
+          .map(([optionId, quantity]) => ({
+            group_id: group.id,
+            option_id: optionId,
+            quantity,
+          })),
+      ),
+    [groups, sel],
+  );
+
   const subtotal = useMemo(() => {
-    let s = Number(activeBuilder?.base_price ?? 0) || 0;
-    for (const g of groups) {
-      const picks = sel[g.id] ?? {};
-      for (const o of g.builder_options) s += (picks[o.id] ?? 0) * Number(o.price_delta);
+    if (!activeBuilder || !data?.restaurant?.id) return 0;
+    try {
+      return calculateBuilderCatalogUnitPrice({
+        restaurantId: data.restaurant.id,
+        basePrice: Number(activeBuilder.base_price ?? 0) || 0,
+        groups,
+        selections: normalizedSelections,
+      });
+    } catch (error) {
+      console.error("[Build] pricing error:", error);
+      return Number(activeBuilder.base_price ?? 0) || 0;
     }
-    return s;
-  }, [activeBuilder?.base_price, groups, sel]);
+  }, [activeBuilder, data?.restaurant?.id, groups, normalizedSelections]);
 
   const updateQty = (groupId: string, optionId: string, qty: number) => {
     setSel((prev) => {
@@ -151,7 +280,10 @@ function BuildYourOwnPage() {
     });
   };
 
-  const toggle = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
+  const toggle = (
+    g: Builder["builder_groups"][number],
+    o: Builder["builder_groups"][number]["builder_options"][number],
+  ) => {
     setSel((prev) => {
       const cur = { ...(prev[g.id] ?? {}) };
       const have = cur[o.id] ?? 0;
@@ -178,7 +310,10 @@ function BuildYourOwnPage() {
     });
   };
 
-  const inc = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
+  const inc = (
+    g: Builder["builder_groups"][number],
+    o: Builder["builder_groups"][number]["builder_options"][number],
+  ) => {
     const cur = sel[g.id] ?? {};
     const have = cur[o.id] ?? 0;
     const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
@@ -190,7 +325,10 @@ function BuildYourOwnPage() {
     updateQty(g.id, o.id, have + 1);
   };
 
-  const dec = (g: Builder["builder_groups"][number], o: Builder["builder_groups"][number]["builder_options"][number]) => {
+  const dec = (
+    g: Builder["builder_groups"][number],
+    o: Builder["builder_groups"][number]["builder_options"][number],
+  ) => {
     const cur = sel[g.id] ?? {};
     const have = cur[o.id] ?? 0;
     if (have <= 0) return;
@@ -236,15 +374,11 @@ function BuildYourOwnPage() {
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
 
-    const selections = groups.flatMap((g) =>
-      Object.entries(sel[g.id] ?? {})
-        .filter(([, qty]) => qty > 0)
-        .map(([optionId, qty]) => ({
-          groupId: g.id,
-          optionId,
-          qty,
-        })),
-    );
+    const selections = normalizedSelections.map((selection) => ({
+      groupId: selection.group_id,
+      optionId: selection.option_id,
+      qty: selection.quantity,
+    }));
 
     const item = {
       id: `builder:${activeBuilder.id}:${Date.now()}`,
@@ -258,7 +392,9 @@ function BuildYourOwnPage() {
 
     try {
       sessionStorage.setItem(`builder:add:${slug}`, JSON.stringify(item));
-    } catch {}
+    } catch {
+      return;
+    }
     toast.success("Adicionado ao carrinho");
     navigate({ to: "/$slug", params: { slug } });
   }
@@ -266,7 +402,13 @@ function BuildYourOwnPage() {
   if (isLoading) return <BuildSkeleton />;
 
   if (isError || !data?.restaurant) {
-    return <BuildUnavailable slug={slug} title="Monte do seu jeito estará disponível em breve." description="Não conseguimos encontrar a configuração deste restaurante agora." />;
+    return (
+      <BuildUnavailable
+        slug={slug}
+        title="Monte do seu jeito estará disponível em breve."
+        description="Não conseguimos encontrar a configuração deste restaurante agora."
+      />
+    );
   }
 
   const status = getRestaurantStatus({
@@ -275,23 +417,48 @@ function BuildYourOwnPage() {
   });
 
   if (!status.isOpen) {
-    return <BuildUnavailable slug={slug} title="Restaurante fechado no momento." description="Volte ao cardápio para consultar os horários de funcionamento." />;
+    return (
+      <BuildUnavailable
+        slug={slug}
+        title="Restaurante fechado no momento."
+        description="Volte ao cardápio para consultar os horários de funcionamento."
+      />
+    );
   }
 
   if (!data.restaurant.builders_enabled || !activeBuilder) {
-    return <BuildUnavailable slug={slug} title="Monte do seu jeito estará disponível em breve." description="O restaurante ainda está preparando essa experiência personalizada." />;
+    return (
+      <BuildUnavailable
+        slug={slug}
+        title="Monte do seu jeito estará disponível em breve."
+        description="O restaurante ainda está preparando essa experiência personalizada."
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-muted/30 pb-44">
       <div className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate({ to: "/$slug", params: { slug } })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => navigate({ to: "/$slug", params: { slug } })}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          {data.restaurant.logo_url && <img src={data.restaurant.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" />}
+          {data.restaurant.logo_url && (
+            <img
+              src={data.restaurant.logo_url}
+              alt=""
+              className="h-10 w-10 rounded-xl object-cover"
+            />
+          )}
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-muted-foreground">{data.restaurant.name}</p>
+            <p className="truncate text-xs font-semibold text-muted-foreground">
+              {data.restaurant.name}
+            </p>
             <h1 className="truncate font-display text-lg font-extrabold">Monte do Seu Jeito</h1>
           </div>
         </div>
@@ -316,20 +483,32 @@ function BuildYourOwnPage() {
         <Card className="overflow-hidden rounded-3xl border bg-card shadow-premium">
           <div className="flex gap-4 p-4">
             <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-primary/10 text-4xl">
-              {activeBuilder.image_url ? <img src={activeBuilder.image_url} alt="" className="h-full w-full object-cover" /> : (activeBuilder.emoji ?? "✨")}
+              {activeBuilder.image_url ? (
+                <img src={activeBuilder.image_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                (activeBuilder.emoji ?? "✨")
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-1 text-primary">
                 <Sparkles className="h-4 w-4" />
-                <span className="text-xs font-extrabold uppercase tracking-wide">Personalizado</span>
+                <span className="text-xs font-extrabold uppercase tracking-wide">
+                  Personalizado
+                </span>
               </div>
-              <h2 className="font-display text-2xl font-extrabold leading-tight">{activeBuilder.name}</h2>
-              {activeBuilder.description && <p className="mt-1 text-sm text-muted-foreground">{activeBuilder.description}</p>}
+              <h2 className="font-display text-2xl font-extrabold leading-tight">
+                {activeBuilder.name}
+              </h2>
+              {activeBuilder.description && (
+                <p className="mt-1 text-sm text-muted-foreground">{activeBuilder.description}</p>
+              )}
             </div>
           </div>
           <div className="border-t px-4 py-3">
             <Progress className="h-1.5" value={((step + 1) / totalSteps) * 100} />
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">Etapa {step + 1} de {totalSteps}</p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              Etapa {step + 1} de {totalSteps}
+            </p>
           </div>
         </Card>
 
@@ -339,47 +518,91 @@ function BuildYourOwnPage() {
               <h3 className="font-display text-xl font-extrabold">{currentGroup.name}</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {currentGroup.is_required ? "Obrigatório · " : "Opcional · "}
-                {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
+                {minimumRequiredFor(currentGroup) > 0 &&
+                  `mín ${minimumRequiredFor(currentGroup)} · `}
                 máx {currentGroup.max_select}
               </p>
+              {currentGroup.price_strategy === "MAX_MENU_ITEM" && (
+                <p className="mt-1 text-xs font-semibold text-primary">
+                  O preço da pizza será o maior preço entre os sabores escolhidos.
+                </p>
+              )}
               <div className="mt-4 space-y-2">
-                {currentGroup.builder_options.slice().sort((a, b) => a.position - b.position).map((o) => {
-                  const qty = sel[currentGroup.id]?.[o.id] ?? 0;
-                  const selected = qty > 0;
-                  const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => toggle(currentGroup, o)}
-                      className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`grid h-6 w-6 place-items-center border-2 ${radioLike ? "rounded-full" : "rounded-md"} ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
-                          {selected && <Check className="h-3.5 w-3.5" />}
-                        </span>
-                        <span className="font-semibold">{o.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {Number(o.price_delta) > 0 && <span className="text-sm font-bold text-primary">+ {brl(Number(o.price_delta))}</span>}
-                        {currentGroup.max_select > 1 && o.max_qty > 1 && selected && (
-                          <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <span onClick={() => dec(currentGroup, o)} className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border"><Minus className="h-3.5 w-3.5" /></span>
-                            <span className="w-6 text-center text-sm font-bold">{qty}</span>
-                            <span onClick={() => inc(currentGroup, o)} className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border"><Plus className="h-3.5 w-3.5" /></span>
+                {currentGroup.builder_options
+                  .slice()
+                  .sort((a, b) => a.position - b.position)
+                  .map((o) => {
+                    const qty = sel[currentGroup.id]?.[o.id] ?? 0;
+                    const selected = qty > 0;
+                    const radioLike =
+                      currentGroup.max_select === 1 && currentGroup.min_select === 1;
+                    const catalogPrice =
+                      currentGroup.price_strategy === "MAX_MENU_ITEM" && o.menu_item
+                        ? currentBuilderCatalogPrice(o.menu_item)
+                        : null;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => toggle(currentGroup, o)}
+                        className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`grid h-6 w-6 place-items-center border-2 ${radioLike ? "rounded-full" : "rounded-md"} ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}
+                          >
+                            {selected && <Check className="h-3.5 w-3.5" />}
                           </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                          <span className="font-semibold">{o.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {catalogPrice !== null ? (
+                            <span className="text-sm font-bold text-primary">
+                              {brl(catalogPrice)}
+                            </span>
+                          ) : Number(o.price_delta) > 0 ? (
+                            <span className="text-sm font-bold text-primary">
+                              + {brl(Number(o.price_delta))}
+                            </span>
+                          ) : null}
+                          {currentGroup.max_select > 1 && o.max_qty > 1 && selected && (
+                            <span
+                              className="flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span
+                                onClick={() => dec(currentGroup, o)}
+                                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </span>
+                              <span className="w-6 text-center text-sm font-bold">{qty}</span>
+                              <span
+                                onClick={() => inc(currentGroup, o)}
+                                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           ) : (
             <div>
               <h3 className="font-display text-xl font-extrabold">Observações</h3>
-              <p className="mb-3 mt-1 text-sm text-muted-foreground">Algum detalhe especial? (opcional)</p>
-              <Textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: sem cebola, massa bem assada..." />
+              <p className="mb-3 mt-1 text-sm text-muted-foreground">
+                Algum detalhe especial? (opcional)
+              </p>
+              <Textarea
+                rows={5}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: sem cebola, massa bem assada..."
+              />
             </div>
           )}
         </Card>
@@ -395,9 +618,17 @@ function BuildYourOwnPage() {
             <p className="font-display text-xl font-extrabold text-primary">{brl(subtotal)}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>Voltar</Button>
+            <Button
+              variant="outline"
+              disabled={step === 0}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+            >
+              Voltar
+            </Button>
             {step < totalSteps - 1 ? (
-              <Button onClick={next}>Avançar <ChevronRight className="h-4 w-4" /></Button>
+              <Button onClick={next}>
+                Avançar <ChevronRight className="h-4 w-4" />
+              </Button>
             ) : (
               <Button onClick={finish}>Adicionar</Button>
             )}
@@ -420,11 +651,21 @@ function BuildSkeleton() {
   );
 }
 
-function BuildUnavailable({ slug, title, description }: { slug: string; title: string; description: string }) {
+function BuildUnavailable({
+  slug,
+  title,
+  description,
+}: {
+  slug: string;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="grid min-h-screen place-items-center bg-muted/30 px-4 text-center">
       <Card className="max-w-sm rounded-3xl p-6 shadow-premium">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-2xl">✨</div>
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-2xl">
+          ✨
+        </div>
         <h1 className="font-display text-2xl font-extrabold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         <Link to="/$slug" params={{ slug }} className="mt-5 inline-flex w-full">

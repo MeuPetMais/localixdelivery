@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SupabaseRawFetchTempRouteImport } from './routes/supabase-raw-fetch-temp'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as PartnerGrowthRouteImport } from './routes/partner-growth'
+import { Route as MotoboyEstabelecimentosRouteImport } from './routes/motoboy-estabelecimentos'
 import { Route as MotoboyRouteImport } from './routes/motoboy'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as MeusEnderecosRouteImport } from './routes/meus-enderecos'
@@ -65,6 +66,7 @@ import { Route as AuthenticatedPrintSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPagamentosRouteImport } from './routes/_authenticated/pagamentos'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedOrderHistoryRouteImport } from './routes/_authenticated/order-history'
 import { Route as AuthenticatedMotoboysRouteImport } from './routes/_authenticated/motoboys'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedLoyaltyRouteImport } from './routes/_authenticated/loyalty'
@@ -81,12 +83,14 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConsultorRouteImport } from './routes/_authenticated/consultor'
 import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
 import { Route as AuthenticatedBuildersRouteImport } from './routes/_authenticated/builders'
+import { Route as AuthenticatedBuilderStockRouteImport } from './routes/_authenticated/builder-stock'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as SlugSobreRouteImport } from './routes/$slug.sobre'
 import { Route as SlugMontarRouteImport } from './routes/$slug.montar'
 import { Route as AdminSupportTeamRouteImport } from './routes/admin.support.team'
 import { Route as AdminSupportReportsRouteImport } from './routes/admin.support.reports'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
+import { Route as AuthenticatedBuildersCatalogFlavorsRouteImport } from './routes/_authenticated/builders.catalog-flavors'
 import { Route as ApiPublicOrdersTransitionRouteImport } from './routes/api/public/orders.transition'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp.webhook'
 import { Route as ApiPublicMpCallbackRouteImport } from './routes/api/public/mp.callback'
@@ -104,6 +108,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
 const PartnerGrowthRoute = PartnerGrowthRouteImport.update({
   id: '/partner-growth',
   path: '/partner-growth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotoboyEstabelecimentosRoute = MotoboyEstabelecimentosRouteImport.update({
+  id: '/motoboy-estabelecimentos',
+  path: '/motoboy-estabelecimentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MotoboyRoute = MotoboyRouteImport.update({
@@ -374,6 +383,12 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrderHistoryRoute =
+  AuthenticatedOrderHistoryRouteImport.update({
+    id: '/order-history',
+    path: '/order-history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMotoboysRoute = AuthenticatedMotoboysRouteImport.update({
   id: '/motoboys',
   path: '/motoboys',
@@ -456,6 +471,12 @@ const AuthenticatedBuildersRoute = AuthenticatedBuildersRouteImport.update({
   path: '/builders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBuilderStockRoute =
+  AuthenticatedBuilderStockRouteImport.update({
+    id: '/builder-stock',
+    path: '/builder-stock',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -486,6 +507,12 @@ const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
   path: '/$ticketId',
   getParentRoute: () => AdminSupportRoute,
 } as any)
+const AuthenticatedBuildersCatalogFlavorsRoute =
+  AuthenticatedBuildersCatalogFlavorsRouteImport.update({
+    id: '/catalog-flavors',
+    path: '/catalog-flavors',
+    getParentRoute: () => AuthenticatedBuildersRoute,
+  } as any)
 const ApiPublicOrdersTransitionRoute =
   ApiPublicOrdersTransitionRouteImport.update({
     id: '/api/public/orders/transition',
@@ -519,13 +546,15 @@ export interface FileRoutesByFullPath {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/motoboy-estabelecimentos': typeof MotoboyEstabelecimentosRoute
   '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
-  '/builders': typeof AuthenticatedBuildersRoute
+  '/builder-stock': typeof AuthenticatedBuilderStockRoute
+  '/builders': typeof AuthenticatedBuildersRouteWithChildren
   '/central': typeof AuthenticatedCentralRoute
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -541,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/motoboys': typeof AuthenticatedMotoboysRoute
+  '/order-history': typeof AuthenticatedOrderHistoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -578,6 +608,7 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
+  '/builders/catalog-flavors': typeof AuthenticatedBuildersCatalogFlavorsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/support/reports': typeof AdminSupportReportsRoute
   '/admin/support/team': typeof AdminSupportTeamRoute
@@ -599,13 +630,15 @@ export interface FileRoutesByTo {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/motoboy-estabelecimentos': typeof MotoboyEstabelecimentosRoute
   '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/ai': typeof AuthenticatedAiRoute
-  '/builders': typeof AuthenticatedBuildersRoute
+  '/builder-stock': typeof AuthenticatedBuilderStockRoute
+  '/builders': typeof AuthenticatedBuildersRouteWithChildren
   '/central': typeof AuthenticatedCentralRoute
   '/consultor': typeof AuthenticatedConsultorRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -621,6 +654,7 @@ export interface FileRoutesByTo {
   '/loyalty': typeof AuthenticatedLoyaltyRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/motoboys': typeof AuthenticatedMotoboysRoute
+  '/order-history': typeof AuthenticatedOrderHistoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pagamentos': typeof AuthenticatedPagamentosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -658,6 +692,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugIndexRoute
   '/admin': typeof AdminIndexRoute
   '/entregador': typeof EntregadorIndexRoute
+  '/builders/catalog-flavors': typeof AuthenticatedBuildersCatalogFlavorsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/support/reports': typeof AdminSupportReportsRoute
   '/admin/support/team': typeof AdminSupportTeamRoute
@@ -683,13 +718,15 @@ export interface FileRoutesById {
   '/meus-enderecos': typeof MeusEnderecosRoute
   '/meus-pedidos': typeof MeusPedidosRoute
   '/motoboy': typeof MotoboyRoute
+  '/motoboy-estabelecimentos': typeof MotoboyEstabelecimentosRoute
   '/partner-growth': typeof PartnerGrowthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/supabase-raw-fetch-temp': typeof SupabaseRawFetchTempRoute
   '/$slug/montar': typeof SlugMontarRoute
   '/$slug/sobre': typeof SlugSobreRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
-  '/_authenticated/builders': typeof AuthenticatedBuildersRoute
+  '/_authenticated/builder-stock': typeof AuthenticatedBuilderStockRoute
+  '/_authenticated/builders': typeof AuthenticatedBuildersRouteWithChildren
   '/_authenticated/central': typeof AuthenticatedCentralRoute
   '/_authenticated/consultor': typeof AuthenticatedConsultorRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
@@ -705,6 +742,7 @@ export interface FileRoutesById {
   '/_authenticated/loyalty': typeof AuthenticatedLoyaltyRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/motoboys': typeof AuthenticatedMotoboysRoute
+  '/_authenticated/order-history': typeof AuthenticatedOrderHistoryRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/pagamentos': typeof AuthenticatedPagamentosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -742,6 +780,7 @@ export interface FileRoutesById {
   '/$slug/': typeof SlugIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/entregador/': typeof EntregadorIndexRoute
+  '/_authenticated/builders/catalog-flavors': typeof AuthenticatedBuildersCatalogFlavorsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/support/reports': typeof AdminSupportReportsRoute
   '/admin/support/team': typeof AdminSupportTeamRoute
@@ -767,12 +806,14 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/motoboy-estabelecimentos'
     | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
+    | '/builder-stock'
     | '/builders'
     | '/central'
     | '/consultor'
@@ -789,6 +830,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/motoboys'
+    | '/order-history'
     | '/orders'
     | '/pagamentos'
     | '/perfil'
@@ -826,6 +868,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
+    | '/builders/catalog-flavors'
     | '/admin/support/$ticketId'
     | '/admin/support/reports'
     | '/admin/support/team'
@@ -847,12 +890,14 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/motoboy-estabelecimentos'
     | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/ai'
+    | '/builder-stock'
     | '/builders'
     | '/central'
     | '/consultor'
@@ -869,6 +914,7 @@ export interface FileRouteTypes {
     | '/loyalty'
     | '/menu'
     | '/motoboys'
+    | '/order-history'
     | '/orders'
     | '/pagamentos'
     | '/perfil'
@@ -906,6 +952,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/admin'
     | '/entregador'
+    | '/builders/catalog-flavors'
     | '/admin/support/$ticketId'
     | '/admin/support/reports'
     | '/admin/support/team'
@@ -930,12 +977,14 @@ export interface FileRouteTypes {
     | '/meus-enderecos'
     | '/meus-pedidos'
     | '/motoboy'
+    | '/motoboy-estabelecimentos'
     | '/partner-growth'
     | '/redefinir-senha'
     | '/supabase-raw-fetch-temp'
     | '/$slug/montar'
     | '/$slug/sobre'
     | '/_authenticated/ai'
+    | '/_authenticated/builder-stock'
     | '/_authenticated/builders'
     | '/_authenticated/central'
     | '/_authenticated/consultor'
@@ -952,6 +1001,7 @@ export interface FileRouteTypes {
     | '/_authenticated/loyalty'
     | '/_authenticated/menu'
     | '/_authenticated/motoboys'
+    | '/_authenticated/order-history'
     | '/_authenticated/orders'
     | '/_authenticated/pagamentos'
     | '/_authenticated/perfil'
@@ -989,6 +1039,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/admin/'
     | '/entregador/'
+    | '/_authenticated/builders/catalog-flavors'
     | '/admin/support/$ticketId'
     | '/admin/support/reports'
     | '/admin/support/team'
@@ -1014,6 +1065,7 @@ export interface RootRouteChildren {
   MeusEnderecosRoute: typeof MeusEnderecosRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
   MotoboyRoute: typeof MotoboyRoute
+  MotoboyEstabelecimentosRoute: typeof MotoboyEstabelecimentosRoute
   PartnerGrowthRoute: typeof PartnerGrowthRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SupabaseRawFetchTempRoute: typeof SupabaseRawFetchTempRoute
@@ -1053,6 +1105,13 @@ declare module '@tanstack/react-router' {
       path: '/partner-growth'
       fullPath: '/partner-growth'
       preLoaderRoute: typeof PartnerGrowthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/motoboy-estabelecimentos': {
+      id: '/motoboy-estabelecimentos'
+      path: '/motoboy-estabelecimentos'
+      fullPath: '/motoboy-estabelecimentos'
+      preLoaderRoute: typeof MotoboyEstabelecimentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/motoboy': {
@@ -1426,6 +1485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/order-history': {
+      id: '/_authenticated/order-history'
+      path: '/order-history'
+      fullPath: '/order-history'
+      preLoaderRoute: typeof AuthenticatedOrderHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/motoboys': {
       id: '/_authenticated/motoboys'
       path: '/motoboys'
@@ -1538,6 +1604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBuildersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/builder-stock': {
+      id: '/_authenticated/builder-stock'
+      path: '/builder-stock'
+      fullPath: '/builder-stock'
+      preLoaderRoute: typeof AuthenticatedBuilderStockRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ai': {
       id: '/_authenticated/ai'
       path: '/ai'
@@ -1580,6 +1653,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSupportTicketIdRouteImport
       parentRoute: typeof AdminSupportRoute
     }
+    '/_authenticated/builders/catalog-flavors': {
+      id: '/_authenticated/builders/catalog-flavors'
+      path: '/catalog-flavors'
+      fullPath: '/builders/catalog-flavors'
+      preLoaderRoute: typeof AuthenticatedBuildersCatalogFlavorsRouteImport
+      parentRoute: typeof AuthenticatedBuildersRoute
+    }
     '/api/public/orders/transition': {
       id: '/api/public/orders/transition'
       path: '/api/public/orders/transition'
@@ -1604,9 +1684,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedBuildersRouteChildren {
+  AuthenticatedBuildersCatalogFlavorsRoute: typeof AuthenticatedBuildersCatalogFlavorsRoute
+}
+
+const AuthenticatedBuildersRouteChildren: AuthenticatedBuildersRouteChildren = {
+  AuthenticatedBuildersCatalogFlavorsRoute:
+    AuthenticatedBuildersCatalogFlavorsRoute,
+}
+
+const AuthenticatedBuildersRouteWithChildren =
+  AuthenticatedBuildersRoute._addFileChildren(
+    AuthenticatedBuildersRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
-  AuthenticatedBuildersRoute: typeof AuthenticatedBuildersRoute
+  AuthenticatedBuilderStockRoute: typeof AuthenticatedBuilderStockRoute
+  AuthenticatedBuildersRoute: typeof AuthenticatedBuildersRouteWithChildren
   AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
   AuthenticatedConsultorRoute: typeof AuthenticatedConsultorRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
@@ -1622,6 +1717,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLoyaltyRoute: typeof AuthenticatedLoyaltyRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedMotoboysRoute: typeof AuthenticatedMotoboysRoute
+  AuthenticatedOrderHistoryRoute: typeof AuthenticatedOrderHistoryRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPagamentosRoute: typeof AuthenticatedPagamentosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -1638,7 +1734,8 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiRoute: AuthenticatedAiRoute,
-  AuthenticatedBuildersRoute: AuthenticatedBuildersRoute,
+  AuthenticatedBuilderStockRoute: AuthenticatedBuilderStockRoute,
+  AuthenticatedBuildersRoute: AuthenticatedBuildersRouteWithChildren,
   AuthenticatedCentralRoute: AuthenticatedCentralRoute,
   AuthenticatedConsultorRoute: AuthenticatedConsultorRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
@@ -1654,6 +1751,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLoyaltyRoute: AuthenticatedLoyaltyRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedMotoboysRoute: AuthenticatedMotoboysRoute,
+  AuthenticatedOrderHistoryRoute: AuthenticatedOrderHistoryRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPagamentosRoute: AuthenticatedPagamentosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
@@ -1754,6 +1852,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusEnderecosRoute: MeusEnderecosRoute,
   MeusPedidosRoute: MeusPedidosRoute,
   MotoboyRoute: MotoboyRoute,
+  MotoboyEstabelecimentosRoute: MotoboyEstabelecimentosRoute,
   PartnerGrowthRoute: PartnerGrowthRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SupabaseRawFetchTempRoute: SupabaseRawFetchTempRoute,

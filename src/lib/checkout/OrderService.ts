@@ -256,7 +256,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         const { data: rows, error } = await supabaseAdmin
           .from("builders")
           .select(
-            "id, restaurant_id, name, base_price, is_active, builder_groups(id, builder_id, name, is_required, min_select, max_select, builder_options(id, group_id, name, price_delta, max_qty))",
+            "id, restaurant_id, name, base_price, is_active, builder_groups(id, builder_id, name, is_required, min_select, max_select, source_type, price_strategy, builder_options(id, group_id, name, price_delta, max_qty, menu_item_id, menu_item:menu_items(id, restaurant_id, price, promo_price, promo_starts_at, promo_ends_at, recurrence_days, recurrence_start_time, recurrence_end_time, is_active, is_available, is_paused)))",
           )
           .eq("restaurant_id", restaurantId)
           .in("id", ids);

@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -7,22 +13,50 @@ import { Progress } from "@/components/ui/progress";
 import { brl } from "@/lib/format";
 import { Check, ChevronLeft, ChevronRight, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
+import {
+  calculateBuilderCatalogUnitPrice,
+  currentBuilderCatalogPrice,
+  type BuilderCatalogProduct,
+} from "@/lib/checkout/builder-catalog-pricing";
 
 export type Builder = {
-  id: string; name: string; emoji?: string | null; description?: string | null;
-  image_url?: string | null; base_price: number;
+  id: string;
+  name: string;
+  emoji?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  base_price: number;
+  restaurant_id?: string;
   builder_groups: Group[];
 };
-type Group = {
-  id: string; name: string; min_select: number; max_select: number; is_required: boolean; position: number;
+export type Group = {
+  id: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  is_required: boolean;
+  position: number;
+  source_type?: "MANUAL" | "MENU_ITEMS" | null;
+  price_strategy?: "SUM" | "MAX_MENU_ITEM" | null;
   builder_options: Option[];
 };
-type Option = { id: string; name: string; price_delta: number; max_qty: number; position: number };
+export type Option = {
+  id: string;
+  name: string;
+  price_delta: number;
+  max_qty: number;
+  position: number;
+  menu_item_id?: string | null;
+  menu_item?: BuilderCatalogProduct | null;
+};
 
-type Selection = Record<string, Record<string, number>>; // groupId -> { optionId: qty }
+type Selection = Record<string, Record<string, number>>;
 
 export function BuilderConfigurator({
-  builder, open, onOpenChange, onAdd,
+  builder,
+  open,
+  onOpenChange,
+  onAdd,
 }: {
   builder: Builder | null;
   open: boolean;
@@ -33,20 +67,23 @@ export function BuilderConfigurator({
     () => (builder?.builder_groups ?? []).slice().sort((a, b) => a.position - b.position),
     [builder],
   );
-  const totalSteps = groups.length + 1; // +1 notes step
+  const totalSteps = groups.length + 1;
   const [step, setStep] = useState(0);
   const [sel, setSel] = useState<Selection>({});
   const [notes, setNotes] = useState("");
 
-  // reset when builder changes
-  useEffect(() => { setStep(0); setSel({}); setNotes(""); }, [builder?.id]);
+  useEffect(() => {
+    setStep(0);
+    setSel({});
+    setNotes("");
+  }, [builder?.id]);
 
   const currentGroup: Group | undefined = groups[step];
 
-  const totalForGroup = (gid: string) =>
-    Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
+  const totalForGroup = (gid: string) => Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
 
-  const minimumRequiredFor = (g: Group) => Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
+  const minimumRequiredFor = (g: Group) =>
+    Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
 
   const removeWouldBreakMinimum = (g: Group, totalNow: number, removeQty: number) => {
     const minimumRequired = minimumRequiredFor(g);
@@ -62,7 +99,9 @@ export function BuilderConfigurator({
       if (g.max_select === 1) {
         if (have) {
           if (removeWouldBreakMinimum(g, totalNow, have)) {
-            toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
+            toast.error(
+              `É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`,
+            );
             return prev;
           }
           return { ...prev, [g.id]: {} };
@@ -77,7 +116,9 @@ export function BuilderConfigurator({
         delete cur[o.id];
       } else {
         if (totalNow >= g.max_select) {
-          toast.error(`Você atingiu o limite desta etapa. Você pode escolher no máximo ${g.max_select} ${optionLabel}.`);
+          toast.error(
+            `Você atingiu o limite desta etapa. Você pode escolher no máximo ${g.max_select} ${optionLabel}.`,
+          );
           return prev;
         }
         cur[o.id] = 1;
@@ -92,11 +133,15 @@ export function BuilderConfigurator({
       const have = cur[o.id] ?? 0;
       const totalNow = Object.values(cur).reduce((s, n) => s + n, 0);
       if (have >= o.max_qty) return prev;
-      if (totalNow >= g.max_select) { toast.error("Você atingiu o limite desta etapa."); return prev; }
+      if (totalNow >= g.max_select) {
+        toast.error("Você atingiu o limite desta etapa.");
+        return prev;
+      }
       cur[o.id] = have + 1;
       return { ...prev, [g.id]: cur };
     });
   };
+
   const dec = (g: Group, o: Option) => {
     setSel((prev) => {
       const cur = { ...(prev[g.id] ?? {}) };
@@ -108,21 +153,38 @@ export function BuilderConfigurator({
         return prev;
       }
       const next = have - 1;
-      if (next <= 0) delete cur[o.id]; else cur[o.id] = next;
+      if (next <= 0) delete cur[o.id];
+      else cur[o.id] = next;
       return { ...prev, [g.id]: cur };
     });
   };
 
   const subtotal = useMemo(() => {
-    let s = Number(builder?.base_price ?? 0) || 0;
-    for (const g of groups) {
-      const picks = sel[g.id] ?? {};
-      for (const o of g.builder_options) s += (picks[o.id] ?? 0) * Number(o.price_delta);
+    if (!builder) return 0;
+    try {
+      return calculateBuilderCatalogUnitPrice({
+        restaurantId: builder.restaurant_id ?? "preview",
+        basePrice: Number(builder.base_price ?? 0) || 0,
+        groups,
+        selections: groups.flatMap((group) =>
+          Object.entries(sel[group.id] ?? {}).map(([optionId, quantity]) => ({
+            group_id: group.id,
+            option_id: optionId,
+            quantity,
+          })),
+        ),
+      });
+    } catch {
+      return Number(builder.base_price ?? 0) || 0;
     }
-    return s;
-  }, [sel, groups, builder?.base_price]);
+  }, [sel, groups, builder]);
 
-  if (!builder) return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent /></Dialog>;
+  if (!builder)
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent />
+      </Dialog>
+    );
 
   function next() {
     if (currentGroup) {
@@ -137,7 +199,6 @@ export function BuilderConfigurator({
   }
 
   function finish() {
-    // validate all required
     for (const g of groups) {
       const t = totalForGroup(g.id);
       const minimumRequired = minimumRequiredFor(g);
@@ -155,12 +216,14 @@ export function BuilderConfigurator({
       if (names.length) parts.push(`${g.name}: ${names.join(", ")}`);
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
-    if (!builder) return;
-    const name = `${builder.emoji ?? ""} ${builder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim();
+    const name =
+      `${builder.emoji ?? ""} ${builder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim();
     onAdd({ id: `builder:${builder.id}:${Date.now()}`, name, price: subtotal });
     toast.success("Adicionado ao carrinho");
     onOpenChange(false);
-    setStep(0); setSel({}); setNotes("");
+    setStep(0);
+    setSel({});
+    setNotes("");
   }
 
   return (
@@ -173,7 +236,9 @@ export function BuilderConfigurator({
             </DialogTitle>
           </DialogHeader>
           <Progress className="mt-3 h-1.5" value={((step + 1) / totalSteps) * 100} />
-          <p className="mt-1 text-xs text-muted-foreground">Etapa {step + 1} de {totalSteps}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Etapa {step + 1} de {totalSteps}
+          </p>
         </div>
 
         <div className="p-4">
@@ -183,20 +248,29 @@ export function BuilderConfigurator({
                 <h3 className="font-display text-lg font-extrabold">{currentGroup.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {currentGroup.is_required ? "Obrigatório · " : "Opcional · "}
-                  {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
+                  {minimumRequiredFor(currentGroup) > 0 &&
+                    `mín ${minimumRequiredFor(currentGroup)} · `}
                   máx {currentGroup.max_select}
                 </p>
               </div>
               <div className="space-y-2">
                 {currentGroup.builder_options.length === 0 && (
-                  <p className="rounded-xl border bg-muted/40 p-4 text-center text-sm text-muted-foreground">Sem opções cadastradas nesta etapa.</p>
+                  <p className="rounded-xl border bg-muted/40 p-4 text-center text-sm text-muted-foreground">
+                    Sem opções cadastradas nesta etapa.
+                  </p>
                 )}
                 {currentGroup.builder_options
-                  .slice().sort((a, b) => a.position - b.position)
+                  .slice()
+                  .sort((a, b) => a.position - b.position)
                   .map((o) => {
                     const qty = sel[currentGroup.id]?.[o.id] ?? 0;
                     const selected = qty > 0;
-                    const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
+                    const radioLike =
+                      currentGroup.max_select === 1 && currentGroup.min_select === 1;
+                    const catalogPrice =
+                      currentGroup.price_strategy === "MAX_MENU_ITEM" && o.menu_item
+                        ? currentBuilderCatalogPrice(o.menu_item)
+                        : null;
                     return (
                       <button
                         type="button"
@@ -205,26 +279,44 @@ export function BuilderConfigurator({
                         className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                       >
                         <div className="flex items-center gap-3">
-                          {radioLike ? (
-                            <span className={`grid h-5 w-5 place-items-center rounded-full border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
-                              {selected && <Check className="h-3 w-3" />}
-                            </span>
-                          ) : (
-                            <span className={`grid h-5 w-5 place-items-center rounded-md border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
-                              {selected && <Check className="h-3 w-3" />}
-                            </span>
-                          )}
+                          <span
+                            className={`grid h-5 w-5 place-items-center ${radioLike ? "rounded-full" : "rounded-md"} border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}
+                          >
+                            {selected && <Check className="h-3 w-3" />}
+                          </span>
                           <span className="text-sm font-semibold">{o.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {Number(o.price_delta) > 0 && (
-                            <span className="text-xs font-bold text-primary">+ {brl(Number(o.price_delta))}</span>
-                          )}
+                          {catalogPrice !== null ? (
+                            <span className="text-xs font-bold text-primary">
+                              {brl(catalogPrice)}
+                            </span>
+                          ) : Number(o.price_delta) > 0 ? (
+                            <span className="text-xs font-bold text-primary">
+                              + {brl(Number(o.price_delta))}
+                            </span>
+                          ) : null}
                           {currentGroup.max_select > 1 && o.max_qty > 1 && selected && (
                             <span className="flex items-center gap-1">
-                              <span onClick={(e) => { e.stopPropagation(); dec(currentGroup, o); }} className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"><Minus className="h-3 w-3" /></span>
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  dec(currentGroup, o);
+                                }}
+                                className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </span>
                               <span className="w-5 text-center text-sm font-bold">{qty}</span>
-                              <span onClick={(e) => { e.stopPropagation(); inc(currentGroup, o); }} className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"><Plus className="h-3 w-3" /></span>
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  inc(currentGroup, o);
+                                }}
+                                className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </span>
                             </span>
                           )}
                         </div>
@@ -236,9 +328,16 @@ export function BuilderConfigurator({
           ) : (
             <div>
               <h3 className="font-display text-lg font-extrabold">Observações</h3>
-              <p className="mb-2 text-xs text-muted-foreground">Algum detalhe especial? (opcional)</p>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Algum detalhe especial? (opcional)
+              </p>
               <Label className="sr-only">Observações</Label>
-              <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: sem cebola, massa bem assada..." />
+              <Textarea
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: sem cebola, massa bem assada..."
+              />
             </div>
           )}
         </div>
@@ -249,11 +348,17 @@ export function BuilderConfigurator({
             <p className="font-display text-lg font-extrabold text-primary">{brl(subtotal)}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+            <Button
+              variant="outline"
+              disabled={step === 0}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+            >
               <ChevronLeft className="h-4 w-4" /> Voltar
             </Button>
             {step < totalSteps - 1 ? (
-              <Button onClick={next}>Avançar <ChevronRight className="h-4 w-4" /></Button>
+              <Button onClick={next}>
+                Avançar <ChevronRight className="h-4 w-4" />
+              </Button>
             ) : (
               <Button onClick={finish}>Adicionar ao carrinho</Button>
             )}
