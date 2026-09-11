@@ -1,7 +1,10 @@
 import { isPromoActiveNow } from "@/lib/promotions";
 import { ConfigurationRuleEngine } from "@/lib/product/configuration/ConfigurationRuleEngine";
 import { PriceCalculationStrategy } from "@/lib/product/configuration/PriceCalculationStrategy";
-import { calculateBuilderCatalogUnitPrice, type BuilderCatalogProduct } from "./builder-catalog-pricing";
+import {
+  calculateBuilderCatalogUnitPrice,
+  type BuilderCatalogProduct,
+} from "./builder-catalog-pricing";
 import type {
   ProductOption,
   ProductOptionGroup,
@@ -238,7 +241,9 @@ function buildBuilderOptionSnapshot(
   const groups = builder.builder_groups ?? [];
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const optionsById = new Map(
-    groups.flatMap((group) => (group.builder_options ?? []).map((option) => [option.id, option] as const)),
+    groups.flatMap((group) =>
+      (group.builder_options ?? []).map((option) => [option.id, option] as const),
+    ),
   );
 
   return selections.map((selection) => {

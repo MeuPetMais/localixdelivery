@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -74,8 +80,7 @@ export function BuilderConfigurator({
 
   const currentGroup: Group | undefined = groups[step];
 
-  const totalForGroup = (gid: string) =>
-    Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
+  const totalForGroup = (gid: string) => Object.values(sel[gid] ?? {}).reduce((s, n) => s + n, 0);
 
   const minimumRequiredFor = (g: Group) =>
     Math.max(g.is_required ? 1 : 0, Number(g.min_select) || 0);
@@ -94,7 +99,9 @@ export function BuilderConfigurator({
       if (g.max_select === 1) {
         if (have) {
           if (removeWouldBreakMinimum(g, totalNow, have)) {
-            toast.error(`É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`);
+            toast.error(
+              `É necessário manter pelo menos ${minimumRequiredFor(g)} opção selecionada.`,
+            );
             return prev;
           }
           return { ...prev, [g.id]: {} };
@@ -109,7 +116,9 @@ export function BuilderConfigurator({
         delete cur[o.id];
       } else {
         if (totalNow >= g.max_select) {
-          toast.error(`Você atingiu o limite desta etapa. Você pode escolher no máximo ${g.max_select} ${optionLabel}.`);
+          toast.error(
+            `Você atingiu o limite desta etapa. Você pode escolher no máximo ${g.max_select} ${optionLabel}.`,
+          );
           return prev;
         }
         cur[o.id] = 1;
@@ -207,7 +216,8 @@ export function BuilderConfigurator({
       if (names.length) parts.push(`${g.name}: ${names.join(", ")}`);
     }
     if (notes.trim()) parts.push(`Obs: ${notes.trim()}`);
-    const name = `${builder.emoji ?? ""} ${builder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim();
+    const name =
+      `${builder.emoji ?? ""} ${builder.name}${parts.length ? ` (${parts.join(" | ")})` : ""}`.trim();
     onAdd({ id: `builder:${builder.id}:${Date.now()}`, name, price: subtotal });
     toast.success("Adicionado ao carrinho");
     onOpenChange(false);
@@ -226,7 +236,9 @@ export function BuilderConfigurator({
             </DialogTitle>
           </DialogHeader>
           <Progress className="mt-3 h-1.5" value={((step + 1) / totalSteps) * 100} />
-          <p className="mt-1 text-xs text-muted-foreground">Etapa {step + 1} de {totalSteps}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Etapa {step + 1} de {totalSteps}
+          </p>
         </div>
 
         <div className="p-4">
@@ -236,7 +248,8 @@ export function BuilderConfigurator({
                 <h3 className="font-display text-lg font-extrabold">{currentGroup.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {currentGroup.is_required ? "Obrigatório · " : "Opcional · "}
-                  {minimumRequiredFor(currentGroup) > 0 && `mín ${minimumRequiredFor(currentGroup)} · `}
+                  {minimumRequiredFor(currentGroup) > 0 &&
+                    `mín ${minimumRequiredFor(currentGroup)} · `}
                   máx {currentGroup.max_select}
                 </p>
               </div>
@@ -252,7 +265,8 @@ export function BuilderConfigurator({
                   .map((o) => {
                     const qty = sel[currentGroup.id]?.[o.id] ?? 0;
                     const selected = qty > 0;
-                    const radioLike = currentGroup.max_select === 1 && currentGroup.min_select === 1;
+                    const radioLike =
+                      currentGroup.max_select === 1 && currentGroup.min_select === 1;
                     const catalogPrice =
                       currentGroup.price_strategy === "MAX_MENU_ITEM" && o.menu_item
                         ? currentBuilderCatalogPrice(o.menu_item)
@@ -265,22 +279,44 @@ export function BuilderConfigurator({
                         className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${selected ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={`grid h-5 w-5 place-items-center ${radioLike ? "rounded-full" : "rounded-md"} border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}>
+                          <span
+                            className={`grid h-5 w-5 place-items-center ${radioLike ? "rounded-full" : "rounded-md"} border-2 ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30"}`}
+                          >
                             {selected && <Check className="h-3 w-3" />}
                           </span>
                           <span className="text-sm font-semibold">{o.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {catalogPrice !== null ? (
-                            <span className="text-xs font-bold text-primary">{brl(catalogPrice)}</span>
+                            <span className="text-xs font-bold text-primary">
+                              {brl(catalogPrice)}
+                            </span>
                           ) : Number(o.price_delta) > 0 ? (
-                            <span className="text-xs font-bold text-primary">+ {brl(Number(o.price_delta))}</span>
+                            <span className="text-xs font-bold text-primary">
+                              + {brl(Number(o.price_delta))}
+                            </span>
                           ) : null}
                           {currentGroup.max_select > 1 && o.max_qty > 1 && selected && (
                             <span className="flex items-center gap-1">
-                              <span onClick={(e) => { e.stopPropagation(); dec(currentGroup, o); }} className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"><Minus className="h-3 w-3" /></span>
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  dec(currentGroup, o);
+                                }}
+                                className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </span>
                               <span className="w-5 text-center text-sm font-bold">{qty}</span>
-                              <span onClick={(e) => { e.stopPropagation(); inc(currentGroup, o); }} className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"><Plus className="h-3 w-3" /></span>
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  inc(currentGroup, o);
+                                }}
+                                className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </span>
                             </span>
                           )}
                         </div>
@@ -292,9 +328,16 @@ export function BuilderConfigurator({
           ) : (
             <div>
               <h3 className="font-display text-lg font-extrabold">Observações</h3>
-              <p className="mb-2 text-xs text-muted-foreground">Algum detalhe especial? (opcional)</p>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Algum detalhe especial? (opcional)
+              </p>
               <Label className="sr-only">Observações</Label>
-              <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: sem cebola, massa bem assada..." />
+              <Textarea
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: sem cebola, massa bem assada..."
+              />
             </div>
           )}
         </div>
@@ -305,11 +348,17 @@ export function BuilderConfigurator({
             <p className="font-display text-lg font-extrabold text-primary">{brl(subtotal)}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+            <Button
+              variant="outline"
+              disabled={step === 0}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+            >
               <ChevronLeft className="h-4 w-4" /> Voltar
             </Button>
             {step < totalSteps - 1 ? (
-              <Button onClick={next}>Avançar <ChevronRight className="h-4 w-4" /></Button>
+              <Button onClick={next}>
+                Avançar <ChevronRight className="h-4 w-4" />
+              </Button>
             ) : (
               <Button onClick={finish}>Adicionar ao carrinho</Button>
             )}

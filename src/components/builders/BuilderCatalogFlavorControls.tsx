@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -62,6 +62,18 @@ type SyncedFlavorRow = {
   linked_menu_item_id: string;
 };
 
+type RpcError = { message?: string };
+type BuilderCatalogRpcClient = {
+  rpc(
+    fn: "sync_builder_catalog_flavors",
+    args: { p_group_id: string; p_menu_item_ids: string[] },
+  ): Promise<{ data: SyncedFlavorRow[] | null; error: RpcError | null }>;
+};
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function normalize(value: string) {
   return value
     .normalize("NFD")
@@ -98,12 +110,13 @@ export function BuilderCatalogFlavorControls({
     () => options.map((option) => option.menu_item_id).filter((id): id is string => !!id),
     [options],
   );
+  const linkedKey = linkedIds.join("|");
   const [selected, setSelected] = useState<Set<string>>(new Set(linkedIds));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setSelected(new Set(linkedIds));
-  }, [groupId, linkedIds.join("|")]);
+  }, [groupId, linkedIds, linkedKey]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["builder-catalog-flavors", restaurantId],
@@ -157,37 +170,36 @@ export function BuilderCatalogFlavorControls({
 
   async function sync() {
     if (selected.size === 0) {
-      toast.error("Selecione ao menos uma pizza do cardápio.");
+      toast.error("Selecione ao menos uma pizza do cardÃ¡pio.");
       return;
     }
 
     const selectedItems = candidates.filter((item) => selected.has(item.id));
     if (selectedItems.length !== selected.size) {
-      toast.error("Uma das pizzas selecionadas não está mais disponível no cardápio.");
+      toast.error("Uma das pizzas selecionadas nÃ£o estÃ¡ mais disponÃ­vel no cardÃ¡pio.");
       return;
     }
 
     const hasManualOptions = options.some((option) => !option.menu_item_id);
     if (sourceType !== "MENU_ITEMS" && hasManualOptions) {
       const confirmed = window.confirm(
-        "Ao vincular esta etapa ao cardápio, as opções manuais atuais serão substituídas pelas pizzas selecionadas. Deseja continuar?",
+        "Ao vincular esta etapa ao cardÃ¡pio, as opÃ§Ãµes manuais atuais serÃ£o substituÃ­das pelas pizzas selecionadas. Deseja continuar?",
       );
       if (!confirmed) return;
     }
 
     setSaving(true);
     try {
-      const { data: syncedRows, error } = await (supabase as any).rpc(
-        "sync_builder_catalog_flavors",
-        {
-          p_group_id: groupId,
-          p_menu_item_ids: selectedItems.map((item) => item.id),
-        },
-      );
+      const { data: syncedRows, error } = await (
+        supabase as unknown as BuilderCatalogRpcClient
+      ).rpc("sync_builder_catalog_flavors", {
+        p_group_id: groupId,
+        p_menu_item_ids: selectedItems.map((item) => item.id),
+      });
       if (error) throw error;
 
       const menuById = new Map(selectedItems.map((item) => [item.id, item]));
-      const finalOptions: BuilderCatalogFlavorOption[] = ((syncedRows ?? []) as SyncedFlavorRow[])
+      const finalOptions: BuilderCatalogFlavorOption[] = (syncedRows ?? [])
         .map((row) => ({
           id: row.option_id,
           group_id: row.option_group_id,
@@ -205,9 +217,9 @@ export function BuilderCatalogFlavorControls({
         price_strategy: "MAX_MENU_ITEM",
         builder_options: finalOptions,
       });
-      toast.success(`${finalOptions.length} sabores sincronizados com o cardápio.`);
-    } catch (error: any) {
-      toast.error(error?.message ?? "Não foi possível sincronizar os sabores.");
+      toast.success(`${finalOptions.length} sabores sincronizados com o cardÃ¡pio.`);
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Não foi possível sincronizar os sabores."));
     } finally {
       setSaving(false);
     }
@@ -217,23 +229,31 @@ export function BuilderCatalogFlavorControls({
     <Card className="rounded-xl border-primary/25 bg-primary/5 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-bold">🍕 Puxar sabores do cardápio</p>
+          <p className="text-sm font-bold">ðŸ• Puxar sabores do cardÃ¡pio</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Use as pizzas já cadastradas no cardápio. Nome, preço, promoção e disponibilidade ficam vinculados ao produto real.
+            Use as pizzas jÃ¡ cadastradas no cardÃ¡pio. Nome, preÃ§o, promoÃ§Ã£o e disponibilidade
+            ficam vinculados ao produto real.
           </p>
         </div>
-        <Button type="button" size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading || saving}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => refetch()}
+          disabled={isLoading || saving}
+        >
           <RefreshCw className="mr-1 h-3.5 w-3.5" /> Atualizar
         </Button>
       </div>
 
       {isLoading ? (
         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando cardápio…
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando cardÃ¡pioâ€¦
         </div>
       ) : candidates.length === 0 ? (
         <p className="mt-3 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-          Nenhuma pizza disponível foi encontrada. Cadastre ou disponibilize as pizzas no Cardápio antes de sincronizar esta etapa.
+          Nenhuma pizza disponÃ­vel foi encontrada. Cadastre ou disponibilize as pizzas no CardÃ¡pio
+          antes de sincronizar esta etapa.
         </p>
       ) : (
         <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
@@ -270,7 +290,8 @@ export function BuilderCatalogFlavorControls({
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {selected.size} {selected.size === 1 ? "pizza selecionada" : "pizzas selecionadas"}. No pedido, prevalece o maior preço entre os sabores escolhidos.
+          {selected.size} {selected.size === 1 ? "pizza selecionada" : "pizzas selecionadas"}. No
+          pedido, prevalece o maior preÃ§o entre os sabores escolhidos.
         </p>
         <Button type="button" size="sm" onClick={sync} disabled={saving || selected.size === 0}>
           {saving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}

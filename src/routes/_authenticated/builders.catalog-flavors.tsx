@@ -43,7 +43,11 @@ function BuilderCatalogFlavorsPage() {
   const [builderId, setBuilderId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
 
-  const { data: builders = [], isLoading, refetch } = useQuery({
+  const {
+    data: builders = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["builder-catalog-flavor-manager", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
@@ -107,7 +111,9 @@ function BuilderCatalogFlavorsPage() {
       <Card className="rounded-2xl border-primary/20 bg-primary/5 p-4">
         <p className="text-sm font-bold">Como funciona</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Escolha o configurador e a etapa de sabores. Depois marque as pizzas já cadastradas no cardápio e sincronize. O cliente passa a escolher os mesmos produtos e o preço da pizza usa o maior valor entre os sabores selecionados.
+          Escolha o configurador e a etapa de sabores. Depois marque as pizzas já cadastradas no
+          cardápio e sincronize. O cliente passa a escolher os mesmos produtos e o preço da pizza
+          usa o maior valor entre os sabores selecionados.
         </p>
       </Card>
 
@@ -182,7 +188,8 @@ function BuilderCatalogFlavorsPage() {
             />
           ) : (
             <Card className="rounded-2xl p-8 text-center text-sm text-muted-foreground">
-              Este configurador ainda não possui etapas. Crie a etapa “Sabores” antes de sincronizar.
+              Este configurador ainda não possui etapas. Crie a etapa “Sabores” antes de
+              sincronizar.
             </Card>
           )}
         </>
