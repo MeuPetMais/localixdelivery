@@ -29,9 +29,15 @@ const orderPaymentSource = readFileSync(
 
 describe("orders RLS hardening migration", () => {
   it("drops direct public order write policies", () => {
-    expect(migrationSql).toContain('DROP POLICY IF EXISTS "Anyone can place an order" ON public.orders;');
-    expect(migrationSql).toContain('DROP POLICY IF EXISTS "Owners delete their orders" ON public.orders;');
-    expect(migrationSql).toContain('DROP POLICY IF EXISTS "Owners update their orders" ON public.orders;');
+    expect(migrationSql).toContain(
+      'DROP POLICY IF EXISTS "Anyone can place an order" ON public.orders;',
+    );
+    expect(migrationSql).toContain(
+      'DROP POLICY IF EXISTS "Owners delete their orders" ON public.orders;',
+    );
+    expect(migrationSql).toContain(
+      'DROP POLICY IF EXISTS "Owners update their orders" ON public.orders;',
+    );
   });
 
   it("revokes direct order writes from anon and authenticated", () => {
@@ -42,14 +48,17 @@ describe("orders RLS hardening migration", () => {
   });
 
   it("revokes only anon execute on order_apply_transition and preserves required callers", () => {
-    const signature =
-      "public.order_apply_transition(uuid, text, text, text, text, uuid, jsonb)";
+    const signature = "public.order_apply_transition(uuid, text, text, text, text, uuid, jsonb)";
 
     expect(normalizedSql).toContain(`revoke execute on function ${signature} from anon;`);
     expect(normalizedSql).toContain(`grant execute on function ${signature} to authenticated;`);
     expect(normalizedSql).toContain(`grant execute on function ${signature} to service_role;`);
-    expect(normalizedSql).not.toContain(`revoke execute on function ${signature} from authenticated`);
-    expect(normalizedSql).not.toContain(`revoke execute on function ${signature} from service_role`);
+    expect(normalizedSql).not.toContain(
+      `revoke execute on function ${signature} from authenticated`,
+    );
+    expect(normalizedSql).not.toContain(
+      `revoke execute on function ${signature} from service_role`,
+    );
   });
 
   it("does not alter SELECT policies or recreate write policies", () => {
@@ -62,7 +71,7 @@ describe("orders RLS hardening migration", () => {
 
   it("does not alter checkout, pricing, order service, or payment code", () => {
     expect(orderServiceSource).toContain("export const createCheckoutOrder");
-    expect(orderServiceSource).toContain(".from(\"orders\")");
+    expect(orderServiceSource).toContain('.from("orders")');
     expect(pricingEngineSource).toContain("export function computePricing");
     expect(paymentIntentSource).toContain("mp-payment-intent");
     expect(orderPaymentSource).toContain("registerPendingOrderPayment");
