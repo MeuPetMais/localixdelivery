@@ -80,6 +80,7 @@ const inputSchema = z.object({
   cashback: z.number().nonnegative().optional().default(0),
   loyaltyDiscount: z.number().nonnegative().optional().default(0),
   loyaltyPoints: z.number().int().nonnegative().optional().default(0),
+  checkoutIdempotencyKey: z.string().min(16).max(160).optional(),
 });
 
 export type CheckoutInput = z.infer<typeof inputSchema>;
@@ -157,6 +158,31 @@ export function logCheckoutPricingPreviewServerDiagnostic(
     "[checkout-pricing-preview][server]",
     buildCheckoutPricingPreviewServerDiagnosticPayload(input, result, diagnostics),
   );
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((item) => stableJson(item)).join(",")}]`;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+export async function buildCheckoutCreationPayloadHash(
+  input: Record<string, unknown>,
+): Promise<string> {
+  const { createHash } = await import("node:crypto");
+  return createHash("sha256").update(stableJson(input)).digest("hex");
+}
+
+async function createCheckoutIdempotencyKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  const { randomUUID } = await import("node:crypto");
+  return randomUUID();
 }
 
 export async function calculateAuthoritativeCheckoutPricing(
@@ -346,59 +372,88 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
       if (e instanceof PricingError) throw new Error(e.message);
       throw e;
     }
-    // 4) Criar pedido com status inicial definido pelo tipo de pagamento.
-    const { data: order, error: ordErr } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        restaurant_id: rest.id,
-        customer_id: context.userId,
-        customer_name: data.customer.name,
-        customer_phone: data.customer.phone,
-        address: data.customer.address,
+    const checkoutIdempotencyKey =
+      data.checkoutIdempotencyKey ?? (await createCheckoutIdempotencyKey());
+    const checkoutPayloadHash = await buildCheckoutCreationPayloadHash({
+      restaurant_id: rest.id,
+      customer_id: context.userId ?? null,
+      customer_name: data.customer.name,
+      customer_phone: data.customer.phone,
+      address: data.customer.address,
+      payment_method: paymentDecision.paymentMethod,
+      items: authoritative.items,
+      order_total: pricing.customerTotal,
+      order_discount: pricing.couponDiscount,
+      order_loyalty_discount: 0,
+      order_status: paymentDecision.initialStatus,
+      snapshot: {
+        subtotal: pricing.subtotal,
+        delivery_fee: pricing.deliveryFee,
+        platform_fee: pricing.platformFee,
+        service_fee_payer: pricing.serviceFeePayer,
+        gateway_fee: pricing.gatewayFee,
+        coupon_discount: pricing.couponDiscount,
+        cashback: pricing.cashback,
+        restaurant_gross: pricing.restaurantGross,
+        restaurant_net: pricing.restaurantNet,
+        platform_revenue: pricing.platformRevenue,
+        realized_platform_revenue: pricing.realizedPlatformRevenue,
+        gateway_revenue: pricing.gatewayRevenue,
+        customer_total: pricing.customerTotal,
+        provider: "mercado_pago",
+        currency: pricing.currency,
+      },
+      payment: {
+        provider: "mercado_pago",
         payment_method: paymentDecision.paymentMethod,
-        items: authoritative.items,
-        total: pricing.customerTotal,
-        discount: pricing.couponDiscount,
-        loyalty_discount: 0,
-        status: paymentDecision.initialStatus,
-      })
-      .select("id, order_number, payment_method, status")
-      .single();
-    if (ordErr) throw new Error(`Falha ao criar pedido: ${ordErr.message}`);
-
-    // 5) Snapshot financeiro (imutável)
-    const { error: snapErr } = await supabaseAdmin.from("order_pricing_snapshot").insert({
-      order_id: order.id,
-      subtotal: pricing.subtotal,
-      delivery_fee: pricing.deliveryFee,
-      platform_fee: pricing.platformFee,
-      service_fee_payer: pricing.serviceFeePayer,
-      gateway_fee: pricing.gatewayFee,
-      coupon_discount: pricing.couponDiscount,
-      cashback: pricing.cashback,
-      restaurant_gross: pricing.restaurantGross,
-      restaurant_net: pricing.restaurantNet,
-      platform_revenue: pricing.platformRevenue,
-      realized_platform_revenue: pricing.realizedPlatformRevenue,
-      gateway_revenue: pricing.gatewayRevenue,
-      customer_total: pricing.customerTotal,
-      provider: "mercado_pago",
-      currency: pricing.currency,
+        status: paymentDecision.paymentRecordStatus,
+      },
     });
-    if (snapErr) throw new Error(`Falha no snapshot: ${snapErr.message}`);
 
-    // 6) Registro de pagamento via Payment Domain (nenhum SQL local).
-    const { registerPendingOrderPayment } = await import("@/lib/payments/orderPayment.server");
+    // 4) Persistir pedido + snapshot + registro de pagamento em uma unica transacao.
+    const { data: atomicOrderRows, error: atomicErr } = await (supabaseAdmin as any).rpc(
+      "create_order_with_snapshot_payment",
+      {
+        _idempotency_key: checkoutIdempotencyKey,
+        _payload_hash: checkoutPayloadHash,
+        _restaurant_id: rest.id,
+        _customer_id: context.userId ?? null,
+        _customer_name: data.customer.name,
+        _customer_phone: data.customer.phone,
+        _address: data.customer.address,
+        _payment_method: paymentDecision.paymentMethod,
+        _items: authoritative.items,
+        _total: pricing.customerTotal,
+        _discount: pricing.couponDiscount,
+        _loyalty_discount: 0,
+        _status: paymentDecision.initialStatus,
+        _snapshot_subtotal: pricing.subtotal,
+        _snapshot_delivery_fee: pricing.deliveryFee,
+        _snapshot_platform_fee: pricing.platformFee,
+        _snapshot_service_fee_payer: pricing.serviceFeePayer,
+        _snapshot_gateway_fee: pricing.gatewayFee,
+        _snapshot_coupon_discount: pricing.couponDiscount,
+        _snapshot_cashback: pricing.cashback,
+        _snapshot_restaurant_gross: pricing.restaurantGross,
+        _snapshot_restaurant_net: pricing.restaurantNet,
+        _snapshot_platform_revenue: pricing.platformRevenue,
+        _snapshot_realized_platform_revenue: pricing.realizedPlatformRevenue,
+        _snapshot_gateway_revenue: pricing.gatewayRevenue,
+        _snapshot_customer_total: pricing.customerTotal,
+        _snapshot_provider: "mercado_pago",
+        _snapshot_currency: pricing.currency,
+        _payment_provider: "mercado_pago",
+        _payment_status: paymentDecision.paymentRecordStatus,
+        _payment_external_reference: null,
+      },
+    );
+    if (atomicErr) throw new Error(`Falha ao criar pedido atomico: ${atomicErr.message}`);
 
-    await registerPendingOrderPayment({
-      orderId: order.id,
-      restaurantId: rest.id,
-      paymentMethod: paymentDecision.paymentMethod,
-      status: paymentDecision.paymentRecordStatus,
-    });
+    const order = Array.isArray(atomicOrderRows) ? atomicOrderRows[0] : atomicOrderRows;
+    if (!order?.order_id) throw new Error("Falha ao criar pedido atomico: retorno vazio");
 
     return {
-      orderId: order.id,
+      orderId: order.order_id,
       orderNumber: order.order_number,
       status: paymentDecision.initialStatus,
       pricing,

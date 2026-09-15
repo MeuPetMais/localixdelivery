@@ -71,7 +71,8 @@ describe("orders RLS hardening migration", () => {
 
   it("does not alter checkout, pricing, order service, or payment code", () => {
     expect(orderServiceSource).toContain("export const createCheckoutOrder");
-    expect(orderServiceSource).toContain('.from("orders")');
+    expect(orderServiceSource).toContain(".rpc(");
+    expect(orderServiceSource).toContain('"create_order_with_snapshot_payment"');
     expect(pricingEngineSource).toContain("export function computePricing");
     expect(paymentIntentSource).toContain("mp-payment-intent");
     expect(orderPaymentSource).toContain("registerPendingOrderPayment");
