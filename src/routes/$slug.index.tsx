@@ -398,7 +398,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   const productIds = useMemo(
     () =>
       Array.from(
-        new Set(((data?.items ?? []) as Array<{ id: string }>).map((item) => item.id).filter(Boolean)),
+        new Set(
+          ((data?.items ?? []) as Array<{ id: string }>).map((item) => item.id).filter(Boolean),
+        ),
       ),
     [data?.items],
   );
@@ -1327,7 +1329,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                             tabIndex={0}
                             onClick={() => openProductDetails(it)}
                             onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") openProductDetails(it);
+                              if (event.key === "Enter" || event.key === " ")
+                                openProductDetails(it);
                             }}
                             className="group relative flex cursor-pointer items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
                           >
@@ -1592,24 +1595,22 @@ function CheckoutSheet({
   const gateway = getGatewayDisplay(primaryProviderId);
 
   const canUseOnlinePayment = !!user || createAccount;
+  const ONLINE_METHODS: PayOption[] = [
+    {
+      id: "pix",
+      label: gateway.pix,
+      method: "pix",
+      online: true,
+    },
+    {
+      id: "card_online",
+      label: `${gateway.card} Online`,
+      method: "credit_card",
+      online: true,
+    },
+  ];
   const paymentOptions: PayOption[] = (
-    readiness?.ready
-      ? [
-          {
-            id: "pix",
-            label: gateway.pix,
-            method: "pix",
-            online: true,
-          },
-          {
-            id: "card_online",
-            label: `${gateway.card} Online`,
-            method: "credit_card",
-            online: true,
-          },
-          ...BASE_METHODS,
-        ]
-      : BASE_METHODS
+    readiness?.ready ? [...ONLINE_METHODS, ...BASE_METHODS] : BASE_METHODS
   ).filter((option) => {
     if (!canUseOnlinePayment && option.online) {
       return false;
@@ -1723,6 +1724,7 @@ function CheckoutSheet({
   const [pricingLoading, setPricingLoading] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const checkoutAttemptRef = useRef<{ key: string; fingerprint: string } | null>(null);
   const [cardPayment, setCardPayment] = useState<TransparentCardInput | null>(null);
   const [cardTokenizing, setCardTokenizing] = useState(false);
 
@@ -1890,6 +1892,29 @@ function CheckoutSheet({
       }
 
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
+      const checkoutAttemptFingerprint = JSON.stringify({
+        restaurantId: restaurant.id,
+        customer: { name, phone, address: fullAddress },
+        items: cart.map((c) => ({
+          id: c.id,
+          qty: c.qty,
+          kind: c.kind,
+          builderId: c.builderId,
+          selections: c.selections,
+          notes: c.notes,
+        })),
+        paymentMethod: paymentPayload.payloadPaymentMethod,
+        couponCode: coupon?.code ?? null,
+      });
+      if (
+        !checkoutAttemptRef.current ||
+        checkoutAttemptRef.current.fingerprint !== checkoutAttemptFingerprint
+      ) {
+        checkoutAttemptRef.current = {
+          key: crypto.randomUUID(),
+          fingerprint: checkoutAttemptFingerprint,
+        };
+      }
 
       const res = await create({
         data: {
@@ -1909,6 +1934,7 @@ function CheckoutSheet({
           deliveryFee: fee,
           couponCode: coupon?.code ?? undefined,
           couponDiscount: discount,
+          checkoutIdempotencyKey: checkoutAttemptRef.current.key,
         },
       });
 
@@ -1949,6 +1975,7 @@ function CheckoutSheet({
           const email = checkoutUser?.email;
           if (!email) {
             toast.error("Faça login com e-mail para pagar online");
+            checkoutAttemptRef.current = null;
             onClose();
             onCreated(res.orderId);
             return;
@@ -1975,6 +2002,7 @@ function CheckoutSheet({
             // Limpa carrinho antes de sair para o gateway sem navegar agora.
             // O callback_url do Mercado Pago retorna esta mesma aba para
             // /pedido-sucesso/:id após a confirmação.
+            checkoutAttemptRef.current = null;
             onClose();
             onCreated(res.orderId, { navigate: false });
             window.location.assign(result.redirectUrl);
@@ -1982,6 +2010,7 @@ function CheckoutSheet({
           }
           if (isTransparentCardPayment) {
             toast.success(`Pedido #${res.orderNumber ?? ""} criado - cartao validado`);
+            checkoutAttemptRef.current = null;
             onClose();
             onCreated(res.orderId);
             return;
@@ -1989,6 +2018,7 @@ function CheckoutSheet({
           throw new Error("Gateway não retornou URL de pagamento");
         } catch (e: any) {
           toast.error(e?.message ?? "Não foi possível iniciar o pagamento");
+          checkoutAttemptRef.current = null;
           onClose();
           onCreated(res.orderId);
           return;
@@ -2000,6 +2030,7 @@ function CheckoutSheet({
           ? `Pedido #${res.orderNumber ?? ""} criado — aguardando pagamento`
           : `Pedido #${res.orderNumber ?? ""} enviado ao restaurante`,
       );
+      checkoutAttemptRef.current = null;
       onClose();
       onCreated(res.orderId);
     } catch (e: any) {
@@ -2021,9 +2052,7 @@ function CheckoutSheet({
               <p className="font-medium">{c.name}</p>
               <p className="text-sm text-muted-foreground">{brl(c.price)}</p>
               {c.notes && (
-                <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
-                  Obs.: {c.notes}
-                </p>
+                <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">Obs.: {c.notes}</p>
               )}
             </div>
             <div className="flex items-center gap-2">

@@ -18,6 +18,7 @@ import { readFileSync } from "node:fs";
 import { paymentMethodLabel } from "./paymentMethodLabel";
 import {
   buildCheckoutPricingPreviewServerDiagnosticPayload,
+  buildCheckoutCreationPayloadHash,
   calculateAuthoritativeCheckoutPricing,
   checkoutPricingPreviewErrorResult,
   isCheckoutPricingPreviewServerDiagnosticsEnabled,
@@ -318,6 +319,9 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
       restaurantSlug: "localix-mp-staging-pilot",
       subtotal: 3.5,
       deliveryFee: 5,
+      couponDiscount: 0,
+      cashback: 0,
+      loyaltyDiscount: 0,
       paymentMethod: "pix" as const,
     };
     const diagnostics = {
@@ -444,6 +448,55 @@ describe("Checkout â€” validaÃ§Ãµes e snapshot", () => {
 
     expect(route).not.toContain("Math.max(0, subtotal - discount) + fee");
     expect(route).toContain("canSubmitWithAuthoritativePricing");
+  });
+
+  it("hash de criacao do checkout e estavel e muda com payload financeiro divergente", async () => {
+    const payload = {
+      restaurant_id: PILOT_RESTAURANT_ID,
+      order_total: 31.99,
+      snapshot: {
+        customer_total: 31.99,
+        platform_fee: 0.99,
+        restaurant_net: 25,
+      },
+      payment: {
+        payment_method: "pix",
+        status: "PENDING",
+      },
+    };
+
+    await expect(buildCheckoutCreationPayloadHash(payload)).resolves.toBe(
+      await buildCheckoutCreationPayloadHash({
+        payment: {
+          status: "PENDING",
+          payment_method: "pix",
+        },
+        snapshot: {
+          restaurant_net: 25,
+          platform_fee: 0.99,
+          customer_total: 31.99,
+        },
+        order_total: 31.99,
+        restaurant_id: PILOT_RESTAURANT_ID,
+      }),
+    );
+    await expect(
+      buildCheckoutCreationPayloadHash({
+        ...payload,
+        order_total: 32.99,
+      }),
+    ).resolves.not.toBe(await buildCheckoutCreationPayloadHash(payload));
+  });
+
+  it("OrderService usa RPC atomica em vez de inserts separados no fluxo normal", () => {
+    const source = readFileSync("src/lib/checkout/OrderService.ts", "utf8");
+
+    expect(source).toContain(".rpc(");
+    expect(source).toContain('"create_order_with_snapshot_payment"');
+    expect(source).toContain("buildCheckoutCreationPayloadHash");
+    expect(source).not.toContain('.from("orders")\n      .insert');
+    expect(source).not.toContain('.from("order_pricing_snapshot").insert');
+    expect(source).not.toContain("registerPendingOrderPayment");
   });
 
   it("labels do painel e acompanhamento distinguem cartao online de cartao na entrega", () => {
