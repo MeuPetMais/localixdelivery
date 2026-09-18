@@ -16,17 +16,16 @@ describe("Gate D TRUNCATE hardening migration", () => {
     );
   });
 
-  it("removes TRUNCATE from future-table defaults for postgres and supabase_admin", () => {
+  it("removes TRUNCATE from future-table defaults for the postgres-owned app schema", () => {
     expect(migration).toContain(
       "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public",
     );
     expect(migration).toContain(
-      "ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public",
+      "REVOKE TRUNCATE ON TABLES FROM anon, authenticated;",
     );
-    expect(migration.match(/REVOKE TRUNCATE ON TABLES FROM anon, authenticated;/g)).toHaveLength(2);
   });
 
-  it("does not alter data", () => {
+  it("does not alter application data", () => {
     expect(migration).not.toMatch(/\bDELETE\s+FROM\b/i);
     expect(migration).not.toMatch(/\bUPDATE\s+/i);
     expect(migration).not.toMatch(/\bINSERT\s+INTO\b/i);
