@@ -27,8 +27,7 @@ const IngestInput = z.object({
 export const ingestDriverLocations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => IngestInput.parse(data))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
     let accepted = 0;
     let skipped = 0;
     const reasons: Record<string, number> = {};
@@ -40,18 +39,21 @@ export const ingestDriverLocations = createServerFn({ method: "POST" })
         continue;
       }
 
-      const { data: result, error } = await supabaseAdmin.rpc("upsert_driver_operational_location" as never, {
-        _driver_id: sample.driver_id,
-        _restaurant_id: sample.restaurant_id,
-        _assignment_id: sample.assignment_id ?? null,
-        _lat: sample.lat,
-        _lng: sample.lng,
-        _accuracy: sample.accuracy ?? null,
-        _heading: sample.heading ?? null,
-        _speed: sample.speed ?? null,
-        _device_captured_at: sample.captured_at,
-        _correlation_id: sample.correlation_id ?? crypto.randomUUID(),
-      } as never);
+      const { data: result, error } = await context.supabase.rpc(
+        "upsert_driver_operational_location" as never,
+        {
+          _driver_id: sample.driver_id,
+          _restaurant_id: sample.restaurant_id,
+          _assignment_id: sample.assignment_id ?? null,
+          _lat: sample.lat,
+          _lng: sample.lng,
+          _accuracy: sample.accuracy ?? null,
+          _heading: sample.heading ?? null,
+          _speed: sample.speed ?? null,
+          _device_captured_at: sample.captured_at,
+          _correlation_id: sample.correlation_id ?? crypto.randomUUID(),
+        } as never,
+      );
 
       if (error) {
         skipped++;
