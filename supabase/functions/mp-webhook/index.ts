@@ -375,6 +375,43 @@ Deno.serve(async (req) => {
 
     if (String(mp?.id ?? "") !== String(paymentResourceId))
       return await failClosed("mp_id_mismatch");
+
+    if (isChargebackCase) {
+      const mpStatus = String(mp?.status ?? "").trim();
+      const mpStatusDetail = String(mp?.status_detail ?? "").trim();
+
+      // topic_chargebacks_wh fires when a dispute starts and on status changes.
+      // Only a settled adverse outcome is a realized financial chargeback.
+      // In-process cases and seller reimbursements must not debit the ledger
+      // or overwrite the local payment/order state.
+      if (mpStatus !== "charged_back" || mpStatusDetail !== "settled") {
+        const { error: deferErr } = await sb
+          .from("payment_webhook_events")
+          .update({
+            processed: true,
+            processed_at: new Date().toISOString(),
+            error_message: null,
+          })
+          .eq("id", eventPk);
+        if (deferErr) throw new Error(`chargeback_defer_event:${deferErr.message}`);
+
+        console.log("[mp-webhook] chargeback case deferred", {
+          resourceId,
+          paymentResourceId,
+          mpStatus,
+          mpStatusDetail,
+        });
+        return json({
+          ok: true,
+          deferred: true,
+          reason:
+            mpStatus === "charged_back" && mpStatusDetail === "reimbursed"
+              ? "chargeback_reimbursed_to_seller"
+              : "chargeback_not_settled",
+        });
+      }
+    }
+
     const mpExternalReference = String(mp?.external_reference ?? "").trim();
     if (!isUuid(mpExternalReference)) return await failClosed("missing_mp_external_reference");
 
