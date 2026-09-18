@@ -373,7 +373,8 @@ Deno.serve(async (req) => {
     const mp = await fetchMpPayment(token, paymentResourceId);
     if (!mp) return await failClosed("mp_payment_not_found");
 
-    if (String(mp?.id ?? "") !== String(paymentResourceId)) return await failClosed("mp_id_mismatch");
+    if (String(mp?.id ?? "") !== String(paymentResourceId))
+      return await failClosed("mp_id_mismatch");
     const mpExternalReference = String(mp?.external_reference ?? "").trim();
     if (!isUuid(mpExternalReference)) return await failClosed("missing_mp_external_reference");
 
