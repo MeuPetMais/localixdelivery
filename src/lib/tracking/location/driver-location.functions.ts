@@ -39,18 +39,21 @@ export const ingestDriverLocations = createServerFn({ method: "POST" })
         continue;
       }
 
-      const { data: result, error } = await context.supabase.rpc("upsert_driver_operational_location" as never, {
-        _driver_id: sample.driver_id,
-        _restaurant_id: sample.restaurant_id,
-        _assignment_id: sample.assignment_id ?? null,
-        _lat: sample.lat,
-        _lng: sample.lng,
-        _accuracy: sample.accuracy ?? null,
-        _heading: sample.heading ?? null,
-        _speed: sample.speed ?? null,
-        _device_captured_at: sample.captured_at,
-        _correlation_id: sample.correlation_id ?? crypto.randomUUID(),
-      } as never);
+      const { data: result, error } = await context.supabase.rpc(
+        "upsert_driver_operational_location" as never,
+        {
+          _driver_id: sample.driver_id,
+          _restaurant_id: sample.restaurant_id,
+          _assignment_id: sample.assignment_id ?? null,
+          _lat: sample.lat,
+          _lng: sample.lng,
+          _accuracy: sample.accuracy ?? null,
+          _heading: sample.heading ?? null,
+          _speed: sample.speed ?? null,
+          _device_captured_at: sample.captured_at,
+          _correlation_id: sample.correlation_id ?? crypto.randomUUID(),
+        } as never,
+      );
 
       if (error) {
         skipped++;
