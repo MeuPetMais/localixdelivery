@@ -18,6 +18,11 @@ describe("mp-webhook chargeback case identity", () => {
     expect(webhookSource).toContain("recordChargebackLedger(sb");
     expect(webhookSource).toContain("chargebackId: resourceId");
     expect(webhookSource).toContain('reference_type: "mp_chargeback"');
+    expect(webhookSource).toContain(
+      'mpStatus !== "charged_back" || mpStatusDetail !== "settled"',
+    );
+    expect(webhookSource).toContain("chargeback_reimbursed_to_seller");
+    expect(webhookSource).toContain("chargeback_not_settled");
   });
 
   it("does not write generic payment charged_back directly to financial_ledger", () => {
