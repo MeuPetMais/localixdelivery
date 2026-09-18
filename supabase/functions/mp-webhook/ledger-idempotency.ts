@@ -12,12 +12,7 @@ type LedgerEntry = {
   metadata: Record<string, unknown>;
 };
 
-const IDEMPOTENT_MP_LEDGER_TYPES = new Set([
-  "PAYMENT_PENDING",
-  "PAYMENT_APPROVED",
-  "REFUND",
-  "CHARGEBACK",
-]);
+const IDEMPOTENT_MP_LEDGER_TYPES = new Set(["PAYMENT_PENDING", "PAYMENT_APPROVED"]);
 
 export function shouldDeduplicateLedgerType(transactionType: string): boolean {
   return IDEMPOTENT_MP_LEDGER_TYPES.has(transactionType);
@@ -28,6 +23,8 @@ export function ledgerIdempotencyKey(entry: LedgerEntry): string {
 }
 
 export async function recordMercadoPagoLedger(
+  // Supabase's fluent query builder has distinct return types for each operation.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,
   entry: LedgerEntry,
 ): Promise<{ inserted: boolean }> {
@@ -48,7 +45,6 @@ export async function recordMercadoPagoLedger(
   const { data, error: lookupError } = await sb
     .from("financial_ledger")
     .select("id")
-    .eq("provider", entry.provider)
     .eq("reference_type", entry.reference_type)
     .eq("reference_id", entry.reference_id)
     .eq("transaction_type", entry.transaction_type)
