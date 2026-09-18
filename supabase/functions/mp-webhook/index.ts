@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
         metadata: { correlation_id: correlationId },
       });
     } else if (local === "REJECTED" || local === "CANCELLED" || local === "EXPIRED") {
-      await sb.from("financial_ledger").insert({
+      await recordMercadoPagoLedger(sb, {
         order_id: orderId,
         restaurant_id: restaurantId,
         provider: "mercado_pago",
@@ -613,7 +613,10 @@ Deno.serve(async (req) => {
         reference_type: "mp_payment",
         reference_id: String(mp.id),
         description: `Pagamento ${local.toLowerCase()}`,
-        metadata: { correlation_id: correlationId },
+        metadata: {
+          correlation_id: correlationId,
+          status_detail: mp.status_detail ?? null,
+        },
       });
     } else if (local === "CHARGEBACK" && isChargebackCase) {
       await recordChargebackLedger(sb, {
