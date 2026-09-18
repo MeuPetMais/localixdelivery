@@ -17,12 +17,8 @@ describe("Gate D TRUNCATE hardening migration", () => {
   });
 
   it("removes TRUNCATE from future-table defaults for the postgres-owned app schema", () => {
-    expect(migration).toContain(
-      "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public",
-    );
-    expect(migration).toContain(
-      "REVOKE TRUNCATE ON TABLES FROM anon, authenticated;",
-    );
+    expect(migration).toContain("ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public");
+    expect(migration).toContain("REVOKE TRUNCATE ON TABLES FROM anon, authenticated;");
   });
 
   it("does not alter application data", () => {
