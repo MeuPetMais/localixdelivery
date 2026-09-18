@@ -21,10 +21,10 @@ describe("mp-webhook chargeback case identity", () => {
   });
 
   it("does not write generic payment charged_back directly to financial_ledger", () => {
-    expect(webhookSource).toContain(
-      "chargeback ledger deferred to chargeback case notification",
+    expect(webhookSource).toContain("chargeback ledger deferred to chargeback case notification");
+    expect(webhookSource).not.toContain(
+      'reference_type: "mp_payment",\n        reference_id: String(mp.id),\n        description: "Chargeback"',
     );
-    expect(webhookSource).not.toContain('reference_type: "mp_payment",\n        reference_id: String(mp.id),\n        description: "Chargeback"');
   });
 
   it("ledger helper deduplicates by provider chargeback case and handles races", () => {
