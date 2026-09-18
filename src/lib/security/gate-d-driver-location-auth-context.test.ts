@@ -9,14 +9,10 @@ const source = readFileSync(
 describe("driver location auth context", () => {
   it("calls the operational location RPC with the authenticated Supabase client", () => {
     expect(source).toContain(".handler(async ({ data, context }) =>");
-    expect(source).toContain(
-      'context.supabase.rpc("upsert_driver_operational_location" as never',
-    );
+    expect(source).toContain('context.supabase.rpc("upsert_driver_operational_location" as never');
   });
 
   it("does not call the location RPC through supabaseAdmin", () => {
-    expect(source).not.toContain(
-      'supabaseAdmin.rpc("upsert_driver_operational_location"',
-    );
+    expect(source).not.toContain('supabaseAdmin.rpc("upsert_driver_operational_location"');
   });
 });
