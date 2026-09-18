@@ -29,11 +29,7 @@ describe("Gate D critical financial table grant hardening", () => {
   });
 
   it("removes default function EXECUTE from API roles", () => {
-    expect(migration).toContain(
-      "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public",
-    );
-    expect(migration).toContain(
-      "REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;",
-    );
+    expect(migration).toContain("ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public");
+    expect(migration).toContain("REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;");
   });
 });
