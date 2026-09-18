@@ -43,7 +43,7 @@ jobs:
 
       - name: Test hotfix
         if: github.event_name == 'pull_request'
-        run: bunx vitest run src/lib/checkout/OrderService.test.ts src/lib/payments/PricingEngine.test.ts src/lib/payments/service-fee-settings.test.ts supabase/functions/mp-webhook/ledger-idempotency.test.ts src/lib/payments/mp-webhook-payment-failed-idempotency-source.test.ts src/lib/payments/payment-failed-ledger-idempotency-migration.test.ts src/lib/security/gate-d-truncate-privileges-migration.test.ts src/lib/security/gate-d-delivery-security-definer-migration.test.ts src/lib/security/gate-d-trigger-function-execute-migration.test.ts src/lib/security/gate-d-loyalty-security-definer-migration.test.ts
+        run: bunx vitest run src/lib/checkout/OrderService.test.ts src/lib/payments/PricingEngine.test.ts src/lib/payments/service-fee-settings.test.ts supabase/functions/mp-webhook/ledger-idempotency.test.ts src/lib/payments/mp-webhook-payment-failed-idempotency-source.test.ts src/lib/payments/payment-failed-ledger-idempotency-migration.test.ts src/lib/security/gate-d-truncate-privileges-migration.test.ts src/lib/security/gate-d-delivery-security-definer-migration.test.ts src/lib/security/gate-d-trigger-function-execute-migration.test.ts src/lib/security/gate-d-loyalty-security-definer-migration.test.ts src/lib/security/gate-d-support-internal-rpcs-migration.test.ts
 
       - name: Test
         if: github.event_name != 'pull_request'
