@@ -12,7 +12,11 @@ type LedgerEntry = {
   metadata: Record<string, unknown>;
 };
 
-const IDEMPOTENT_MP_LEDGER_TYPES = new Set(["PAYMENT_PENDING", "PAYMENT_APPROVED"]);
+const IDEMPOTENT_MP_LEDGER_TYPES = new Set([
+  "PAYMENT_PENDING",
+  "PAYMENT_APPROVED",
+  "PAYMENT_FAILED",
+]);
 
 export function shouldDeduplicateLedgerType(transactionType: string): boolean {
   return IDEMPOTENT_MP_LEDGER_TYPES.has(transactionType);
