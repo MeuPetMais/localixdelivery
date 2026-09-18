@@ -19,7 +19,7 @@ Os principais riscos eram:
 
 ## Contexto
 
-Entre 18/09/2026 e 19/09/2026 foram concluídos os seguintes hardenings:
+Em 18/09/2026 foram concluídos os seguintes hardenings:
 
 1. remoção de `TRUNCATE` para `anon` e `authenticated` em todas as tabelas públicas;
 2. hardening da superfície `SECURITY DEFINER` de entregas;
@@ -215,7 +215,7 @@ Acesso administrativo continua condicionado às roles/policies existentes.
 
 ## Data
 
-19/09/2026
+18/09/2026
 
 ## Status
 
