@@ -7,7 +7,9 @@ import {
 
 type LedgerEntry = Parameters<typeof recordMercadoPagoLedger>[1];
 
-function entry(transactionType: "PAYMENT_PENDING" | "PAYMENT_APPROVED"): LedgerEntry {
+function entry(
+  transactionType: "PAYMENT_PENDING" | "PAYMENT_APPROVED" | "PAYMENT_FAILED",
+): LedgerEntry {
   return {
     order_id: "order-1",
     restaurant_id: "restaurant-1",
@@ -15,7 +17,12 @@ function entry(transactionType: "PAYMENT_PENDING" | "PAYMENT_APPROVED"): LedgerE
     transaction_type: transactionType,
     amount: 10,
     currency: "BRL",
-    status: transactionType === "PAYMENT_PENDING" ? "PENDING" : "COMPLETED",
+    status:
+      transactionType === "PAYMENT_PENDING"
+        ? "PENDING"
+        : transactionType === "PAYMENT_FAILED"
+          ? "FAILED"
+          : "COMPLETED",
     reference_type: "mp_payment",
     reference_id: "payment-1",
     description: "Pagamento",
@@ -51,7 +58,7 @@ function database() {
 }
 
 describe("deployed payment ledger idempotency", () => {
-  it.each(["PAYMENT_PENDING", "PAYMENT_APPROVED"] as const)(
+  it.each(["PAYMENT_PENDING", "PAYMENT_APPROVED", "PAYMENT_FAILED"] as const)(
     "%s retains the v13 lookup filters and deduplicates",
     async (transactionType) => {
       const db = database();
