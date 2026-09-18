@@ -14,6 +14,9 @@ import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
+import { recordPaymentRefunds } from "./refund-ledger.ts";
+import { normalizeMpUserId, resolveMercadoPagoWebhookToken } from "./token-resolution.ts";
+import { validateTrustedMpPaymentContext } from "./trust-boundary.ts";
 
 type MpStatus =
   | "approved"
@@ -147,41 +150,6 @@ async function verifySignature(opts: {
   return { ok: true, manifest, dataId, ts, calculated: hex, received: v1 };
 }
 
-async function getAccessTokenForOrder(
-  sb: SupabaseClient,
-  restaurantId: string | null,
-): Promise<string | null> {
-  console.log("[mp-webhook] getAccessTokenForOrder restaurant_id", restaurantId);
-  if (restaurantId) {
-    const { data } = await sb
-      .from("mercado_pago_accounts")
-      .select("access_token, connected")
-      .eq("restaurant_id", restaurantId)
-      .maybeSingle();
-    console.log("[mp-webhook] mercado_pago_accounts row_found", Boolean(data));
-    console.log("[mp-webhook] mercado_pago_accounts connected", data?.connected ?? null);
-    console.log(
-      "[mp-webhook] mercado_pago_accounts access_token_exists",
-      Boolean(data?.access_token),
-    );
-    if (data?.connected && data.access_token) {
-      try {
-        const tok = await decryptToken(data.access_token);
-        console.log("[mp-webhook] decryptToken result", tok ? "success" : "null");
-        if (tok) return tok;
-      } catch (err) {
-        console.error(
-          "[mp-webhook] decryptToken error",
-          err instanceof Error ? err.message : String(err),
-        );
-      }
-    }
-  }
-  const fallbackToken = Deno.env.get("MP_ACCESS_TOKEN") ?? null;
-  console.log("[mp-webhook] fallback MP_ACCESS_TOKEN", Boolean(fallbackToken));
-  return fallbackToken;
-}
-
 async function fetchMpPayment(token: string, paymentId: string) {
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -190,30 +158,10 @@ async function fetchMpPayment(token: string, paymentId: string) {
   return await res.json();
 }
 
-function latestRefund(mp: any): any | null {
-  const refunds = Array.isArray(mp?.refunds) ? mp.refunds : [];
-  if (refunds.length === 0) return null;
-  return refunds[refunds.length - 1] ?? null;
-}
-
-function refundLedgerReference(
-  mp: any,
-  amount: number,
-): { referenceType: string; referenceId: string; refundId: string | null } {
-  const refund = latestRefund(mp);
-  const refundId = refund?.id ? String(refund.id) : null;
-  if (refundId) {
-    return {
-      referenceType: "mp_refund",
-      referenceId: `${String(mp.id)}:refund:${refundId}`,
-      refundId,
-    };
-  }
-  return {
-    referenceType: "mp_refund",
-    referenceId: `${String(mp.id)}:refund:full:${Number(amount).toFixed(2)}`,
-    refundId: null,
-  };
+function isUuid(value: string | null | undefined): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value ?? ""),
+  );
 }
 
 Deno.serve(async (req) => {
@@ -345,59 +293,96 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Localiza pedido primeiro (para pegar restaurant_id → access token)
-    const { data: op } = await sb
-      .from("order_payment")
-      .select("order_id, orders:order_id(id, restaurant_id)")
-      .eq("payment_id", resourceId)
-      .maybeSingle();
-
-    let orderId: string | null = op?.order_id ?? null;
-    let restaurantId: string | null = (op as any)?.orders?.restaurant_id ?? null;
-
-    if (!orderId && externalRef) {
-      const { data: opRef } = await sb
-        .from("order_payment")
-        .select("order_id, orders:order_id(id, restaurant_id)")
-        .eq("order_id", externalRef)
-        .maybeSingle();
-      orderId = opRef?.order_id ?? null;
-      restaurantId = (opRef as any)?.orders?.restaurant_id ?? restaurantId;
-    }
-
-    const token = await getAccessTokenForOrder(sb, restaurantId);
-    if (!token) throw new Error("no_access_token");
-    const mp = await fetchMpPayment(token, resourceId);
-    if (!mp) throw new Error("mp_payment_not_found");
-
-    const local = mapStatus(mp.status);
-    if (!orderId) {
-      // tenta external_reference vindo do MP
-      const extFromMp = mp.external_reference;
-      if (extFromMp) {
-        const { data: opMp } = await sb
-          .from("order_payment")
-          .select("order_id, orders:order_id(id, restaurant_id)")
-          .eq("order_id", extFromMp)
-          .maybeSingle();
-        orderId = opMp?.order_id ?? null;
-        restaurantId = (opMp as any)?.orders?.restaurant_id ?? restaurantId;
-      }
-    }
-
-    if (!orderId) {
+    const failClosed = async (reason: string) => {
       await sb
         .from("payment_webhook_events")
         .update({
-          processed: true,
-          processed_at: new Date().toISOString(),
-          error_message: "order_not_found",
+          processed: false,
+          processed_at: null,
+          error_message: `trust_boundary:${reason}`,
+          processing_attempts: 1,
         })
         .eq("id", eventPk);
-      return json({ ok: true, warning: "order_not_found" });
-    }
+      return json({ ok: false, error: reason }, { status: 200 });
+    };
 
-    const amount = Number(mp.transaction_amount ?? 0) || 0;
+    const webhookUserId = normalizeMpUserId(body?.user_id ?? body?.data?.user_id);
+    const tokenResolution = await resolveMercadoPagoWebhookToken(sb, {
+      restaurantId: null,
+      webhookUserId,
+      decryptToken,
+      fallbackAccessToken: null,
+    });
+    console.log("[mp-webhook] token resolution", {
+      ok: tokenResolution.ok,
+      source: tokenResolution.ok ? tokenResolution.source : null,
+      reason: tokenResolution.ok ? null : tokenResolution.reason,
+      restaurant_id: tokenResolution.restaurantId,
+      webhook_user_id: webhookUserId,
+    });
+    if (!tokenResolution.ok) return await failClosed(tokenResolution.reason);
+    const token = tokenResolution.token;
+    const mp = await fetchMpPayment(token, resourceId);
+    if (!mp) return await failClosed("mp_payment_not_found");
+
+    if (String(mp?.id ?? "") !== String(resourceId)) return await failClosed("mp_id_mismatch");
+    const mpExternalReference = String(mp?.external_reference ?? "").trim();
+    if (!isUuid(mpExternalReference)) return await failClosed("missing_mp_external_reference");
+
+    const [
+      { data: order, error: orderErr },
+      { data: op, error: opLookupErr },
+      { data: snapshot, error: snapshotErr },
+    ] = await Promise.all([
+      sb
+        .from("orders")
+        .select("id, restaurant_id, status")
+        .eq("id", mpExternalReference)
+        .maybeSingle(),
+      sb
+        .from("order_payment")
+        .select("order_id, restaurant_id, payment_id, transaction_amount")
+        .eq("order_id", mpExternalReference)
+        .eq("provider", "mercado_pago")
+        .maybeSingle(),
+      sb
+        .from("order_pricing_snapshot")
+        .select("order_id, customer_total, currency")
+        .eq("order_id", mpExternalReference)
+        .maybeSingle(),
+    ]);
+    if (orderErr) throw new Error(`order_lookup:${orderErr.message}`);
+    if (opLookupErr) throw new Error(`order_payment_lookup:${opLookupErr.message}`);
+    if (snapshotErr) throw new Error(`snapshot_lookup:${snapshotErr.message}`);
+
+    const restaurantId = order?.restaurant_id ?? null;
+    if (!restaurantId) return await failClosed("order_not_found");
+    const [{ data: restaurant, error: restaurantErr }, { data: account, error: accountErr }] =
+      await Promise.all([
+        sb.from("restaurants").select("id").eq("id", restaurantId).maybeSingle(),
+        sb
+          .from("mercado_pago_accounts")
+          .select("restaurant_id, mp_user_id, connected")
+          .eq("restaurant_id", restaurantId)
+          .maybeSingle(),
+      ]);
+    if (restaurantErr) throw new Error(`restaurant_lookup:${restaurantErr.message}`);
+    if (accountErr) throw new Error(`mp_account_lookup:${accountErr.message}`);
+
+    const trust = validateTrustedMpPaymentContext({
+      resourceId,
+      mp,
+      order,
+      orderPayment: op,
+      snapshot,
+      restaurant,
+      account,
+    });
+    if (!trust.ok) return await failClosed(trust.reason);
+
+    const orderId = trust.orderId;
+    const local = mapStatus(mp.status);
+    const amount = trust.amount;
     const ticketUrl =
       mp?.point_of_interaction?.transaction_data?.ticket_url ??
       mp?.transaction_details?.external_resource_url ??
@@ -540,27 +525,8 @@ Deno.serve(async (req) => {
         description: `Pagamento ${local.toLowerCase()}`,
         metadata: { correlation_id: correlationId },
       });
-    } else if (local === "REFUNDED") {
-      const refundRef = refundLedgerReference(mp, amount);
-      await recordMercadoPagoLedger(sb, {
-        order_id: orderId,
-        restaurant_id: restaurantId,
-        provider: "mercado_pago",
-        transaction_type: "REFUND",
-        amount,
-        currency: mp.currency_id ?? "BRL",
-        status: "COMPLETED",
-        reference_type: refundRef.referenceType,
-        reference_id: refundRef.referenceId,
-        description: "Estorno",
-        metadata: {
-          correlation_id: correlationId,
-          payment_id: String(mp.id),
-          refund_id: refundRef.refundId,
-        },
-      });
     } else if (local === "CHARGEBACK") {
-      await recordMercadoPagoLedger(sb, {
+      await sb.from("financial_ledger").insert({
         order_id: orderId,
         restaurant_id: restaurantId,
         provider: "mercado_pago",
@@ -573,6 +539,29 @@ Deno.serve(async (req) => {
         description: "Chargeback",
         metadata: { correlation_id: correlationId },
       });
+    }
+
+    if (local === "REFUNDED") {
+      const result = await recordPaymentRefunds(sb, mp, {
+        orderId,
+        restaurantId,
+        currency: mp.currency_id ?? "BRL",
+        correlationId,
+      });
+      if (result.incomplete > 0 || (local === "REFUNDED" && result.recorded === 0)) {
+        const reason = `refund_identity_or_amount_missing:payment_id=${String(mp.id)};incomplete=${result.incomplete}`;
+        console.error("[mp-webhook] incomplete refunds", reason);
+        await sb
+          .from("payment_webhook_events")
+          .update({
+            processed: false,
+            processed_at: null,
+            error_message: reason,
+            processing_attempts: 1,
+          })
+          .eq("id", eventPk);
+        return json({ ok: false, error: "refund_incomplete" }, { status: 200 });
+      }
     }
 
     await sb

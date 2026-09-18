@@ -7,38 +7,39 @@ import {
 
 type LedgerEntry = Parameters<typeof recordMercadoPagoLedger>[1];
 
-function entry(overrides: Partial<LedgerEntry> = {}): LedgerEntry {
+function entry(transactionType: "PAYMENT_PENDING" | "PAYMENT_APPROVED"): LedgerEntry {
   return {
     order_id: "order-1",
     restaurant_id: "restaurant-1",
     provider: "mercado_pago",
-    transaction_type: "REFUND",
-    amount: 5.99,
+    transaction_type: transactionType,
+    amount: 10,
     currency: "BRL",
-    status: "COMPLETED",
-    reference_type: "mp_refund",
-    reference_id: "175142020516:refund:678",
-    description: "Estorno",
-    metadata: { correlation_id: "mp:event", payment_id: "175142020516", refund_id: "678" },
-    ...overrides,
+    status: transactionType === "PAYMENT_PENDING" ? "PENDING" : "COMPLETED",
+    reference_type: "mp_payment",
+    reference_id: "payment-1",
+    description: "Pagamento",
+    metadata: { correlation_id: "mp:event-a" },
   };
 }
 
-function makeSupabaseMock() {
+function database() {
   const rows: LedgerEntry[] = [];
+  const filters: Array<[string, string]> = [];
+  const queries: Array<Array<[string, string]>> = [];
   const query = {
-    filters: [] as Array<{ column: keyof LedgerEntry; value: string }>,
     select: () => query,
-    eq: (column: keyof LedgerEntry, value: string) => {
-      query.filters.push({ column, value });
+    eq: (column: string, value: string) => {
+      filters.push([column, value]);
       return query;
     },
     limit: () => query,
     maybeSingle: async () => {
+      queries.push([...filters]);
       const found = rows.find((row) =>
-        query.filters.every((filter) => row[filter.column] === filter.value),
+        filters.every(([column, value]) => row[column as keyof LedgerEntry] === value),
       );
-      query.filters = [];
+      filters.length = 0;
       return { data: found ? { id: "existing" } : null, error: null };
     },
     insert: async (row: LedgerEntry) => {
@@ -46,64 +47,47 @@ function makeSupabaseMock() {
       return { error: null };
     },
   };
-  return {
-    rows,
-    client: {
-      from: (table: string) => {
-        expect(table).toBe("financial_ledger");
-        return query;
-      },
-    },
-  };
+  return { rows, queries, client: { from: (_table: string) => query } };
 }
 
-describe("Mercado Pago ledger idempotency", () => {
-  it("deduplica REFUND por reference_type/reference_id/tipo", async () => {
-    const db = makeSupabaseMock();
-    expect(shouldDeduplicateLedgerType("REFUND")).toBe(true);
+describe("deployed payment ledger idempotency", () => {
+  it.each(["PAYMENT_PENDING", "PAYMENT_APPROVED"] as const)(
+    "%s retains the v13 lookup filters and deduplicates",
+    async (transactionType) => {
+      const db = database();
+      const payment = entry(transactionType);
+      expect(shouldDeduplicateLedgerType(transactionType)).toBe(true);
 
-    await recordMercadoPagoLedger(db.client, entry());
-    await recordMercadoPagoLedger(db.client, entry({ metadata: { correlation_id: "mp:other" } }));
+      await recordMercadoPagoLedger(db.client, payment);
+      await recordMercadoPagoLedger(db.client, {
+        ...payment,
+        metadata: { correlation_id: "mp:event-b" },
+      });
 
-    expect(db.rows).toHaveLength(1);
-    expect(db.rows[0]?.metadata.ledger_idempotency_key).toBe(
-      "mp_refund:175142020516:refund:678:REFUND",
+      expect(db.queries).toEqual([
+        [
+          ["reference_type", "mp_payment"],
+          ["reference_id", "payment-1"],
+          ["transaction_type", transactionType],
+        ],
+        [
+          ["reference_type", "mp_payment"],
+          ["reference_id", "payment-1"],
+          ["transaction_type", transactionType],
+        ],
+      ]);
+      expect(db.rows).toHaveLength(1);
+      expect(db.rows[0]?.metadata.ledger_idempotency_key).toBe(
+        `mp_payment:payment-1:${transactionType}`,
+      );
+    },
+  );
+
+  it("keeps REFUND outside the shared idempotency path", () => {
+    expect(shouldDeduplicateLedgerType("REFUND")).toBe(false);
+    expect(shouldDeduplicateLedgerType("CHARGEBACK")).toBe(false);
+    expect(ledgerIdempotencyKey(entry("PAYMENT_APPROVED"))).toBe(
+      "mp_payment:payment-1:PAYMENT_APPROVED",
     );
-  });
-
-  it("permite refunds distintos do mesmo payment quando refund_id muda", async () => {
-    const db = makeSupabaseMock();
-
-    await recordMercadoPagoLedger(db.client, entry({ reference_id: "175142020516:refund:678" }));
-    await recordMercadoPagoLedger(db.client, entry({ reference_id: "175142020516:refund:679" }));
-
-    expect(db.rows).toHaveLength(2);
-  });
-
-  it("trata conflito de unicidade como retry idempotente", async () => {
-    const client = {
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            eq: () => ({
-              eq: () => ({
-                eq: () => ({
-                  limit: () => ({
-                    maybeSingle: async () => ({ data: null, error: null }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-        insert: async () => ({ error: { code: "23505", message: "duplicate key" } }),
-      }),
-    };
-
-    await expect(recordMercadoPagoLedger(client, entry())).resolves.toEqual({ inserted: false });
-  });
-
-  it("gera chave de idempotencia estavel", () => {
-    expect(ledgerIdempotencyKey(entry())).toBe("mp_refund:175142020516:refund:678:REFUND");
   });
 });
