@@ -13,6 +13,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
 import { normalizeMpUserId, resolveMercadoPagoWebhookToken } from "./token-resolution.ts";
@@ -158,6 +159,17 @@ async function fetchMpPayment(token: string, paymentId: string) {
   return await res.json();
 }
 
+async function fetchMpChargeback(token: string, sellerId: string, chargebackId: string) {
+  const res = await fetch(`https://api.mercadopago.com/v1/chargebacks/${chargebackId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Caller-Id": sellerId,
+    },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 function isUuid(value: string | null | undefined): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value ?? ""),
@@ -280,7 +292,8 @@ Deno.serve(async (req) => {
   }
 
   const isPayment = eventType?.includes("payment") || action?.startsWith("payment.");
-  if (!isPayment || !resourceId) {
+  const isChargebackCase = eventType === "topic_chargebacks_wh";
+  if ((!isPayment && !isChargebackCase) || !resourceId) {
     await sb
       .from("payment_webhook_events")
       .update({
@@ -322,10 +335,83 @@ Deno.serve(async (req) => {
     });
     if (!tokenResolution.ok) return await failClosed(tokenResolution.reason);
     const token = tokenResolution.token;
-    const mp = await fetchMpPayment(token, resourceId);
+
+    let paymentResourceId = resourceId;
+    let chargeback: Record<string, unknown> | null = null;
+    let chargebackAmount: number | null = null;
+
+    if (isChargebackCase) {
+      if (!webhookUserId) return await failClosed("missing_mp_user_id");
+      const bodyPaymentId = String(body?.data?.payment_id ?? "").trim();
+      if (!bodyPaymentId) return await failClosed("missing_chargeback_payment_id");
+
+      chargeback = await fetchMpChargeback(token, webhookUserId, resourceId);
+      if (!chargeback) return await failClosed("mp_chargeback_not_found");
+      if (String(chargeback?.id ?? "") !== String(resourceId)) {
+        return await failClosed("mp_chargeback_id_mismatch");
+      }
+
+      const casePayments = Array.isArray(chargeback?.payments)
+        ? chargeback.payments.map((value: unknown) => String(value))
+        : [];
+      if (!casePayments.includes(bodyPaymentId)) {
+        return await failClosed("mp_chargeback_payment_mismatch");
+      }
+
+      const parsedChargebackAmount = Number(chargeback?.amount);
+      if (!Number.isFinite(parsedChargebackAmount) || parsedChargebackAmount <= 0) {
+        return await failClosed("invalid_chargeback_amount");
+      }
+      if (String(chargeback?.currency ?? "") !== "BRL") {
+        return await failClosed("chargeback_currency_mismatch");
+      }
+
+      chargebackAmount = parsedChargebackAmount;
+      paymentResourceId = bodyPaymentId;
+    }
+
+    const mp = await fetchMpPayment(token, paymentResourceId);
     if (!mp) return await failClosed("mp_payment_not_found");
 
-    if (String(mp?.id ?? "") !== String(resourceId)) return await failClosed("mp_id_mismatch");
+    if (String(mp?.id ?? "") !== String(paymentResourceId))
+      return await failClosed("mp_id_mismatch");
+
+    if (isChargebackCase) {
+      const mpStatus = String(mp?.status ?? "").trim();
+      const mpStatusDetail = String(mp?.status_detail ?? "").trim();
+
+      // topic_chargebacks_wh fires when a dispute starts and on status changes.
+      // Only a settled adverse outcome is a realized financial chargeback.
+      // In-process cases and seller reimbursements must not debit the ledger
+      // or overwrite the local payment/order state.
+      if (mpStatus !== "charged_back" || mpStatusDetail !== "settled") {
+        const { error: deferErr } = await sb
+          .from("payment_webhook_events")
+          .update({
+            processed: true,
+            processed_at: new Date().toISOString(),
+            error_message: null,
+          })
+          .eq("id", eventPk);
+        if (deferErr) throw new Error(`chargeback_defer_event:${deferErr.message}`);
+
+        console.log("[mp-webhook] chargeback case deferred", {
+          resourceId,
+          paymentResourceId,
+          mpStatus,
+          mpStatusDetail,
+        });
+        return json({
+          ok: true,
+          deferred: true,
+          reason:
+            mpStatus === "charged_back" && mpStatusDetail === "reimbursed"
+              ? "chargeback_reimbursed_to_seller"
+              : "chargeback_not_settled",
+        });
+      }
+    }
+
     const mpExternalReference = String(mp?.external_reference ?? "").trim();
     if (!isUuid(mpExternalReference)) return await failClosed("missing_mp_external_reference");
 
@@ -370,7 +456,7 @@ Deno.serve(async (req) => {
     if (accountErr) throw new Error(`mp_account_lookup:${accountErr.message}`);
 
     const trust = validateTrustedMpPaymentContext({
-      resourceId,
+      resourceId: paymentResourceId,
       mp,
       order,
       orderPayment: op,
@@ -381,8 +467,12 @@ Deno.serve(async (req) => {
     if (!trust.ok) return await failClosed(trust.reason);
 
     const orderId = trust.orderId;
-    const local = mapStatus(mp.status);
+    const local: LocalStatus = isChargebackCase ? "CHARGEBACK" : mapStatus(mp.status);
     const amount = trust.amount;
+
+    if (isChargebackCase && chargebackAmount != null && chargebackAmount > amount) {
+      return await failClosed("chargeback_amount_exceeds_payment");
+    }
     const ticketUrl =
       mp?.point_of_interaction?.transaction_data?.ticket_url ??
       mp?.transaction_details?.external_resource_url ??
@@ -525,19 +615,20 @@ Deno.serve(async (req) => {
         description: `Pagamento ${local.toLowerCase()}`,
         metadata: { correlation_id: correlationId },
       });
+    } else if (local === "CHARGEBACK" && isChargebackCase) {
+      await recordChargebackLedger(sb, {
+        orderId,
+        restaurantId,
+        chargebackId: resourceId,
+        paymentId: String(mp.id),
+        amount: chargebackAmount!,
+        currency: "BRL",
+        correlationId,
+      });
     } else if (local === "CHARGEBACK") {
-      await sb.from("financial_ledger").insert({
-        order_id: orderId,
-        restaurant_id: restaurantId,
-        provider: "mercado_pago",
-        transaction_type: "CHARGEBACK",
-        amount,
-        currency: mp.currency_id ?? "BRL",
-        status: "COMPLETED",
-        reference_type: "mp_payment",
-        reference_id: String(mp.id),
-        description: "Chargeback",
-        metadata: { correlation_id: correlationId },
+      console.warn("[mp-webhook] chargeback ledger deferred to chargeback case notification", {
+        payment_id: String(mp.id),
+        event_id: eventId,
       });
     }
 
