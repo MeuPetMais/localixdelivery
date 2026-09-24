@@ -201,9 +201,21 @@ export function buildCustomer360ReadModel(
     chargebacks: orders.filter((order) => order.status === "chargeback").length,
   };
 
+  const lastGapDays = realized.length >= 2
+    ? (new Date(realized[realized.length - 1].created_at).getTime() -
+        new Date(realized[realized.length - 2].created_at).getTime()) / DAY_MS
+    : 0;
+
+  const lifecycle =
+    lastGapDays >= CUSTOMER360_THRESHOLDS.inactiveDays &&
+    metrics.days_since_last_order !== null &&
+    metrics.days_since_last_order < CUSTOMER360_THRESHOLDS.atRiskDays
+      ? "REACTIVATED"
+      : resolveCustomer360Lifecycle(metrics);
+
   return {
     customer,
-    lifecycle: resolveCustomer360Lifecycle(metrics),
+    lifecycle,
     metrics,
     metric_time_basis: "UTC",
   };
