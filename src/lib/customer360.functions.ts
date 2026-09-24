@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { canReadCustomer360Restaurant } from "@/lib/customer360-access";
 import {
   buildCustomer360ReadModel,
   normalizeCustomerPhone,
@@ -39,13 +40,15 @@ async function authorizeRestaurantRead(userId: string, restaurantId: string) {
   if (restaurantQ.error) throw new Error(restaurantQ.error.message);
   if (!restaurantQ.data) throw new Error("Restaurant not found");
 
-  const isOwner = restaurantQ.data.owner_id === userId;
-  const isAdmin = Boolean(adminRoleQ.data);
-  const isAssignedGrowth = Boolean(growthRoleQ.data && assignmentQ.data);
+  const allowed = canReadCustomer360Restaurant({
+    userId,
+    restaurantOwnerId: restaurantQ.data.owner_id,
+    isAdmin: Boolean(adminRoleQ.data),
+    hasGrowthRole: Boolean(growthRoleQ.data),
+    hasActiveGrowthAssignment: Boolean(assignmentQ.data),
+  });
 
-  if (!isOwner && !isAdmin && !isAssignedGrowth) {
-    throw new Error("Forbidden");
-  }
+  if (!allowed) throw new Error("Forbidden");
 
   return supabaseAdmin;
 }
