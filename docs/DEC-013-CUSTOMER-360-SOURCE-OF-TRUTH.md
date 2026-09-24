@@ -1,7 +1,7 @@
 # DEC-013 — Fonte canônica e arquitetura do Customer 360
 
 - **Data:** 2026-09-24
-- **Status:** PROPOSTA — aguardando aprovação/merge
+- **Status:** APROVADA — implementada e validada em produção
 - **Escopo:** Localix Growth / Customer Intelligence / Customer 360
 - **Tipo:** Decisão arquitetural
 - **Gate:** GROWTH-0
