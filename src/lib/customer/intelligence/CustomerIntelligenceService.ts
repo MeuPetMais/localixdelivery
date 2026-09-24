@@ -19,6 +19,16 @@ const SEG = () => (supabase as any).from("customer_segments");
 const INS = () => (supabase as any).from("customer_insights");
 const LOY = () => (supabase as any).from("customer_loyalty");
 
+export function loyaltyLevelRank(level: unknown): number {
+  switch (String(level ?? "").toUpperCase()) {
+    case "BRONZE": return 1;
+    case "SILVER": return 2;
+    case "GOLD": return 3;
+    case "DIAMOND": return 4;
+    default: return 0;
+  }
+}
+
 /**
  * CustomerIntelligenceService — facade orchestrating analytics, scoring,
  * segmentation, insights and recommendations. Never duplicates calc logic;
@@ -38,13 +48,13 @@ export const CustomerIntelligenceService = {
     tags: CustomerSegment[];
     recommendations: CustomerRecommendation[];
   }> {
-    const analytics = await CustomerAnalyticsService.forCustomer(customerId, restaurantId);
+    const analytics = await CustomerAnalyticsService.forAuthenticatedCustomer(customerId, restaurantId);
     const { data: loy } = await LOY()
-      .select("balance,total_earned,current_level_id")
+      .select("points_balance,level")
       .eq("customer_id", customerId).eq("restaurant_id", restaurantId).maybeSingle();
     const score = CustomerScoreService.compute(analytics, {
-      loyaltyPoints: Number(loy?.balance ?? 0),
-      loyaltyLevelRank: loy?.current_level_id ? 2 : 0,
+      loyaltyPoints: Number(loy?.points_balance ?? 0),
+      loyaltyLevelRank: loyaltyLevelRank(loy?.level),
     });
     const seg = CustomerSegmentationService.resolve(analytics, score);
     const recs = CustomerRecommendationService.recommend(analytics, score, seg.primary);
