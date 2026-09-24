@@ -81,7 +81,9 @@ export function resolveCustomer360Lifecycle(
   metrics: Customer360Metrics,
   thresholds = CUSTOMER360_THRESHOLDS,
 ): Customer360Lifecycle {
-  if (metrics.total_orders <= 0) return "NEW";
+  if (metrics.total_orders <= 0) {
+    throw new Error("Customer 360 requires at least one realized purchase");
+  }
 
   if (metrics.total_orders === 1) {
     if (
@@ -126,6 +128,10 @@ export function buildCustomer360ReadModel(
   const realized = orders
     .filter((order) => isOrderGrowthEligible(order.status))
     .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+
+  if (realized.length === 0 || Number(customer.total_orders ?? 0) <= 0) {
+    throw new Error("Customer 360 requires at least one realized purchase");
+  }
 
   const firstOrderAt = realized[0]?.created_at ?? null;
   const lastOrderAt = realized[realized.length - 1]?.created_at ?? null;
@@ -223,4 +229,41 @@ export function buildCustomer360ReadModel(
 
 export function normalizeCustomerPhone(value: string | null | undefined): string {
   return String(value ?? "").replace(/\D/g, "");
+}
+
+
+export function resolveCustomer360LifecycleFromProjection(input: {
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderAt: string | null;
+  now?: Date;
+}): Exclude<Customer360Lifecycle, "REACTIVATED"> {
+  const now = input.now ?? new Date();
+  if (input.totalOrders <= 0) {
+    throw new Error("Customer 360 requires at least one realized purchase");
+  }
+
+  const daysSinceLastOrder = input.lastOrderAt
+    ? Math.max(0, Math.floor((now.getTime() - new Date(input.lastOrderAt).getTime()) / DAY_MS))
+    : null;
+
+  const metrics: Customer360Metrics = {
+    total_orders: input.totalOrders,
+    total_spent: input.totalSpent,
+    avg_ticket: input.totalOrders ? input.totalSpent / input.totalOrders : 0,
+    first_order_at: null,
+    last_order_at: input.lastOrderAt,
+    days_since_last_order: daysSinceLastOrder,
+    avg_days_between_orders: null,
+    frequency_per_30d: 0,
+    favorite_products: [],
+    predominant_weekday_utc: null,
+    predominant_hour_utc: null,
+    coupon_usage_count: 0,
+    cancellations: 0,
+    refunds: 0,
+    chargebacks: 0,
+  };
+
+  return resolveCustomer360Lifecycle(metrics) as Exclude<Customer360Lifecycle, "REACTIVATED">;
 }

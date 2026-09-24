@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   buildCustomer360ReadModel,
   normalizeCustomerPhone,
+  resolveCustomer360LifecycleFromProjection,
   type Customer360Customer,
   type Customer360Order,
 } from "@/lib/customer360";
@@ -92,6 +93,7 @@ export const getCustomer360 = createServerFn({ method: "POST" })
       .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
       .eq("id", data.customerId)
       .eq("restaurant_id", data.restaurantId)
+      .gt("total_orders", 0)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
@@ -113,6 +115,7 @@ export const listCustomer360 = createServerFn({ method: "POST" })
       .from("customers")
       .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
       .eq("restaurant_id", data.restaurantId)
+      .gt("total_orders", 0)
       .order("last_order_at", { ascending: false, nullsFirst: false })
       .limit(data.limit);
 
@@ -124,36 +127,24 @@ export const listCustomer360 = createServerFn({ method: "POST" })
     const { data: customers, error } = await query;
     if (error) throw new Error(error.message);
 
-    const now = Date.now();
+    const now = new Date();
 
     return ((customers ?? []) as Customer360Customer[]).map((customer) => {
       const totalOrders = Number(customer.total_orders ?? 0);
       const totalSpent = Number(customer.total_spent ?? 0);
       const lastOrderAt = customer.last_order_at;
       const daysSinceLastOrder = lastOrderAt
-        ? Math.max(0, Math.floor((now - new Date(lastOrderAt).getTime()) / 86_400_000))
+        ? Math.max(0, Math.floor((now.getTime() - new Date(lastOrderAt).getTime()) / 86_400_000))
         : null;
-
-      let lifecycle: "NEW" | "AWAITING_SECOND_PURCHASE" | "RECURRING" | "HIGH_VALUE" | "LOYAL" | "AT_RISK" | "INACTIVE";
-      if (totalOrders <= 1) {
-        lifecycle = totalOrders === 1 && daysSinceLastOrder !== null && daysSinceLastOrder <= 30
-          ? "AWAITING_SECOND_PURCHASE"
-          : "NEW";
-      } else if (daysSinceLastOrder !== null && daysSinceLastOrder >= 90) {
-        lifecycle = "INACTIVE";
-      } else if (daysSinceLastOrder !== null && daysSinceLastOrder >= 45) {
-        lifecycle = "AT_RISK";
-      } else if (totalSpent >= 500) {
-        lifecycle = "HIGH_VALUE";
-      } else if (totalOrders >= 5) {
-        lifecycle = "LOYAL";
-      } else {
-        lifecycle = "RECURRING";
-      }
 
       return {
         customer,
-        lifecycle,
+        lifecycle: resolveCustomer360LifecycleFromProjection({
+          totalOrders,
+          totalSpent,
+          lastOrderAt,
+          now,
+        }),
         metrics: {
           total_orders: totalOrders,
           total_spent: totalSpent,

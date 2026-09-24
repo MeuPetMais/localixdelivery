@@ -3,6 +3,7 @@ import {
   buildCustomer360ReadModel,
   normalizeCustomerPhone,
   resolveCustomer360Lifecycle,
+  resolveCustomer360LifecycleFromProjection,
   type Customer360Customer,
 } from "./customer360";
 
@@ -106,4 +107,144 @@ it("classifies a purchase after a long gap as reactivated", () => {
     new Date("2026-09-24T12:00:00.000Z"),
   );
   expect(result.lifecycle).toBe("REACTIVATED");
+});
+
+
+describe("GROWTH-3 metric integrity matrix", () => {
+  it("rejects projected customers with no realized sale", () => {
+    const zeroCustomer = { ...customer, total_orders: 0, total_spent: 0, avg_ticket: 0, last_order_at: null };
+    expect(() => buildCustomer360ReadModel(
+      zeroCustomer,
+      [
+        { id: "n1", total: 30, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "cancelado" },
+      ],
+      new Date("2026-09-24T12:00:00.000Z"),
+    )).toThrow("at least one realized purchase");
+  });
+
+  it("excludes every non-realized status from realized metrics", () => {
+    const statuses = [
+      "novo",
+      "aguardando_pagamento",
+      "pago",
+      "falha_pagamento",
+      "aceito",
+      "rejeitado",
+      "em_preparo",
+      "pronto",
+      "saiu_para_entrega",
+      "cancelado",
+      "reembolsado",
+      "chargeback",
+    ];
+
+    const realizedCustomer = { ...customer, total_orders: 2, total_spent: 70, avg_ticket: 35 };
+    const result = buildCustomer360ReadModel(
+      realizedCustomer,
+      [
+        { id: "ok1", total: 30, created_at: "2026-09-10T12:00:00.000Z", items: [], status: "entregue" },
+        { id: "ok2", total: 40, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "concluido" },
+        ...statuses.map((status, index) => ({
+          id: `x${index}`,
+          total: 999,
+          created_at: `2026-09-${String(index + 1).padStart(2, "0")}T08:00:00.000Z`,
+          items: [{ productId: "ignored", name: "Ignored", qty: 99 }],
+          status,
+        })),
+      ],
+      new Date("2026-09-24T12:00:00.000Z"),
+    );
+
+    expect(result.metrics.total_orders).toBe(2);
+    expect(result.metrics.total_spent).toBe(70);
+    expect(result.metrics.favorite_products).toEqual([]);
+    expect(result.metrics.cancellations).toBe(1);
+    expect(result.metrics.refunds).toBe(1);
+    expect(result.metrics.chargebacks).toBe(1);
+  });
+
+  it("keeps list and detail lifecycle thresholds consistent", () => {
+    expect(resolveCustomer360LifecycleFromProjection({
+      totalOrders: 2,
+      totalSpent: 100,
+      lastOrderAt: "2026-08-01T00:00:00.000Z",
+      now: new Date("2026-09-24T00:00:00.000Z"),
+    })).toBe("AT_RISK");
+
+    expect(resolveCustomer360LifecycleFromProjection({
+      totalOrders: 2,
+      totalSpent: 100,
+      lastOrderAt: "2026-06-01T00:00:00.000Z",
+      now: new Date("2026-09-24T00:00:00.000Z"),
+    })).toBe("INACTIVE");
+
+    expect(resolveCustomer360LifecycleFromProjection({
+      totalOrders: 6,
+      totalSpent: 300,
+      lastOrderAt: "2026-09-20T00:00:00.000Z",
+      now: new Date("2026-09-24T00:00:00.000Z"),
+    })).toBe("LOYAL");
+
+    expect(resolveCustomer360LifecycleFromProjection({
+      totalOrders: 3,
+      totalSpent: 600,
+      lastOrderAt: "2026-09-20T00:00:00.000Z",
+      now: new Date("2026-09-24T00:00:00.000Z"),
+    })).toBe("HIGH_VALUE");
+  });
+
+  it("computes frequency and predominant UTC behavior deterministically", () => {
+    const result = buildCustomer360ReadModel(
+      { ...customer, total_orders: 3, total_spent: 120, avg_ticket: 40, last_order_at: "2026-09-21T18:00:00.000Z" },
+      [
+        { id: "o1", total: 30, created_at: "2026-09-01T18:00:00.000Z", items: [], status: "entregue" },
+        { id: "o2", total: 40, created_at: "2026-09-11T18:00:00.000Z", items: [], status: "entregue" },
+        { id: "o3", total: 50, created_at: "2026-09-21T18:00:00.000Z", items: [], status: "concluido" },
+      ],
+      new Date("2026-10-01T18:00:00.000Z"),
+    );
+
+    expect(result.metrics.avg_days_between_orders).toBe(10);
+    expect(result.metrics.frequency_per_30d).toBeCloseTo(3, 1);
+    expect(result.metrics.predominant_hour_utc).toBe(18);
+    expect(result.metric_time_basis).toBe("UTC");
+  });
+
+  it("aggregates favorite products across historical item shapes", () => {
+    const result = buildCustomer360ReadModel(
+      { ...customer, total_orders: 2, total_spent: 80, avg_ticket: 40 },
+      [
+        {
+          id: "o1",
+          total: 40,
+          created_at: "2026-09-10T12:00:00.000Z",
+          items: [{ product_id: "p1", name: "Burger", quantity: 2 }],
+          status: "entregue",
+        },
+        {
+          id: "o2",
+          total: 40,
+          created_at: "2026-09-20T12:00:00.000Z",
+          items: [{ id: "p1", name: "Burger", qty: 3 }],
+          status: "concluido",
+        },
+      ],
+      new Date("2026-09-24T12:00:00.000Z"),
+    );
+
+    expect(result.metrics.favorite_products[0]).toEqual({
+      product_id: "p1",
+      name: "Burger",
+      qty: 5,
+    });
+  });
+
+  it("does not allow zero-purchase lifecycle classification in projection summaries", () => {
+    expect(() => resolveCustomer360LifecycleFromProjection({
+      totalOrders: 0,
+      totalSpent: 0,
+      lastOrderAt: null,
+      now: new Date("2026-09-24T00:00:00.000Z"),
+    })).toThrow("at least one realized purchase");
+  });
 });
