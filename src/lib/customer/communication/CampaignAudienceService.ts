@@ -18,12 +18,12 @@ export const CampaignAudienceService = {
     if (input.customer_ids?.length) return [...new Set(input.customer_ids)];
     const { data, error } = await (supabase as any)
       .from("customer_segments")
-      .select("customer_id, primary_segment")
+      .select("customer_id, segment")
       .eq("restaurant_id", input.restaurant_id);
     if (error) throw error;
-    const rows = (data ?? []) as Array<{ customer_id: string; primary_segment: string | null }>;
+    const rows = (data ?? []) as Array<{ customer_id: string; segment: string | null }>;
     const filtered = input.segment
-      ? rows.filter((r) => r.primary_segment === input.segment)
+      ? rows.filter((r) => r.segment === input.segment)
       : rows;
     return filtered.map((r) => r.customer_id);
   },
@@ -85,11 +85,11 @@ export const CampaignPreview = {
     }
     const { data } = await (supabase as any)
       .from("customer_segments")
-      .select("primary_segment")
+      .select("segment")
       .eq("restaurant_id", input.restaurant_id);
     const segments: Record<string, number> = {};
-    for (const r of (data ?? []) as Array<{ primary_segment: string | null }>) {
-      const k = r.primary_segment ?? "UNKNOWN";
+    for (const r of (data ?? []) as Array<{ segment: string | null }>) {
+      const k = r.segment ?? "UNKNOWN";
       segments[k] = (segments[k] ?? 0) + 1;
     }
     return {
