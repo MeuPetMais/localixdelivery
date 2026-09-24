@@ -437,6 +437,29 @@ function Customer360Detail({ detail }: { detail: any }) {
         </Card>
       </div>
 
+      {Array.isArray(detail.intelligence) && detail.intelligence.length > 0 && (
+        <Card className="p-4">
+          <h4 className="font-semibold">Oportunidades identificadas</h4>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Sugestões baseadas no comportamento do Customer 360. Nenhuma ação é executada automaticamente.
+          </p>
+          <div className="mt-3 space-y-2">
+            {detail.intelligence.map((insight: any) => (
+              <div key={insight.type} className="rounded-xl border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-medium">{insight.title}</p>
+                  <Badge variant="outline">{insight.severity}</Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{insight.description}</p>
+                <p className="mt-2 text-xs font-medium text-primary">
+                  Ação sugerida: {String(insight.recommended_action).replaceAll("_", " ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card className="p-4">
         <h4 className="font-semibold">Produtos favoritos</h4>
         {metrics.favorite_products.length === 0 ? (

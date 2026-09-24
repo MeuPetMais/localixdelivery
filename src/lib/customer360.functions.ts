@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { canReadCustomer360Restaurant } from "@/lib/customer360-access";
+import { buildCustomer360Intelligence } from "@/lib/customer360-intelligence";
 import {
   buildCustomer360ReadModel,
   normalizeCustomerPhone,
@@ -105,7 +106,8 @@ export const getCustomer360 = createServerFn({ method: "POST" })
     const normalizedPhone = normalizeCustomerPhone(customer.phone);
     const orders = await loadOrdersForProjectedCustomer(sb, data.restaurantId, normalizedPhone);
 
-    return buildCustomer360ReadModel(customer as Customer360Customer, orders);
+    const customer360 = buildCustomer360ReadModel(customer as Customer360Customer, orders);
+    return { ...customer360, intelligence: buildCustomer360Intelligence(customer360) };
   });
 
 export const listCustomer360 = createServerFn({ method: "POST" })
