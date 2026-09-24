@@ -124,14 +124,43 @@ export const listCustomer360 = createServerFn({ method: "POST" })
     const { data: customers, error } = await query;
     if (error) throw new Error(error.message);
 
-    return ((customers ?? []) as Customer360Customer[]).map((customer) => ({
-      customer,
-      lifecycle: null,
-      metrics: {
-        total_orders: Number(customer.total_orders ?? 0),
-        total_spent: Number(customer.total_spent ?? 0),
-        avg_ticket: Number(customer.avg_ticket ?? 0),
-        last_order_at: customer.last_order_at,
-      },
-    }));
+    const now = Date.now();
+
+    return ((customers ?? []) as Customer360Customer[]).map((customer) => {
+      const totalOrders = Number(customer.total_orders ?? 0);
+      const totalSpent = Number(customer.total_spent ?? 0);
+      const lastOrderAt = customer.last_order_at;
+      const daysSinceLastOrder = lastOrderAt
+        ? Math.max(0, Math.floor((now - new Date(lastOrderAt).getTime()) / 86_400_000))
+        : null;
+
+      let lifecycle: "NEW" | "AWAITING_SECOND_PURCHASE" | "RECURRING" | "HIGH_VALUE" | "LOYAL" | "AT_RISK" | "INACTIVE";
+      if (totalOrders <= 1) {
+        lifecycle = totalOrders === 1 && daysSinceLastOrder !== null && daysSinceLastOrder <= 30
+          ? "AWAITING_SECOND_PURCHASE"
+          : "NEW";
+      } else if (daysSinceLastOrder !== null && daysSinceLastOrder >= 90) {
+        lifecycle = "INACTIVE";
+      } else if (daysSinceLastOrder !== null && daysSinceLastOrder >= 45) {
+        lifecycle = "AT_RISK";
+      } else if (totalSpent >= 500) {
+        lifecycle = "HIGH_VALUE";
+      } else if (totalOrders >= 5) {
+        lifecycle = "LOYAL";
+      } else {
+        lifecycle = "RECURRING";
+      }
+
+      return {
+        customer,
+        lifecycle,
+        metrics: {
+          total_orders: totalOrders,
+          total_spent: totalSpent,
+          avg_ticket: Number(customer.avg_ticket ?? 0),
+          last_order_at: lastOrderAt,
+          days_since_last_order: daysSinceLastOrder,
+        },
+      };
+    });
   });
