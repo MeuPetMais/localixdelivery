@@ -3,7 +3,7 @@ import { CustomerAnalyticsService } from "./CustomerAnalyticsService";
 import { CustomerScoreService } from "./CustomerScoreService";
 import { CustomerSegmentationService } from "./CustomerSegmentationService";
 import { CustomerRecommendationService } from "./CustomerRecommendationService";
-import { CustomerIntelligenceService } from "./CustomerIntelligenceService";
+import { CustomerIntelligenceService, loyaltyLevelRank } from "./CustomerIntelligenceService";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
@@ -149,5 +149,17 @@ describe("CustomerIntelligenceService.buildInsights", () => {
     const s = CustomerScoreService.compute(a);
     const ins = CustomerIntelligenceService.buildInsights("r", "c", a, s, "NEW");
     expect(ins[0].insight_type).toBe("NO_PURCHASE");
+  });
+});
+
+
+describe("GROWTH-1 loyalty contract", () => {
+  it("maps persisted loyalty levels to score ranks", () => {
+    expect(loyaltyLevelRank("BRONZE")).toBe(1);
+    expect(loyaltyLevelRank("SILVER")).toBe(2);
+    expect(loyaltyLevelRank("GOLD")).toBe(3);
+    expect(loyaltyLevelRank("DIAMOND")).toBe(4);
+    expect(loyaltyLevelRank(null)).toBe(0);
+    expect(loyaltyLevelRank("UNKNOWN")).toBe(0);
   });
 });
