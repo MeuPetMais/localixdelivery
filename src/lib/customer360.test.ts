@@ -92,3 +92,18 @@ describe("Customer 360 read model", () => {
     })).toBe("AWAITING_SECOND_PURCHASE");
   });
 });
+
+
+it("classifies a purchase after a long gap as reactivated", () => {
+  const reactivatedCustomer = { ...customer, total_orders: 3, total_spent: 120, avg_ticket: 40 };
+  const result = buildCustomer360ReadModel(
+    reactivatedCustomer,
+    [
+      { id: "o1", total: 30, created_at: "2026-01-01T12:00:00.000Z", items: [], status: "entregue" },
+      { id: "o2", total: 40, created_at: "2026-02-01T12:00:00.000Z", items: [], status: "entregue" },
+      { id: "o3", total: 50, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "concluido" },
+    ],
+    new Date("2026-09-24T12:00:00.000Z"),
+  );
+  expect(result.lifecycle).toBe("REACTIVATED");
+});
