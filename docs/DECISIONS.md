@@ -64,3 +64,20 @@
   protegidas por flag (evita rollback de release inteiro).
 - Observability e EventBus permanecem in-process em v1.0; persistência
   durável fica formalmente registrada como pré-requisito de v1.1.
+
+
+## 2026-09-24 — DEC-013 — Customer 360 como fonte partner-scoped
+
+- `public.customers` é a raiz comportamental do Customer 360 por restaurante.
+- `public.orders` permanece a fonte transacional de verdade.
+- Growth é consumidor de dados e não autoridade financeira.
+- Lifecycle e métricas do Customer 360 são calculados server-side.
+
+## 2026-09-24 — DEC-014 — Encerramento do ciclo Customer 360 / Growth
+
+- Gates GROWTH-0 a GROWTH-8 encerrados tecnicamente.
+- Customer Intelligence deriva do Customer 360 canônico.
+- Measurement usa ledger durável de oportunidade → ação → pedido atribuído.
+- Consentimento de Growth é partner-scoped e cobre clientes guest.
+- Automação real permanece bloqueada até provider comprovado, consentimento vigente e controles de frequência/idempotência.
+- Próxima fase: validação operacional de recompra, recorrência e atribuição.
