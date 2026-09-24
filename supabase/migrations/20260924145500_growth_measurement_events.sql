@@ -14,6 +14,7 @@ create table if not exists public.growth_measurement_events (
   source_type text not null,
   source_ref text,
   action_key text,
+  parent_event_id uuid references public.growth_measurement_events(id) on delete set null,
   order_id uuid references public.orders(id) on delete set null,
   attributed_order_total numeric(12,2),
   occurred_at timestamptz not null default now(),
@@ -35,6 +36,10 @@ create index if not exists growth_measurement_events_restaurant_occurred_idx
 
 create index if not exists growth_measurement_events_customer_occurred_idx
   on public.growth_measurement_events (restaurant_id, customer_id, occurred_at desc);
+
+create index if not exists growth_measurement_events_parent_idx
+  on public.growth_measurement_events (parent_event_id)
+  where parent_event_id is not null;
 
 create index if not exists growth_measurement_events_order_idx
   on public.growth_measurement_events (order_id)
