@@ -80,8 +80,18 @@ export const CustomerAnalyticsService = {
     };
   },
 
-  /** Fetch orders + compute. */
-  async forCustomer(customerId: string, restaurantId: string, limit = 200): Promise<CustomerAnalytics> {
+  /**
+   * Fetch orders for an authenticated customer id + restaurant.
+   *
+   * IMPORTANT: this path does not cover guest customers whose orders have
+   * customer_id = null. Customer 360 must use the partner-scoped projected
+   * customer identity from public.customers in the GROWTH-2 read model.
+   */
+  async forAuthenticatedCustomer(
+    customerId: string,
+    restaurantId: string,
+    limit = 200,
+  ): Promise<CustomerAnalytics> {
     const { data, error } = await (supabase as any)
       .from("orders")
       .select("id,total,created_at,items,payment_method,status")
@@ -91,5 +101,10 @@ export const CustomerAnalyticsService = {
       .limit(limit);
     if (error) throw error;
     return CustomerAnalyticsService.compute(customerId, restaurantId, (data ?? []) as OrderRow[]);
+  },
+
+  /** @deprecated Use only for authenticated-customer flows. Customer 360 uses GROWTH-2. */
+  async forCustomer(customerId: string, restaurantId: string, limit = 200): Promise<CustomerAnalytics> {
+    return CustomerAnalyticsService.forAuthenticatedCustomer(customerId, restaurantId, limit);
   },
 } as const;
