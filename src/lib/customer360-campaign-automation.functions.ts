@@ -2,8 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { canReadCustomer360Restaurant } from "@/lib/customer360-access";
-import { getCustomer360 } from "@/lib/customer360.functions";
 import { planGrowthCampaignAutomation } from "@/lib/customer360-campaign-automation";
+import {
+  buildCustomer360ReadModel,
+  normalizeCustomerPhone,
+  type Customer360Customer,
+  type Customer360Order,
+} from "@/lib/customer360";
+import { buildCustomer360Intelligence } from "@/lib/customer360-intelligence";
 
 const planSchema = z.object({
   restaurantId: z.string().uuid(),
@@ -68,14 +74,41 @@ export const planAndQueueGrowthCampaign = createServerFn({ method: "POST" })
     if (consentError) throw new Error(consentError.message);
     if (jobsError) throw new Error(jobsError.message);
 
-    // Reuse the already-authorized Customer 360 data contract.
-    const customer360 = await getCustomer360({
-      data: { restaurantId: data.restaurantId, customerId: data.customerId },
-    } as any);
+    const { data: customer, error: customerError } = await sb
+      .from("customers")
+      .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
+      .eq("id", data.customerId)
+      .eq("restaurant_id", data.restaurantId)
+      .gt("total_orders", 0)
+      .maybeSingle();
+    if (customerError) throw new Error(customerError.message);
+    if (!customer) throw new Error("Customer not found");
+
+    const normalizedPhone = normalizeCustomerPhone(customer.phone);
+    const orders: Customer360Order[] = [];
+    const pageSize = 500;
+    let from = 0;
+    while (true) {
+      const { data: page, error: ordersError } = await sb
+        .from("orders")
+        .select("id,total,created_at,items,payment_method,status,coupon_id,customer_phone")
+        .eq("restaurant_id", data.restaurantId)
+        .eq("customer_phone", normalizedPhone)
+        .order("created_at", { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (ordersError) throw new Error(ordersError.message);
+      const rows = (page ?? []) as Array<Customer360Order & { customer_phone?: string | null }>;
+      orders.push(...rows);
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    const customer360 = buildCustomer360ReadModel(customer as Customer360Customer, orders);
+    const intelligence = buildCustomer360Intelligence(customer360);
 
     const plan = planGrowthCampaignAutomation({
-      customer360: customer360 as any,
-      insights: (customer360 as any).intelligence ?? [],
+      customer360,
+      insights: intelligence,
       channel: data.channel,
       latestConsent: consent as any,
       providerAvailable: providerAvailable(data.channel),
@@ -107,8 +140,8 @@ export const planAndQueueGrowthCampaign = createServerFn({ method: "POST" })
       consent_id: plan.consent_id,
       idempotency_key: idempotencyKey,
       metadata: {
-        lifecycle: (customer360 as any).lifecycle,
-        metric_time_basis: (customer360 as any).metric_time_basis,
+        lifecycle: customer360.lifecycle,
+        metric_time_basis: customer360.metric_time_basis,
       },
     };
 
