@@ -58,6 +58,20 @@ type Customer360ListItem = {
   };
 };
 
+const ACTION_LABELS: Record<string, string> = {
+  ENCOURAGE_SECOND_PURCHASE: "Incentivar a segunda compra",
+  MAINTAIN_RECURRENCE: "Manter a recorrência deste cliente",
+  REACTIVATE_CUSTOMER: "Reativar este cliente",
+  RETAIN_HIGH_VALUE: "Fidelizar este cliente de alto valor",
+  REWARD_LOYALTY: "Recompensar a fidelidade deste cliente",
+  PROMOTE_FAVORITE_PRODUCT: "Oferecer novamente o produto favorito",
+};
+
+function growthActionLabel(action: unknown) {
+  const key = String(action ?? "");
+  return ACTION_LABELS[key] ?? key.replaceAll("_", " ").toLowerCase();
+}
+
 const LIFECYCLE_META: Record<
   Customer360Lifecycle,
   { label: string; tone: string }
@@ -452,7 +466,7 @@ function Customer360Detail({ detail }: { detail: any }) {
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{insight.description}</p>
                 <p className="mt-2 text-xs font-medium text-primary">
-                  Ação sugerida: {String(insight.recommended_action).replaceAll("_", " ")}
+                  Ação sugerida: {growthActionLabel(insight.recommended_action)}
                 </p>
               </div>
             ))}
