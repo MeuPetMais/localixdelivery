@@ -66,6 +66,7 @@ export const NAVIGATION: NavigationItem[] = [
     workspace: "customers",
     children: [
       { id: "customers", label: "Clientes", to: "/customers", workspace: "customers" },
+      { id: "growth", label: "Growth", to: "/growth", workspace: "customers", requiredRoles: ["OWNER", "MANAGER"] },
       { id: "loyalty", label: "Fidelidade", to: "/loyalty", workspace: "marketing", requiredRoles: ["OWNER", "MANAGER"] },
       { id: "reviews", label: "Avaliações", to: "/reviews", workspace: "customers", requiredRoles: ["OWNER", "MANAGER", "STAFF"] },
     ],
