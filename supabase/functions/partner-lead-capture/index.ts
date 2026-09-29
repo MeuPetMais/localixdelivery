@@ -46,7 +46,11 @@ function corsHeaders(req: Request) {
 Deno.serve(async (req: Request) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: cors });
-  if (req.method !== "POST")\n    return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {\n      status: 405,\n      headers: cors,\n    });
+  if (req.method !== "POST")
+    return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
+      status: 405,
+      headers: cors,
+    });
   const auth = req.headers.get("Authorization");
   if (!auth) return new Response(JSON.stringify({ error: "AUTH_REQUIRED" }), { status: 401, headers: cors });
   let body: any;
@@ -64,5 +68,8 @@ Deno.serve(async (req: Request) => {
     const status = error.message.includes("FORBIDDEN") ? 403 : error.message.includes("AUTH_REQUIRED") ? 401 : 400;
     return new Response(JSON.stringify({ error: "CAPTURE_FAILED", code: error.code }), { status, headers: cors });
   }
-  return new Response(\n    JSON.stringify({ ok: true, lead_id: data?.id ?? null, status: data?.status ?? null }),\n    { status: 200, headers: cors },\n  );
+  return new Response(
+    JSON.stringify({ ok: true, lead_id: data?.id ?? null, status: data?.status ?? null }),
+    { status: 200, headers: cors },
+  );
 });
