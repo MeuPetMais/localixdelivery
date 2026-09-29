@@ -141,8 +141,17 @@ function CommercialPage() {
     }
 
     setSaving(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) {
+      setSaving(false);
+      toast.error("Sua sessao expirou. Entre novamente.");
+      return;
+    }
+
     const externalRef = `manual-${user.id}-${crypto.randomUUID()}`;
     const { data, error: invokeError } = await supabase.functions.invoke("partner-lead-capture", {
+      headers: { Authorization: `Bearer ${accessToken}` },
       body: {
         business_name: businessName,
         contact_name: contactName,
