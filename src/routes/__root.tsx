@@ -87,15 +87,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { name: "description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
+      {
+        name: "description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
       { property: "og:title", content: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { property: "og:description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
+      {
+        property: "og:description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { name: "twitter:description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png",
+      },
       { name: "theme-color", content: "#0f172a" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -117,7 +137,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
