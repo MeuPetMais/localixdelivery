@@ -1,7 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const allowedOrigins = new Set([\n  "https://localixdelivery.rngdigital.com.br",
+const allowedOrigins = new Set([
+  "https://localixdelivery.rngdigital.com.br",
   "https://localixdelivery-stagin-git-5346ae-alexandre-sanliver-s-projects.vercel.app",
 ]);
 const allowed = new Set([
