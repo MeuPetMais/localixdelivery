@@ -152,25 +152,38 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isPartnerGrowthArea = pathname === "/partner-growth" || pathname.startsWith("/partner-growth/");
+  const isPartnerGrowthArea =
+    pathname === "/partner-growth" || pathname.startsWith("/partner-growth/");
 
   useEffect(() => {
-    const isDriverAppRoute = pathname.startsWith("/motoboy") || pathname.startsWith("/entregador");
+    const isDriverAppRoute =
+      pathname.startsWith("/motoboy") || pathname.startsWith("/entregador");
     if (isDriverAppRoute) return;
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => registration.unregister());
-      }).catch(() => {});
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => registration.unregister());
+        })
+        .catch(() => {});
     }
     if ("caches" in window && import.meta.env.DEV) {
-      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key))).catch(() => {});
+      caches
+        .keys()
+        .then((keys) => keys.forEach((key) => caches.delete(key)))
+        .catch(() => {});
     }
   }, [pathname]);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (import.meta.env.DEV) {
-        console.info("[auth-debug] onAuthStateChange(root)", { event, hasSession: !!session, userId: session?.user?.id, expiresAt: session?.expires_at });
+        console.info("[auth-debug] onAuthStateChange(root)", {
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+          expiresAt: session?.expires_at,
+        });
       }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
@@ -193,7 +206,6 @@ function RootComponent() {
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
           <CustomerNotificationsProvider>
-        
             <Outlet />
             <CustomerBottomNav />
           </CustomerNotificationsProvider>
