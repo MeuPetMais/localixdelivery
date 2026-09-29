@@ -33,9 +33,7 @@ const allowed = new Set([
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin)
-      ? origin
-      : "https://localixdelivery-stagin-git-5346ae-alexandre-sanliver-s-projects.vercel.app",
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
