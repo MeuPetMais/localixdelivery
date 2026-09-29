@@ -52,7 +52,15 @@ export async function isCurrentUserAdmin(userId: string): Promise<boolean> {
  * - Everyone else → /dashboard.
  */
 export async function resolvePostLoginRedirect(userId: string): Promise<string> {
+  const { data: commercialRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "comercial")
+    .maybeSingle();
+
   const admin = await isCurrentUserAdmin(userId);
+  if (!admin && commercialRole) return "/comercial";
   if (!admin) return "/dashboard";
 
   const { data: restaurants } = await supabase
