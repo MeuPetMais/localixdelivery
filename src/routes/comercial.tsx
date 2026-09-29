@@ -182,6 +182,7 @@ function CommercialPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <style>{`nav[aria-label="Navegação principal"], button[aria-label="Notificações"] { display: none !important; }`}</style>
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <div>
