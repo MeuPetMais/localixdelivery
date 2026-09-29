@@ -19,19 +19,35 @@ export function getPreferredEnv(): AdminEnv | null {
 }
 
 export function setPreferredEnv(v: AdminEnv) {
-  try { localStorage.setItem(LS_ENV, v); } catch {}
+  try {
+    localStorage.setItem(LS_ENV, v);
+  } catch {
+    void 0;
+  }
 }
 
 export function getImpersonatedRestaurantId(): string | null {
-  try { return localStorage.getItem(LS_IMPERSONATE); } catch { return null; }
+  try {
+    return localStorage.getItem(LS_IMPERSONATE);
+  } catch {
+    return null;
+  }
 }
 
 export function setImpersonatedRestaurantId(id: string) {
-  try { localStorage.setItem(LS_IMPERSONATE, id); } catch {}
+  try {
+    localStorage.setItem(LS_IMPERSONATE, id);
+  } catch {
+    void 0;
+  }
 }
 
 export function clearImpersonation() {
-  try { localStorage.removeItem(LS_IMPERSONATE); } catch {}
+  try {
+    localStorage.removeItem(LS_IMPERSONATE);
+  } catch {
+    void 0;
+  }
 }
 
 export async function isCurrentUserAdmin(userId: string): Promise<boolean> {
@@ -52,7 +68,15 @@ export async function isCurrentUserAdmin(userId: string): Promise<boolean> {
  * - Everyone else → /dashboard.
  */
 export async function resolvePostLoginRedirect(userId: string): Promise<string> {
+  const { data: commercialRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "comercial")
+    .maybeSingle();
+
   const admin = await isCurrentUserAdmin(userId);
+  if (!admin && commercialRole) return "/comercial";
   if (!admin) return "/dashboard";
 
   const { data: restaurants } = await supabase
