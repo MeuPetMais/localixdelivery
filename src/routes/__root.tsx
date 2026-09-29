@@ -27,7 +27,6 @@ import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
 import { CustomerNotificationsProvider } from "@/contexts/CustomerNotificationsContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -37,7 +36,10 @@ function NotFoundComponent() {
         <p className="mt-2 text-sm text-muted-foreground">
           O link que você abriu não existe ou foi movido.
         </p>
-        <Link to="/" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+        <Link
+          to="/"
+          className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
           Voltar para o início
         </Link>
       </div>
@@ -59,12 +61,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">Tente novamente em instantes.</p>
         <div className="mt-6 flex justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Tentar novamente
           </button>
-          <a href="/" className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent">
+          <a
+            href="/"
+            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
             Início
           </a>
         </div>
@@ -137,7 +145,6 @@ function RootComponent() {
     }
   }, [pathname]);
 
-
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (import.meta.env.DEV) {
@@ -199,7 +206,6 @@ const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
   },
 ];
 
-
 function CustomerBottomNav() {
   const { pathname, isAdminArea } = useRouterState({
     select: (s) => ({
@@ -219,5 +225,4 @@ function CustomerBottomNav() {
     </>
   );
 }
-
 
