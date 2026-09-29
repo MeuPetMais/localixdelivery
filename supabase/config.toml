@@ -14,3 +14,5 @@ entrypoint = "./functions/confirm-customer-email/index.ts"
 # static_files = [ "./functions/confirm-customer-email/*.html" ]
 [functions.mp-webhook]
 verify_jwt = false
+[functions.partner-lead-capture]
+verify_jwt = true
