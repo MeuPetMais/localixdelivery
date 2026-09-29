@@ -68,9 +68,7 @@ export const Route = createFileRoute("/comercial")({
       });
     }
 
-    const allowed = (roles ?? []).some(
-      (row) => row.role === "comercial" || row.role === "admin",
-    );
+    const allowed = (roles ?? []).some((row) => row.role === "comercial" || row.role === "admin");
     if (!allowed) throw redirect({ to: "/dashboard" });
 
     return { user: data.user };
@@ -144,26 +142,23 @@ function CommercialPage() {
 
     setSaving(true);
     const externalRef = `manual-${user.id}-${crypto.randomUUID()}`;
-    const { data, error: invokeError } = await supabase.functions.invoke(
-      "partner-lead-capture",
-      {
-        body: {
-          business_name: businessName,
-          contact_name: contactName,
-          phone,
-          segment: draft.segment.trim() || null,
-          city: draft.city.trim() || null,
-          neighborhood: draft.neighborhood.trim() || null,
-          estimated_monthly_orders: draft.estimatedMonthlyOrders
-            ? Number(draft.estimatedMonthlyOrders)
-            : null,
-          main_pain: draft.mainPain.trim() || null,
-          source: "manual",
-          medium: "commercial_panel",
-          external_ref: externalRef,
-        },
+    const { data, error: invokeError } = await supabase.functions.invoke("partner-lead-capture", {
+      body: {
+        business_name: businessName,
+        contact_name: contactName,
+        phone,
+        segment: draft.segment.trim() || null,
+        city: draft.city.trim() || null,
+        neighborhood: draft.neighborhood.trim() || null,
+        estimated_monthly_orders: draft.estimatedMonthlyOrders
+          ? Number(draft.estimatedMonthlyOrders)
+          : null,
+        main_pain: draft.mainPain.trim() || null,
+        source: "manual",
+        medium: "commercial_panel",
+        external_ref: externalRef,
       },
-    );
+    });
     setSaving(false);
 
     if (invokeError || !data?.ok) {
@@ -227,9 +222,7 @@ function CommercialPage() {
                     required
                     minLength={2}
                     value={draft.businessName}
-                    onChange={(event) =>
-                      setDraft({ ...draft, businessName: event.target.value })
-                    }
+                    onChange={(event) => setDraft({ ...draft, businessName: event.target.value })}
                   />
                 </Field>
                 <Field label="Contato *">
@@ -237,9 +230,7 @@ function CommercialPage() {
                     required
                     minLength={2}
                     value={draft.contactName}
-                    onChange={(event) =>
-                      setDraft({ ...draft, contactName: event.target.value })
-                    }
+                    onChange={(event) => setDraft({ ...draft, contactName: event.target.value })}
                   />
                 </Field>
                 <Field label="Telefone / WhatsApp *">
@@ -267,9 +258,7 @@ function CommercialPage() {
                   <Field label="Bairro">
                     <Input
                       value={draft.neighborhood}
-                      onChange={(event) =>
-                        setDraft({ ...draft, neighborhood: event.target.value })
-                      }
+                      onChange={(event) => setDraft({ ...draft, neighborhood: event.target.value })}
                     />
                   </Field>
                 </div>
