@@ -175,7 +175,7 @@ function CommercialPage() {
         invokeError?.message ||
         (typeof data?.error === "string" ? data.error : null) ||
         "Resposta invalida da funcao de captura.";
-      toast.error(`Falha ao cadastrar: ${technicalMessage}`);
+      void technicalMessage;\n      toast.error("Nao foi possivel cadastrar o lead. Tente novamente.");
       return;
     }
 
