@@ -4,16 +4,39 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const allowedOrigins = new Set([
   "https://localixdelivery-stagin-git-5346ae-alexandre-sanliver-s-projects.vercel.app",
 ]);
-const allowed = new Set(["business_name","contact_name","phone","segment","city","neighborhood","estimated_monthly_orders","current_channels","main_pain","is_decision_maker","source","medium","utm_source","utm_medium","utm_campaign","utm_content","utm_term","meta_campaign_id","meta_adset_id","meta_ad_id","creative_code","external_ref"]);
+const allowed = new Set([
+  "business_name",
+  "contact_name",
+  "phone",
+  "segment",
+  "city",
+  "neighborhood",
+  "estimated_monthly_orders",
+  "current_channels",
+  "main_pain",
+  "is_decision_maker",
+  "source",
+  "medium",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "meta_campaign_id",
+  "meta_adset_id",
+  "meta_ad_id",
+  "creative_code",
+  "external_ref",
+]);
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://localixdelivery-stagin-git-5346ae-alexandre-sanliver-s-projects.vercel.app",
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin)\n      ? origin\n      : "https://localixdelivery-stagin-git-5346ae-alexandre-sanliver-s-projects.vercel.app",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
-    "Vary": "Origin",
+    Vary: "Origin",
     "Content-Type": "application/json",
   };
 }
@@ -21,7 +44,7 @@ function corsHeaders(req: Request) {
 Deno.serve(async (req: Request) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: cors });
-  if (req.method !== "POST") return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), { status: 405, headers: cors });
+  if (req.method !== "POST")\n    return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {\n      status: 405,\n      headers: cors,\n    });
   const auth = req.headers.get("Authorization");
   if (!auth) return new Response(JSON.stringify({ error: "AUTH_REQUIRED" }), { status: 401, headers: cors });
   let body: any;
@@ -39,5 +62,5 @@ Deno.serve(async (req: Request) => {
     const status = error.message.includes("FORBIDDEN") ? 403 : error.message.includes("AUTH_REQUIRED") ? 401 : 400;
     return new Response(JSON.stringify({ error: "CAPTURE_FAILED", code: error.code }), { status, headers: cors });
   }
-  return new Response(JSON.stringify({ ok: true, lead_id: data?.id ?? null, status: data?.status ?? null }), { status: 200, headers: cors });
+  return new Response(\n    JSON.stringify({ ok: true, lead_id: data?.id ?? null, status: data?.status ?? null }),\n    { status: 200, headers: cors },\n  );
 });
