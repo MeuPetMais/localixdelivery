@@ -36,13 +36,35 @@ function CommercialClaimE2E() {
       <h1 className="text-2xl font-bold">E2E Staging — Claim de lead</h1>
       <p className="mt-2 text-sm">Rota temporária. Lead: {LEAD_ID}</p>
       <div className="mt-6 grid gap-3">
-        <input className="rounded border p-2" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="rounded border p-2" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" />
-        <button className="rounded border p-2" disabled={busy} onClick={login}>Autenticar no preview</button>
-        <button className="rounded border p-2" disabled={busy} onClick={() => claim("claim_1")}>Executar Claim #1</button>
-        <button className="rounded border p-2" disabled={busy} onClick={() => claim("claim_2_idempotency")}>Executar Claim #2 (idempotência)</button>
+        <input
+          className="rounded border p-2"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          className="rounded border p-2"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Senha"
+        />
+        <button className="rounded border p-2" disabled={busy} onClick={login}>
+          Autenticar no preview
+        </button>
+        <button className="rounded border p-2" disabled={busy} onClick={() => claim("claim_1")}>
+          Executar Claim #1
+        </button>
+        <button
+          className="rounded border p-2"
+          disabled={busy}
+          onClick={() => claim("claim_2_idempotency")}
+        >
+          Executar Claim #2 (idempotência)
+        </button>
       </div>
-      <pre className="mt-6 overflow-auto rounded border p-4 text-xs">{JSON.stringify(result, null, 2)}</pre>
+      <pre className="mt-6 overflow-auto rounded border p-4 text-xs">
+        {JSON.stringify(result, null, 2)}
+      </pre>
     </main>
   );
 }
