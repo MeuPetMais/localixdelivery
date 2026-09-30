@@ -66,7 +66,12 @@ function CommercialConversionE2E() {
       <div className="space-y-3 rounded-md border p-4">
         <div className="space-y-1.5">
           <Label htmlFor="e2e-email">E-mail</Label>
-          <Input id="e2e-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            id="e2e-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="e2e-password">Senha</Label>
