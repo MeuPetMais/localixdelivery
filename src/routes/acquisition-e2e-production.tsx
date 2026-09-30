@@ -55,15 +55,13 @@ function AcquisitionE2EProduction() {
     <main className="mx-auto max-w-xl p-6">
       <h1 className="mb-3 text-2xl font-semibold">E2E público Production</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Rota temporária para validar a captura pública. Execute duas vezes para
-        comprovar idempotência.
+        Rota temporária para validar a captura pública. Execute duas vezes para comprovar
+        idempotência.
       </p>
       <Button onClick={runTest} disabled={loading}>
         {loading ? "Executando..." : "Executar teste"}
       </Button>
-      <pre className="mt-6 whitespace-pre-wrap rounded-md border p-4 text-xs">
-        {result}
-      </pre>
+      <pre className="mt-6 whitespace-pre-wrap rounded-md border p-4 text-xs">{result}</pre>
     </main>
   );
 }
