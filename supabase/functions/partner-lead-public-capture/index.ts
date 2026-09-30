@@ -1,10 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const allowedOrigins = new Set([
-  "https://localixdelivery-stagin-git-39a621-alexandre-sanliver-s-projects.vercel.app",
-  "https://localixdelivery.rngdigital.com.br",
-]);
+const productionOrigin = "https://localixdelivery.rngdigital.com.br";
+const stagingPreviewPattern =
+  /^https:\/\/localixdelivery-stagin-git-[a-z0-9-]+-alexandre-sanliver-s-projects\.vercel\.app$/;
+
+function isAllowedOrigin(origin: string) {
+  return origin === productionOrigin || stagingPreviewPattern.test(origin);
+}
 
 const allowed = new Set([
   "business_name",
@@ -34,7 +37,7 @@ const allowed = new Set([
 function headers(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "",
+    "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : "",
     "Access-Control-Allow-Headers": "content-type, x-client-info, apikey",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
@@ -62,7 +65,7 @@ Deno.serve(async (req) => {
     });
 
   const origin = req.headers.get("origin") ?? "";
-  if (!allowedOrigins.has(origin))
+  if (!isAllowedOrigin(origin))
     return new Response(JSON.stringify({ error: "ORIGIN_NOT_ALLOWED" }), {
       status: 403,
       headers: h,
