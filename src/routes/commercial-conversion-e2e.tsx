@@ -41,7 +41,7 @@ function CommercialConversionE2E() {
         return;
       }
 
-      const { data, error } = await supabase.schema("private").rpc("convert_partner_lead", {
+      const { data, error } = await supabase.rpc("convert_partner_lead", {
         _lead_id: "d6204507-b8b2-4137-b294-6e587676acbf",
         _restaurant_id: "58c6def7-03bd-4a3a-aeae-1aa03e82105e",
       });
