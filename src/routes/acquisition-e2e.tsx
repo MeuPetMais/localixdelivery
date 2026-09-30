@@ -57,8 +57,8 @@ function AcquisitionE2E() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Teste controlado. Não usar em produção. O mesmo external_ref é reutilizado para
-            validar idempotência.
+            Teste controlado. Não usar em produção. O mesmo external_ref é reutilizado para validar
+            idempotência.
           </p>
           <div className="space-y-1">
             <Label>Campanha</Label>
