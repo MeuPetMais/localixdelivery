@@ -8,6 +8,7 @@ export const Route = createFileRoute("/commercial-claim-e2e")({
 });
 
 const LEAD_ID = "237431d5-5f51-421c-8f3d-5eaccac447d6";
+const RESTAURANT_ID = "676844cd-dfb2-45ed-9850-c37819bb3302";
 
 function CommercialClaimE2E() {
   const [email, setEmail] = useState("financeiro@rngdigital.com.br");
@@ -28,6 +29,17 @@ function CommercialClaimE2E() {
     const { data: userData } = await supabase.auth.getUser();
     const { data, error } = await supabase.rpc("claim_partner_lead", { _lead_id: LEAD_ID });
     setResult({ test: label, user_id: userData.user?.id ?? null, data, error });
+    setBusy(false);
+  }
+
+  async function convert() {
+    setBusy(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const { data, error } = await supabase.rpc("convert_partner_lead", {
+      _lead_id: LEAD_ID,
+      _restaurant_id: RESTAURANT_ID,
+    });
+    setResult({ test: "convert_claimed_lead", user_id: userData.user?.id ?? null, data, error });
     setBusy(false);
   }
 
@@ -67,6 +79,9 @@ function CommercialClaimE2E() {
           onClick={() => claim("claim_other_authorized_user")}
         >
           Testar Claim por outro usuário autorizado
+        </button>
+        <button className="rounded border p-2" disabled={busy} onClick={convert}>
+          Converter lead para restaurante de teste
         </button>
       </div>
       <pre className="mt-6 overflow-auto rounded border p-4 text-xs">
