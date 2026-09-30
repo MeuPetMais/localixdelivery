@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/commercial-conversion-e2e")({
@@ -9,8 +12,25 @@ export const Route = createFileRoute("/commercial-conversion-e2e")({
 });
 
 function CommercialConversionE2E() {
-  const [result, setResult] = useState("Aguardando teste.");
+  const [email, setEmail] = useState("alexandre@rngdigital.com.br");
+  const [password, setPassword] = useState("");
+  const [result, setResult] = useState("Faça login no preview antes de executar a conversão.");
   const [loading, setLoading] = useState(false);
+
+  async function signIn() {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      setPassword("");
+      setResult(
+        error
+          ? JSON.stringify({ error: { code: error.code, message: error.message } }, null, 2)
+          : JSON.stringify({ authenticated: true, user_id: data.user?.id }, null, 2),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function runTest() {
     setLoading(true);
@@ -35,15 +55,37 @@ function CommercialConversionE2E() {
   }
 
   return (
-    <main className="mx-auto max-w-xl p-6">
-      <h1 className="mb-3 text-2xl font-semibold">E2E conversão comercial</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Teste temporário autenticado para converter o lead E2E no restaurante de teste.
-      </p>
+    <main className="mx-auto max-w-xl space-y-6 p-6">
+      <div>
+        <h1 className="mb-3 text-2xl font-semibold">E2E conversão comercial</h1>
+        <p className="text-sm text-muted-foreground">
+          Teste temporário autenticado para converter o lead E2E no restaurante de teste.
+        </p>
+      </div>
+
+      <div className="space-y-3 rounded-md border p-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="e2e-email">E-mail</Label>
+          <Input id="e2e-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="e2e-password">Senha</Label>
+          <PasswordInput
+            id="e2e-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </div>
+        <Button onClick={signIn} disabled={loading || !email || !password}>
+          Autenticar no preview
+        </Button>
+      </div>
+
       <Button onClick={runTest} disabled={loading}>
         {loading ? "Executando..." : "Executar conversão"}
       </Button>
-      <pre className="mt-6 whitespace-pre-wrap rounded-md border p-4 text-xs">{result}</pre>
+      <pre className="whitespace-pre-wrap rounded-md border p-4 text-xs">{result}</pre>
     </main>
   );
 }
