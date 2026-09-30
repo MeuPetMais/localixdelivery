@@ -10,7 +10,7 @@ export const Route = createFileRoute("/commercial-claim-e2e")({
 const LEAD_ID = "237431d5-5f51-421c-8f3d-5eaccac447d6";
 
 function CommercialClaimE2E() {
-  const [email, setEmail] = useState("alexandre@rngdigital.com.br");
+  const [email, setEmail] = useState("financeiro@rngdigital.com.br");
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +60,13 @@ function CommercialClaimE2E() {
           onClick={() => claim("claim_2_idempotency")}
         >
           Executar Claim #2 (idempotência)
+        </button>
+        <button
+          className="rounded border p-2"
+          disabled={busy}
+          onClick={() => claim("claim_other_authorized_user")}
+        >
+          Testar Claim por outro usuário autorizado
         </button>
       </div>
       <pre className="mt-6 overflow-auto rounded border p-4 text-xs">
