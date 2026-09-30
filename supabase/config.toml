@@ -16,3 +16,6 @@ entrypoint = "./functions/confirm-customer-email/index.ts"
 verify_jwt = false
 [functions.partner-lead-capture]
 verify_jwt = true
+
+[functions.partner-lead-public-capture]
+verify_jwt = false
