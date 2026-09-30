@@ -43,14 +43,10 @@ function headers(req: Request) {
   };
 }
 
-const clean = (v: unknown, max = 200) =>
-  typeof v === "string" ? v.trim().slice(0, max) : null;
+const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : null);
 
 async function hash(value: string) {
-  const bytes = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -58,8 +54,7 @@ async function hash(value: string) {
 
 Deno.serve(async (req) => {
   const h = headers(req);
-  if (req.method === "OPTIONS")
-    return new Response("ok", { status: 200, headers: h });
+  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: h });
   if (req.method !== "POST")
     return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
       status: 405,
@@ -91,10 +86,10 @@ Deno.serve(async (req) => {
 
   for (const key of Object.keys(body)) {
     if (!allowed.has(key))
-      return new Response(
-        JSON.stringify({ error: "UNKNOWN_FIELD", field: key }),
-        { status: 400, headers: h },
-      );
+      return new Response(JSON.stringify({ error: "UNKNOWN_FIELD", field: key }), {
+        status: 400,
+        headers: h,
+      });
   }
 
   if (clean(body.website))
@@ -188,46 +183,43 @@ Deno.serve(async (req) => {
     created_by: null,
   };
 
-  const { data, error } = await sb.rpc(
-    "create_partner_lead_public_idempotent",
-    {
-      _business_name: row.business_name,
-      _contact_name: row.contact_name,
-      _phone: row.phone,
-      _email: row.email,
-      _segment: row.segment,
-      _city: row.city,
-      _neighborhood: row.neighborhood,
-      _estimated_monthly_orders: row.estimated_monthly_orders,
-      _main_pain: row.main_pain,
-      _source: row.source,
-      _medium: row.medium,
-      _utm_source: row.utm_source,
-      _utm_medium: row.utm_medium,
-      _utm_campaign: row.utm_campaign,
-      _utm_content: row.utm_content,
-      _utm_term: row.utm_term,
-      _meta_campaign_id: row.meta_campaign_id,
-      _meta_adset_id: row.meta_adset_id,
-      _meta_ad_id: row.meta_ad_id,
-      _creative_code: row.creative_code,
-      _external_ref: row.external_ref,
-    },
-  );
+  const { data, error } = await sb.rpc("create_partner_lead_public_idempotent", {
+    _business_name: row.business_name,
+    _contact_name: row.contact_name,
+    _phone: row.phone,
+    _email: row.email,
+    _segment: row.segment,
+    _city: row.city,
+    _neighborhood: row.neighborhood,
+    _estimated_monthly_orders: row.estimated_monthly_orders,
+    _main_pain: row.main_pain,
+    _source: row.source,
+    _medium: row.medium,
+    _utm_source: row.utm_source,
+    _utm_medium: row.utm_medium,
+    _utm_campaign: row.utm_campaign,
+    _utm_content: row.utm_content,
+    _utm_term: row.utm_term,
+    _meta_campaign_id: row.meta_campaign_id,
+    _meta_adset_id: row.meta_adset_id,
+    _meta_ad_id: row.meta_ad_id,
+    _creative_code: row.creative_code,
+    _external_ref: row.external_ref,
+  });
 
   if (error) {
     console.error("public_lead_capture_failed", {
       code: error.code,
       message: error.message,
     });
-    return new Response(
-      JSON.stringify({ error: "CAPTURE_FAILED", code: error.code }),
-      { status: 400, headers: h },
-    );
+    return new Response(JSON.stringify({ error: "CAPTURE_FAILED", code: error.code }), {
+      status: 400,
+      headers: h,
+    });
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, lead_id: data.id, status: data.status }),
-    { status: 200, headers: h },
-  );
+  return new Response(JSON.stringify({ ok: true, lead_id: data.id, status: data.status }), {
+    status: 200,
+    headers: h,
+  });
 });
