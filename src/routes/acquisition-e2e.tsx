@@ -52,15 +52,15 @@ function AcquisitionE2E() {
   return (
     <main className="mx-auto max-w-xl p-6">
       <Card>
-        <CardHeader><CardTitle>Staging — E2E aquisição pública</CardTitle></CardHeader>
+        <CardHeader>\n          <CardTitle>Staging — E2E aquisição pública</CardTitle>\n        </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Teste controlado. Não usar em produção. O mesmo external_ref é reutilizado para validar idempotência.
+            Teste controlado. Não usar em produção. O mesmo external_ref é reutilizado para\n            validar idempotência.
           </p>
-          <div className="space-y-1"><Label>Campanha</Label><Input readOnly value="paid_partners_spzs_validation_v1" /></div>
-          <div className="space-y-1"><Label>Criativo</Label><Input readOnly value="creative_e2e_01" /></div>
-          <div className="space-y-1"><Label>External ref</Label><Input readOnly value={testRef} /></div>
-          <Button onClick={run} disabled={loading}>{loading ? "Executando..." : "Executar captura E2E"}</Button>
+          <div className="space-y-1">\n            <Label>Campanha</Label>\n            <Input readOnly value="paid_partners_spzs_validation_v1" />\n          </div>
+          <div className="space-y-1">\n            <Label>Criativo</Label>\n            <Input readOnly value="creative_e2e_01" />\n          </div>
+          <div className="space-y-1">\n            <Label>External ref</Label>\n            <Input readOnly value={testRef} />\n          </div>
+          <Button onClick={run} disabled={loading}>\n            {loading ? "Executando..." : "Executar captura E2E"}\n          </Button>
           {result && <pre className="overflow-auto rounded bg-muted p-3 text-xs">{result}</pre>}
         </CardContent>
       </Card>
