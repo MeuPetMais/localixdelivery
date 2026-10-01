@@ -111,14 +111,17 @@ function CommercialPage() {
       setLeads((data ?? []) as Lead[]);
     }
     setLoading(false);
-  }, [user.id]);
+  }, []);
 
   useEffect(() => {
     void loadLeads();
   }, [loadLeads]);
 
   const inboxLeads = useMemo(() => leads.filter((lead) => !lead.assigned_to), [leads]);
-  const myLeads = useMemo(() => leads.filter((lead) => lead.assigned_to === user.id), [leads, user.id]);
+  const myLeads = useMemo(
+    () => leads.filter((lead) => lead.assigned_to === user.id),
+    [leads, user.id],
+  );
 
   const totals = useMemo(
     () => ({
@@ -287,7 +290,12 @@ function CommercialPage() {
                     <div className="mt-2 text-xs text-muted-foreground">
                       {lead.source} · {lead.creative_code ?? lead.utm_campaign ?? "sem campanha"}
                     </div>
-                    <Button className="mt-3 w-full" size="sm" disabled={saving} onClick={() => claimLead(lead.id)}>
+                    <Button
+                      className="mt-3 w-full"
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => claimLead(lead.id)}
+                    >
                       Assumir lead
                     </Button>
                   </div>
@@ -442,10 +450,27 @@ function CommercialPage() {
                               className="rounded-md border bg-background px-2 py-1 text-xs"
                               value={lead.status}
                               disabled={saving || lead.status === "converted"}
-                              onChange={(event) => updateLead(lead.id, { status: event.target.value })}
+                              onChange={(event) =>
+                                updateLead(lead.id, { status: event.target.value })
+                              }
                             >
-                              {["new","contacted","qualifying","qualified","demo_scheduled","demo_completed","negotiating","signed","onboarding","nurture","disqualified","lost"].map((status) => (
-                                <option key={status} value={status}>{statusLabel(status)}</option>
+                              {[
+                                "new",
+                                "contacted",
+                                "qualifying",
+                                "qualified",
+                                "demo_scheduled",
+                                "demo_completed",
+                                "negotiating",
+                                "signed",
+                                "onboarding",
+                                "nurture",
+                                "disqualified",
+                                "lost",
+                              ].map((status) => (
+                                <option key={status} value={status}>
+                                  {statusLabel(status)}
+                                </option>
                               ))}
                             </select>
                           </td>
@@ -459,11 +484,30 @@ function CommercialPage() {
                                 value={lead.fit_score ?? ""}
                                 disabled={saving || lead.status === "converted"}
                                 onChange={(event) => {
-                                  const score = event.target.value === "" ? null : Number(event.target.value);
-                                  const leadClass = score == null ? null : score >= 70 ? "A" : score >= 50 ? "B" : "C";
-                                  setLeads((current) => current.map((item) => item.id === lead.id ? { ...item, fit_score: score, lead_class: leadClass } : item));
+                                  const score =
+                                    event.target.value === "" ? null : Number(event.target.value);
+                                  const leadClass =
+                                    score == null
+                                      ? null
+                                      : score >= 70
+                                        ? "A"
+                                        : score >= 50
+                                          ? "B"
+                                          : "C";
+                                  setLeads((current) =>
+                                    current.map((item) =>
+                                      item.id === lead.id
+                                        ? { ...item, fit_score: score, lead_class: leadClass }
+                                        : item,
+                                    ),
+                                  );
                                 }}
-                                onBlur={() => updateLead(lead.id, { fit_score: lead.fit_score, lead_class: lead.lead_class })}
+                                onBlur={() =>
+                                  updateLead(lead.id, {
+                                    fit_score: lead.fit_score,
+                                    lead_class: lead.lead_class,
+                                  })
+                                }
                               />
                               <span className="font-semibold">{lead.lead_class ?? "—"}</span>
                             </div>
