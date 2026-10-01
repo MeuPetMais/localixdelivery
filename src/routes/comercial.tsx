@@ -105,11 +105,6 @@ function CommercialPage() {
   const [activityType, setActivityType] = useState("note");
   const leadRecordRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!selectedLeadId) return;
-    leadRecordRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [selectedLeadId]);
-
   const loadLeads = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -265,6 +260,10 @@ function CommercialPage() {
       return;
     }
     setActivities((data ?? []) as Activity[]);
+
+    requestAnimationFrame(() => {
+      leadRecordRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   async function addActivity() {
