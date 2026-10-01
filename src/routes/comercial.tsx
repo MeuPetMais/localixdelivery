@@ -259,7 +259,6 @@ function CommercialPage() {
       return;
     }
     setActivities((data ?? []) as Activity[]);
-
   }
 
   async function addActivity() {
@@ -506,7 +505,9 @@ function CommercialPage() {
                             <div key={activity.id} className="rounded-md border p-3">
                               <div className="flex justify-between gap-3 text-xs text-muted-foreground">
                                 <span>{activityTypeLabel(activity.activity_type)}</span>
-                                <span>{new Date(activity.occurred_at).toLocaleString("pt-BR")}</span>
+                                <span>
+                                  {new Date(activity.occurred_at).toLocaleString("pt-BR")}
+                                </span>
                               </div>
                               <p className="mt-1 text-sm">{activity.note}</p>
                             </div>
@@ -657,7 +658,6 @@ function CommercialPage() {
             </CardContent>
           </Card>
         </div>
-
       </main>
     </div>
   );
