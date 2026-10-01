@@ -21,6 +21,12 @@ type Lead = {
   utm_campaign: string | null;
   creative_code: string | null;
   status: string;
+  assigned_to: string | null;
+  fit_score: number | null;
+  lead_class: string | null;
+  estimated_monthly_orders: number | null;
+  main_pain: string | null;
+  next_action_at: string | null;
 };
 
 type Draft = {
@@ -94,9 +100,8 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,main_pain,next_action_at",
       )
-      .eq("assigned_to", user.id)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -106,21 +111,28 @@ function CommercialPage() {
       setLeads((data ?? []) as Lead[]);
     }
     setLoading(false);
-  }, [user.id]);
+  }, []);
 
   useEffect(() => {
     void loadLeads();
   }, [loadLeads]);
 
+  const inboxLeads = useMemo(() => leads.filter((lead) => !lead.assigned_to), [leads]);
+  const myLeads = useMemo(
+    () => leads.filter((lead) => lead.assigned_to === user.id),
+    [leads, user.id],
+  );
+
   const totals = useMemo(
     () => ({
-      all: leads.length,
-      qualified: leads.filter((lead) => lead.status === "qualified").length,
-      demos: leads.filter(
+      all: myLeads.length,
+      inbox: inboxLeads.length,
+      qualified: myLeads.filter((lead) => lead.status === "qualified").length,
+      demos: myLeads.filter(
         (lead) => lead.status === "demo_scheduled" || lead.status === "demo_completed",
       ).length,
     }),
-    [leads],
+    [myLeads, inboxLeads],
   );
 
   async function submitLead(event: React.FormEvent) {
@@ -185,6 +197,40 @@ function CommercialPage() {
     await loadLeads();
   }
 
+  async function claimLead(leadId: string) {
+    setSaving(true);
+    // RPC is versioned in the database but not yet in generated client types.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: claimError } = await (supabase.rpc as any)("claim_partner_lead", {
+      _lead_id: leadId,
+    });
+    setSaving(false);
+    if (claimError) {
+      toast.error("Nao foi possivel assumir este lead.");
+      return;
+    }
+    toast.success("Lead adicionado a sua carteira.");
+    await loadLeads();
+  }
+
+  async function updateLead(
+    leadId: string,
+    patch: { status?: string; fit_score?: number | null; lead_class?: string | null },
+  ) {
+    setSaving(true);
+    // partner_leads is not in generated client types yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const leadsTable = supabase.from("partner_leads" as any);
+    const { error: updateError } = await leadsTable.eq("id", leadId).update(patch);
+    setSaving(false);
+    if (updateError) {
+      toast.error("Nao foi possivel atualizar o lead.");
+      return;
+    }
+    toast.success("Lead atualizado.");
+    await loadLeads();
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     navigate({
@@ -216,11 +262,48 @@ function CommercialPage() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Metric label="Caixa de entrada" value={totals.inbox} />
           <Metric label="Minha carteira" value={totals.all} />
           <Metric label="Qualificados" value={totals.qualified} />
           <Metric label="Demos" value={totals.demos} />
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Caixa de entrada</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Leads de campanhas e canais publicos ainda sem responsavel.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {inboxLeads.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum lead aguardando atendimento.</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {inboxLeads.map((lead) => (
+                  <div key={lead.id} className="rounded-lg border p-4">
+                    <div className="font-semibold">{lead.business_name}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {lead.contact_name} · {lead.phone}
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {lead.source} · {lead.creative_code ?? lead.utm_campaign ?? "sem campanha"}
+                    </div>
+                    <Button
+                      className="mt-3 w-full"
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => claimLead(lead.id)}
+                    >
+                      Assumir lead
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
           <Card>
@@ -324,12 +407,12 @@ function CommercialPage() {
               {loading && (
                 <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
               )}
-              {!loading && !error && leads.length === 0 && (
+              {!loading && !error && myLeads.length === 0 && (
                 <div className="p-8 text-center text-sm text-muted-foreground">
                   Nenhum lead na sua carteira.
                 </div>
               )}
-              {!loading && leads.length > 0 && (
+              {!loading && myLeads.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="border-y bg-muted/40 text-left text-xs uppercase text-muted-foreground">
@@ -338,10 +421,11 @@ function CommercialPage() {
                         <th className="px-4 py-3">Contato</th>
                         <th className="px-4 py-3">Origem</th>
                         <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Fit</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {leads.map((lead) => (
+                      {myLeads.map((lead) => (
                         <tr key={lead.id} className="border-b last:border-0">
                           <td className="px-4 py-3">
                             <div className="font-medium">{lead.business_name}</div>
@@ -362,9 +446,71 @@ function CommercialPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="rounded-full bg-muted px-2 py-1 text-xs">
-                              {statusLabel(lead.status)}
-                            </span>
+                            <select
+                              className="rounded-md border bg-background px-2 py-1 text-xs"
+                              value={lead.status}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) =>
+                                updateLead(lead.id, { status: event.target.value })
+                              }
+                            >
+                              {[
+                                "new",
+                                "contacted",
+                                "qualifying",
+                                "qualified",
+                                "demo_scheduled",
+                                "demo_completed",
+                                "negotiating",
+                                "signed",
+                                "onboarding",
+                                "nurture",
+                                "disqualified",
+                                "lost",
+                              ].map((status) => (
+                                <option key={status} value={status}>
+                                  {statusLabel(status)}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                className="h-8 w-20"
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={lead.fit_score ?? ""}
+                                disabled={saving || lead.status === "converted"}
+                                onChange={(event) => {
+                                  const score =
+                                    event.target.value === "" ? null : Number(event.target.value);
+                                  const leadClass =
+                                    score == null
+                                      ? null
+                                      : score >= 70
+                                        ? "A"
+                                        : score >= 50
+                                          ? "B"
+                                          : "C";
+                                  setLeads((current) =>
+                                    current.map((item) =>
+                                      item.id === lead.id
+                                        ? { ...item, fit_score: score, lead_class: leadClass }
+                                        : item,
+                                    ),
+                                  );
+                                }}
+                                onBlur={() =>
+                                  updateLead(lead.id, {
+                                    fit_score: lead.fit_score,
+                                    lead_class: lead.lead_class,
+                                  })
+                                }
+                              />
+                              <span className="font-semibold">{lead.lead_class ?? "—"}</span>
+                            </div>
                           </td>
                         </tr>
                       ))}
