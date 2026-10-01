@@ -588,8 +588,7 @@ function CommercialPage() {
                 <CardHeader>
                   <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {lead.contact_name} · {lead.phone} ·{" "}
-                    {lead.segment ?? "Segmento nao informado"}
+                    {lead.contact_name} · {lead.phone} · {lead.segment ?? "Segmento nao informado"}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-5">
@@ -635,17 +634,13 @@ function CommercialPage() {
                   <div className="space-y-2">
                     <h3 className="font-semibold">Historico</h3>
                     {activities.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma atividade registrada.
-                      </p>
+                      <p className="text-sm text-muted-foreground">Nenhuma atividade registrada.</p>
                     ) : (
                       activities.map((activity) => (
                         <div key={activity.id} className="rounded-md border p-3">
                           <div className="flex justify-between gap-3 text-xs text-muted-foreground">
                             <span>{activityTypeLabel(activity.activity_type)}</span>
-                            <span>
-                              {new Date(activity.occurred_at).toLocaleString("pt-BR")}
-                            </span>
+                            <span>{new Date(activity.occurred_at).toLocaleString("pt-BR")}</span>
                           </div>
                           <p className="mt-1 text-sm">{activity.note}</p>
                         </div>
@@ -656,7 +651,6 @@ function CommercialPage() {
               </Card>
             );
           })()}
-
       </main>
     </div>
   );
