@@ -15,18 +15,21 @@ alter table public.partner_lead_activities enable row level security;
 
 grant select, insert on public.partner_lead_activities to authenticated;
 
-create policy "partner lead activities admin manage"
+create policy "partner lead activities admin select"
 on public.partner_lead_activities
-for all to authenticated
-using (private.has_role((select auth.uid()), 'admin'::app_role))
+for select to authenticated
+using (private.has_role((select auth.uid()), 'admin'::app_role));
+
+create policy "partner lead activities admin insert"
+on public.partner_lead_activities
+for insert to authenticated
 with check (private.has_role((select auth.uid()), 'admin'::app_role));
 
-create policy "partner lead activities commercial own select"
+create policy "partner lead activities commercial assigned select"
 on public.partner_lead_activities
 for select to authenticated
 using (
-  created_by = (select auth.uid())
-  and exists (
+  exists (
     select 1 from public.partner_leads l
     where l.id = lead_id
       and l.assigned_to = (select auth.uid())
