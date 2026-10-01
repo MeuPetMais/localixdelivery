@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, LogOut, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,12 @@ function CommercialPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityNote, setActivityNote] = useState("");
   const [activityType, setActivityType] = useState("note");
+  const leadRecordRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedLeadId) return;
+    leadRecordRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedLeadId]);
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -584,9 +590,10 @@ function CommercialPage() {
             const lead = myLeads.find((item) => item.id === selectedLeadId);
             if (!lead) return null;
             return (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
+              <div ref={leadRecordRef} className="scroll-mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {lead.contact_name} · {lead.phone} · {lead.segment ?? "Segmento nao informado"}
                   </p>
@@ -647,8 +654,9 @@ function CommercialPage() {
                       ))
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             );
           })()}
       </main>
