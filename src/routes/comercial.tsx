@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, LogOut, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,6 @@ function CommercialPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityNote, setActivityNote] = useState("");
   const [activityType, setActivityType] = useState("note");
-  const leadRecordRef = useRef<HTMLDivElement | null>(null);
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -261,9 +260,6 @@ function CommercialPage() {
     }
     setActivities((data ?? []) as Activity[]);
 
-    requestAnimationFrame(() => {
-      leadRecordRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   }
 
   async function addActivity() {
@@ -445,6 +441,84 @@ function CommercialPage() {
             </CardContent>
           </Card>
 
+        {selectedLeadId &&
+          (() => {
+            const lead = myLeads.find((item) => item.id === selectedLeadId);
+            if (!lead) return null;
+            return (
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {lead.contact_name} · {lead.phone} ·{" "}
+                      {lead.segment ?? "Segmento nao informado"}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Pedidos estimados</span>
+                        <p>{lead.estimated_monthly_orders ?? "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Principal dor</span>
+                        <p>{lead.main_pain ?? "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Proxima acao</span>
+                        <p>
+                          {lead.next_action_at
+                            ? new Date(lead.next_action_at).toLocaleString("pt-BR")
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-[160px_1fr_auto]">
+                      <select
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        value={activityType}
+                        onChange={(event) => setActivityType(event.target.value)}
+                      >
+                        <option value="note">Observacao</option>
+                        <option value="contact">Contato</option>
+                        <option value="demo">Demonstracao</option>
+                        <option value="follow_up">Follow-up</option>
+                      </select>
+                      <Input
+                        value={activityNote}
+                        onChange={(event) => setActivityNote(event.target.value)}
+                        placeholder="Registre o que aconteceu e o proximo contexto..."
+                        maxLength={2000}
+                      />
+                      <Button disabled={saving || !activityNote.trim()} onClick={addActivity}>
+                        Registrar
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-semibold">Historico</h3>
+                      {activities.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhuma atividade registrada.
+                        </p>
+                      ) : (
+                        activities.map((activity) => (
+                          <div key={activity.id} className="rounded-md border p-3">
+                            <div className="flex justify-between gap-3 text-xs text-muted-foreground">
+                              <span>{activityTypeLabel(activity.activity_type)}</span>
+                              <span>{new Date(activity.occurred_at).toLocaleString("pt-BR")}</span>
+                            </div>
+                            <p className="mt-1 text-sm">{activity.note}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -584,83 +658,7 @@ function CommercialPage() {
             </CardContent>
           </Card>
         </div>
-        {selectedLeadId &&
-          (() => {
-            const lead = myLeads.find((item) => item.id === selectedLeadId);
-            if (!lead) return null;
-            return (
-              <div ref={leadRecordRef} className="scroll-mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {lead.contact_name} · {lead.phone} ·{" "}
-                      {lead.segment ?? "Segmento nao informado"}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <span className="text-xs text-muted-foreground">Pedidos estimados</span>
-                        <p>{lead.estimated_monthly_orders ?? "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Principal dor</span>
-                        <p>{lead.main_pain ?? "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Proxima acao</span>
-                        <p>
-                          {lead.next_action_at
-                            ? new Date(lead.next_action_at).toLocaleString("pt-BR")
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-[160px_1fr_auto]">
-                      <select
-                        className="rounded-md border bg-background px-3 py-2 text-sm"
-                        value={activityType}
-                        onChange={(event) => setActivityType(event.target.value)}
-                      >
-                        <option value="note">Observacao</option>
-                        <option value="contact">Contato</option>
-                        <option value="demo">Demonstracao</option>
-                        <option value="follow_up">Follow-up</option>
-                      </select>
-                      <Input
-                        value={activityNote}
-                        onChange={(event) => setActivityNote(event.target.value)}
-                        placeholder="Registre o que aconteceu e o proximo contexto..."
-                        maxLength={2000}
-                      />
-                      <Button disabled={saving || !activityNote.trim()} onClick={addActivity}>
-                        Registrar
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">Historico</h3>
-                      {activities.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Nenhuma atividade registrada.
-                        </p>
-                      ) : (
-                        activities.map((activity) => (
-                          <div key={activity.id} className="rounded-md border p-3">
-                            <div className="flex justify-between gap-3 text-xs text-muted-foreground">
-                              <span>{activityTypeLabel(activity.activity_type)}</span>
-                              <span>{new Date(activity.occurred_at).toLocaleString("pt-BR")}</span>
-                            </div>
-                            <p className="mt-1 text-sm">{activity.note}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })()}
+
       </main>
     </div>
   );
