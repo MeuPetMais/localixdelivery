@@ -29,6 +29,15 @@ type Lead = {
   next_action_at: string | null;
 };
 
+type Activity = {
+  id: string;
+  lead_id: string;
+  activity_type: string;
+  note: string;
+  occurred_at: string;
+  created_at: string;
+};
+
 type Draft = {
   businessName: string;
   contactName: string;
@@ -90,6 +99,10 @@ function CommercialPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activityNote, setActivityNote] = useState("");
+  const [activityType, setActivityType] = useState("note");
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -229,6 +242,45 @@ function CommercialPage() {
     }
     toast.success("Lead atualizado.");
     await loadLeads();
+  }
+
+  async function openLead(leadId: string) {
+    setSelectedLeadId(leadId);
+    // New CRM table is not in generated client types yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const activitiesTable = supabase.from("partner_lead_activities" as any);
+    const { data, error: activitiesError } = await activitiesTable
+      .select("id,lead_id,activity_type,note,occurred_at,created_at")
+      .eq("lead_id", leadId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (activitiesError) {
+      toast.error("Nao foi possivel carregar o historico.");
+      return;
+    }
+    setActivities((data ?? []) as Activity[]);
+  }
+
+  async function addActivity() {
+    if (!selectedLeadId || !activityNote.trim()) return;
+    setSaving(true);
+    // New CRM table is not in generated client types yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const activitiesTable = supabase.from("partner_lead_activities" as any);
+    const { error: activityError } = await activitiesTable.insert({
+      lead_id: selectedLeadId,
+      activity_type: activityType,
+      note: activityNote.trim(),
+      created_by: user.id,
+    });
+    setSaving(false);
+    if (activityError) {
+      toast.error("Nao foi possivel registrar a atividade.");
+      return;
+    }
+    setActivityNote("");
+    toast.success("Atividade registrada.");
+    await openLead(selectedLeadId);
   }
 
   async function logout() {
@@ -428,7 +480,13 @@ function CommercialPage() {
                       {myLeads.map((lead) => (
                         <tr key={lead.id} className="border-b last:border-0">
                           <td className="px-4 py-3">
-                            <div className="font-medium">{lead.business_name}</div>
+                            <button
+                              type="button"
+                              className="font-medium underline-offset-4 hover:underline"
+                              onClick={() => openLead(lead.id)}
+                            >
+                              {lead.business_name}
+                            </button>
                             <div className="text-xs text-muted-foreground">
                               {[lead.segment, lead.neighborhood, lead.city]
                                 .filter(Boolean)
@@ -521,6 +579,50 @@ function CommercialPage() {
             </CardContent>
           </Card>
         </div>
+        {selectedLeadId && (() => {
+          const lead = myLeads.find((item) => item.id === selectedLeadId);
+          if (!lead) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ficha comercial · {lead.business_name}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {lead.contact_name} · {lead.phone} · {lead.segment ?? "Segmento nao informado"}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div><span className="text-xs text-muted-foreground">Pedidos estimados</span><p>{lead.estimated_monthly_orders ?? "—"}</p></div>
+                  <div><span className="text-xs text-muted-foreground">Principal dor</span><p>{lead.main_pain ?? "—"}</p></div>
+                  <div><span className="text-xs text-muted-foreground">Proxima acao</span><p>{lead.next_action_at ? new Date(lead.next_action_at).toLocaleString("pt-BR") : "—"}</p></div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[160px_1fr_auto]">
+                  <select className="rounded-md border bg-background px-3 py-2 text-sm" value={activityType} onChange={(event) => setActivityType(event.target.value)}>
+                    <option value="note">Observacao</option>
+                    <option value="contact">Contato</option>
+                    <option value="demo">Demonstracao</option>
+                    <option value="follow_up">Follow-up</option>
+                  </select>
+                  <Input value={activityNote} onChange={(event) => setActivityNote(event.target.value)} placeholder="Registre o que aconteceu e o proximo contexto..." maxLength={2000} />
+                  <Button disabled={saving || !activityNote.trim()} onClick={addActivity}>Registrar</Button>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Historico</h3>
+                  {activities.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma atividade registrada.</p> : activities.map((activity) => (
+                    <div key={activity.id} className="rounded-md border p-3">
+                      <div className="flex justify-between gap-3 text-xs text-muted-foreground">
+                        <span>{activityTypeLabel(activity.activity_type)}</span>
+                        <span>{new Date(activity.occurred_at).toLocaleString("pt-BR")}</span>
+                      </div>
+                      <p className="mt-1 text-sm">{activity.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
       </main>
     </div>
   );
@@ -565,5 +667,11 @@ function statusLabel(status: string) {
         lost: "Perdido",
       } as Record<string, string>
     )[status] ?? status
+  );
+}
+
+function activityTypeLabel(type: string) {
+  return (
+    ({ note: "Observacao", contact: "Contato", demo: "Demonstracao", follow_up: "Follow-up" } as Record<string, string>)[type] ?? type
   );
 }
