@@ -807,6 +807,17 @@ function CommercialPage() {
                               disabled={saving || lead.status === "converted"}
                               onChange={(event) => setQualificationOrdersDraft(event.target.value)}
                             />
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por volume:{" "}
+                              <span className="font-semibold text-foreground">
+                                {volumeFitPoints(
+                                  qualificationOrdersDraft.trim() === ""
+                                    ? null
+                                    : Number(qualificationOrdersDraft),
+                                )}
+                                /25
+                              </span>
+                            </p>
                           </Field>
                           <Field label="Contato e decisor?">
                             <select
@@ -838,7 +849,8 @@ function CommercialPage() {
                           </Button>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">
-                          O Fit Score automatico ainda nao e recalculado por estes campos.
+                          O volume ja possui regra objetiva de 0 a 25 pontos. O Fit Score total
+                          permanece manual ate os demais criterios serem formalizados.
                         </p>
                       </div>
                       <div className="rounded-md border p-3">
@@ -997,6 +1009,15 @@ function statusLabel(status: string) {
       } as Record<string, string>
     )[status] ?? status
   );
+}
+
+function volumeFitPoints(orders: number | null) {
+  if (orders == null || !Number.isFinite(orders) || orders < 150) return 0;
+  if (orders < 250) return 5;
+  if (orders < 350) return 10;
+  if (orders < 450) return 15;
+  if (orders < 600) return 20;
+  return 25;
 }
 
 function compareNextAction(a: Lead, b: Lead) {
