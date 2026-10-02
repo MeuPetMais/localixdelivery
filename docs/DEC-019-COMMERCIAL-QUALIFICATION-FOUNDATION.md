@@ -1,7 +1,7 @@
 # DEC-019 — Base estruturada da qualificação comercial
 
 **Data:** 2026-10-02  
-**Status:** Proposta técnica para validação.
+**Status:** Aprovada.
 
 ## Problema
 
@@ -15,9 +15,7 @@ A tabela `partner_leads` já possui campos objetivos utilizáveis pela qualifica
 - `is_decision_maker`;
 - `current_channels`.
 
-Há, porém, um conflito documental que impede codificar com segurança uma fórmula autoritativa de Fit Score: `docs/BUSINESS_DECISIONS.md` (BD-006) registra 600 pedidos/mês como elegibilidade mínima, enquanto materiais comerciais posteriores usados na operação consideraram referência de 200 pedidos/mês e uma matriz A/B/C diferente.
-
-**Não foi possível provar.** qual dessas referências deve ser a regra autoritativa do novo cálculo automático.
+O conflito documental sobre volume foi resolvido em 2026-10-02 com uma regra ascendente, usando 150 pedidos/mês como início da pontuação e 600+ como faixa máxima.
 
 ## Opções consideradas
 
@@ -27,9 +25,22 @@ Há, porém, um conflito documental que impede codificar com segurança uma fór
 
 ## Decisão
 
-Adotar a opção 3.
+A Ficha Comercial registra volume estimado, confirmação de decisor e canais atuais.
 
-A Ficha Comercial passa a permitir o registro estruturado de volume estimado, confirmação de decisor e canais atuais. O `fit_score` existente não é recalculado automaticamente nesta etapa.
+O componente **Volume mensal** do Fit Score vale até 25 pontos e segue a regra:
+
+| Pedidos estimados/mês | Pontos |
+| ---: | ---: |
+| abaixo de 150 | 0 |
+| 150–249 | 5 |
+| 250–349 | 10 |
+| 350–449 | 15 |
+| 450–599 | 20 |
+| 600 ou mais | 25 |
+
+A regra é ascendente. Estar abaixo de 150 não desqualifica automaticamente o lead; apenas atribui 0 ponto neste componente.
+
+O `fit_score` total continua sem recálculo automático até que os demais componentes sejam formalizados.
 
 ## Motivo
 
@@ -44,9 +55,10 @@ Evita cristalizar uma regra de qualificação potencialmente incorreta no códig
 
 ## Riscos
 
-- Fit Score e classe A/B/C continuam podendo divergir dos dados objetivos até que a regra seja formalmente reconciliada.
+- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque somente o componente de volume está formalizado.
 - Canais atuais permanecem uma lista textual livre, sem taxonomia fechada.
+- O frontend exibe a pontuação parcial de volume, mas não a grava como se fosse o Fit Score total.
 
 ## Condição para revisão
 
-Revisar e substituir esta decisão quando a regra oficial de elegibilidade e os pesos da qualificação A/B/C forem formalmente aprovados e documentados.
+Revisar quando os demais componentes do Fit Score forem formalmente aprovados, quando houver mudança das faixas de volume ou quando o cálculo total passar a ser autoritativo no backend.
