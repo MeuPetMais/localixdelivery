@@ -140,6 +140,44 @@ function CommercialPage() {
     [leads, user.id],
   );
 
+  const agenda = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+    const terminalStatuses = new Set(["converted", "lost", "disqualified"]);
+
+    const active = myLeads.filter((lead) => !terminalStatuses.has(lead.status));
+    const overdue = active
+      .filter((lead) => lead.next_action_at && new Date(lead.next_action_at) < now)
+      .sort(compareNextAction);
+    const today = active
+      .filter((lead) => {
+        if (!lead.next_action_at) return false;
+        const actionAt = new Date(lead.next_action_at);
+        return actionAt >= now && actionAt <= endOfToday;
+      })
+      .sort(compareNextAction);
+    const upcoming = active
+      .filter((lead) => lead.next_action_at && new Date(lead.next_action_at) > endOfToday)
+      .sort(compareNextAction);
+    const unscheduled = active.filter((lead) => !lead.next_action_at);
+
+    return { overdue, today, upcoming, unscheduled };
+  }, [myLeads]);
+
+  const orderedMyLeads = useMemo(
+    () => [
+      ...agenda.overdue,
+      ...agenda.today,
+      ...agenda.upcoming,
+      ...agenda.unscheduled,
+      ...myLeads.filter((lead) => ["converted", "lost", "disqualified"].includes(lead.status)),
+    ],
+    [agenda, myLeads],
+  );
+
   const totals = useMemo(
     () => ({
       all: myLeads.length,
@@ -354,6 +392,58 @@ function CommercialPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Agenda comercial</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Priorize primeiro as acoes vencidas e as previstas para hoje.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <AgendaMetric label="Vencidas" value={agenda.overdue.length} />
+              <AgendaMetric label="Hoje" value={agenda.today.length} />
+              <AgendaMetric label="Proximas" value={agenda.upcoming.length} />
+            </div>
+            {agenda.overdue.length === 0 && agenda.today.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma acao vencida ou prevista para hoje.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {[...agenda.overdue, ...agenda.today].slice(0, 6).map((lead) => (
+                  <button
+                    key={lead.id}
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 rounded-md border p-3 text-left hover:bg-muted/40"
+                    onClick={() => openLead(lead.id)}
+                  >
+                    <div>
+                      <div className="font-medium">{lead.business_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {lead.contact_name} · {statusLabel(lead.status)}
+                      </div>
+                    </div>
+                    <div className="text-right text-xs">
+                      <div className={nextActionKind(lead.next_action_at) === "overdue" ? "font-semibold text-destructive" : "font-semibold"}>
+                        {nextActionLabel(lead.next_action_at)}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {lead.next_action_at
+                          ? new Date(lead.next_action_at).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Caixa de entrada</CardTitle>
             <p className="text-sm text-muted-foreground">
               Leads de campanhas e canais publicos ainda sem responsavel.
@@ -503,12 +593,13 @@ function CommercialPage() {
                         <th className="px-4 py-3">Estabelecimento</th>
                         <th className="px-4 py-3">Contato</th>
                         <th className="px-4 py-3">Origem</th>
+                        <th className="px-4 py-3">Proxima acao</th>
                         <th className="px-4 py-3">Status</th>
                         <th className="px-4 py-3">Fit</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {myLeads.map((lead) => (
+                      {orderedMyLeads.map((lead) => (
                         <tr key={lead.id} className="border-b last:border-0">
                           <td className="px-4 py-3">
                             <button
@@ -533,6 +624,26 @@ function CommercialPage() {
                             <div className="text-xs text-muted-foreground">
                               {lead.creative_code ?? lead.utm_campaign ?? "—"}
                             </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {lead.next_action_at ? (
+                              <div>
+                                <div
+                                  className={
+                                    nextActionKind(lead.next_action_at) === "overdue"
+                                      ? "font-semibold text-destructive"
+                                      : "font-medium"
+                                  }
+                                >
+                                  {nextActionLabel(lead.next_action_at)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(lead.next_action_at).toLocaleString("pt-BR")}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Nao agendada</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <select
@@ -760,6 +871,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function AgendaMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
+    </div>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <Card>
@@ -791,6 +911,32 @@ function statusLabel(status: string) {
       } as Record<string, string>
     )[status] ?? status
   );
+}
+
+function compareNextAction(a: Lead, b: Lead) {
+  const aTime = a.next_action_at ? new Date(a.next_action_at).getTime() : Number.MAX_SAFE_INTEGER;
+  const bTime = b.next_action_at ? new Date(b.next_action_at).getTime() : Number.MAX_SAFE_INTEGER;
+  return aTime - bTime;
+}
+
+function nextActionKind(value: string | null) {
+  if (!value) return "unscheduled";
+  const now = new Date();
+  const actionAt = new Date(value);
+  if (actionAt < now) return "overdue";
+
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  if (actionAt <= endOfToday) return "today";
+  return "upcoming";
+}
+
+function nextActionLabel(value: string | null) {
+  const kind = nextActionKind(value);
+  if (kind === "overdue") return "Vencida";
+  if (kind === "today") return "Hoje";
+  if (kind === "upcoming") return "Futura";
+  return "Sem agenda";
 }
 
 function toDatetimeLocalValue(value: string | null) {
