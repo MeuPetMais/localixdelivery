@@ -335,8 +335,7 @@ function CommercialPage() {
 
   async function saveQualification() {
     if (!selectedLeadId) return;
-    const orders =
-      qualificationOrdersDraft.trim() === "" ? null : Number(qualificationOrdersDraft);
+    const orders = qualificationOrdersDraft.trim() === "" ? null : Number(qualificationOrdersDraft);
     if (orders != null && (!Number.isInteger(orders) || orders < 0)) {
       toast.error("Informe uma estimativa valida de pedidos por mes.");
       return;
@@ -349,8 +348,7 @@ function CommercialPage() {
 
     await updateLead(selectedLeadId, {
       estimated_monthly_orders: orders,
-      is_decision_maker:
-        decisionMakerDraft === "unknown" ? null : decisionMakerDraft === "yes",
+      is_decision_maker: decisionMakerDraft === "unknown" ? null : decisionMakerDraft === "yes",
       current_channels: channels.length > 0 ? channels : null,
     });
   }
