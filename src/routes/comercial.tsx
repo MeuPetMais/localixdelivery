@@ -423,7 +423,13 @@ function CommercialPage() {
                       </div>
                     </div>
                     <div className="text-right text-xs">
-                      <div className={nextActionKind(lead.next_action_at) === "overdue" ? "font-semibold text-destructive" : "font-semibold"}>
+                      <div
+                        className={
+                          nextActionKind(lead.next_action_at) === "overdue"
+                            ? "font-semibold text-destructive"
+                            : "font-semibold"
+                        }
+                      >
                         {nextActionLabel(lead.next_action_at)}
                       </div>
                       <div className="text-muted-foreground">
