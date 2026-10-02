@@ -26,6 +26,8 @@ type Lead = {
   fit_score: number | null;
   lead_class: string | null;
   estimated_monthly_orders: number | null;
+  current_channels: string[] | null;
+  is_decision_maker: boolean | null;
   main_pain: string | null;
   next_action_at: string | null;
   loss_reason: string | null;
@@ -107,6 +109,9 @@ function CommercialPage() {
   const [activityType, setActivityType] = useState("note");
   const [nextActionDraft, setNextActionDraft] = useState("");
   const [lossReasonDraft, setLossReasonDraft] = useState("");
+  const [qualificationOrdersDraft, setQualificationOrdersDraft] = useState("");
+  const [decisionMakerDraft, setDecisionMakerDraft] = useState("unknown");
+  const [channelsDraft, setChannelsDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -117,7 +122,7 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,main_pain,next_action_at,loss_reason",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,main_pain,next_action_at,loss_reason",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -276,6 +281,9 @@ function CommercialPage() {
       lead_class?: string | null;
       next_action_at?: string | null;
       loss_reason?: string | null;
+      estimated_monthly_orders?: number | null;
+      current_channels?: string[] | null;
+      is_decision_maker?: boolean | null;
     },
   ) {
     setSaving(true);
@@ -296,6 +304,13 @@ function CommercialPage() {
     const lead = leads.find((item) => item.id === leadId);
     setNextActionDraft(toDatetimeLocalValue(lead?.next_action_at ?? null));
     setLossReasonDraft(lead?.loss_reason ?? "");
+    setQualificationOrdersDraft(
+      lead?.estimated_monthly_orders == null ? "" : String(lead.estimated_monthly_orders),
+    );
+    setDecisionMakerDraft(
+      lead?.is_decision_maker == null ? "unknown" : lead.is_decision_maker ? "yes" : "no",
+    );
+    setChannelsDraft((lead?.current_channels ?? []).join(", "));
     setSelectedLeadId(leadId);
     // New CRM table is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -316,6 +331,28 @@ function CommercialPage() {
     if (!selectedLeadId) return;
     const nextActionAt = nextActionDraft ? new Date(nextActionDraft).toISOString() : null;
     await updateLead(selectedLeadId, { next_action_at: nextActionAt });
+  }
+
+  async function saveQualification() {
+    if (!selectedLeadId) return;
+    const orders =
+      qualificationOrdersDraft.trim() === "" ? null : Number(qualificationOrdersDraft);
+    if (orders != null && (!Number.isInteger(orders) || orders < 0)) {
+      toast.error("Informe uma estimativa valida de pedidos por mes.");
+      return;
+    }
+
+    const channels = channelsDraft
+      .split(",")
+      .map((channel) => channel.trim())
+      .filter(Boolean);
+
+    await updateLead(selectedLeadId, {
+      estimated_monthly_orders: orders,
+      is_decision_maker:
+        decisionMakerDraft === "unknown" ? null : decisionMakerDraft === "yes",
+      current_channels: channels.length > 0 ? channels : null,
+    });
   }
 
   async function saveLossReason() {
@@ -760,6 +797,51 @@ function CommercialPage() {
                               : "—"}
                           </p>
                         </div>
+                      </div>
+                      <div className="rounded-md border p-3">
+                        <h3 className="mb-3 font-semibold">Qualificacao objetiva</h3>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <Field label="Pedidos estimados / mes">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={qualificationOrdersDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setQualificationOrdersDraft(event.target.value)}
+                            />
+                          </Field>
+                          <Field label="Contato e decisor?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={decisionMakerDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setDecisionMakerDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                          </Field>
+                          <Field label="Canais atuais">
+                            <Input
+                              value={channelsDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setChannelsDraft(event.target.value)}
+                              placeholder="WhatsApp, Instagram, iFood..."
+                            />
+                          </Field>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <Button
+                            disabled={saving || lead.status === "converted"}
+                            onClick={saveQualification}
+                          >
+                            Salvar qualificacao
+                          </Button>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          O Fit Score automatico ainda nao e recalculado por estes campos.
+                        </p>
                       </div>
                       <div className="rounded-md border p-3">
                         <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
