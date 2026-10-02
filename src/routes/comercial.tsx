@@ -104,6 +104,7 @@ function CommercialPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityNote, setActivityNote] = useState("");
   const [activityType, setActivityType] = useState("note");
+  const [nextActionDraft, setNextActionDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -229,7 +230,12 @@ function CommercialPage() {
 
   async function updateLead(
     leadId: string,
-    patch: { status?: string; fit_score?: number | null; lead_class?: string | null },
+    patch: {
+      status?: string;
+      fit_score?: number | null;
+      lead_class?: string | null;
+      next_action_at?: string | null;
+    },
   ) {
     setSaving(true);
     // partner_leads is not in generated client types yet.
@@ -246,6 +252,8 @@ function CommercialPage() {
   }
 
   async function openLead(leadId: string) {
+    const lead = leads.find((item) => item.id === leadId);
+    setNextActionDraft(toDatetimeLocalValue(lead?.next_action_at ?? null));
     setSelectedLeadId(leadId);
     // New CRM table is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -260,6 +268,12 @@ function CommercialPage() {
       return;
     }
     setActivities((data ?? []) as Activity[]);
+  }
+
+  async function saveNextAction() {
+    if (!selectedLeadId) return;
+    const nextActionAt = nextActionDraft ? new Date(nextActionDraft).toISOString() : null;
+    await updateLead(selectedLeadId, { next_action_at: nextActionAt });
   }
 
   async function addActivity() {
@@ -614,6 +628,34 @@ function CommercialPage() {
                           </p>
                         </div>
                       </div>
+                      <div className="rounded-md border p-3">
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+                          <Field label="Agendar proxima acao">
+                            <Input
+                              type="datetime-local"
+                              value={nextActionDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setNextActionDraft(event.target.value)}
+                            />
+                          </Field>
+                          <Button
+                            disabled={saving || lead.status === "converted"}
+                            onClick={saveNextAction}
+                          >
+                            Salvar agenda
+                          </Button>
+                          <Button
+                            variant="outline"
+                            disabled={saving || lead.status === "converted" || !lead.next_action_at}
+                            onClick={() => {
+                              setNextActionDraft("");
+                              void updateLead(lead.id, { next_action_at: null });
+                            }}
+                          >
+                            Limpar
+                          </Button>
+                        </div>
+                      </div>
                       <div className="grid gap-3 sm:grid-cols-[160px_1fr_auto]">
                         <select
                           className="rounded-md border bg-background px-3 py-2 text-sm"
@@ -706,6 +748,13 @@ function statusLabel(status: string) {
       } as Record<string, string>
     )[status] ?? status
   );
+}
+
+function toDatetimeLocalValue(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
 }
 
 function activityTypeLabel(type: string) {
