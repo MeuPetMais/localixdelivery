@@ -28,6 +28,7 @@ type Lead = {
   estimated_monthly_orders: number | null;
   main_pain: string | null;
   next_action_at: string | null;
+  loss_reason: string | null;
 };
 
 type Activity = {
@@ -105,6 +106,7 @@ function CommercialPage() {
   const [activityNote, setActivityNote] = useState("");
   const [activityType, setActivityType] = useState("note");
   const [nextActionDraft, setNextActionDraft] = useState("");
+  const [lossReasonDraft, setLossReasonDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
     setLoading(true);
@@ -115,7 +117,7 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,main_pain,next_action_at",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,main_pain,next_action_at,loss_reason",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -235,6 +237,7 @@ function CommercialPage() {
       fit_score?: number | null;
       lead_class?: string | null;
       next_action_at?: string | null;
+      loss_reason?: string | null;
     },
   ) {
     setSaving(true);
@@ -254,6 +257,7 @@ function CommercialPage() {
   async function openLead(leadId: string) {
     const lead = leads.find((item) => item.id === leadId);
     setNextActionDraft(toDatetimeLocalValue(lead?.next_action_at ?? null));
+    setLossReasonDraft(lead?.loss_reason ?? "");
     setSelectedLeadId(leadId);
     // New CRM table is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -274,6 +278,18 @@ function CommercialPage() {
     if (!selectedLeadId) return;
     const nextActionAt = nextActionDraft ? new Date(nextActionDraft).toISOString() : null;
     await updateLead(selectedLeadId, { next_action_at: nextActionAt });
+  }
+
+  async function saveLossReason() {
+    if (!selectedLeadId) return;
+    const lead = leads.find((item) => item.id === selectedLeadId);
+    if (!lead || !["lost", "disqualified"].includes(lead.status)) return;
+    const reason = lossReasonDraft.trim();
+    if (!reason) {
+      toast.error("Informe o motivo antes de salvar.");
+      return;
+    }
+    await updateLead(selectedLeadId, { loss_reason: reason });
   }
 
   async function addActivity() {
@@ -656,6 +672,33 @@ function CommercialPage() {
                           </Button>
                         </div>
                       </div>
+                      {["lost", "disqualified"].includes(lead.status) && (
+                        <div className="rounded-md border p-3">
+                          <Field
+                            label={
+                              lead.status === "lost"
+                                ? "Motivo da perda"
+                                : "Motivo da desqualificacao"
+                            }
+                          >
+                            <Textarea
+                              value={lossReasonDraft}
+                              onChange={(event) => setLossReasonDraft(event.target.value)}
+                              placeholder="Registre por que este lead foi encerrado..."
+                              maxLength={1000}
+                              disabled={saving}
+                            />
+                          </Field>
+                          <div className="mt-3 flex justify-end">
+                            <Button
+                              disabled={saving || !lossReasonDraft.trim()}
+                              onClick={saveLossReason}
+                            >
+                              Salvar motivo
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid gap-3 sm:grid-cols-[160px_1fr_auto]">
                         <select
                           className="rounded-md border bg-background px-3 py-2 text-sm"
