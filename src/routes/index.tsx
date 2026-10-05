@@ -61,12 +61,24 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+const ATTRIBUTION_KEYS = [
+  "source",
+  "medium",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "meta_campaign_id",
+  "meta_adset_id",
+  "meta_ad_id",
+  "creative_code",
+];
 
 function buildSignupHref(search = "") {
   const params = new URLSearchParams({ mode: "signup" });
   const current = new URLSearchParams(search);
-  for (const key of UTM_KEYS) {
+  for (const key of ATTRIBUTION_KEYS) {
     const value = current.get(key);
     if (value) params.set(key, value);
   }
