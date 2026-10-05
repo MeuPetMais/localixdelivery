@@ -830,6 +830,12 @@ function CommercialPage() {
                               <option value="yes">Sim</option>
                               <option value="no">Nao</option>
                             </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por decisor:{" "}
+                              <span className="font-semibold text-foreground">
+                                {decisionMakerFitPoints(decisionMakerDraft)}/15
+                              </span>
+                            </p>
                           </Field>
                           <Field label="Canais atuais">
                             <Input
@@ -848,10 +854,23 @@ function CommercialPage() {
                             Salvar qualificacao
                           </Button>
                         </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          O volume ja possui regra objetiva de 0 a 25 pontos. O Fit Score total
-                          permanece manual ate os demais criterios serem formalizados.
-                        </p>
+                        <div className="mt-3 rounded-md bg-muted/40 p-3 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span>Pontuacao parcial formalizada</span>
+                            <span className="font-semibold">
+                              {volumeFitPoints(
+                                qualificationOrdersDraft.trim() === ""
+                                  ? null
+                                  : Number(qualificationOrdersDraft),
+                              ) + decisionMakerFitPoints(decisionMakerDraft)}
+                              /40
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Soma apenas volume e decisor. O Fit Score total permanece manual ate os
+                            demais criterios serem formalizados.
+                          </p>
+                        </div>
                       </div>
                       <div className="rounded-md border p-3">
                         <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
@@ -1018,6 +1037,10 @@ function volumeFitPoints(orders: number | null) {
   if (orders < 450) return 15;
   if (orders < 600) return 20;
   return 25;
+}
+
+function decisionMakerFitPoints(value: string) {
+  return value === "yes" ? 15 : 0;
 }
 
 function compareNextAction(a: Lead, b: Lead) {
