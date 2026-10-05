@@ -118,6 +118,50 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function MetaPixel() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const w = window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+      _fbq?: unknown;
+    };
+
+    if (!w.fbq) {
+      const fbq = function (...args: unknown[]) {
+        if ((fbq as any).callMethod) {
+          (fbq as any).callMethod(...args);
+        } else {
+          (fbq as any).queue.push(args);
+        }
+      } as any;
+
+      fbq.push = fbq;
+      fbq.loaded = true;
+      fbq.version = "2.0";
+      fbq.queue = [];
+
+      w.fbq = fbq;
+      w._fbq = fbq;
+
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = "https://connect.facebook.net/en_US/fbevents.js";
+
+      const firstScript = document.getElementsByTagName("script")[0];
+      firstScript?.parentNode?.insertBefore(script, firstScript);
+
+      w.fbq("init", "1087793500808651");
+    }
+
+    w.fbq?.("track", "PageView");
+  }, [pathname]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -153,6 +197,7 @@ function RootComponent() {
   if (isPartnerGrowthArea) {
     return (
       <QueryClientProvider client={queryClient}>
+        <MetaPixel />
         <Outlet />
         <Toaster richColors position="top-right" />
       </QueryClientProvider>
@@ -161,6 +206,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <MetaPixel />
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
           <CustomerNotificationsProvider>
