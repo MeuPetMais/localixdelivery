@@ -30,6 +30,7 @@ type Lead = {
   is_decision_maker: boolean | null;
   has_own_customer_base: boolean | null;
   has_recurring_customers: boolean | null;
+  interested_in_own_channel: boolean | null;
   main_pain: string | null;
   next_action_at: string | null;
   loss_reason: string | null;
@@ -115,6 +116,7 @@ function CommercialPage() {
   const [decisionMakerDraft, setDecisionMakerDraft] = useState("unknown");
   const [ownBaseDraft, setOwnBaseDraft] = useState("unknown");
   const [recurringCustomersDraft, setRecurringCustomersDraft] = useState("unknown");
+  const [ownChannelInterestDraft, setOwnChannelInterestDraft] = useState("unknown");
   const [channelsDraft, setChannelsDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
@@ -126,7 +128,7 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,has_recurring_customers,main_pain,next_action_at,loss_reason",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,has_recurring_customers,interested_in_own_channel,main_pain,next_action_at,loss_reason",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -290,6 +292,7 @@ function CommercialPage() {
       is_decision_maker?: boolean | null;
       has_own_customer_base?: boolean | null;
       has_recurring_customers?: boolean | null;
+      interested_in_own_channel?: boolean | null;
     },
   ) {
     setSaving(true);
@@ -323,6 +326,13 @@ function CommercialPage() {
       lead?.has_recurring_customers == null
         ? "unknown"
         : lead.has_recurring_customers
+          ? "yes"
+          : "no",
+    );
+    setOwnChannelInterestDraft(
+      lead?.interested_in_own_channel == null
+        ? "unknown"
+        : lead.interested_in_own_channel
           ? "yes"
           : "no",
     );
@@ -368,6 +378,8 @@ function CommercialPage() {
       has_own_customer_base: ownBaseDraft === "unknown" ? null : ownBaseDraft === "yes",
       has_recurring_customers:
         recurringCustomersDraft === "unknown" ? null : recurringCustomersDraft === "yes",
+      interested_in_own_channel:
+        ownChannelInterestDraft === "unknown" ? null : ownChannelInterestDraft === "yes",
       current_channels: channels.length > 0 ? channels : null,
     });
   }
@@ -817,7 +829,7 @@ function CommercialPage() {
                       </div>
                       <div className="rounded-md border p-3">
                         <h3 className="mb-3 font-semibold">Qualificacao objetiva</h3>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                           <Field label="Pedidos estimados / mes">
                             <Input
                               type="number"
@@ -892,6 +904,24 @@ function CommercialPage() {
                               </span>
                             </p>
                           </Field>
+                          <Field label="Interesse em canal proprio?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={ownChannelInterestDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setOwnChannelInterestDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por interesse:{" "}
+                              <span className="font-semibold text-foreground">
+                                {ownChannelInterestFitPoints(ownChannelInterestDraft)}/10
+                              </span>
+                            </p>
+                          </Field>
                           <Field label="Canais atuais">
                             <Input
                               value={channelsDraft}
@@ -920,13 +950,15 @@ function CommercialPage() {
                               ) +
                                 decisionMakerFitPoints(decisionMakerDraft) +
                                 ownBaseFitPoints(ownBaseDraft) +
-                                recurringCustomersFitPoints(recurringCustomersDraft)}
-                              /70
+                                recurringCustomersFitPoints(recurringCustomersDraft) +
+                                ownChannelInterestFitPoints(ownChannelInterestDraft)}
+                              /80
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Soma volume, decisor, base propria/WhatsApp e recorrencia. O Fit Score
-                            total permanece manual ate os demais criterios serem formalizados.
+                            Soma volume, decisor, base propria/WhatsApp, recorrencia e interesse em
+                            canal proprio. O Fit Score total permanece manual ate os demais
+                            criterios serem formalizados.
                           </p>
                         </div>
                       </div>
@@ -1107,6 +1139,10 @@ function ownBaseFitPoints(value: string) {
 
 function recurringCustomersFitPoints(value: string) {
   return value === "yes" ? 15 : 0;
+}
+
+function ownChannelInterestFitPoints(value: string) {
+  return value === "yes" ? 10 : 0;
 }
 
 function compareNextAction(a: Lead, b: Lead) {
