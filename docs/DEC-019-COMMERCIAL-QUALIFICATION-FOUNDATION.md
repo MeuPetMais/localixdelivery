@@ -59,7 +59,7 @@ O componente **Compromisso com divulgação** vale 5 pontos: "sim" recebe 5 pont
 
 Com isso, os componentes do Fit Score passam a totalizar 100 pontos: volume (25) + decisor (15) + base própria/WhatsApp (15) + clientes recorrentes (15) + interesse em canal próprio (10) + estrutura operacional (10) + marketing ativo (5) + compromisso com divulgação (5).
 
-O `fit_score` total permanece manual nesta etapa. A automatização do valor total deverá ser feita em etapa própria, com cálculo autoritativo no backend e classificação A/B/C derivada do score.
+A matriz de 100 pontos é a base objetiva do cálculo. A autoridade de persistência de `fit_score` e `lead_class` passa a ser definida pela DEC-020.
 
 ## Motivo
 
@@ -74,10 +74,9 @@ Evita cristalizar uma regra de qualificação potencialmente incorreta no códig
 
 ## Riscos
 
-- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque o total permanece manual apesar de os 100 pontos já estarem formalizados.
 - Canais atuais permanecem uma lista textual livre, sem taxonomia fechada.
-- O frontend exibe a pontuação parcial de volume, mas não a grava como se fosse o Fit Score total.
+- Alterações futuras na matriz exigem atualização coordenada da regra autoritativa descrita na DEC-020.
 
 ## Condição para revisão
 
-Revisar quando houver mudança nas regras de pontuação ou quando o cálculo total passar a ser autoritativo no backend.
+Revisar quando houver mudança nas regras de pontuação. A implementação autoritativa do cálculo está registrada na DEC-020.

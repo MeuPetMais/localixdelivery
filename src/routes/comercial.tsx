@@ -289,8 +289,6 @@ function CommercialPage() {
     leadId: string,
     patch: {
       status?: string;
-      fit_score?: number | null;
-      lead_class?: string | null;
       next_action_at?: string | null;
       loss_reason?: string | null;
       estimated_monthly_orders?: number | null;
@@ -776,40 +774,12 @@ function CommercialPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Input
-                                className="h-8 w-20"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={lead.fit_score ?? ""}
-                                disabled={saving || lead.status === "converted"}
-                                onChange={(event) => {
-                                  const score =
-                                    event.target.value === "" ? null : Number(event.target.value);
-                                  const leadClass =
-                                    score == null
-                                      ? null
-                                      : score >= 70
-                                        ? "A"
-                                        : score >= 50
-                                          ? "B"
-                                          : "C";
-                                  setLeads((current) =>
-                                    current.map((item) =>
-                                      item.id === lead.id
-                                        ? { ...item, fit_score: score, lead_class: leadClass }
-                                        : item,
-                                    ),
-                                  );
-                                }}
-                                onBlur={() =>
-                                  updateLead(lead.id, {
-                                    fit_score: lead.fit_score,
-                                    lead_class: lead.lead_class,
-                                  })
-                                }
-                              />
-                              <span className="font-semibold">{lead.lead_class ?? "—"}</span>
+                              <span className="font-semibold">
+                                {lead.fit_score == null ? "—" : `${lead.fit_score}/100`}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                Classe {lead.lead_class ?? "—"}
+                              </span>
                             </div>
                           </td>
                         </tr>
@@ -1041,9 +1011,8 @@ function CommercialPage() {
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Todos os componentes do Fit Score estao formalizados. O valor total
-                            permanece manual ate a proxima etapa tornar o calculo autoritativo no
-                            backend.
+                            O backend recalcula o Fit Score e a classe A/B/C ao salvar os criterios.
+                            O valor persistido nao e editavel manualmente no painel comercial.
                           </p>
                         </div>
                       </div>
