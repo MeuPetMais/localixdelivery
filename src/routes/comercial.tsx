@@ -31,6 +31,9 @@ type Lead = {
   has_own_customer_base: boolean | null;
   has_recurring_customers: boolean | null;
   interested_in_own_channel: boolean | null;
+  has_structured_operation: boolean | null;
+  has_active_marketing: boolean | null;
+  committed_to_promotion: boolean | null;
   main_pain: string | null;
   next_action_at: string | null;
   loss_reason: string | null;
@@ -117,6 +120,9 @@ function CommercialPage() {
   const [ownBaseDraft, setOwnBaseDraft] = useState("unknown");
   const [recurringCustomersDraft, setRecurringCustomersDraft] = useState("unknown");
   const [ownChannelInterestDraft, setOwnChannelInterestDraft] = useState("unknown");
+  const [structuredOperationDraft, setStructuredOperationDraft] = useState("unknown");
+  const [activeMarketingDraft, setActiveMarketingDraft] = useState("unknown");
+  const [promotionCommitmentDraft, setPromotionCommitmentDraft] = useState("unknown");
   const [channelsDraft, setChannelsDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
@@ -128,7 +134,7 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,has_recurring_customers,interested_in_own_channel,main_pain,next_action_at,loss_reason",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,has_recurring_customers,interested_in_own_channel,has_structured_operation,has_active_marketing,committed_to_promotion,main_pain,next_action_at,loss_reason",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -293,6 +299,9 @@ function CommercialPage() {
       has_own_customer_base?: boolean | null;
       has_recurring_customers?: boolean | null;
       interested_in_own_channel?: boolean | null;
+      has_structured_operation?: boolean | null;
+      has_active_marketing?: boolean | null;
+      committed_to_promotion?: boolean | null;
     },
   ) {
     setSaving(true);
@@ -333,6 +342,23 @@ function CommercialPage() {
       lead?.interested_in_own_channel == null
         ? "unknown"
         : lead.interested_in_own_channel
+          ? "yes"
+          : "no",
+    );
+    setStructuredOperationDraft(
+      lead?.has_structured_operation == null
+        ? "unknown"
+        : lead.has_structured_operation
+          ? "yes"
+          : "no",
+    );
+    setActiveMarketingDraft(
+      lead?.has_active_marketing == null ? "unknown" : lead.has_active_marketing ? "yes" : "no",
+    );
+    setPromotionCommitmentDraft(
+      lead?.committed_to_promotion == null
+        ? "unknown"
+        : lead.committed_to_promotion
           ? "yes"
           : "no",
     );
@@ -380,6 +406,12 @@ function CommercialPage() {
         recurringCustomersDraft === "unknown" ? null : recurringCustomersDraft === "yes",
       interested_in_own_channel:
         ownChannelInterestDraft === "unknown" ? null : ownChannelInterestDraft === "yes",
+      has_structured_operation:
+        structuredOperationDraft === "unknown" ? null : structuredOperationDraft === "yes",
+      has_active_marketing:
+        activeMarketingDraft === "unknown" ? null : activeMarketingDraft === "yes",
+      committed_to_promotion:
+        promotionCommitmentDraft === "unknown" ? null : promotionCommitmentDraft === "yes",
       current_channels: channels.length > 0 ? channels : null,
     });
   }
@@ -829,7 +861,7 @@ function CommercialPage() {
                       </div>
                       <div className="rounded-md border p-3">
                         <h3 className="mb-3 font-semibold">Qualificacao objetiva</h3>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           <Field label="Pedidos estimados / mes">
                             <Input
                               type="number"
@@ -922,6 +954,60 @@ function CommercialPage() {
                               </span>
                             </p>
                           </Field>
+                          <Field label="Operacao estruturada?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={structuredOperationDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setStructuredOperationDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por estrutura:{" "}
+                              <span className="font-semibold text-foreground">
+                                {structuredOperationFitPoints(structuredOperationDraft)}/10
+                              </span>
+                            </p>
+                          </Field>
+                          <Field label="Marketing / Instagram ativo?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={activeMarketingDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setActiveMarketingDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por marketing:{" "}
+                              <span className="font-semibold text-foreground">
+                                {activeMarketingFitPoints(activeMarketingDraft)}/5
+                              </span>
+                            </p>
+                          </Field>
+                          <Field label="Compromisso com divulgacao?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={promotionCommitmentDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setPromotionCommitmentDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por compromisso:{" "}
+                              <span className="font-semibold text-foreground">
+                                {promotionCommitmentFitPoints(promotionCommitmentDraft)}/5
+                              </span>
+                            </p>
+                          </Field>
                           <Field label="Canais atuais">
                             <Input
                               value={channelsDraft}
@@ -951,14 +1037,17 @@ function CommercialPage() {
                                 decisionMakerFitPoints(decisionMakerDraft) +
                                 ownBaseFitPoints(ownBaseDraft) +
                                 recurringCustomersFitPoints(recurringCustomersDraft) +
-                                ownChannelInterestFitPoints(ownChannelInterestDraft)}
-                              /80
+                                ownChannelInterestFitPoints(ownChannelInterestDraft) +
+                                structuredOperationFitPoints(structuredOperationDraft) +
+                                activeMarketingFitPoints(activeMarketingDraft) +
+                                promotionCommitmentFitPoints(promotionCommitmentDraft)}
+                              /100
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Soma volume, decisor, base propria/WhatsApp, recorrencia e interesse em
-                            canal proprio. O Fit Score total permanece manual ate os demais
-                            criterios serem formalizados.
+                            Todos os componentes do Fit Score estao formalizados. O valor total
+                            permanece manual ate a proxima etapa tornar o calculo autoritativo no
+                            backend.
                           </p>
                         </div>
                       </div>
@@ -1143,6 +1232,18 @@ function recurringCustomersFitPoints(value: string) {
 
 function ownChannelInterestFitPoints(value: string) {
   return value === "yes" ? 10 : 0;
+}
+
+function structuredOperationFitPoints(value: string) {
+  return value === "yes" ? 10 : 0;
+}
+
+function activeMarketingFitPoints(value: string) {
+  return value === "yes" ? 5 : 0;
+}
+
+function promotionCommitmentFitPoints(value: string) {
+  return value === "yes" ? 5 : 0;
 }
 
 function compareNextAction(a: Lead, b: Lead) {
