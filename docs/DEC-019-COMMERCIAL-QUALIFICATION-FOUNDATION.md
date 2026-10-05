@@ -40,6 +40,10 @@ O componente **Volume mensal** do Fit Score vale até 25 pontos e segue a regra:
 
 A regra é ascendente. Estar abaixo de 150 não desqualifica automaticamente o lead; apenas atribui 0 ponto neste componente.
 
+O componente **Decisor identificado** vale 15 pontos: contato confirmado como decisor recebe 15 pontos; "não" ou "não confirmado" recebem 0. A ausência de confirmação não desqualifica automaticamente o lead.
+
+Com volume (25) + decisor (15), o CRM passa a exibir uma pontuação parcial formalizada de até 40 pontos.
+
 O `fit_score` total continua sem recálculo automático até que os demais componentes sejam formalizados.
 
 ## Motivo
@@ -55,7 +59,7 @@ Evita cristalizar uma regra de qualificação potencialmente incorreta no códig
 
 ## Riscos
 
-- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque somente o componente de volume está formalizado.
+- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque apenas 40 dos 100 pontos estão formalizados.
 - Canais atuais permanecem uma lista textual livre, sem taxonomia fechada.
 - O frontend exibe a pontuação parcial de volume, mas não a grava como se fosse o Fit Score total.
 
