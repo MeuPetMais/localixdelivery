@@ -356,11 +356,7 @@ function CommercialPage() {
       lead?.has_active_marketing == null ? "unknown" : lead.has_active_marketing ? "yes" : "no",
     );
     setPromotionCommitmentDraft(
-      lead?.committed_to_promotion == null
-        ? "unknown"
-        : lead.committed_to_promotion
-          ? "yes"
-          : "no",
+      lead?.committed_to_promotion == null ? "unknown" : lead.committed_to_promotion ? "yes" : "no",
     );
     setChannelsDraft((lead?.current_channels ?? []).join(", "));
     setSelectedLeadId(leadId);
