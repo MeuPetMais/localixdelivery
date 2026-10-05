@@ -21,17 +21,44 @@ import { slugify } from "@/lib/format";
 import { resolvePostLoginRedirect } from "@/lib/admin-mode";
 import { toastArgsFromAuthError } from "@/lib/auth-errors";
 
+const ATTRIBUTION_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "meta_campaign_id",
+  "meta_adset_id",
+  "meta_ad_id",
+  "creative_code",
+] as const;
+
+type AttributionKey = (typeof ATTRIBUTION_KEYS)[number];
+type AuthSearch = { mode?: "signup" } & Partial<Record<AttributionKey, string>>;
+
+function cleanSearchValue(value: unknown, max = 200) {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
+}
+
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    mode: search.mode === "signup" ? "signup" : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): AuthSearch => {
+    const validated: AuthSearch = {
+      mode: search.mode === "signup" ? "signup" : undefined,
+    };
+    for (const key of ATTRIBUTION_KEYS) {
+      const value = cleanSearchValue(search[key]);
+      if (value) validated[key] = value;
+    }
+    return validated;
+  },
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { mode } = Route.useSearch();
+  const search = Route.useSearch();
+  const { mode } = search;
   const [tab, setTab] = useState<"signin" | "signup">(mode === "signup" ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,6 +71,21 @@ function AuthPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSending, setForgotSending] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+
+  // Preserve acquisition attribution through the auth step. This is intentionally
+  // non-authoritative: META-2C will persist/link it server-side to partner_leads.
+  useEffect(() => {
+    if (mode !== "signup") return;
+    const attribution = Object.fromEntries(
+      ATTRIBUTION_KEYS.flatMap((key) => (search[key] ? [[key, search[key]]] : [])),
+    );
+    if (Object.keys(attribution).length === 0) return;
+    try {
+      localStorage.setItem("localix.partner-attribution.first-touch", JSON.stringify(attribution));
+    } catch {
+      void 0;
+    }
+  }, [mode, search]);
 
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
