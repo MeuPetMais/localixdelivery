@@ -957,8 +957,8 @@ function CommercialPage() {
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
                             Soma volume, decisor, base propria/WhatsApp, recorrencia e interesse em
-                            canal proprio. O Fit Score total permanece manual ate os demais criterios
-                            serem formalizados.
+                            canal proprio. O Fit Score total permanece manual ate os demais
+                            criterios serem formalizados.
                           </p>
                         </div>
                       </div>
