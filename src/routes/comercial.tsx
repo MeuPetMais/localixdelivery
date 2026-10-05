@@ -28,6 +28,7 @@ type Lead = {
   estimated_monthly_orders: number | null;
   current_channels: string[] | null;
   is_decision_maker: boolean | null;
+  has_own_customer_base: boolean | null;
   main_pain: string | null;
   next_action_at: string | null;
   loss_reason: string | null;
@@ -111,6 +112,7 @@ function CommercialPage() {
   const [lossReasonDraft, setLossReasonDraft] = useState("");
   const [qualificationOrdersDraft, setQualificationOrdersDraft] = useState("");
   const [decisionMakerDraft, setDecisionMakerDraft] = useState("unknown");
+  const [ownBaseDraft, setOwnBaseDraft] = useState("unknown");
   const [channelsDraft, setChannelsDraft] = useState("");
 
   const loadLeads = useCallback(async () => {
@@ -122,7 +124,7 @@ function CommercialPage() {
     const leadsTable = supabase.from("partner_leads" as any);
     const { data, error: queryError } = await leadsTable
       .select(
-        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,main_pain,next_action_at,loss_reason",
+        "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,main_pain,next_action_at,loss_reason",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -284,6 +286,7 @@ function CommercialPage() {
       estimated_monthly_orders?: number | null;
       current_channels?: string[] | null;
       is_decision_maker?: boolean | null;
+      has_own_customer_base?: boolean | null;
     },
   ) {
     setSaving(true);
@@ -309,6 +312,9 @@ function CommercialPage() {
     );
     setDecisionMakerDraft(
       lead?.is_decision_maker == null ? "unknown" : lead.is_decision_maker ? "yes" : "no",
+    );
+    setOwnBaseDraft(
+      lead?.has_own_customer_base == null ? "unknown" : lead.has_own_customer_base ? "yes" : "no",
     );
     setChannelsDraft((lead?.current_channels ?? []).join(", "));
     setSelectedLeadId(leadId);
@@ -349,6 +355,7 @@ function CommercialPage() {
     await updateLead(selectedLeadId, {
       estimated_monthly_orders: orders,
       is_decision_maker: decisionMakerDraft === "unknown" ? null : decisionMakerDraft === "yes",
+      has_own_customer_base: ownBaseDraft === "unknown" ? null : ownBaseDraft === "yes",
       current_channels: channels.length > 0 ? channels : null,
     });
   }
@@ -798,7 +805,7 @@ function CommercialPage() {
                       </div>
                       <div className="rounded-md border p-3">
                         <h3 className="mb-3 font-semibold">Qualificacao objetiva</h3>
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                           <Field label="Pedidos estimados / mes">
                             <Input
                               type="number"
@@ -837,6 +844,24 @@ function CommercialPage() {
                               </span>
                             </p>
                           </Field>
+                          <Field label="Base propria / WhatsApp?">
+                            <select
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              value={ownBaseDraft}
+                              disabled={saving || lead.status === "converted"}
+                              onChange={(event) => setOwnBaseDraft(event.target.value)}
+                            >
+                              <option value="unknown">Nao confirmado</option>
+                              <option value="yes">Sim</option>
+                              <option value="no">Nao</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Pontuacao por base propria:{" "}
+                              <span className="font-semibold text-foreground">
+                                {ownBaseFitPoints(ownBaseDraft)}/15
+                              </span>
+                            </p>
+                          </Field>
                           <Field label="Canais atuais">
                             <Input
                               value={channelsDraft}
@@ -862,13 +887,15 @@ function CommercialPage() {
                                 qualificationOrdersDraft.trim() === ""
                                   ? null
                                   : Number(qualificationOrdersDraft),
-                              ) + decisionMakerFitPoints(decisionMakerDraft)}
-                              /40
+                              ) +
+                                decisionMakerFitPoints(decisionMakerDraft) +
+                                ownBaseFitPoints(ownBaseDraft)}
+                              /55
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Soma apenas volume e decisor. O Fit Score total permanece manual ate os
-                            demais criterios serem formalizados.
+                            Soma volume, decisor e base propria/WhatsApp. O Fit Score total permanece
+                            manual ate os demais criterios serem formalizados.
                           </p>
                         </div>
                       </div>
@@ -1040,6 +1067,10 @@ function volumeFitPoints(orders: number | null) {
 }
 
 function decisionMakerFitPoints(value: string) {
+  return value === "yes" ? 15 : 0;
+}
+
+function ownBaseFitPoints(value: string) {
   return value === "yes" ? 15 : 0;
 }
 
