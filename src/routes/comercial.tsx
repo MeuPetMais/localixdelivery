@@ -320,7 +320,11 @@ function CommercialPage() {
       lead?.has_own_customer_base == null ? "unknown" : lead.has_own_customer_base ? "yes" : "no",
     );
     setRecurringCustomersDraft(
-      lead?.has_recurring_customers == null ? "unknown" : lead.has_recurring_customers ? "yes" : "no",
+      lead?.has_recurring_customers == null
+        ? "unknown"
+        : lead.has_recurring_customers
+          ? "yes"
+          : "no",
     );
     setChannelsDraft((lead?.current_channels ?? []).join(", "));
     setSelectedLeadId(leadId);
