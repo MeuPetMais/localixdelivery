@@ -50,7 +50,20 @@ function getOrCreatePartnerAttribution(search: AuthSearch): PartnerAttribution |
     const raw = localStorage.getItem(PARTNER_ATTRIBUTION_KEY);
     if (raw) {
       const stored = JSON.parse(raw) as PartnerAttribution;
-      if (stored?.external_ref) return stored;
+      if (stored && typeof stored === "object") {
+        if (stored.external_ref) return stored;
+        const legacyValues = Object.fromEntries(
+          ATTRIBUTION_KEYS.flatMap((key) => (stored[key] ? [[key, stored[key]]] : [])),
+        ) as Partial<Record<AttributionKey, string>>;
+        if (Object.keys(legacyValues).length > 0) {
+          const migrated: PartnerAttribution = {
+            ...legacyValues,
+            external_ref: `signup_${crypto.randomUUID()}`,
+          };
+          localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
+      }
     }
     const values = Object.fromEntries(
       ATTRIBUTION_KEYS.flatMap((key) => (search[key] ? [[key, search[key]]] : [])),
@@ -227,6 +240,7 @@ function AuthPage() {
           void 0;
         }
 
+        const signupAttribution = getOrCreatePartnerAttribution(search);
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -239,6 +253,7 @@ function AuthPage() {
               store_name: storeName,
               whatsapp,
               cnpj: cnpj || null,
+              acquisition_attribution: signupAttribution ?? null,
             },
           },
         });
@@ -262,9 +277,15 @@ function AuthPage() {
           hasSession: !!data.session,
         });
 
+        const userId = data.user?.id;
+        if (!userId) {
+          toast.error("auth.signUp não retornou usuário.");
+          return;
+        }
+
         // META-2C: persist the acquisition as an idempotent pre-partner lead only
         // after Supabase has actually created/returned the auth user.
-        const attribution = getOrCreatePartnerAttribution(search);
+        const attribution = signupAttribution;
         if (attribution && !attribution.lead_id) {
           const { data: leadData, error: leadError } = await supabase.functions.invoke(
             "partner-lead-public-capture",
@@ -301,12 +322,6 @@ function AuthPage() {
               void 0;
             }
           }
-        }
-
-        const userId = data.user?.id;
-        if (!userId) {
-          toast.error("auth.signUp não retornou usuário.");
-          return;
         }
 
         // Se a confirmação de e-mail está ativa, não há sessão — o INSERT em restaurants
