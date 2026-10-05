@@ -44,7 +44,9 @@ O componente **Decisor identificado** vale 15 pontos: contato confirmado como de
 
 O componente **Base própria / WhatsApp** vale 15 pontos: "sim" recebe 15 pontos; "não" ou "não confirmado" recebem 0. A ausência de base própria não desqualifica automaticamente o lead.
 
-Com volume (25) + decisor (15) + base própria/WhatsApp (15), o CRM passa a exibir uma pontuação parcial formalizada de até 55 pontos.
+O componente **Clientes recorrentes** vale 15 pontos: "sim" recebe 15 pontos; "não" ou "não confirmado" recebem 0. A ausência de recorrência não desqualifica automaticamente o lead.
+
+Com volume (25) + decisor (15) + base própria/WhatsApp (15) + clientes recorrentes (15), o CRM passa a exibir uma pontuação parcial formalizada de até 70 pontos.
 
 O `fit_score` total continua sem recálculo automático até que os demais componentes sejam formalizados.
 
@@ -61,7 +63,7 @@ Evita cristalizar uma regra de qualificação potencialmente incorreta no códig
 
 ## Riscos
 
-- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque apenas 55 dos 100 pontos estão formalizados.
+- Fit Score e classe A/B/C ainda podem divergir dos dados objetivos porque apenas 70 dos 100 pontos estão formalizados.
 - Canais atuais permanecem uma lista textual livre, sem taxonomia fechada.
 - O frontend exibe a pontuação parcial de volume, mas não a grava como se fosse o Fit Score total.
 
