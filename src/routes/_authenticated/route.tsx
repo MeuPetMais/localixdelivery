@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -25,8 +26,7 @@ export const Route = createFileRoute("/_authenticated")({
     // RC2-SEC-001: parceiros/admins só podem acessar via e-mail/senha.
     // Usuários autenticados por Google/Apple (área do cliente) são bloqueados
     // no painel do parceiro e devolvidos à área do cliente.
-    const provider =
-      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    const provider = (data.user.app_metadata?.provider as string | undefined) ?? "email";
     if (provider !== "email") {
       await supabase.auth.signOut();
       throw redirect({ to: "/entrar" });
@@ -37,8 +37,73 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthLayout() {
-  const { user } = Route.useRouteContext() as { user: { id: string; email?: string } };
+  const { user } = Route.useRouteContext();
   const { restaurant } = useCurrentRestaurant(user.id);
+
+  useEffect(() => {
+    const metadata = user.user_metadata ?? {};
+    const attribution = metadata.acquisition_attribution as
+      | Record<string, string | undefined>
+      | undefined;
+
+    if (
+      metadata.kind !== "partner" ||
+      !attribution?.external_ref ||
+      attribution.lead_id ||
+      !metadata.store_name ||
+      !metadata.owner_name ||
+      !metadata.whatsapp
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke("partner-lead-public-capture", {
+        body: {
+          business_name: metadata.store_name,
+          contact_name: metadata.owner_name,
+          phone: metadata.whatsapp,
+          email: user.email,
+          source: attribution.source ?? attribution.utm_source ?? "website_signup",
+          medium: attribution.medium ?? attribution.utm_medium ?? "owned",
+          utm_source: attribution.utm_source,
+          utm_medium: attribution.utm_medium,
+          utm_campaign: attribution.utm_campaign,
+          utm_content: attribution.utm_content,
+          utm_term: attribution.utm_term,
+          meta_campaign_id: attribution.meta_campaign_id,
+          meta_adset_id: attribution.meta_adset_id,
+          meta_ad_id: attribution.meta_ad_id,
+          creative_code: attribution.creative_code,
+          external_ref: attribution.external_ref,
+        },
+      });
+
+      if (cancelled) return;
+      if (error || !data?.lead_id) {
+        console.error("[acquisition-recovery] partner lead recovery failed", {
+          message: error?.message,
+        });
+        return;
+      }
+
+      const recovered = { ...attribution, lead_id: data.lead_id };
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { acquisition_attribution: recovered },
+      });
+      if (metadataError) {
+        console.error("[acquisition-recovery] recovery marker update failed", {
+          message: metadataError.message,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   return (
     <OrdersRealtimeProvider restaurantId={restaurant?.id ?? ""}>
       <AuthShell userId={user.id} userEmail={user.email} />
@@ -57,7 +122,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   const restaurantName = restaurant?.name ?? "Localix";
   const restaurantStatus = useRestaurantStatus({
     is_open: restaurant?.is_open,
-    opening_hours: (restaurant as any)?.opening_hours,
+    opening_hours: (restaurant as { opening_hours?: unknown } | null)?.opening_hours,
   });
   const dashboardStatus = restaurant
     ? {
@@ -72,7 +137,11 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true, search: { mode: undefined } as { mode: string | undefined } });
+    navigate({
+      to: "/auth",
+      replace: true,
+      search: { mode: undefined } as { mode: string | undefined },
+    });
   }
 
   return (
