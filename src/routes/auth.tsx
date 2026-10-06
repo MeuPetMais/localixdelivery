@@ -84,6 +84,46 @@ function cleanSearchValue(value: unknown, max = 200) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
 }
 
+async function capturePartnerLead(
+  attribution: PartnerAttribution,
+  input: { businessName: string; contactName: string; phone: string; email: string },
+) {
+  if (attribution.lead_id) return attribution.lead_id;
+
+  const { data, error } = await supabase.functions.invoke("partner-lead-public-capture", {
+    body: {
+      business_name: input.businessName,
+      contact_name: input.contactName,
+      phone: input.phone,
+      email: input.email,
+      source: attribution.source ?? attribution.utm_source ?? "website_signup",
+      medium: attribution.medium ?? attribution.utm_medium ?? "owned",
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
+      utm_content: attribution.utm_content,
+      utm_term: attribution.utm_term,
+      meta_campaign_id: attribution.meta_campaign_id,
+      meta_adset_id: attribution.meta_adset_id,
+      meta_ad_id: attribution.meta_ad_id,
+      creative_code: attribution.creative_code,
+      external_ref: attribution.external_ref,
+    },
+  });
+
+  if (error || !data?.lead_id) {
+    throw error ?? new Error("Partner lead capture did not return lead_id");
+  }
+
+  const persisted = { ...attribution, lead_id: data.lead_id };
+  try {
+    localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(persisted));
+  } catch {
+    void 0;
+  }
+  return data.lead_id as string;
+}
+
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar — Localix Delivery" }] }),
   validateSearch: (search: Record<string, unknown>): AuthSearch => {
@@ -287,40 +327,17 @@ function AuthPage() {
         // after Supabase has actually created/returned the auth user.
         const attribution = signupAttribution;
         if (attribution && !attribution.lead_id) {
-          const { data: leadData, error: leadError } = await supabase.functions.invoke(
-            "partner-lead-public-capture",
-            {
-              body: {
-                business_name: storeName,
-                contact_name: ownerName,
-                phone: whatsapp,
-                email,
-                source: attribution.source ?? attribution.utm_source ?? "website_signup",
-                medium: attribution.medium ?? attribution.utm_medium ?? "owned",
-                utm_source: attribution.utm_source,
-                utm_medium: attribution.utm_medium,
-                utm_campaign: attribution.utm_campaign,
-                utm_content: attribution.utm_content,
-                utm_term: attribution.utm_term,
-                meta_campaign_id: attribution.meta_campaign_id,
-                meta_adset_id: attribution.meta_adset_id,
-                meta_ad_id: attribution.meta_ad_id,
-                creative_code: attribution.creative_code,
-                external_ref: attribution.external_ref,
-              },
-            },
-          );
-          if (leadError || !leadData?.lead_id) {
-            console.error("[signup] partner lead capture failed", {
-              message: leadError?.message,
+          try {
+            await capturePartnerLead(attribution, {
+              businessName: storeName,
+              contactName: ownerName,
+              phone: whatsapp,
+              email,
             });
-          } else {
-            const persisted = { ...attribution, lead_id: leadData.lead_id };
-            try {
-              localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(persisted));
-            } catch {
-              void 0;
-            }
+          } catch (leadError) {
+            console.error("[signup] partner lead capture failed; recovery metadata preserved", {
+              message: leadError instanceof Error ? leadError.message : "unknown",
+            });
           }
         }
 
