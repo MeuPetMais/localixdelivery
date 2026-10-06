@@ -8,7 +8,9 @@ const stagingPreviewPatterns = [
 ];
 
 function isAllowedOrigin(origin: string) {
-  return origin === productionOrigin || stagingPreviewPatterns.some((pattern) => pattern.test(origin));
+  return (
+    origin === productionOrigin || stagingPreviewPatterns.some((pattern) => pattern.test(origin))
+  );
 }
 
 const allowed = new Set([
