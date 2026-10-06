@@ -105,7 +105,6 @@ function AuthLayout() {
     };
   }, [user]);
 
-  const { restaurant } = useCurrentRestaurant(user.id);
   return (
     <OrdersRealtimeProvider restaurantId={restaurant?.id ?? ""}>
       <AuthShell userId={user.id} userEmail={user.email} />
