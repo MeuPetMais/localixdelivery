@@ -26,8 +26,7 @@ export const Route = createFileRoute("/_authenticated")({
     // RC2-SEC-001: parceiros/admins só podem acessar via e-mail/senha.
     // Usuários autenticados por Google/Apple (área do cliente) são bloqueados
     // no painel do parceiro e devolvidos à área do cliente.
-    const provider =
-      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    const provider = (data.user.app_metadata?.provider as string | undefined) ?? "email";
     if (provider !== "email") {
       await supabase.auth.signOut();
       throw redirect({ to: "/entrar" });
@@ -123,7 +122,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   const restaurantName = restaurant?.name ?? "Localix";
   const restaurantStatus = useRestaurantStatus({
     is_open: restaurant?.is_open,
-    opening_hours: (restaurant as any)?.opening_hours,
+    opening_hours: (restaurant as { opening_hours?: unknown } | null)?.opening_hours,
   });
   const dashboardStatus = restaurant
     ? {
@@ -138,7 +137,11 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true, search: { mode: undefined } as { mode: string | undefined } });
+    navigate({
+      to: "/auth",
+      replace: true,
+      search: { mode: undefined } as { mode: string | undefined },
+    });
   }
 
   return (
