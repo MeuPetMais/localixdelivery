@@ -122,15 +122,22 @@ async function capturePartnerLead(
     void 0;
   }
 
-  // Persist the successful materialization marker in Auth metadata too, so
-  // recovery remains available across devices and after email confirmation.
-  const { error: metadataError } = await supabase.auth.updateUser({
-    data: { acquisition_attribution: persisted },
-  });
-  if (metadataError) {
-    console.error("[signup] lead captured but attribution metadata update failed", {
-      message: metadataError.message,
+  // Auth metadata is only a recovery/continuity marker. Email-confirmation
+  // signups return a user without a session, so defer this authenticated write
+  // until the user has a valid session. The authenticated route will recover
+  // idempotently from the same external_ref after confirmation/login.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) {
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: { acquisition_attribution: persisted },
     });
+    if (metadataError) {
+      console.error("[signup] lead captured but attribution metadata update failed", {
+        message: metadataError.message,
+      });
+    }
   }
 
   return data.lead_id as string;
