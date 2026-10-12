@@ -46,13 +46,13 @@ import { isPromoActiveNow } from "@/lib/promotions";
 import type { BuilderCatalogProduct } from "@/lib/checkout/builder-catalog-pricing";
 
 export const Route = createFileRoute("/_authenticated/builders")({
-  head: () => ({ meta: [{ title: "Monte do Seu Jeito â€” Localix" }] }),
+  head: () => ({ meta: [{ title: "Monte do Seu Jeito — Localix" }] }),
   component: BuildersRoute,
 });
 
 const TEMPLATES = [
   {
-    emoji: "ðŸ•",
+    emoji: "🍕",
     name: "Monte sua Pizza",
     groups: [
       {
@@ -61,9 +61,9 @@ const TEMPLATES = [
         max: 1,
         opts: [
           ["Pequena", 0],
-          ["MÃ©dia", 10],
+          ["Média", 10],
           ["Grande", 18],
-          ["FamÃ­lia", 28],
+          ["Família", 28],
         ],
       },
       {
@@ -106,17 +106,17 @@ const TEMPLATES = [
         opts: [
           ["Bacon", 4],
           ["Catupiry extra", 5],
-          ["MuÃ§arela extra", 4],
+          ["Muçarela extra", 4],
         ],
       },
     ],
   },
   {
-    emoji: "ðŸ”",
-    name: "Monte seu HambÃºrguer",
+    emoji: "🍔",
+    name: "Monte seu Hambúrguer",
     groups: [
       {
-        name: "PÃ£o",
+        name: "Pão",
         min: 1,
         max: 1,
         opts: [
@@ -178,17 +178,17 @@ const TEMPLATES = [
     ],
   },
   {
-    emoji: "ðŸ¥—",
+    emoji: "🥗",
     name: "Monte seu Prato",
     groups: [
       {
-        name: "ProteÃ­na",
+        name: "Proteína",
         min: 1,
         max: 1,
         opts: [
           ["Frango grelhado", 0],
-          ["FilÃ© mignon", 10],
-          ["SalmÃ£o", 14],
+          ["Filé mignon", 10],
+          ["Salmão", 14],
         ],
       },
       {
@@ -201,7 +201,7 @@ const TEMPLATES = [
         ],
       },
       {
-        name: "FeijÃ£o",
+        name: "Feijão",
         min: 0,
         max: 1,
         opts: [
@@ -230,10 +230,10 @@ const TEMPLATES = [
       },
     ],
   },
-  { emoji: "ðŸ¥™", name: "Monte seu Lanche", groups: [] },
-  { emoji: "ðŸŒ®", name: "Monte seu Combo", groups: [] },
-  { emoji: "ðŸŸ", name: "Monte sua PorÃ§Ã£o", groups: [] },
-  { emoji: "ðŸ¥¤", name: "Monte sua Bebida", groups: [] },
+  { emoji: "🥙", name: "Monte seu Lanche", groups: [] },
+  { emoji: "🌮", name: "Monte seu Combo", groups: [] },
+  { emoji: "🍟", name: "Monte sua Porção", groups: [] },
+  { emoji: "🥤", name: "Monte sua Bebida", groups: [] },
 ];
 
 type EditorOption = Omit<Option, "price_delta" | "max_qty"> & {
@@ -334,7 +334,7 @@ function BuildersPage() {
       .update({ builders_enabled: v })
       .eq("id", restaurant.id);
     if (error) return toast.error(error.message);
-    toast.success(v ? "MÃ³dulo ativado" : "MÃ³dulo desativado");
+    toast.success(v ? "Módulo ativado" : "Módulo desativado");
     qc.invalidateQueries({ queryKey: ["my-restaurant"] });
   }
 
@@ -388,7 +388,7 @@ function BuildersPage() {
       .insert({
         restaurant_id: restaurant.id,
         name: "Novo modelo",
-        emoji: "âœ¨",
+        emoji: "✨",
         description: "Personalize do seu jeito.",
         base_price: 0,
         position: (builders?.length ?? 0) + 1,
@@ -407,7 +407,7 @@ function BuildersPage() {
       .from("builders")
       .insert({
         restaurant_id: restaurant.id,
-        name: `${b.name} (cÃ³pia)`,
+        name: `${b.name} (cópia)`,
         emoji: b.emoji,
         description: b.description,
         image_url: b.image_url,
@@ -451,7 +451,7 @@ function BuildersPage() {
     if (!confirm("Excluir este modelo?")) return;
     const { error } = await supabase.from("builders").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("ExcluÃ­do");
+    toast.success("Excluído");
     refetch();
   }
 
@@ -473,18 +473,18 @@ function BuildersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight">
-            ðŸ• Monte do Seu Jeito
+            🍕 Monte do Seu Jeito
           </h1>
           <p className="text-sm text-muted-foreground">
-            OfereÃ§a produtos totalmente personalizÃ¡veis ao seu cliente.
+            Ofereça produtos totalmente personalizáveis ao seu cliente.
           </p>
         </div>
         <Card className="flex items-center gap-3 rounded-2xl border bg-gradient-warm/5 p-4">
           <Sparkles className="h-5 w-5 text-primary" />
           <div className="flex-1">
-            <p className="text-sm font-bold">Ativar mÃ³dulo</p>
+            <p className="text-sm font-bold">Ativar módulo</p>
             <p className="text-xs text-muted-foreground">
-              Quando desligado, nada aparece no cardÃ¡pio.
+              Quando desligado, nada aparece no cardápio.
             </p>
           </div>
           <Switch checked={!!restaurant.builders_enabled} onCheckedChange={toggleModule} />
@@ -496,11 +496,11 @@ function BuildersPage() {
         const totalCount = (builders ?? []).length;
         const visible = !!restaurant.builders_enabled && activeCount > 0;
         const reason = !restaurant.builders_enabled
-          ? "MÃ³dulo desativado."
+          ? "Módulo desativado."
           : totalCount === 0
             ? "Nenhum configurador criado."
             : activeCount === 0
-              ? "Todos os configuradores estÃ£o pausados."
+              ? "Todos os configuradores estão pausados."
               : null;
         return (
           <Card
@@ -508,7 +508,7 @@ function BuildersPage() {
           >
             <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
               <span className="font-bold">
-                {restaurant.builders_enabled ? "âœ… MÃ³dulo ativado" : "â›” MÃ³dulo desativado"}
+                {restaurant.builders_enabled ? "✅ Módulo ativado" : "⛔ Módulo desativado"}
               </span>
               <span>
                 Configuradores publicados: <strong>{activeCount}</strong>
@@ -517,7 +517,7 @@ function BuildersPage() {
                 )}
               </span>
               <span>
-                Exibido para clientes: <strong>{visible ? "Sim" : "NÃ£o"}</strong>
+                Exibido para clientes: <strong>{visible ? "Sim" : "Não"}</strong>
               </span>
               {!visible && reason && (
                 <span className="text-amber-700 dark:text-amber-400">Motivo: {reason}</span>
@@ -556,7 +556,7 @@ function BuildersPage() {
             className="flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center"
           >
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-muted text-2xl">
-              {b.emoji ?? "âœ¨"}
+              {b.emoji ?? "✨"}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -569,7 +569,7 @@ function BuildersPage() {
               </div>
               <p className="line-clamp-1 text-xs text-muted-foreground">{b.description}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {(b.builder_groups ?? []).length} etapas Â· base {brl(b.base_price)}
+                {(b.builder_groups ?? []).length} etapas · base {brl(b.base_price)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -597,7 +597,7 @@ function BuildersPage() {
         ))}
         {(builders ?? []).length === 0 && (
           <Card className="rounded-2xl p-10 text-center text-muted-foreground">
-            Nenhum modelo ainda. Escolha um template acima para comeÃ§ar.
+            Nenhum modelo ainda. Escolha um template acima para começar.
           </Card>
         )}
       </div>
@@ -663,7 +663,7 @@ function BuilderEditor({
   function validate(): string | null {
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
-      return "O PreÃ§o Inicial nÃ£o pode ser negativo.";
+      return "O Preço Inicial não pode ser negativo.";
     if (groups.length === 0) return "Adicione ao menos uma etapa antes de salvar.";
     for (const g of groups) {
       const min = Number(g.min_select) || 0;
@@ -674,17 +674,17 @@ function BuilderEditor({
           String(o.name ?? "").trim() &&
           String(o.name ?? "")
             .trim()
-            .toLowerCase() !== "nova opÃ§Ã£o",
+            .toLowerCase() !== "nova opção",
       );
       if (!isCatalogGroup(g) && (g.builder_options ?? []).some((o) => isDraftOption(o)))
-        return `Salve ou exclua a nova opÃ§Ã£o da etapa "${g.name}" antes de continuar.`;
-      if (max < 1) return `A etapa "${g.name}" precisa de quantidade mÃ¡xima â‰¥ 1.`;
+        return `Salve ou exclua a nova opção da etapa "${g.name}" antes de continuar.`;
+      if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
       if (min > max)
-        return `Na etapa "${g.name}", o mÃ­nimo (${min}) nÃ£o pode ser maior que o mÃ¡ximo (${max}).`;
+        return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
       if (g.is_required && savedOptions.length === 0)
-        return `A etapa obrigatÃ³ria "${g.name}" precisa ter ao menos uma opÃ§Ã£o.`;
+        return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
       if (g.is_required && min < 1)
-        return `A etapa obrigatÃ³ria "${g.name}" precisa de mÃ­nimo â‰¥ 1.`;
+        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
@@ -692,30 +692,30 @@ function BuilderEditor({
   function validateAllForConclude(): string | null {
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
-      return "O PreÃ§o Inicial nÃ£o pode ser negativo.";
+      return "O Preço Inicial não pode ser negativo.";
     if (groups.length === 0) return "Adicione ao menos uma etapa antes de concluir.";
     for (const g of groups) {
       const min = Number(g.min_select) || 0;
       const max = Number(g.max_select) || 0;
       if (!String(g.name ?? "").trim())
         return "Informe o nome de todas as etapas antes de concluir.";
-      if (max < 1) return `A etapa "${g.name}" precisa de quantidade mÃ¡xima â‰¥ 1.`;
+      if (max < 1) return `A etapa "${g.name}" precisa de quantidade máxima ≥ 1.`;
       if (min > max)
-        return `Na etapa "${g.name}", o mÃ­nimo (${min}) nÃ£o pode ser maior que o mÃ¡ximo (${max}).`;
+        return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
       const options = g.builder_options ?? [];
       for (const o of options) {
         const name = String(o.name ?? "").trim();
-        if (!name || name.toLowerCase() === "nova opÃ§Ã£o")
-          return `Preencha ou exclua a opÃ§Ã£o incompleta da etapa "${g.name}" antes de concluir.`;
+        if (!name || name.toLowerCase() === "nova opção")
+          return `Preencha ou exclua a opção incompleta da etapa "${g.name}" antes de concluir.`;
         if ((Number(o.max_qty) || 0) < 1)
-          return `A opÃ§Ã£o "${name}" precisa de quantidade mÃ¡xima â‰¥ 1.`;
+          return `A opção "${name}" precisa de quantidade máxima ≥ 1.`;
         if (isCatalogGroup(g) && !o.menu_item_id)
-          return `O sabor "${name}" perdeu o vÃ­nculo com o cardÃ¡pio. Sincronize os sabores novamente.`;
+          return `O sabor "${name}" perdeu o vínculo com o cardápio. Sincronize os sabores novamente.`;
       }
       if (g.is_required && options.length === 0)
-        return `A etapa obrigatÃ³ria "${g.name}" precisa ter ao menos uma opÃ§Ã£o.`;
+        return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
       if (g.is_required && min < 1)
-        return `A etapa obrigatÃ³ria "${g.name}" precisa de mÃ­nimo â‰¥ 1.`;
+        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
@@ -776,7 +776,7 @@ function BuilderEditor({
 
   function addOption(g: EditorGroup) {
     if (isCatalogGroup(g)) {
-      toast.info("Os sabores vinculados ao cardÃ¡pio sÃ£o gerenciados em Sabores do cardÃ¡pio.");
+      toast.info("Os sabores vinculados ao cardápio são gerenciados em Sabores do cardápio.");
       return;
     }
     const draft = {
@@ -797,12 +797,12 @@ function BuilderEditor({
     const group = groups.find((g) => g.id === gid);
     if (isCatalogGroup(group))
       return toast.error(
-        "Sabores vinculados ao cardÃ¡pio nÃ£o podem ser editados manualmente aqui.",
+        "Sabores vinculados ao cardápio não podem ser editados manualmente aqui.",
       );
 
     const name = String(o.name ?? "").trim();
-    if (!name || name.toLowerCase() === "nova opÃ§Ã£o")
-      return toast.error("Informe um nome vÃ¡lido para a opÃ§Ã£o antes de salvar.");
+    if (!name || name.toLowerCase() === "nova opção")
+      return toast.error("Informe um nome válido para a opção antes de salvar.");
 
     const payload = {
       name,
@@ -821,7 +821,7 @@ function BuilderEditor({
         .select("*")
         .single();
       if (error || !data)
-        return toast.error(error?.message ?? "NÃ£o foi possÃ­vel salvar a opÃ§Ã£o.");
+        return toast.error(error?.message ?? "Não foi possível salvar a opção.");
       setGroups((gs) =>
         gs.map((g) =>
           g.id === gid
@@ -834,7 +834,7 @@ function BuilderEditor({
             : g,
         ),
       );
-      toast.success("OpÃ§Ã£o salva");
+      toast.success("Opção salva");
       return;
     }
 
@@ -852,13 +852,13 @@ function BuilderEditor({
           : g,
       ),
     );
-    toast.success("OpÃ§Ã£o salva");
+    toast.success("Opção salva");
   }
 
   async function deleteOption(gid: string, oid: string) {
     const group = groups.find((g) => g.id === gid);
     if (isCatalogGroup(group))
-      return toast.error("Gerencie sabores vinculados pela tela Sabores do cardÃ¡pio.");
+      return toast.error("Gerencie sabores vinculados pela tela Sabores do cardápio.");
     const draft = String(oid).startsWith("draft:");
     if (!draft) {
       const { error } = await supabase.from("builder_options").delete().eq("id", oid);
@@ -916,7 +916,7 @@ function BuilderEditor({
               .select("*")
               .single();
             if (error || !data)
-              throw error ?? new Error("NÃ£o foi possÃ­vel salvar uma das opÃ§Ãµes.");
+              throw error ?? new Error("Não foi possível salvar uma das opções.");
             setGroups((gs) =>
               gs.map((group) =>
                 group.id === g.id
@@ -936,7 +936,7 @@ function BuilderEditor({
         }
       }
 
-      toast.success("AlteraÃ§Ãµes salvas");
+      toast.success("Alterações salvas");
       onOpenChange(false);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Não foi possível salvar todas as alterações."));
@@ -969,7 +969,7 @@ function BuilderEditor({
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>DescriÃ§Ã£o</Label>
+          <Label>Descrição</Label>
           <Textarea
             rows={2}
             value={form.description}
@@ -992,7 +992,7 @@ function BuilderEditor({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>PreÃ§o Inicial (R$)</Label>
+            <Label>Preço Inicial (R$)</Label>
             <Input
               type="text"
               inputMode="decimal"
@@ -1001,29 +1001,29 @@ function BuilderEditor({
             />
             <p className="text-xs text-muted-foreground">
               {hasCatalogFlavorGroup
-                ? "Usado apenas como fallback. Para sabores vinculados, o preÃ§o vem do cardÃ¡pio."
-                : "Ã‰ o valor inicial do produto antes da escolha dos complementos e personalizaÃ§Ãµes."}
+                ? "Usado apenas como fallback. Para sabores vinculados, o preço vem do cardápio."
+                : "É o valor inicial do produto antes da escolha dos complementos e personalizações."}
             </p>
           </div>
         </div>
 
         <Card className="rounded-xl border-dashed bg-muted/30 p-4 text-sm">
-          <p className="mb-2 font-bold">ðŸ’¡ Como o preÃ§o Ã© calculado?</p>
+          <p className="mb-2 font-bold">💡 Como o preço é calculado?</p>
           {hasCatalogFlavorGroup ? (
             <p className="text-muted-foreground">
-              Nos sabores vinculados ao cardÃ¡pio, o preÃ§o da pizza Ã© o{" "}
-              <strong>maior preÃ§o vigente entre os sabores escolhidos</strong>. Depois, bordas,
-              adicionais e demais etapas somÃ¡veis sÃ£o acrescentados normalmente.
+              Nos sabores vinculados ao cardápio, o preço da pizza é o{" "}
+              <strong>maior preço vigente entre os sabores escolhidos</strong>. Depois, bordas,
+              adicionais e demais etapas somáveis são acrescentados normalmente.
             </p>
           ) : (
             <>
               <p className="text-muted-foreground">
-                <strong>PreÃ§o Final = PreÃ§o Inicial</strong> + adicionais escolhidos pelo cliente
-                + diferenÃ§as de preÃ§o entre opÃ§Ãµes (quando existirem).
+                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente
+                + diferenças de preço entre opções (quando existirem).
               </p>
               <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
                 <div className="flex justify-between">
-                  <span>PreÃ§o Inicial</span>
+                  <span>Preço Inicial</span>
                   <span>R$ 18,90</span>
                 </div>
                 <div className="flex justify-between">
@@ -1073,20 +1073,20 @@ function BuilderEditor({
             }
             return (
               <Card className="rounded-xl border bg-primary/5 p-4">
-                <p className="mb-2 text-sm font-bold">ðŸ“Š Resumo do modelo</p>
+                <p className="mb-2 text-sm font-bold">📊 Resumo do modelo</p>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="text-[11px] text-muted-foreground">PreÃ§o Inicial</p>
+                    <p className="text-[11px] text-muted-foreground">Preço Inicial</p>
                     <p className="font-display text-lg font-extrabold">{brl(base)}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-muted-foreground">Menor possÃ­vel</p>
+                    <p className="text-[11px] text-muted-foreground">Menor possível</p>
                     <p className="font-display text-lg font-extrabold text-success">
                       {brl(base + minExtra)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-muted-foreground">Maior possÃ­vel</p>
+                    <p className="text-[11px] text-muted-foreground">Maior possível</p>
                     <p className="font-display text-lg font-extrabold text-primary">
                       {brl(base + maxExtra)}
                     </p>
@@ -1128,7 +1128,7 @@ function BuilderEditor({
                                 gs.map((x, i) => (i === gi ? { ...x, name: e.target.value } : x)),
                               )
                             }
-                            placeholder="Ex: Escolha o pÃ£o"
+                            placeholder="Ex: Escolha o pão"
                           />
                         </div>
                         <div className="flex gap-1 sm:items-end">
@@ -1143,7 +1143,7 @@ function BuilderEditor({
                       <div className="grid gap-3 sm:grid-cols-[1fr_110px_110px]">
                         <div className="rounded-lg border bg-muted/30 p-2">
                           <p className="mb-1 text-xs font-bold">
-                            O cliente Ã© obrigado a escolher?
+                            O cliente é obrigado a escolher?
                           </p>
                           <div className="flex gap-1">
                             <button
@@ -1155,7 +1155,7 @@ function BuilderEditor({
                               }
                               className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold transition ${!g.is_required ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/40"}`}
                             >
-                              NÃ£o
+                              Não
                             </button>
                             <button
                               type="button"
@@ -1185,7 +1185,7 @@ function BuilderEditor({
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">
-                            {g.is_required ? "Escolha mÃ­nima" : "MÃ­nimo"}
+                            {g.is_required ? "Escolha mínima" : "Mínimo"}
                           </Label>
                           <Input
                             type="number"
@@ -1200,12 +1200,12 @@ function BuilderEditor({
                             }
                           />
                           <p className="text-[10px] text-muted-foreground">
-                            Quantidade mÃ­nima que o cliente deve selecionar.
+                            Quantidade mínima que o cliente deve selecionar.
                           </p>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">
-                            {g.is_required ? "Escolha mÃ¡xima" : "MÃ¡ximo"}
+                            {g.is_required ? "Escolha máxima" : "Máximo"}
                           </Label>
                           <Input
                             type="number"
@@ -1220,32 +1220,32 @@ function BuilderEditor({
                             }
                           />
                           <p className="text-[10px] text-muted-foreground">
-                            Quantidade mÃ¡xima permitida.
+                            Quantidade máxima permitida.
                           </p>
                         </div>
                       </div>
                       <details className="rounded-lg border bg-muted/20 px-3 py-2 text-xs">
                         <summary className="cursor-pointer font-bold">
-                          ðŸ’¡ Como funciona esta etapa?
+                          💡 Como funciona esta etapa?
                         </summary>
                         <div className="mt-2 space-y-1 text-muted-foreground">
                           <p>
-                            O cliente {g.is_required ? "deverÃ¡" : "poderÃ¡"} escolher{" "}
+                            O cliente {g.is_required ? "deverá" : "poderá"} escolher{" "}
                             {Number(g.min_select) > 0
                               ? `de ${g.min_select} a ${g.max_select || 1}`
-                              : `atÃ© ${g.max_select || 1}`}{" "}
-                            {(Number(g.max_select) || 1) > 1 ? "opÃ§Ãµes" : "opÃ§Ã£o"} abaixo.
+                              : `até ${g.max_select || 1}`}{" "}
+                            {(Number(g.max_select) || 1) > 1 ? "opções" : "opção"} abaixo.
                           </p>
                           {catalog ? (
                             <p>
-                              <strong>âœ” Sabores vinculados ao cardÃ¡pio.</strong> O preÃ§o nÃ£o Ã©
-                              editado aqui; prevalece o maior preÃ§o vigente entre os sabores
+                              <strong>✔ Sabores vinculados ao cardápio.</strong> O preço não é
+                              editado aqui; prevalece o maior preço vigente entre os sabores
                               selecionados.
                             </p>
                           ) : (
                             <p>
-                              Cada opÃ§Ã£o poderÃ¡: <strong>âœ” nÃ£o alterar o preÃ§o</strong> ou{" "}
-                              <strong>âœ” acrescentar um valor ao preÃ§o inicial do produto</strong>
+                              Cada opção poderá: <strong>✔ não alterar o preço</strong> ou{" "}
+                              <strong>✔ acrescentar um valor ao preço inicial do produto</strong>
                               .
                             </p>
                           )}
@@ -1259,13 +1259,13 @@ function BuilderEditor({
                       <>
                         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                           <div>
-                            <p className="text-xs font-bold">ðŸ”— Vinculado ao cardÃ¡pio</p>
+                            <p className="text-xs font-bold">🔗 Vinculado ao cardápio</p>
                             <p className="text-[11px] text-muted-foreground">
-                              Nome, preÃ§o, promoÃ§Ã£o e disponibilidade vÃªm do produto real.
+                              Nome, preço, promoção e disponibilidade vêm do produto real.
                             </p>
                           </div>
                           <Button size="sm" variant="outline" asChild>
-                            <a href="/builders/catalog-flavors">Gerenciar sabores do cardÃ¡pio</a>
+                            <a href="/builders/catalog-flavors">Gerenciar sabores do cardápio</a>
                           </Button>
                         </div>
 
@@ -1282,7 +1282,7 @@ function BuilderEditor({
                                 <div>
                                   <p className="font-medium">{o.name}</p>
                                   <p className="text-[11px] text-muted-foreground">
-                                    Vinculado ao cardÃ¡pio
+                                    Vinculado ao cardápio
                                   </p>
                                 </div>
                                 {item && effective != null ? (
@@ -1295,13 +1295,13 @@ function BuilderEditor({
                                     <p className="font-bold text-primary">{brl(effective)}</p>
                                     {promo && (
                                       <p className="text-[10px] font-medium text-success">
-                                        PromoÃ§Ã£o ativa
+                                        Promoção ativa
                                       </p>
                                     )}
                                   </div>
                                 ) : (
                                   <p className="text-xs font-medium text-destructive">
-                                    Produto vinculado indisponÃ­vel. Sincronize novamente.
+                                    Produto vinculado indisponível. Sincronize novamente.
                                   </p>
                                 )}
                               </div>
@@ -1310,10 +1310,10 @@ function BuilderEditor({
                         </div>
 
                         <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
-                          <p className="mb-1 font-bold">ðŸ§ª Regra desta etapa</p>
+                          <p className="mb-1 font-bold">🧪 Regra desta etapa</p>
                           <p className="text-muted-foreground">
-                            Com 1 sabor, vale o preÃ§o vigente desse sabor. Com 2 ou 3 sabores,
-                            prevalece o maior preÃ§o entre os sabores selecionados.
+                            Com 1 sabor, vale o preço vigente desse sabor. Com 2 ou 3 sabores,
+                            prevalece o maior preço entre os sabores selecionados.
                           </p>
                         </Card>
                       </>
@@ -1321,8 +1321,8 @@ function BuilderEditor({
                       <>
                         <div className="hidden gap-2 px-1 text-[10px] font-bold uppercase text-muted-foreground sm:grid sm:grid-cols-[1fr_140px_90px_auto]">
                           <span>Nome</span>
-                          <span>Acrescenta ao preÃ§o (+R$)</span>
-                          <span>Qtd. mÃ¡x</span>
+                          <span>Acrescenta ao preço (+R$)</span>
+                          <span>Qtd. máx</span>
                           <span></span>
                         </div>
                         {g.builder_options.map((o, oi) => {
@@ -1419,12 +1419,12 @@ function BuilderEditor({
                         })}
                         <Button size="sm" variant="ghost" onClick={() => addOption(g)}>
                           <Plus className="mr-1 h-3.5 w-3.5" />
-                          OpÃ§Ã£o
+                          Opção
                         </Button>
 
                         {g.builder_options.filter((o) => !isDraftOption(o)).length > 0 && (
                           <Card className="mt-2 rounded-lg border-dashed bg-success/5 p-3 text-xs">
-                            <p className="mb-1 font-bold">ðŸ§ª Exemplos desta etapa</p>
+                            <p className="mb-1 font-bold">🧪 Exemplos desta etapa</p>
                             <div className="space-y-0.5">
                               {g.builder_options
                                 .filter((o) => !isDraftOption(o))
@@ -1435,7 +1435,7 @@ function BuilderEditor({
                                   return (
                                     <div key={o.id} className="flex justify-between">
                                       <span>
-                                        âœ” {o.name || "(sem nome)"}{" "}
+                                        ✔ {o.name || "(sem nome)"}{" "}
                                         {delta > 0 && (
                                           <span className="text-muted-foreground">
                                             (+{brl(delta)})
@@ -1443,7 +1443,7 @@ function BuilderEditor({
                                         )}
                                       </span>
                                       <span className="font-bold">
-                                        PreÃ§o Final: {brl(base + delta)}
+                                        Preço Final: {brl(base + delta)}
                                       </span>
                                     </div>
                                   );
@@ -1504,7 +1504,7 @@ function BuilderEditor({
               })),
           })),
         }}
-        onAdd={() => toast.success("Preview: item adicionado (somente visualizaÃ§Ã£o)")}
+        onAdd={() => toast.success("Preview: item adicionado (somente visualização)")}
       />
     </Dialog>
   );
@@ -1600,7 +1600,7 @@ function BuilderImageUpload({
           onClick={() => cameraRef.current?.click()}
           disabled={progress !== null}
         >
-          <Camera className="mr-2 h-4 w-4" /> CÃ¢mera
+          <Camera className="mr-2 h-4 w-4" /> Câmera
         </Button>
       </div>
 
@@ -1608,7 +1608,7 @@ function BuilderImageUpload({
         <div className="space-y-1">
           <Progress value={progress} />
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Enviandoâ€¦ {progress}%
+            <Loader2 className="h-3 w-3 animate-spin" /> Enviando… {progress}%
           </p>
         </div>
       )}
