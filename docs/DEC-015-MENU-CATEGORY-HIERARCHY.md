@@ -1,7 +1,7 @@
 # DEC-015 — Hierarquia de categorias no cardápio
 
 - **Data:** 2026-10-13
-- **Status:** IMPLEMENTADA — PASS TÉCNICO CONTROLADO
+- **Status:** IMPLEMENTADA — VALIDADA E2E
 - **Escopo:** Cardápio / Catálogo / Painel do Parceiro / Vitrine pública
 - **Tipo:** Decisão estrutural de produto e catálogo
 
@@ -229,7 +229,7 @@ O Documento Mestre deverá registrar:
 ## 12. Encerramento técnico — CAT-4
 
 **Data:** 2026-10-13  
-**Status do gate:** PASS TÉCNICO CONTROLADO
+**Status do gate:** PASS E2E
 
 Evidências consolidadas:
 
@@ -251,12 +251,12 @@ Evidências consolidadas:
 - resíduos após rollback: 0 categorias / 0 produtos;
 - builds e deployments pós-merge em produção e staging: READY / SUCCESS.
 
-Limitação de evidência:
+Validação operacional complementar:
 
-**Não foi possível provar.** Um checkout E2E completo, executado pela interface com um produto em subcategoria e finalização de pedido real, não foi realizado neste gate. A implementação não alterou `OrderService`, `PricingEngine`, `PaymentService`, Mercado Pago, split, taxa de serviço ou Localix Benefits, e os builds passaram, mas isso não substitui um pedido E2E real.
+Em 2026-10-13, foi confirmada a execução de um pedido E2E pela interface utilizando produto vinculado a subcategoria, com fluxo de checkout concluído sem divergência reportada de valor.
 
-Condição para fechamento operacional completo:
-- executar ao menos um pedido controlado pela interface com produto em subcategoria;
-- validar snapshot/valor do pedido;
-- confirmar criação do pedido sem divergência financeira;
-- cancelar/reverter o pedido de teste conforme procedimento operacional, se aplicável.
+Com essa validação, a pendência operacional do CAT-4 foi encerrada.
+
+Observação de evidência:
+- a confirmação operacional foi fornecida pelo responsável pelo teste;
+- não foi realizada, nesta atualização documental, uma auditoria independente dos logs financeiros do pedido.
