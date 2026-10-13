@@ -28,7 +28,11 @@ import { Plus, Pencil, Trash2, Loader2, FolderPlus, Sparkles, Flame } from "luci
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
 import { ProductImageUploader, type ProductImage } from "@/components/ProductImageUploader";
-import { deleteProductImage } from "@/lib/image-upload";
+import {
+  deleteCategoryImage,
+  deleteProductImage,
+  uploadCategoryImage,
+} from "@/lib/image-upload";
 import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
 import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
@@ -40,7 +44,14 @@ export const Route = createFileRoute("/_authenticated/menu")({
   component: MenuPage,
 });
 
-type Category = { id: string; name: string; position: number };
+type Category = {
+  id: string;
+  name: string;
+  position: number;
+  parent_category_id: string | null;
+  image_url: string | null;
+  description: string | null;
+};
 type Item = {
   id: string;
   name: string;
@@ -97,6 +108,8 @@ function MenuPage() {
     );
   }
 
+  const rootCategories = categories.filter((category) => !category.parent_category_id);
+
   const invalidate = async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["categories", restaurant.id], refetchType: "active" }),
@@ -110,6 +123,30 @@ function MenuPage() {
       qc.invalidateQueries({ queryKey: ["dashboard"] }),
     ]);
   };
+
+  async function removeCategory(category: Category) {
+    const childCount = categories.filter((candidate) => candidate.parent_category_id === category.id).length;
+    const productCount = items.filter((item) => item.category_id === category.id).length;
+
+    if (childCount > 0) {
+      toast.error("Remova ou mova as subcategorias antes de excluir esta categoria.");
+      return;
+    }
+    if (productCount > 0) {
+      toast.error("Mova os produtos antes de excluir esta categoria.");
+      return;
+    }
+    if (!confirm(`Excluir "${category.name}"?`)) return;
+
+    const { error } = await supabase.from("menu_categories").delete().eq("id", category.id);
+    if (error) return toast.error(error.message);
+
+    if (!category.parent_category_id && category.image_url) {
+      deleteCategoryImage(restaurant.id, category.id).catch(() => {});
+    }
+    toast.success(category.parent_category_id ? "Subcategoria excluída" : "Categoria excluída");
+    await invalidate();
+  }
 
   return (
     <div className="space-y-6">
@@ -133,72 +170,181 @@ function MenuPage() {
           </p>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
+        <div className="space-y-8">
+          {rootCategories.map((cat) => {
+            const subcategories = categories.filter(
+              (candidate) => candidate.parent_category_id === cat.id,
+            );
+            const directItems = items.filter((item) => item.category_id === cat.id);
+            const totalItems =
+              directItems.length +
+              subcategories.reduce(
+                (total, subcategory) =>
+                  total + items.filter((item) => item.category_id === subcategory.id).length,
+                0,
+              );
+
             return (
-              <section key={cat.id}>
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="font-display text-xl font-bold">
-                    {cat.name}{" "}
-                    <span className="ml-2 text-sm font-normal text-muted-foreground">
-                      ({catItems.length})
-                    </span>
-                  </h2>
-                  <div className="flex gap-1">
-                    <CategoryDialog
-                      restaurantId={restaurant.id}
-                      category={cat}
-                      onSaved={invalidate}
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={async () => {
-                        if (!confirm(`Excluir a categoria "${cat.name}"?`)) return;
-                        const { error } = await supabase
-                          .from("menu_categories")
-                          .delete()
-                          .eq("id", cat.id);
-                        if (error) return toast.error(error.message);
-                        toast.success("Categoria excluída");
-                        invalidate();
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-                {catItems.length === 0 ? (
-                  <Card className="p-6 text-center text-sm text-muted-foreground">
-                    Nenhum item nesta categoria ainda.
-                  </Card>
-                ) : (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {catItems.map((it) => (
-                      <ItemRow
-                        key={it.id}
-                        item={it}
-                        restaurantId={restaurant.id}
-                        categories={categories}
-                        onChange={invalidate}
+              <section key={cat.id} className="space-y-4">
+                <Card className="overflow-hidden">
+                  <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                    {cat.image_url ? (
+                      <img
+                        src={cat.image_url}
+                        alt={cat.name}
+                        className="h-24 w-full rounded-xl object-cover sm:w-32"
                       />
-                    ))}
+                    ) : (
+                      <div className="grid h-24 w-full place-items-center rounded-xl bg-muted text-xs text-muted-foreground sm:w-32">
+                        Sem foto
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h2 className="font-display text-xl font-bold">
+                            {cat.name}{" "}
+                            <span className="ml-1 text-sm font-normal text-muted-foreground">
+                              ({totalItems})
+                            </span>
+                          </h2>
+                          {cat.description ? (
+                            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                              {cat.description}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              Adicione uma breve descrição para apresentar esta categoria.
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <CategoryDialog
+                            restaurantId={restaurant.id}
+                            category={cat}
+                            onSaved={invalidate}
+                          />
+                          <CategoryDialog
+                            restaurantId={restaurant.id}
+                            parentCategoryId={cat.id}
+                            onSaved={invalidate}
+                            trigger={
+                              <Button size="sm" variant="outline">
+                                <FolderPlus className="mr-2 h-4 w-4" />
+                                Subcategoria
+                              </Button>
+                            }
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeCategory(cat)}
+                            title="Excluir categoria"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </Card>
+
+                {directItems.length > 0 && (
+                  <div className="space-y-3">
+                    {subcategories.length > 0 && (
+                      <h3 className="text-sm font-semibold text-muted-foreground">
+                        Produtos diretamente em {cat.name}
+                      </h3>
+                    )}
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {directItems.map((item) => (
+                        <ItemRow
+                          key={item.id}
+                          item={item}
+                          restaurantId={restaurant.id}
+                          categories={categories}
+                          onChange={invalidate}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {subcategories.map((subcategory) => {
+                  const subcategoryItems = items.filter(
+                    (item) => item.category_id === subcategory.id,
+                  );
+                  return (
+                    <div key={subcategory.id} className="rounded-2xl border p-4">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h3 className="font-display text-lg font-bold">
+                            {subcategory.name}
+                            <span className="ml-2 text-sm font-normal text-muted-foreground">
+                              ({subcategoryItems.length})
+                            </span>
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Subcategoria de {cat.name}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <CategoryDialog
+                            restaurantId={restaurant.id}
+                            category={subcategory}
+                            onSaved={invalidate}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeCategory(subcategory)}
+                            title="Excluir subcategoria"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {subcategoryItems.length === 0 ? (
+                        <div className="rounded-xl bg-muted/40 p-4 text-center text-sm text-muted-foreground">
+                          Nenhum produto nesta subcategoria.
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {subcategoryItems.map((item) => (
+                            <ItemRow
+                              key={item.id}
+                              item={item}
+                              restaurantId={restaurant.id}
+                              categories={categories}
+                              onChange={invalidate}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {directItems.length === 0 && subcategories.length === 0 && (
+                  <Card className="p-6 text-center text-sm text-muted-foreground">
+                    Nenhum produto ou subcategoria nesta categoria ainda.
+                  </Card>
                 )}
               </section>
             );
           })}
-          {items.filter((i) => !i.category_id).length > 0 && (
+
+          {items.filter((item) => !item.category_id).length > 0 && (
             <section>
               <h2 className="mb-3 font-display text-xl font-bold">Sem categoria</h2>
               <div className="grid gap-3 md:grid-cols-2">
                 {items
-                  .filter((i) => !i.category_id)
-                  .map((it) => (
+                  .filter((item) => !item.category_id)
+                  .map((item) => (
                     <ItemRow
-                      key={it.id}
-                      item={it}
+                      key={item.id}
+                      item={item}
                       restaurantId={restaurant.id}
                       categories={categories}
                       onChange={invalidate}
@@ -208,8 +354,7 @@ function MenuPage() {
             </section>
           )}
         </div>
-      )}
-    </div>
+      )}    </div>
   );
 }
 
@@ -321,46 +466,118 @@ function ItemRow({
 function CategoryDialog({
   restaurantId,
   category,
+  parentCategoryId,
   onSaved,
+  trigger,
 }: {
   restaurantId: string;
   category?: Category;
+  parentCategoryId?: string;
   onSaved: () => void;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [categoryId] = useState(() => category?.id ?? crypto.randomUUID());
   const [name, setName] = useState(category?.name ?? "");
+  const [description, setDescription] = useState(category?.description ?? "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const isSubcategory = Boolean(category?.parent_category_id ?? parentCategoryId);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Informe o nome da categoria.");
+      return;
+    }
+
     setLoading(true);
-    const { error } = category
-      ? await supabase.from("menu_categories").update({ name }).eq("id", category.id)
-      : await supabase.from("menu_categories").insert({ restaurant_id: restaurantId, name });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success(category ? "Categoria atualizada" : "Categoria criada");
-    setOpen(false);
-    setName(category?.name ?? "");
-    onSaved();
+    let uploaded = false;
+    try {
+      let imageUrl = category?.image_url ?? null;
+
+      if (!isSubcategory && imageFile) {
+        const uploadedImage = await uploadCategoryImage(imageFile, restaurantId, categoryId);
+        imageUrl = uploadedImage.url;
+        uploaded = true;
+      } else if (!isSubcategory && removeImage) {
+        imageUrl = null;
+      }
+
+      const payload = {
+        name: name.trim(),
+        parent_category_id: category?.parent_category_id ?? parentCategoryId ?? null,
+        description: isSubcategory ? null : description.trim() || null,
+        image_url: isSubcategory ? null : imageUrl,
+      };
+
+      const { error } = category
+        ? await supabase.from("menu_categories").update(payload).eq("id", category.id)
+        : await supabase.from("menu_categories").insert({
+            id: categoryId,
+            restaurant_id: restaurantId,
+            ...payload,
+          });
+
+      if (error) throw error;
+
+      if (!isSubcategory && removeImage && !imageFile) {
+        deleteCategoryImage(restaurantId, categoryId).catch(() => {});
+      }
+
+      toast.success(
+        category
+          ? isSubcategory
+            ? "Subcategoria atualizada"
+            : "Categoria atualizada"
+          : isSubcategory
+            ? "Subcategoria criada"
+            : "Categoria criada",
+      );
+      setOpen(false);
+      if (!category) {
+        setName("");
+        setDescription("");
+        setImageFile(null);
+        setRemoveImage(false);
+      }
+      await onSaved();
+    } catch (error: any) {
+      if (uploaded && !category) {
+        deleteCategoryImage(restaurantId, categoryId).catch(() => {});
+      }
+      toast.error(error?.message ?? "Falha ao salvar categoria");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {category ? (
-          <Button size="icon" variant="ghost">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button variant="outline">
-            <FolderPlus className="mr-2 h-4 w-4" /> Categoria
-          </Button>
-        )}
+        {trigger ??
+          (category ? (
+            <Button size="icon" variant="ghost" title={isSubcategory ? "Editar subcategoria" : "Editar categoria"}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline">
+              <FolderPlus className="mr-2 h-4 w-4" /> Categoria
+            </Button>
+          ))}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{category ? "Editar categoria" : "Nova categoria"}</DialogTitle>
+          <DialogTitle>
+            {category
+              ? isSubcategory
+                ? "Editar subcategoria"
+                : "Editar categoria"
+              : isSubcategory
+                ? "Nova subcategoria"
+                : "Nova categoria"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-1.5">
@@ -369,9 +586,71 @@ function CategoryDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Pizzas"
+              placeholder={isSubcategory ? "Tradicionais" : "Pizzas"}
             />
           </div>
+
+          {!isSubcategory && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Descrição breve</Label>
+                <Textarea
+                  rows={3}
+                  maxLength={160}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ex.: Pizzas artesanais preparadas com ingredientes selecionados."
+                />
+                <p className="text-right text-[11px] text-muted-foreground">
+                  {description.length}/160
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Foto da categoria</Label>
+                {category?.image_url && !removeImage && !imageFile && (
+                  <img
+                    src={category.image_url}
+                    alt={category.name}
+                    className="h-32 w-full rounded-xl object-cover"
+                  />
+                )}
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => {
+                    setImageFile(e.target.files?.[0] ?? null);
+                    if (e.target.files?.[0]) setRemoveImage(false);
+                  }}
+                />
+                {imageFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Nova foto selecionada: {imageFile.name}
+                  </p>
+                )}
+                {category?.image_url && !imageFile && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setRemoveImage((value) => !value)}
+                  >
+                    {removeImage ? "Manter foto atual" : "Remover foto"}
+                  </Button>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  JPG, PNG ou WebP · máximo 5 MB.
+                </p>
+              </div>
+            </>
+          )}
+
+          {isSubcategory && (
+            <p className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+              Foto e descrição ficam na categoria principal. A subcategoria organiza os produtos.
+            </p>
+          )}
+
           <DialogFooter>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
@@ -402,7 +681,11 @@ function ItemDialog({
   const [form, setForm] = useState({
     name: item?.name ?? "",
     description: item?.description ?? "",
-    category_id: item?.category_id ?? categories[0]?.id ?? "",
+    category_id:
+      item?.category_id ??
+      categories.find((category) => !category.parent_category_id)?.id ??
+      categories[0]?.id ??
+      "",
     price: item ? String(item.price) : "",
     promo_price: item?.promo_price ? String(item.promo_price) : "",
     prep_time_minutes: item?.prep_time_minutes ? String(item.prep_time_minutes) : "",
@@ -609,11 +892,23 @@ function ItemDialog({
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
+                {categories
+                  .filter((category) => !category.parent_category_id)
+                  .flatMap((category) => {
+                    const children = categories.filter(
+                      (candidate) => candidate.parent_category_id === category.id,
+                    );
+                    return [
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>,
+                      ...children.map((child) => (
+                        <SelectItem key={child.id} value={child.id}>
+                          ↳ {category.name} / {child.name}
+                        </SelectItem>
+                      )),
+                    ];
+                  })}
               </SelectContent>
             </Select>
           </div>
