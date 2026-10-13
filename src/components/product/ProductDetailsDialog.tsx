@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -50,6 +51,29 @@ export function ProductDetailsDialog({
 }) {
   const [selections, setSelections] = useState<SelectedOption[]>([]);
   const [notes, setNotes] = useState("");
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [imageIndex, setImageIndex] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setImageIndex(0);
+    setGallery(item?.image_url ? [item.image_url] : []);
+    if (!open || !item?.id) return;
+    void (async () => {
+      const { data, error } = await supabase.from("menu_item_images")
+        .select("url, is_primary, position").eq("menu_item_id", item.id)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+      if (error) { console.error("[product-gallery]", error); return; }
+      const ordered = [...(data ?? [])].sort((a, b) =>
+        Number(b.is_primary) - Number(a.is_primary) || a.position - b.position);
+      const urls = Array.from(new Set(ordered.map((image) => image.url).filter(Boolean)));
+      setGallery(urls.length ? urls : item.image_url ? [item.image_url] : []);
+    })();
+    return () => { cancelled = true; };
+  }, [open, item?.id, item?.image_url]);
+  const previousImage = () => setImageIndex((i) => (i - 1 + gallery.length) % gallery.length);
+  const nextImage = () => setImageIndex((i) => (i + 1) % gallery.length);
+
 
   useEffect(() => {
     if (open) {
@@ -161,14 +185,19 @@ export function ProductDetailsDialog({
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Voltar
         </Button>
-        <div className="overflow-hidden rounded-t-2xl bg-muted">
-          {item.image_url ? (
-            <img src={item.image_url} alt={item.name} className="h-56 w-full object-cover" />
-          ) : (
-            <div className="grid h-40 place-items-center text-sm text-muted-foreground">
-              Sem imagem
-            </div>
-          )}
+        <div className="relative overflow-hidden rounded-t-2xl bg-muted">
+          {gallery.length ? (
+            <>
+              <img src={gallery[imageIndex] ?? gallery[0]} alt={item.name} className="h-56 w-full object-cover" />
+              {gallery.length > 1 && (
+                <>
+                  <Button type="button" variant="secondary" size="icon" aria-label="Foto anterior" onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full"><ChevronLeft className="h-5 w-5" /></Button>
+                  <Button type="button" variant="secondary" size="icon" aria-label="Próxima foto" onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"><ChevronRight className="h-5 w-5" /></Button>
+                  <span className="absolute bottom-2 right-3 rounded-full bg-black/60 px-2 py-1 text-xs text-white">{imageIndex + 1} / {gallery.length}</span>
+                </>
+              )}
+            </>
+          ) : <div className="grid h-40 place-items-center text-sm text-muted-foreground">Sem imagem</div>}
         </div>
 
         <div className="space-y-5 px-5 pb-5">
