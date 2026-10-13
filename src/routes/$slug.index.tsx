@@ -61,6 +61,7 @@ import {
   ImageIcon,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Heart,
   Search,
   LayoutGrid,
@@ -1455,22 +1456,19 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                     )}
 
                     {subcategories.length > 0 && (
-                      <div className={directItems.length > 0 ? "mt-6 space-y-6" : "space-y-6"}>
-                        {subcategories.map(({ subcategory, subcategoryItems }) => (
-                          <div key={subcategory.id}>
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                              <h3 className="font-display text-lg font-extrabold">
-                                {subcategory.name}
-                              </h3>
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                {subcategoryItems.length}{" "}
-                                {subcategoryItems.length === 1 ? "item" : "itens"}
-                              </span>
-                            </div>
-                            <div className="grid gap-3">
+                      <div className={directItems.length > 0 ? "mt-6 space-y-3" : "space-y-3"}>
+                        {subcategories.map(({ subcategory, subcategoryItems }, index) => (
+                          <SubcategoryAccordion
+                            key={subcategory.id}
+                            title={subcategory.name}
+                            itemCount={subcategoryItems.length}
+                            defaultOpen={index === 0}
+                            forceOpen={Boolean(q)}
+                          >
+                            <div className="grid gap-3 pt-3">
                               {subcategoryItems.map(renderProductCard)}
                             </div>
-                          </div>
+                          </SubcategoryAccordion>
                         ))}
                       </div>
                     )}
@@ -1611,6 +1609,49 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           setOpenSheet(true);
         }}
       />
+    </div>
+  );
+}
+
+function SubcategoryAccordion({
+  title,
+  itemCount,
+  defaultOpen = false,
+  forceOpen = false,
+  children,
+}: {
+  title: string;
+  itemCount: number;
+  defaultOpen?: boolean;
+  forceOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-muted/40"
+      >
+        <span className="font-display text-lg font-extrabold">{title}</span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {itemCount} {itemCount === 1 ? "item" : "itens"}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
+
+      {open && <div className="border-t px-3 pb-3">{children}</div>}
     </div>
   );
 }
