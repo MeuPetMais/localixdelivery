@@ -477,40 +477,53 @@ function ItemDialog({
         itemId = data.id;
       }
 
-      // Sync gallery
-      const toDelete = images.filter((i) => i._delete && i.id);
+      // Persist gallery changes before reporting success. Keep files when DB deletion fails.
+      const toDelete = images.filter((image) => image._delete && image.id);
       if (toDelete.length) {
-        await supabase
+        const { error } = await supabase
           .from("menu_item_images")
           .delete()
-          .in(
-            "id",
-            toDelete.map((i) => i.id!),
-          );
-        await Promise.all(toDelete.map((i) => deleteProductImage(i.storage_path)));
+          .eq("menu_item_id", itemId!)
+          .in("id", toDelete.map((image) => image.id!));
+        if (error) throw new Error("Falha ao remover fotos da galeria: " + error.message);
       }
+
       const toInsert = images
-        .filter((i) => i._new && !i._delete && i.storage_path)
-        .map((i, idx) => ({
+        .filter((image) => image._new && !image._delete && image.storage_path)
+        .map((image, index) => ({
           menu_item_id: itemId!,
           restaurant_id: restaurantId,
-          storage_path: i.storage_path,
-          url: i.url,
-          is_primary: i.is_primary,
-          position: idx,
+          storage_path: image.storage_path,
+          url: image.url,
+          is_primary: image.is_primary,
+          position: index,
         }));
-      if (toInsert.length) await supabase.from("menu_item_images").insert(toInsert);
+      if (toInsert.length) {
+        const { error } = await supabase.from("menu_item_images").insert(toInsert);
+        if (error) throw new Error("Falha ao adicionar fotos à galeria: " + error.message);
+      }
 
-      const toUpdate = images.filter((i) => !i._new && !i._delete && i.id);
+      const toUpdate = images.filter((image) => !image._new && !image._delete && image.id);
       if (toUpdate.length) {
-        await Promise.all(
-          toUpdate.map((i, idx) =>
-            supabase
-              .from("menu_item_images")
-              .update({ is_primary: i.is_primary, position: idx })
-              .eq("id", i.id!),
+        const results = await Promise.all(
+          toUpdate.map((image, index) =>
+            supabase.from("menu_item_images")
+              .update({ is_primary: image.is_primary, position: index })
+              .eq("menu_item_id", itemId!)
+              .eq("id", image.id!),
           ),
         );
+        const failure = results.find((result) => result.error);
+        if (failure?.error) throw new Error("Falha ao ordenar fotos da galeria: " + failure.error.message);
+      }
+
+      // Clean up storage only after the database no longer references deleted photos.
+      // A storage cleanup failure must not misreport a successful database save.
+      if (toDelete.length) {
+        const cleanup = await Promise.allSettled(toDelete.map((image) => deleteProductImage(image.storage_path)));
+        if (cleanup.some((result) => result.status === "rejected")) {
+          console.warn("[product-gallery] Algumas fotos removidas do banco não puderam ser apagadas do storage.");
+        }
       }
 
       toast.success(item ? "✅ Produto atualizado com sucesso" : "✅ Produto salvo com sucesso");
