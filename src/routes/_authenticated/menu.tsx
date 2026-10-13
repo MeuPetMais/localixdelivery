@@ -477,7 +477,6 @@ function CategoryDialog({
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [categoryId] = useState(() => category?.id ?? crypto.randomUUID());
   const [name, setName] = useState(category?.name ?? "");
   const [description, setDescription] = useState(category?.description ?? "");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -494,11 +493,12 @@ function CategoryDialog({
 
     setLoading(true);
     let uploaded = false;
+    const targetCategoryId = category?.id ?? crypto.randomUUID();
     try {
       let imageUrl = category?.image_url ?? null;
 
       if (!isSubcategory && imageFile) {
-        const uploadedImage = await uploadCategoryImage(imageFile, restaurantId, categoryId);
+        const uploadedImage = await uploadCategoryImage(imageFile, restaurantId, targetCategoryId);
         imageUrl = uploadedImage.url;
         uploaded = true;
       } else if (!isSubcategory && removeImage) {
@@ -515,7 +515,7 @@ function CategoryDialog({
       const { error } = category
         ? await supabase.from("menu_categories").update(payload).eq("id", category.id)
         : await supabase.from("menu_categories").insert({
-            id: categoryId,
+            id: targetCategoryId,
             restaurant_id: restaurantId,
             ...payload,
           });
@@ -523,7 +523,7 @@ function CategoryDialog({
       if (error) throw error;
 
       if (!isSubcategory && removeImage && !imageFile) {
-        deleteCategoryImage(restaurantId, categoryId).catch(() => {});
+        deleteCategoryImage(restaurantId, targetCategoryId).catch(() => {});
       }
 
       toast.success(
@@ -545,7 +545,7 @@ function CategoryDialog({
       await onSaved();
     } catch (error: any) {
       if (uploaded && !category) {
-        deleteCategoryImage(restaurantId, categoryId).catch(() => {});
+        deleteCategoryImage(restaurantId, targetCategoryId).catch(() => {});
       }
       toast.error(error?.message ?? "Falha ao salvar categoria");
     } finally {
