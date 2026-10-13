@@ -1,7 +1,7 @@
 # DEC-015 — Hierarquia de categorias no cardápio
 
 - **Data:** 2026-10-13
-- **Status:** APROVADA
+- **Status:** IMPLEMENTADA — PASS TÉCNICO CONTROLADO
 - **Escopo:** Cardápio / Catálogo / Painel do Parceiro / Vitrine pública
 - **Tipo:** Decisão estrutural de produto e catálogo
 
@@ -224,3 +224,39 @@ O Documento Mestre deverá registrar:
 - hierarquia limitada a 2 níveis;
 - compatibilidade com categorias atuais;
 - ausência de impacto financeiro direto.
+
+
+## 12. Encerramento técnico — CAT-4
+
+**Data:** 2026-10-13  
+**Status do gate:** PASS TÉCNICO CONTROLADO
+
+Evidências consolidadas:
+
+- CAT-1 aplicado em produção com migration aditiva;
+- 16 categorias e 32 produtos preservados após a migration;
+- 0 produtos órfãos;
+- constraints de auto-parent, profundidade máxima e isolamento por restaurante validadas;
+- policy pública revisada para considerar itens ativos nas subcategorias;
+- CAT-2 publicado em produção e staging;
+- CAT-3 publicado em produção e staging;
+- fluxo sintético controlado validado com `ROLLBACK`:
+  - categoria principal;
+  - subcategoria;
+  - produto vinculado à subcategoria;
+  - visibilidade da categoria principal e da subcategoria;
+  - rejeição de alteração cross-tenant;
+  - bloqueio de exclusão da categoria principal com filho;
+- resultado do teste: `CAT4_DB_FLOW_PASS`;
+- resíduos após rollback: 0 categorias / 0 produtos;
+- builds e deployments pós-merge em produção e staging: READY / SUCCESS.
+
+Limitação de evidência:
+
+**Não foi possível provar.** Um checkout E2E completo, executado pela interface com um produto em subcategoria e finalização de pedido real, não foi realizado neste gate. A implementação não alterou `OrderService`, `PricingEngine`, `PaymentService`, Mercado Pago, split, taxa de serviço ou Localix Benefits, e os builds passaram, mas isso não substitui um pedido E2E real.
+
+Condição para fechamento operacional completo:
+- executar ao menos um pedido controlado pela interface com produto em subcategoria;
+- validar snapshot/valor do pedido;
+- confirmar criação do pedido sem divergência financeira;
+- cancelar/reverter o pedido de teste conforme procedimento operacional, se aplicável.
