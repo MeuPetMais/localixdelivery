@@ -76,3 +76,46 @@ export async function deleteProductImage(storagePath: string): Promise<void> {
   if (!storagePath) return;
   await supabase.storage.from(BUCKET).remove([storagePath]);
 }
+
+
+export async function uploadCategoryImage(
+  file: File,
+  restaurantId: string,
+  categoryId: string,
+  onProgress?: (pct: number) => void,
+): Promise<{ storage_path: string; url: string }> {
+  const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+  if (!allowed.has(file.type)) {
+    throw new Error("Use uma imagem JPG, PNG ou WebP.");
+  }
+  if (file.size > MAX_BYTES) throw new Error("Imagem maior que 5 MB. Escolha uma menor.");
+
+  onProgress?.(10);
+  const blob = await compressToWebp(file);
+  onProgress?.(45);
+
+  const path = `${restaurantId}/categories/${categoryId}.webp`;
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, blob, {
+    cacheControl: "31536000",
+    upsert: true,
+    contentType: "image/webp",
+  });
+  if (upErr) throw upErr;
+  onProgress?.(80);
+
+  const { data: signed, error: sErr } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, TEN_YEARS);
+  if (sErr || !signed) throw sErr ?? new Error("Falha ao gerar URL.");
+  onProgress?.(100);
+
+  return { storage_path: path, url: signed.signedUrl };
+}
+
+export async function deleteCategoryImage(
+  restaurantId: string,
+  categoryId: string,
+): Promise<void> {
+  const path = `${restaurantId}/categories/${categoryId}.webp`;
+  await supabase.storage.from(BUCKET).remove([path]);
+}
