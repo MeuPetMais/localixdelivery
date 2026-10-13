@@ -466,7 +466,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
   };
 
   useEffect(() => {
-    if (!activeCat && data?.categories?.[0]?.id) setActiveCat(data.categories[0].id);
+    if (activeCat) return;
+    const firstRoot = (data?.categories ?? []).find((category: any) => !category.parent_category_id);
+    if (firstRoot?.id) setActiveCat(firstRoot.id);
   }, [data, activeCat]);
 
   // Deep-link from Favoritos: /{slug}?add={menuItemId}
@@ -1285,13 +1287,33 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
         <div className="mt-5 space-y-7">
           {(() => {
-            const visibleCats = categories
-              .map((cat) => ({
-                cat,
-                catItems: items.filter((i) => i.category_id === cat.id && matchesQuery(i)),
-              }))
-              .filter(({ catItems }) => catItems.length > 0);
-            const totalMatches = visibleCats.reduce((n, c) => n + c.catItems.length, 0);
+            const roots = categories.filter((category) => !category.parent_category_id);
+            const visibleCats = roots
+              .map((cat) => {
+                const directItems = items.filter(
+                  (item) => item.category_id === cat.id && matchesQuery(item),
+                );
+                const subcategories = categories
+                  .filter((candidate) => candidate.parent_category_id === cat.id)
+                  .map((subcategory) => ({
+                    subcategory,
+                    subcategoryItems: items.filter(
+                      (item) => item.category_id === subcategory.id && matchesQuery(item),
+                    ),
+                  }))
+                  .filter(({ subcategoryItems }) => subcategoryItems.length > 0);
+                return {
+                  cat,
+                  directItems,
+                  subcategories,
+                  totalCount:
+                    directItems.length +
+                    subcategories.reduce((total, group) => total + group.subcategoryItems.length, 0),
+                };
+              })
+              .filter(({ totalCount }) => totalCount > 0);
+
+            const totalMatches = visibleCats.reduce((total, group) => total + group.totalCount, 0);
             if (q && totalMatches === 0) {
               return (
                 <Card className="flex flex-col items-center gap-3 rounded-2xl p-10 text-center text-muted-foreground">
@@ -1308,102 +1330,150 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                 </Card>
               );
             }
+
+            const renderProductCard = (it: any) => {
+              const hasPromo = isPromoActiveNow(it);
+              return (
+                <Card
+                  key={it.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openProductDetails(it)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") openProductDetails(it);
+                  }}
+                  className="group relative flex cursor-pointer items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
+                >
+                  <button
+                    type="button"
+                    aria-label="Favoritar"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite("menu_item", it.id);
+                    }}
+                    className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
+                  >
+                    <Heart
+                      className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`}
+                    />
+                  </button>
+
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
+                    {it.description && (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                        {it.description}
+                      </p>
+                    )}
+                    <div className="mt-auto flex items-baseline gap-2 pt-2">
+                      {hasPromo ? (
+                        <>
+                          <span className="font-display text-lg font-extrabold text-primary">
+                            {brl(it.promo_price)}
+                          </span>
+                          <span className="text-xs text-muted-foreground line-through">
+                            {brl(it.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-display text-lg font-extrabold text-primary">
+                          {brl(it.price)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative shrink-0">
+                    {it.image_url ? (
+                      <img
+                        src={it.image_url}
+                        alt={it.name}
+                        className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
+                        <ImageIcon className="h-6 w-6" />
+                      </div>
+                    )}
+                    <Button
+                      size="icon"
+                      className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
+                      disabled={!effectiveOpen}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        quickAddOrConfigure(
+                          it,
+                          Number(hasPromo ? it.promo_price : it.price),
+                        );
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              );
+            };
+
             return (
               <>
-                {visibleCats.map(({ cat, catItems }) => (
+                {visibleCats.map(({ cat, directItems, subcategories, totalCount }) => (
                   <section
                     key={cat.id}
                     id={`cat-${cat.id}`}
                     className="scroll-mt-20 animate-fade-in"
                   >
-                    <h2 className="mb-3 font-display text-xl font-extrabold tracking-tight">
-                      {cat.name}
-                    </h2>
-                    <div className="grid gap-3">
-                      {catItems.map((it: any) => {
-                        const hasPromo = isPromoActiveNow(it);
-                        return (
-                          <Card
-                            key={it.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => openProductDetails(it)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ")
-                                openProductDetails(it);
-                            }}
-                            className="group relative flex cursor-pointer items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 shadow-sm transition hover:shadow-elegant"
-                          >
-                            <button
-                              type="button"
-                              aria-label="Favoritar"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleFavorite("menu_item", it.id);
-                              }}
-                              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition hover:scale-105"
-                            >
-                              <Heart
-                                className={`h-4 w-4 ${favItems.has(it.id) ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`}
-                              />
-                            </button>
-
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <h3 className="line-clamp-1 font-bold leading-snug">{it.name}</h3>
-                              {it.description && (
-                                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                  {it.description}
-                                </p>
-                              )}
-                              <div className="mt-auto flex items-baseline gap-2 pt-2">
-                                {hasPromo ? (
-                                  <>
-                                    <span className="font-display text-lg font-extrabold text-primary">
-                                      {brl(it.promo_price)}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground line-through">
-                                      {brl(it.price)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="font-display text-lg font-extrabold text-primary">
-                                    {brl(it.price)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="relative shrink-0">
-                              {it.image_url ? (
-                                <img
-                                  src={it.image_url}
-                                  alt={it.name}
-                                  className="h-24 w-24 rounded-xl object-cover sm:h-28 sm:w-28"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="grid h-24 w-24 place-items-center rounded-xl bg-muted text-muted-foreground sm:h-28 sm:w-28">
-                                  <ImageIcon className="h-6 w-6" />
-                                </div>
-                              )}
-                              <Button
-                                size="icon"
-                                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full shadow-premium transition group-hover:scale-105"
-                                disabled={!effectiveOpen}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  quickAddOrConfigure(
-                                    it,
-                                    Number(hasPromo ? it.promo_price : it.price),
-                                  );
-                                }}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                    <div className="mb-4 overflow-hidden rounded-2xl border bg-card">
+                      {cat.image_url && (
+                        <img
+                          src={cat.image_url}
+                          alt={cat.name}
+                          className="h-36 w-full object-cover sm:h-44"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h2 className="font-display text-xl font-extrabold tracking-tight">
+                              {cat.name}
+                            </h2>
+                            {cat.description && (
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {cat.description}
+                              </p>
+                            )}
+                          </div>
+                          <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                            {totalCount} {totalCount === 1 ? "item" : "itens"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+
+                    {directItems.length > 0 && (
+                      <div className="grid gap-3">{directItems.map(renderProductCard)}</div>
+                    )}
+
+                    {subcategories.length > 0 && (
+                      <div className={directItems.length > 0 ? "mt-6 space-y-6" : "space-y-6"}>
+                        {subcategories.map(({ subcategory, subcategoryItems }) => (
+                          <div key={subcategory.id}>
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <h3 className="font-display text-lg font-extrabold">
+                                {subcategory.name}
+                              </h3>
+                              <span className="text-xs font-semibold text-muted-foreground">
+                                {subcategoryItems.length}{" "}
+                                {subcategoryItems.length === 1 ? "item" : "itens"}
+                              </span>
+                            </div>
+                            <div className="grid gap-3">
+                              {subcategoryItems.map(renderProductCard)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </section>
                 ))}
                 {items.length === 0 && (
@@ -2619,9 +2689,14 @@ function buildCategoryMenuItems({
       });
     }
   }
-  for (const category of categories) {
+  const roots = categories.filter((category) => !category.parent_category_id);
+  for (const category of roots) {
+    const childIds = categories
+      .filter((candidate) => candidate.parent_category_id === category.id)
+      .map((candidate) => candidate.id);
+    const categoryIds = new Set([category.id, ...childIds]);
     const count = items.filter(
-      (item) => item.category_id === category.id && matchesQuery(item),
+      (item) => categoryIds.has(item.category_id) && matchesQuery(item),
     ).length;
     if (count === 0) continue;
     arr.push({
