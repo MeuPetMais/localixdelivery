@@ -1462,7 +1462,6 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                             key={subcategory.id}
                             title={subcategory.name}
                             itemCount={subcategoryItems.length}
-                            defaultOpen={index === 0}
                             forceOpen={Boolean(q)}
                           >
                             <div className="grid gap-3 pt-3">
