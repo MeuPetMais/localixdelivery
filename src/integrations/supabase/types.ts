@@ -2499,26 +2499,42 @@ export type Database = {
       menu_categories: {
         Row: {
           created_at: string
+          description: string | null
           id: string
+          image_url: string | null
           name: string
+          parent_category_id: string | null
           position: number
           restaurant_id: string
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
           name: string
+          parent_category_id?: string | null
           position?: number
           restaurant_id: string
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
+          parent_category_id?: string | null
           position?: number
           restaurant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "menu_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "menu_categories_restaurant_id_fkey"
             columns: ["restaurant_id"]
