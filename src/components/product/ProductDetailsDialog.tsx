@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ export function ProductDetailsDialog({
   const [notes, setNotes] = useState("");
   const [gallery, setGallery] = useState<string[]>([]);
   const [imageIndex, setImageIndex] = useState(0);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     let cancelled = false;
     setImageIndex(0);
@@ -185,7 +186,24 @@ export function ProductDetailsDialog({
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Voltar
         </Button>
-        <div className="relative overflow-hidden rounded-t-2xl bg-muted">
+        <div
+          className="relative overflow-hidden rounded-t-2xl bg-muted"
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            if (gallery.length > 1 && touch) swipeStart.current = { x: touch.clientX, y: touch.clientY };
+          }}
+          onTouchEnd={(event) => {
+            const start = swipeStart.current;
+            swipeStart.current = null;
+            const touch = event.changedTouches[0];
+            if (!start || !touch || gallery.length < 2) return;
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+            if (dx < 0) nextImage(); else previousImage();
+          }}
+          onTouchCancel={() => { swipeStart.current = null; }}
+        >
           {gallery.length ? (
             <>
               <img src={gallery[imageIndex] ?? gallery[0]} alt={item.name} className="h-56 w-full object-cover" />
