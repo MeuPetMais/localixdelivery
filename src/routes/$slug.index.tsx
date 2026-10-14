@@ -1286,6 +1286,41 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
           matchesQuery={matchesQuery}
         />
 
+        <style>{`
+          @keyframes localix-category-kenburns {
+            0% { transform: scale(1.02) translate3d(-0.4%, 0, 0); }
+            100% { transform: scale(1.12) translate3d(0.8%, -0.5%, 0); }
+          }
+          @keyframes localix-category-light-sweep {
+            0% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+            12% { opacity: 0.45; }
+            55% { opacity: 0.22; }
+            100% { transform: translateX(240%) skewX(-18deg); opacity: 0; }
+          }
+          @keyframes localix-category-badge-glow {
+            0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+            50% { box-shadow: 0 3px 18px rgba(255,255,255,.25); }
+          }
+          .localix-category-motion-image {
+            animation: localix-category-kenburns 16s ease-in-out infinite alternate;
+            will-change: transform;
+          }
+          .localix-category-light-sweep {
+            position: absolute; inset: 0 auto 0 -35%; width: 35%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.34), transparent);
+            pointer-events: none;
+            animation: localix-category-light-sweep 7.5s ease-in-out infinite;
+          }
+          .localix-category-badge {
+            animation: localix-category-badge-glow 4s ease-in-out infinite;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .localix-category-motion-image, .localix-category-light-sweep, .localix-category-badge {
+              animation: none !important;
+              will-change: auto;
+            }
+          }
+        `}</style>
         <div className="mt-5 space-y-7">
           {(() => {
             const roots = categories.filter((category) => !category.parent_category_id);
@@ -1425,12 +1460,19 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   >
                     <div className="mb-4 overflow-hidden rounded-2xl border bg-card">
                       {cat.image_url && (
-                        <img
-                          src={cat.image_url}
-                          alt={cat.name}
-                          className="h-36 w-full object-cover sm:h-44"
-                          loading="lazy"
-                        />
+                        <div className="group/category-motion relative h-36 overflow-hidden bg-muted sm:h-44">
+                          <img
+                            src={cat.image_url}
+                            alt={cat.name}
+                            className="localix-category-motion-image h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+                          <div className="localix-category-light-sweep" />
+                          <span className="localix-category-badge absolute left-3 top-3 rounded-full border border-white/35 bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                            Em destaque
+                          </span>
+                        </div>
                       )}
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
