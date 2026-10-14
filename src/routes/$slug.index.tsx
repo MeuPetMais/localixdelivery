@@ -1288,8 +1288,21 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
         <style>{`
           @keyframes localix-category-kenburns {
-            0% { transform: scale(1.02) translate3d(-0.4%, 0, 0); }
-            100% { transform: scale(1.12) translate3d(0.8%, -0.5%, 0); }
+            0% { transform: scale(1.04) translate3d(-0.4%, 0, 0) rotate(-0.35deg); }
+            50% { transform: scale(1.08) translate3d(0.2%, -0.25%, 0) rotate(0.35deg); }
+            100% { transform: scale(1.12) translate3d(0.8%, -0.5%, 0) rotate(-0.2deg); }
+          }
+          @keyframes localix-category-steam-rise {
+            0% { transform: translate3d(0, 14%, 0) scale(.72) rotate(-4deg); opacity: 0; filter: blur(5px); }
+            18% { opacity: .36; }
+            55% { opacity: .24; }
+            100% { transform: translate3d(10%, -115%, 0) scale(1.45) rotate(9deg); opacity: 0; filter: blur(9px); }
+          }
+          @keyframes localix-category-steam-rise-alt {
+            0% { transform: translate3d(0, 12%, 0) scale(.65) rotate(5deg); opacity: 0; filter: blur(4px); }
+            22% { opacity: .28; }
+            65% { opacity: .18; }
+            100% { transform: translate3d(-12%, -125%, 0) scale(1.35) rotate(-8deg); opacity: 0; filter: blur(8px); }
           }
           @keyframes localix-category-light-sweep {
             0% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
@@ -1311,11 +1324,26 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
             pointer-events: none;
             animation: localix-category-light-sweep 7.5s ease-in-out infinite;
           }
+          .localix-category-steam {
+            position: absolute; bottom: 7%; left: 24%; width: 34%; height: 58%;
+            pointer-events: none; opacity: 0;
+            background:
+              radial-gradient(ellipse at 50% 78%, rgba(255,255,255,.42) 0%, rgba(255,255,255,.2) 22%, transparent 68%),
+              radial-gradient(ellipse at 35% 48%, rgba(255,255,255,.28) 0%, transparent 62%),
+              radial-gradient(ellipse at 65% 30%, rgba(255,255,255,.22) 0%, transparent 64%);
+            mix-blend-mode: screen;
+            animation: localix-category-steam-rise 5.8s ease-out infinite;
+          }
+          .localix-category-steam-alt {
+            left: 46%; bottom: 4%; width: 29%; height: 54%;
+            animation: localix-category-steam-rise-alt 6.7s 1.7s ease-out infinite;
+          }
           .localix-category-badge {
             animation: localix-category-badge-glow 4s ease-in-out infinite;
           }
           @media (prefers-reduced-motion: reduce) {
-            .localix-category-motion-image, .localix-category-light-sweep, .localix-category-badge {
+            .localix-category-motion-image, .localix-category-light-sweep, .localix-category-badge,
+            .localix-category-steam {
               animation: none !important;
               will-change: auto;
             }
@@ -1468,6 +1496,8 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                             loading="lazy"
                           />
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+                          <div className="localix-category-steam" aria-hidden="true" />
+                          <div className="localix-category-steam localix-category-steam-alt" aria-hidden="true" />
                           <div className="localix-category-light-sweep" />
                           <span className="localix-category-badge absolute left-3 top-3 rounded-full border border-white/35 bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
                             Em destaque
