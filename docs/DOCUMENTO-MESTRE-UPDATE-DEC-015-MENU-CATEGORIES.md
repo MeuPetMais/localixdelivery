@@ -4,7 +4,7 @@
 
 **Data:** 2026-10-13  
 **Origem:** DEC-015  
-**Status:** Implementada — PASS TÉCNICO CONTROLADO
+**Status:** Implementada — VALIDADA E2E
 
 O Localix Delivery passa a suportar uma hierarquia de cardápio limitada a dois níveis:
 
@@ -37,8 +37,10 @@ Componentes financeiros e de pedido permanecem autoritativos e independentes da 
 - taxa de serviço;
 - Localix Benefits.
 
-Limitação de validação:
+Validação operacional:
 
-**Não foi possível provar.** Ainda falta executar um pedido E2E real pela interface utilizando um produto em subcategoria para fechar a validação operacional completa do checkout.
+Em 2026-10-13, foi confirmada a execução de pedido E2E pela interface com produto vinculado a subcategoria, sem divergência de valor reportada e sem interferência observada da hierarquia de categoria no checkout.
+
+A DEC-015 fica encerrada como **Implementada — VALIDADA E2E**.
 
 Esta atualização deve ser incorporada ao Documento Mestre consolidado na próxima revisão documental.

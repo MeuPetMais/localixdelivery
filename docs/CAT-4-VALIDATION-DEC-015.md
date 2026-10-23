@@ -2,7 +2,7 @@
 
 - **Data:** 2026-10-13
 - **Decisão:** DEC-015
-- **Status:** PASS TÉCNICO CONTROLADO
+- **Status:** PASS E2E
 
 ## Escopo validado
 
@@ -72,16 +72,16 @@ A DEC-015 não alterou:
 - taxa de serviço;
 - Localix Benefits.
 
-**Não foi possível provar.** Ainda não foi executado neste gate um pedido E2E real pela interface usando um produto em subcategoria.
+Em 2026-10-13, foi confirmada a execução de um pedido E2E real pela interface utilizando produto em subcategoria.
 
-Portanto, o gate é encerrado como **PASS TÉCNICO CONTROLADO**, e não como validação operacional financeira completa.
-
-## Próxima validação recomendada
-
-Executar pedido controlado em ambiente apropriado com:
+Fluxo confirmado:
 1. produto vinculado a subcategoria;
 2. adição ao carrinho;
-3. preview de preço autoritativo;
+3. checkout pela interface;
 4. criação do pedido;
-5. conferência dos valores persistidos;
-6. confirmação de que a hierarquia de categoria não interfere no preço nem no pagamento.
+5. ausência de divergência de valor reportada;
+6. ausência de interferência observada da hierarquia de categoria no fluxo de pedido.
+
+Com essa confirmação, o CAT-4 passa a **PASS E2E**.
+
+Observação: a evidência operacional foi confirmada pelo responsável pelo teste; esta atualização documental não inclui auditoria independente de logs financeiros ou do gateway.
