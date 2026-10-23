@@ -22,6 +22,8 @@ import { resolvePostLoginRedirect } from "@/lib/admin-mode";
 import { toastArgsFromAuthError } from "@/lib/auth-errors";
 
 const ATTRIBUTION_KEYS = [
+  "source",
+  "medium",
   "utm_source",
   "utm_medium",
   "utm_campaign",
@@ -36,8 +38,109 @@ const ATTRIBUTION_KEYS = [
 type AttributionKey = (typeof ATTRIBUTION_KEYS)[number];
 type AuthSearch = { mode?: "signup" } & Partial<Record<AttributionKey, string>>;
 
+type PartnerAttribution = Partial<Record<AttributionKey, string>> & {
+  external_ref: string;
+  lead_id?: string;
+};
+
+const PARTNER_ATTRIBUTION_KEY = "localix.partner-attribution.first-touch";
+
+function getOrCreatePartnerAttribution(search: AuthSearch): PartnerAttribution | null {
+  try {
+    const raw = localStorage.getItem(PARTNER_ATTRIBUTION_KEY);
+    if (raw) {
+      const stored = JSON.parse(raw) as PartnerAttribution;
+      if (stored && typeof stored === "object") {
+        if (stored.external_ref) return stored;
+        const legacyValues = Object.fromEntries(
+          ATTRIBUTION_KEYS.flatMap((key) => (stored[key] ? [[key, stored[key]]] : [])),
+        ) as Partial<Record<AttributionKey, string>>;
+        if (Object.keys(legacyValues).length > 0) {
+          const migrated: PartnerAttribution = {
+            ...legacyValues,
+            external_ref: `signup_${crypto.randomUUID()}`,
+          };
+          localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(migrated));
+          return migrated;
+        }
+      }
+    }
+    const values = Object.fromEntries(
+      ATTRIBUTION_KEYS.flatMap((key) => (search[key] ? [[key, search[key]]] : [])),
+    ) as Partial<Record<AttributionKey, string>>;
+    if (Object.keys(values).length === 0) return null;
+    const created: PartnerAttribution = {
+      ...values,
+      external_ref: `signup_${crypto.randomUUID()}`,
+    };
+    localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(created));
+    return created;
+  } catch {
+    return null;
+  }
+}
+
 function cleanSearchValue(value: unknown, max = 200) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
+}
+
+async function capturePartnerLead(
+  attribution: PartnerAttribution,
+  input: { businessName: string; contactName: string; phone: string; email: string },
+) {
+  if (attribution.lead_id) return attribution.lead_id;
+
+  const { data, error } = await supabase.functions.invoke("partner-lead-public-capture", {
+    body: {
+      business_name: input.businessName,
+      contact_name: input.contactName,
+      phone: input.phone,
+      email: input.email,
+      source: attribution.source ?? attribution.utm_source ?? "website_signup",
+      medium: attribution.medium ?? attribution.utm_medium ?? "owned",
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
+      utm_content: attribution.utm_content,
+      utm_term: attribution.utm_term,
+      meta_campaign_id: attribution.meta_campaign_id,
+      meta_adset_id: attribution.meta_adset_id,
+      meta_ad_id: attribution.meta_ad_id,
+      creative_code: attribution.creative_code,
+      external_ref: attribution.external_ref,
+    },
+  });
+
+  if (error || !data?.lead_id) {
+    throw error ?? new Error("Partner lead capture did not return lead_id");
+  }
+
+  const persisted = { ...attribution, lead_id: data.lead_id };
+  try {
+    localStorage.setItem(PARTNER_ATTRIBUTION_KEY, JSON.stringify(persisted));
+  } catch {
+    void 0;
+  }
+
+  // Auth metadata is only a recovery/continuity marker. Email-confirmation
+  // signups return a user without a session, so defer this authenticated write
+  // until the user has a valid session. The authenticated route will recover
+  // idempotently from the same external_ref after confirmation/login.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) {
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: { acquisition_attribution: persisted },
+    });
+    if (metadataError) {
+      console.error("[signup] lead captured but attribution metadata update failed", {
+        message: metadataError.message,
+      });
+    }
+  }
+
+  return data.lead_id as string;
 }
 
 export const Route = createFileRoute("/auth")({
@@ -72,19 +175,11 @@ function AuthPage() {
   const [forgotSending, setForgotSending] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
-  // Preserve acquisition attribution through the auth step. This is intentionally
-  // non-authoritative: META-2C will persist/link it server-side to partner_leads.
+  // Preserve one stable acquisition identity across retries/email confirmation.
+  // The browser copy is only continuity state; partner_leads remains authoritative.
   useEffect(() => {
     if (mode !== "signup") return;
-    const attribution = Object.fromEntries(
-      ATTRIBUTION_KEYS.flatMap((key) => (search[key] ? [[key, search[key]]] : [])),
-    );
-    if (Object.keys(attribution).length === 0) return;
-    try {
-      localStorage.setItem("localix.partner-attribution.first-touch", JSON.stringify(attribution));
-    } catch {
-      void 0;
-    }
+    getOrCreatePartnerAttribution(search);
   }, [mode, search]);
 
   async function handleForgot(e: React.FormEvent) {
@@ -204,6 +299,7 @@ function AuthPage() {
           void 0;
         }
 
+        const signupAttribution = getOrCreatePartnerAttribution(search);
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -216,6 +312,7 @@ function AuthPage() {
               store_name: storeName,
               whatsapp,
               cnpj: cnpj || null,
+              acquisition_attribution: signupAttribution ?? null,
             },
           },
         });
@@ -243,6 +340,24 @@ function AuthPage() {
         if (!userId) {
           toast.error("auth.signUp não retornou usuário.");
           return;
+        }
+
+        // META-2C: persist the acquisition as an idempotent pre-partner lead only
+        // after Supabase has actually created/returned the auth user.
+        const attribution = signupAttribution;
+        if (attribution && !attribution.lead_id) {
+          try {
+            await capturePartnerLead(attribution, {
+              businessName: storeName,
+              contactName: ownerName,
+              phone: whatsapp,
+              email,
+            });
+          } catch (leadError) {
+            console.error("[signup] partner lead capture failed; recovery metadata preserved", {
+              message: leadError instanceof Error ? leadError.message : "unknown",
+            });
+          }
         }
 
         // Se a confirmação de e-mail está ativa, não há sessão — o INSERT em restaurants

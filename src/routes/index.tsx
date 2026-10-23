@@ -61,12 +61,24 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+const ATTRIBUTION_KEYS = [
+  "source",
+  "medium",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "meta_campaign_id",
+  "meta_adset_id",
+  "meta_ad_id",
+  "creative_code",
+];
 
 function buildSignupHref(search = "") {
   const params = new URLSearchParams({ mode: "signup" });
   const current = new URLSearchParams(search);
-  for (const key of UTM_KEYS) {
+  for (const key of ATTRIBUTION_KEYS) {
     const value = current.get(key);
     if (value) params.set(key, value);
   }
@@ -149,24 +161,41 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
-        <Link to="/" className="flex min-w-0 items-center gap-2 font-display text-lg font-extrabold sm:text-xl">
+        <Link
+          to="/"
+          className="flex min-w-0 items-center gap-2 font-display text-lg font-extrabold sm:text-xl"
+        >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-warm text-primary-foreground shadow-glow">
             L
           </span>
           <span className="truncate">Localix</span>
         </Link>
         <nav className="hidden gap-8 text-sm font-medium text-muted-foreground md:flex">
-          <a href="#plataforma" className="hover:text-foreground">Plataforma</a>
-          <a href="#growth" className="hover:text-foreground">Crescimento</a>
-          <a href="#entregas" className="hover:text-foreground">Entregas</a>
-          <a href="#beneficios" className="hover:text-foreground">Benefícios</a>
-          <a href="#duvidas" className="hover:text-foreground">Dúvidas</a>
+          <a href="#plataforma" className="hover:text-foreground">
+            Plataforma
+          </a>
+          <a href="#growth" className="hover:text-foreground">
+            Crescimento
+          </a>
+          <a href="#entregas" className="hover:text-foreground">
+            Entregas
+          </a>
+          <a href="#beneficios" className="hover:text-foreground">
+            Benefícios
+          </a>
+          <a href="#duvidas" className="hover:text-foreground">
+            Dúvidas
+          </a>
         </nav>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }}>
-            <Button variant="ghost" size="sm" className="px-2 sm:px-3">Entrar</Button>
+            <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+              Entrar
+            </Button>
           </Link>
-          <SignupButton size="sm" className="px-2 sm:px-3">Cadastrar</SignupButton>
+          <SignupButton size="sm" className="px-2 sm:px-3">
+            Cadastrar
+          </SignupButton>
         </div>
       </div>
     </header>
@@ -183,7 +212,8 @@ function Hero() {
             Tenha seu próprio canal de delivery. E trabalhe para o cliente voltar.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Receba pedidos pelo seu cardápio digital, gerencie sua operação e conte com o Time de Crescimento Localix para desenvolver relacionamento e recorrência com seus clientes.
+            Receba pedidos pelo seu cardápio digital, gerencie sua operação e conte com o Time de
+            Crescimento Localix para desenvolver relacionamento e recorrência com seus clientes.
           </p>
           <ul className="mt-5 space-y-2 text-sm leading-snug text-muted-foreground">
             <li className="flex items-start gap-2">
@@ -200,11 +230,18 @@ function Hero() {
             </li>
           </ul>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <SignupButton className="h-auto min-h-10 w-full px-4 py-2 shadow-glow sm:w-auto sm:px-8" mobileLabel="Cadastrar estabelecimento">
+            <SignupButton
+              className="h-auto min-h-10 w-full px-4 py-2 shadow-glow sm:w-auto sm:px-8"
+              mobileLabel="Cadastrar estabelecimento"
+            >
               Cadastrar meu estabelecimento gratuitamente
             </SignupButton>
             <a href="#plataforma" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="h-auto min-h-10 w-full whitespace-normal px-4 py-2 leading-tight sm:w-auto sm:px-8">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-auto min-h-10 w-full whitespace-normal px-4 py-2 leading-tight sm:w-auto sm:px-8"
+              >
                 Conhecer a plataforma
               </Button>
             </a>
@@ -219,8 +256,12 @@ function Hero() {
             className="relative aspect-[4/3] w-full max-w-full rounded-lg object-cover shadow-glow"
           />
           <div className="absolute -bottom-4 left-4 right-4 hidden rounded-lg border border-border/60 bg-card/95 px-4 py-3 shadow-elegant backdrop-blur md:block">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Para vender, gerenciar e aumentar recorrência</p>
-            <p className="mt-0.5 text-sm font-bold">Cardápio digital · Pedidos · Operação · Relacionamento</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Para vender, gerenciar e aumentar recorrência
+            </p>
+            <p className="mt-0.5 text-sm font-bold">
+              Cardápio digital · Pedidos · Operação · Relacionamento
+            </p>
           </div>
         </div>
       </div>
@@ -255,10 +296,12 @@ function ComplementaryChannel() {
             Você não precisa depender de um único canal para vender.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Continue utilizando os canais que já funcionam para o seu negócio e construa também seu próprio canal de pedidos e relacionamento com seus clientes.
+            Continue utilizando os canais que já funcionam para o seu negócio e construa também seu
+            próprio canal de pedidos e relacionamento com seus clientes.
           </p>
           <p className="mt-3 text-muted-foreground">
-            O Localix foi desenvolvido para complementar sua operação e dar mais controle ao estabelecimento sobre seu delivery.
+            O Localix foi desenvolvido para complementar sua operação e dar mais controle ao
+            estabelecimento sobre seu delivery.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
@@ -305,12 +348,16 @@ function Pillars() {
             Muito mais do que receber pedidos.
           </h2>
           <p className="mt-3 text-sidebar-foreground/70">
-            O Localix conecta três etapas importantes do seu delivery: vender, gerenciar e aumentar recorrência.
+            O Localix conecta três etapas importantes do seu delivery: vender, gerenciar e aumentar
+            recorrência.
           </p>
         </div>
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {items.map((item) => (
-            <div key={item.title} className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-5 sm:p-6">
+            <div
+              key={item.title}
+              className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-5 sm:p-6"
+            >
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground text-sm font-extrabold">
                 {item.number}
               </span>
@@ -321,7 +368,11 @@ function Pillars() {
           ))}
         </div>
         <a href="#plataforma" className="mt-10 block sm:inline-block">
-          <Button size="lg" variant="secondary" className="h-auto min-h-10 w-full whitespace-normal px-4 py-2 leading-tight sm:w-auto sm:px-8">
+          <Button
+            size="lg"
+            variant="secondary"
+            className="h-auto min-h-10 w-full whitespace-normal px-4 py-2 leading-tight sm:w-auto sm:px-8"
+          >
             Quero conhecer o Localix
           </Button>
         </a>
@@ -382,7 +433,9 @@ function Growth() {
             Seu cliente comprou. Nosso trabalho não precisa terminar no pedido.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            O Time de Crescimento Localix ajuda seu estabelecimento a conhecer melhor sua base de clientes, identificar oportunidades de recompra e desenvolver ações de relacionamento e recorrência.
+            O Time de Crescimento Localix ajuda seu estabelecimento a conhecer melhor sua base de
+            clientes, identificar oportunidades de recompra e desenvolver ações de relacionamento e
+            recorrência.
           </p>
           <p className="mt-3 text-sm font-semibold text-primary">
             O Localix prospera quando o seu negócio prospera.
@@ -427,7 +480,9 @@ function HowItWorks() {
     <section className="bg-muted/40">
       <div className="mx-auto max-w-6xl px-3 py-16 sm:px-4 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Começar é simples.</h2>
+          <h2 className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+            Começar é simples.
+          </h2>
         </div>
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {steps.map((step, index) => (
@@ -439,7 +494,9 @@ function HowItWorks() {
           ))}
         </div>
         <div className="mt-10 text-center">
-          <SignupButton className="h-auto min-h-10 w-full px-4 py-2 sm:w-auto sm:px-8">Criar meu estabelecimento</SignupButton>
+          <SignupButton className="h-auto min-h-10 w-full px-4 py-2 sm:w-auto sm:px-8">
+            Criar meu estabelecimento
+          </SignupButton>
         </div>
       </div>
     </section>
@@ -517,13 +574,17 @@ function DeliveryOperation() {
             Sua operação de entrega, conectada ao Localix
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Do pedido à entrega, o Localix ajuda o estabelecimento a organizar a operação e dá ao entregador uma experiência própria para acompanhar suas entregas.
+            Do pedido à entrega, o Localix ajuda o estabelecimento a organizar a operação e dá ao
+            entregador uma experiência própria para acompanhar suas entregas.
           </p>
           <p className="mt-3 text-sm font-semibold text-primary">
             Mais controle para o restaurante. Mais organização para quem entrega.
           </p>
           <div className="mt-8">
-            <SignupButton className="h-auto min-h-10 w-full px-4 py-2 sm:w-auto sm:px-8" mobileLabel="Quero ser parceiro">
+            <SignupButton
+              className="h-auto min-h-10 w-full px-4 py-2 sm:w-auto sm:px-8"
+              mobileLabel="Quero ser parceiro"
+            >
               Quero ser parceiro
             </SignupButton>
           </div>
@@ -541,7 +602,10 @@ function DeliveryOperation() {
           </div>
           <ol className="mt-6 grid gap-3 sm:grid-cols-5">
             {timeline.map((step, index) => (
-              <li key={step} className="relative flex min-w-0 items-center gap-3 sm:flex-col sm:items-start">
+              <li
+                key={step}
+                className="relative flex min-w-0 items-center gap-3 sm:flex-col sm:items-start"
+              >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
                   {index + 1}
                 </span>
@@ -578,7 +642,10 @@ function DeliveryBenefitCard({
       <h3 className="font-display text-xl font-extrabold">{title}</h3>
       <div className="mt-5 grid gap-3">
         {items.map(({ icon: Icon, title: itemTitle, desc }) => (
-          <div key={itemTitle} className="flex min-w-0 items-start gap-3 rounded-lg border border-border/60 bg-background px-3 py-3 sm:px-4">
+          <div
+            key={itemTitle}
+            className="flex min-w-0 items-start gap-3 rounded-lg border border-border/60 bg-background px-3 py-3 sm:px-4"
+          >
             <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             <div className="min-w-0">
               <h4 className="text-sm font-bold leading-snug">{itemTitle}</h4>
@@ -593,14 +660,26 @@ function DeliveryBenefitCard({
 
 function ControlPanel() {
   const features = [
-    { icon: LayoutDashboard, title: "Dashboard", desc: "Indicadores da operação, pedidos e clientes." },
-    { icon: ListOrdered, title: "Gestão de pedidos", desc: "Receba e acompanhe pedidos pelo painel." },
+    {
+      icon: LayoutDashboard,
+      title: "Dashboard",
+      desc: "Indicadores da operação, pedidos e clientes.",
+    },
+    {
+      icon: ListOrdered,
+      title: "Gestão de pedidos",
+      desc: "Receba e acompanhe pedidos pelo painel.",
+    },
     {
       icon: UtensilsCrossed,
       title: "Cardápio digital",
       desc: "Categorias, produtos, adicionais, disponibilidade e fotos.",
     },
-    { icon: Tag, title: "Promoções", desc: "Ofertas, preços promocionais, agendamento e recorrência." },
+    {
+      icon: Tag,
+      title: "Promoções",
+      desc: "Ofertas, preços promocionais, agendamento e recorrência.",
+    },
     {
       icon: Wand2,
       title: "Monte do seu jeito",
@@ -611,16 +690,30 @@ function ControlPanel() {
       title: "Perfil do estabelecimento",
       desc: "Horários, endereço, entrega, retirada, taxas, pedido mínimo e redes sociais.",
     },
-    { icon: UserCircle, title: "Área do proprietário", desc: "Conta, dados do responsável e segurança." },
-    { icon: ImagePlus, title: "Upload de imagens", desc: "Fotos de produtos, logo, banner e galeria." },
-    { icon: LineChart, title: "Financeiro e relatórios", desc: "Indicadores, movimentações e análises em evolução." },
+    {
+      icon: UserCircle,
+      title: "Área do proprietário",
+      desc: "Conta, dados do responsável e segurança.",
+    },
+    {
+      icon: ImagePlus,
+      title: "Upload de imagens",
+      desc: "Fotos de produtos, logo, banner e galeria.",
+    },
+    {
+      icon: LineChart,
+      title: "Financeiro e relatórios",
+      desc: "Indicadores, movimentações e análises em evolução.",
+    },
   ];
   return (
     <section id="plataforma" className="bg-sidebar text-sidebar-foreground">
       <div className="mx-auto max-w-6xl px-3 py-16 sm:px-4 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <FreeBadge className="border-success/40 bg-success/15" />
-          <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Conheça o painel de controle</h2>
+          <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+            Conheça o painel de controle
+          </h2>
           <p className="mt-3 text-sidebar-foreground/70">
             Ferramentas comprovadas para vender e operar melhor, reunidas em um único ambiente.
           </p>
@@ -675,11 +768,17 @@ function Benefits() {
             Tudo o que você precisa para começar seu delivery no Localix.
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Os recursos disponíveis ajudam seu estabelecimento a começar agora, enquanto novas frentes continuam evoluindo para fortalecer operação, relacionamento e recorrência.
+            Os recursos disponíveis ajudam seu estabelecimento a começar agora, enquanto novas
+            frentes continuam evoluindo para fortalecer operação, relacionamento e recorrência.
           </p>
         </div>
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
-          <FeatureList title="Disponível agora" items={available} icon={CircleCheck} tone="success" />
+          <FeatureList
+            title="Disponível agora"
+            items={available}
+            icon={CircleCheck}
+            tone="success"
+          />
           <FeatureList title="Em evolução" items={evolving} icon={Sparkles} tone="primary" />
         </div>
       </div>
@@ -704,7 +803,10 @@ function FeatureList({
       <h3 className="font-display text-xl font-extrabold">{title}</h3>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {items.map((item) => (
-          <div key={item} className="flex min-w-0 items-start gap-3 rounded-lg border border-border/60 bg-background px-3 py-3 sm:px-4">
+          <div
+            key={item}
+            className="flex min-w-0 items-start gap-3 rounded-lg border border-border/60 bg-background px-3 py-3 sm:px-4"
+          >
             <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} />
             <span className="min-w-0 text-sm font-medium leading-snug">{item}</span>
           </div>
@@ -721,9 +823,12 @@ function Evolution() {
         <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-left text-xs font-semibold leading-snug text-primary">
           <Sparkles className="h-3.5 w-3.5 shrink-0" /> Em breve na Localix
         </span>
-        <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">O Localix continua evoluindo.</h2>
+        <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+          O Localix continua evoluindo.
+        </h2>
         <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          Novos recursos de fidelização, benefícios, campanhas e automação estão sendo desenvolvidos para ampliar as ferramentas disponíveis aos parceiros.
+          Novos recursos de fidelização, benefícios, campanhas e automação estão sendo desenvolvidos
+          para ampliar as ferramentas disponíveis aos parceiros.
         </p>
       </div>
     </section>
@@ -777,12 +882,22 @@ function FAQ() {
   return (
     <section id="duvidas" className="bg-muted/40">
       <div className="mx-auto max-w-3xl px-3 py-16 sm:px-4 sm:py-24">
-        <h2 className="text-center font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Dúvidas frequentes</h2>
-        <Accordion type="single" collapsible className="mt-10 w-full rounded-lg border bg-background px-3 sm:px-4">
+        <h2 className="text-center font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+          Dúvidas frequentes
+        </h2>
+        <Accordion
+          type="single"
+          collapsible
+          className="mt-10 w-full rounded-lg border bg-background px-3 sm:px-4"
+        >
           {items.map((item) => (
             <AccordionItem key={item.q} value={item.q}>
-              <AccordionTrigger className="text-left text-sm leading-snug sm:text-base">{item.q}</AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-muted-foreground sm:text-base">{item.a}</AccordionContent>
+              <AccordionTrigger className="text-left text-sm leading-snug sm:text-base">
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {item.a}
+              </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
@@ -800,9 +915,14 @@ function FinalCTA() {
           Comece a construir seu próprio canal de delivery.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-sidebar-foreground/70">
-          Cadastre seu estabelecimento, configure seu cardápio e conheça as ferramentas que o Localix está desenvolvendo para ajudar parceiros a vender, gerenciar e fortalecer o relacionamento com seus clientes.
+          Cadastre seu estabelecimento, configure seu cardápio e conheça as ferramentas que o
+          Localix está desenvolvendo para ajudar parceiros a vender, gerenciar e fortalecer o
+          relacionamento com seus clientes.
         </p>
-        <SignupButton className="mt-8 h-auto min-h-10 w-full px-4 py-2 shadow-glow sm:w-auto sm:px-8" mobileLabel="Cadastrar estabelecimento">
+        <SignupButton
+          className="mt-8 h-auto min-h-10 w-full px-4 py-2 shadow-glow sm:w-auto sm:px-8"
+          mobileLabel="Cadastrar estabelecimento"
+        >
           Cadastrar meu estabelecimento gratuitamente
         </SignupButton>
       </div>

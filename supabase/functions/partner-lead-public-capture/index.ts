@@ -2,11 +2,15 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const productionOrigin = "https://localixdelivery.rngdigital.com.br";
-const stagingPreviewPattern =
-  /^https:\/\/localixdelivery-stagin-git-[a-z0-9-]+-alexandre-sanliver-s-projects\.vercel\.app$/;
+const stagingPreviewPatterns = [
+  /^https:\/\/localixdelivery-stagin-git-[a-z0-9-]+-alexandre-sanliver-s-projects\.vercel\.app$/,
+  /^https:\/\/localixdelivery-staging-[a-z0-9-]+-alexandre-sanliver-s-projects\.vercel\.app$/,
+];
 
 function isAllowedOrigin(origin: string) {
-  return origin === productionOrigin || stagingPreviewPattern.test(origin);
+  return (
+    origin === productionOrigin || stagingPreviewPatterns.some((pattern) => pattern.test(origin))
+  );
 }
 
 const allowed = new Set([
