@@ -357,7 +357,7 @@ describe("ProductionService lifecycle", () => {
       "ProductionCompleted",
       "BatchCreated",
       "LossRegistered",
-    ].forEach((n) => ProductionEventBus.on(n as any, () => seen.push(n)));
+    ].forEach((n) => ProductionEventBus.on(n as Parameters<typeof ProductionEventBus.on>[0], () => seen.push(n)));
     const o = await production.plan({
       restaurant_id: "r1",
       recipe_id: recipe.id,
