@@ -752,7 +752,7 @@ function InfoRow({
   value,
   href,
 }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   href: string;
@@ -797,7 +797,7 @@ function InfoRow({
   );
 }
 
-function PaymentMethod({ icon: Icon, label }: { icon: any; label: string }) {
+function PaymentMethod({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-[hsl(var(--success)/0.08)] p-3">
       <Icon className="h-5 w-5 shrink-0 text-success" />
