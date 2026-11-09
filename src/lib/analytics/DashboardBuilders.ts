@@ -268,22 +268,22 @@ export const DashboardBuilders = {
     const scope: AnalyticsScope = "product";
     const kpis: KpiValue[] = [
       ...input.topSelling.slice(0, 5).map((p, i) =>
-          KpiCalculator.build({
-            key: `top_selling_${i}`,
-            label: `Mais Vendido: ${p.name ?? p.id}`,
-            value: p.qty,
-            scope,
-          }),
-        ),
+        KpiCalculator.build({
+          key: `top_selling_${i}`,
+          label: `Mais Vendido: ${p.name ?? p.id}`,
+          value: p.qty,
+          scope,
+        }),
+      ),
       ...input.topProfitable.slice(0, 5).map((p, i) =>
-          KpiCalculator.build({
-            key: `top_profit_${i}`,
-            label: `Mais Lucrativo: ${p.name ?? p.id}`,
-            value: p.profit,
-            format: "currency",
-            scope,
-          }),
-        ),
+        KpiCalculator.build({
+          key: `top_profit_${i}`,
+          label: `Mais Lucrativo: ${p.name ?? p.id}`,
+          value: p.profit,
+          format: "currency",
+          scope,
+        }),
+      ),
     ];
     return { id: "product_kpis", title: "Produtos", kpis };
   },
