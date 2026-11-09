@@ -8,9 +8,11 @@ import { TrackingService } from "./TrackingService";
 import { dispatchEngine } from "./DispatchEngine";
 import type { DeliveryOrder, Driver } from "./types";
 
-function makeRepo(): DeliveryRepository & { store: Map<string, DeliveryOrder>; timeline: any[] } {
+type TimelineEntry = Parameters<DeliveryRepository["appendTimeline"]>[1] & { id: string };
+
+function makeRepo(): DeliveryRepository & { store: Map<string, DeliveryOrder>; timeline: TimelineEntry[] } {
   const store = new Map<string, DeliveryOrder>();
-  const timeline: any[] = [];
+  const timeline: TimelineEntry[] = [];
   return {
     store,
     timeline,
