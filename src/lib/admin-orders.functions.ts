@@ -411,7 +411,7 @@ export const getAdminOrders = createServerFn({ method: "POST" })
     let paymentOrderIds: string[] | null = null;
     if (paymentStatus) {
       paymentOrderIds = await findOrderIdsByPaymentStatus(supabaseAdmin, paymentStatus);
-      if (paymentOrderIds.length === 0) return { page, pageSize, total: 0, rows: [] };
+      if (paymentOrderIds?.length === 0) return { page, pageSize, total: 0, rows: [] };
     }
 
     let query = supabaseAdmin
