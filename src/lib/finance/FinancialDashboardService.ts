@@ -13,11 +13,7 @@ import type { ExecutiveKPIs, FinanceFilters, FinanceStatus } from "./types";
 import { normalizeFilters } from "./FinanceFilters";
 
 export interface LedgerPort {
-  getStatement(input: {
-    restaurantId: string;
-    from?: string;
-    to?: string;
-  }): Promise<
+  getStatement(input: { restaurantId: string; from?: string; to?: string }): Promise<
     Array<{
       transaction_type: string;
       amount: number;
