@@ -85,7 +85,7 @@ export type AdminOrderDetail = {
   order_number: number | null;
   created_at: string;
   status: string;
-  items: unknown[];
+  items: import("@/integrations/supabase/types").Json[];
   restaurant: { id: string; name: string | null };
   customer: {
     name: string | null;
@@ -567,7 +567,7 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
       order_number: orderRow.order_number,
       created_at: orderRow.created_at,
       status: orderRow.status,
-      items: Array.isArray(orderRow.items) ? orderRow.items : [],
+      items: Array.isArray(orderRow.items) ? orderRow.items as import("@/integrations/supabase/types").Json[] : [],
       restaurant: (restaurantQ.data as { id: string; name: string | null } | null) ?? {
         id: orderRow.restaurant_id,
         name: null,
