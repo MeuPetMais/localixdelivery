@@ -17,7 +17,7 @@ type InternalNotification = {
   id: string;
   template_code: string;
   priority: "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
-  payload_json: Record<string, any>;
+  payload_json: Record<string, unknown>;
   read_at: string | null;
   created_at: string;
 };
