@@ -46,8 +46,8 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
           ];
           onChange([...acc]);
           toast.success("Foto enviada");
-        } catch (e: any) {
-          toast.error(e?.message ?? "Falha no upload");
+        } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : "Falha no upload");
         } finally {
           setProgress(null);
         }
