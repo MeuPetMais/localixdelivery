@@ -44,7 +44,7 @@ export function ActiveShiftsPanel() {
         <p className="text-sm text-muted-foreground">Nenhum motoboy em turno.</p>
       ) : (
         <ul className="space-y-2">
-          {shifts.map((s: any) => {
+          {shifts.map((s) => {
             const online =
               (s.online_minutes ?? 0) +
               (s.waiting_minutes ?? 0) +
