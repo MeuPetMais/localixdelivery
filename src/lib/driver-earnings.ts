@@ -13,7 +13,7 @@ export type DriverEarningSnapshot = {
   driver_distance_km?: number | null;
   driver_earning_amount?: number | null;
   driver_earning_calculated_at?: string | null;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type ResolvedDriverEarning = {
