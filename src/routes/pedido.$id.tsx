@@ -205,7 +205,9 @@ function TrackOrder() {
           })),
         ),
       );
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
     navigate({ to: "/$slug", params: { slug: restaurant.slug } });
   }
 
@@ -391,7 +393,9 @@ function TrackOrder() {
                         window.sessionStorage.removeItem(`repeat:${slug}`);
                       }
                       window.sessionStorage.removeItem(`wa-url:${id}`);
-                    } catch {}
+                    } catch {
+                      // Best-effort cleanup; failure must not interrupt the main flow.
+                    }
                     setOrder((prev) => (prev ? { ...prev, status: "cancelado" } : prev));
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
