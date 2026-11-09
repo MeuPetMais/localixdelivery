@@ -1,5 +1,5 @@
 export type DriverLoginCandidate = {
-  email: string | null;
+  email?: string | null;
   cpf: string | null;
   phone: string | null;
   status: string | null;
