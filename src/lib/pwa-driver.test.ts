@@ -9,7 +9,11 @@ function setWindow(input: {
   navigatorStandalone?: boolean;
   beforeInstallPromptProperty?: boolean;
 }) {
-  const win: any = {
+  const win: {
+    navigator: { userAgent: string; standalone?: boolean };
+    matchMedia: () => { matches: boolean };
+    onbeforeinstallprompt?: null;
+  } = {
     navigator: {
       userAgent: input.userAgent,
       standalone: input.navigatorStandalone,
