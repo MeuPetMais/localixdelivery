@@ -97,9 +97,10 @@ const TAG_RE = /<[^>]*>/g;
 export function parseSupportSlaSettings(raw: unknown): SupportSlaSettings {
   if (!raw || typeof raw !== "object") return DEFAULT_SUPPORT_SLA_SETTINGS;
   const data = raw as Record<string, unknown>;
-  const sourcePriorities = data.priorities && typeof data.priorities === "object"
-    ? data.priorities as Record<string, unknown>
-    : data;
+  const sourcePriorities =
+    data.priorities && typeof data.priorities === "object"
+      ? (data.priorities as Record<string, unknown>)
+      : data;
   const priorities = { ...DEFAULT_SUPPORT_SLA_SETTINGS.priorities };
 
   for (const priority of Object.keys(priorities) as SupportPriority[]) {
