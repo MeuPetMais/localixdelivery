@@ -3,6 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 import { ProductDetailsDialog } from "@/components/product/ProductDetailsDialog";
 import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 
+// The production dialog uses a portal. Server-side static rendering does not
+// render portal contents, so replace only the shell in this content-level test.
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 const group: ProductOptionGroup = {
   id: "point",
   product_id: "burger",
