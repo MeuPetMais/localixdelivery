@@ -281,7 +281,7 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     if (data.search?.trim()) {
       const term = data.search.trim().toLowerCase();
       tickets = tickets.filter(
-        (ticket) =>
+        (ticket: SupportTicketListItem) =>
           String(ticket.ticket_number ?? "").includes(term) ||
           ticket.subject.toLowerCase().includes(term) ||
           ticket.restaurant_name.toLowerCase().includes(term),
@@ -432,7 +432,7 @@ export const listSupportTeam = createServerFn({ method: "GET" })
       .in("role", managedSupportRoles);
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row) => ({
+    return (data ?? []).map((row: { user_id: string; role: string; name: string; email: string; created_at: string }) => ({
       user_id: row.user_id,
       role: String(row.role) as ManagedSupportRole,
       label: row.name || row.email || row.user_id,
