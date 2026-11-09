@@ -254,7 +254,7 @@ describe("Audit history is append-only", () => {
     });
     const [entry] = await svc.audit.list();
     expect(() => {
-      (entry as any).action = "hacked";
+      (entry as { action: string }).action = "hacked";
     }).toThrow();
   });
 });
