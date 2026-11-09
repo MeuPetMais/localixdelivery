@@ -581,7 +581,7 @@ export const updateSupportTicketMeta = createServerFn({ method: "POST" })
     if (data.priority && !canSupport(role, "change_priority")) throw new Error("Forbidden");
     if (data.category && !canSupport(role, "change_category")) throw new Error("Forbidden");
 
-    const patch: { published?: boolean; archived?: boolean } = {};
+    const patch: { priority?: SupportPriority; category?: SupportCategory; tags?: string[] } = {};
     if (data.priority) patch.priority = data.priority;
     if (data.category) patch.category = data.category;
     if (data.tags) patch.tags = data.tags;
@@ -803,7 +803,7 @@ export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST"
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role } = await assertSupportRole(context.userId);
     if (role === "support_agent") throw new Error("Forbidden");
-    const patch: Record<string, unknown> = {};
+    const patch: { published?: boolean; archived?: boolean } = {};
     if (typeof data.published === "boolean") patch.published = data.published;
     if (typeof data.archived === "boolean") {
       patch.archived = data.archived;
