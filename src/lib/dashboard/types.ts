@@ -64,7 +64,7 @@ export interface DashboardBranding {
 
 export interface DashboardRestaurantStatus {
   isOpen: boolean;
-  reason?: RestaurantStatus["reason"];
+  reason: RestaurantStatus["reason"];
   acceptingOrders: boolean;
   vacationMode: boolean;
   maintenanceMode: boolean;
