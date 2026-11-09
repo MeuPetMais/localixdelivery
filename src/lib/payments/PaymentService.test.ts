@@ -46,7 +46,7 @@ describe("PaymentService.createPayment", () => {
 
   it("exige orderId, restaurantId, amount e URLs", async () => {
     await expect(
-      PaymentService.createPayment({ ...baseInput, orderId: "" as any }),
+      PaymentService.createPayment({ ...baseInput, orderId: "" }),
     ).rejects.toThrow(/orderId/);
     await expect(PaymentService.createPayment({ ...baseInput, amount: 0 })).rejects.toThrow(
       /amount/,
