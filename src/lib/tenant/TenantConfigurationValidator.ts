@@ -19,7 +19,7 @@ export function validateGroup<G extends ConfigGroup>(
   value: GroupPayload<G>,
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
-  const v = value as GroupPayload<ConfigGroup>;
+  const v = value as any;
 
   switch (group) {
     case "payment":
