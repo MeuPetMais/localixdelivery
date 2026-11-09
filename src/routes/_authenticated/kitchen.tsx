@@ -215,7 +215,10 @@ function KitchenPage() {
   }
 
   function toggleFullscreen() {
-    const doc: any = document;
+    const doc = document as Document & { 
+      webkitExitFullscreen?: () => Promise<void>;
+      documentElement: HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+    };
     if (!document.fullscreenElement) {
       (
         document.documentElement.requestFullscreen?.() ??
