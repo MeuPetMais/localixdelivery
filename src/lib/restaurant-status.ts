@@ -109,7 +109,7 @@ export function isWithinSchedule(
       const closeMin = parseTime(close);
       if (openMin === null || closeMin === null) continue;
 
-      let start = i * 24 * 60 + openMin;
+      const start = i * 24 * 60 + openMin;
       let end = i * 24 * 60 + closeMin;
       if (end <= start) end += 24 * 60; // overnight shift
 
