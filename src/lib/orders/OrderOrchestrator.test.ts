@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createOrchestrator, type OrchestratorDeps, type OrderSnapshot, type StatusHistoryRow } from "./OrderOrchestrator";
+import {
+  createOrchestrator,
+  type OrchestratorDeps,
+  type OrderSnapshot,
+  type StatusHistoryRow,
+} from "./OrderOrchestrator";
 import { OrderEventBus } from "./domain-events";
 import { TransitionValidator } from "./TransitionValidator";
 import { canTransition, isTerminal } from "./OrderStateMachine";
@@ -9,11 +14,17 @@ import { canActorPerform } from "./OrderPermissions";
 function makeDeps(order: OrderSnapshot | null): OrchestratorDeps & {
   history: Omit<StatusHistoryRow, "id" | "created_at">[];
   updated: Array<{ id: string; s: OrderSnapshot["status"] }>;
-  published: Array<{ name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0]; payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1] }>;
+  published: Array<{
+    name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0];
+    payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1];
+  }>;
 } {
   const history: Omit<StatusHistoryRow, "id" | "created_at">[] = [];
   const updated: Array<{ id: string; s: OrderSnapshot["status"] }> = [];
-  const published: Array<{ name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0]; payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1] }> = [];
+  const published: Array<{
+    name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0];
+    payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1];
+  }> = [];
   return {
     history,
     updated,
@@ -112,7 +123,7 @@ describe("OrderOrchestrator.transition", () => {
     expect(deps.history[0].previous_status).toBe("novo");
     expect(deps.history[0].current_status).toBe("aguardando_pagamento");
     expect(deps.published[0].name).toBe("OrderWaitingPayment");
-    expect(deps.published[0].payload.metadata.audit.actor_type).toBe("system");
+    expect((deps.published[0].payload.metadata.audit as { actor_type: string }).actor_type).toBe("system");
   });
 
   it("bloqueia transição inválida sem tocar em nada", async () => {
