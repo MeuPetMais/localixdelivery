@@ -37,7 +37,8 @@ export function PaymentGatewaysCenter({ restaurantId, stripeParam }: Props) {
       toast.success(`Gateway principal: ${p === "stripe" ? "Stripe" : "Mercado Pago"}`);
       qc.invalidateQueries({ queryKey: primaryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao definir gateway"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao definir gateway"),
     onSettled: () => setPending(null),
   });
 
