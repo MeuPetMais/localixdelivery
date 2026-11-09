@@ -65,7 +65,9 @@ export class AddressService {
       const list = this.getRecent().filter((x) => x.id !== d.id);
       list.unshift(d);
       localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
-    } catch {}
+    } catch {
+      // Non-critical best-effort operation; continue safely.
+    }
   }
 }
 
