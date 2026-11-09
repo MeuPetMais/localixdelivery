@@ -267,9 +267,7 @@ export const DashboardBuilders = {
   }): DashboardSection {
     const scope: AnalyticsScope = "product";
     const kpis: KpiValue[] = [
-      ...input.topSelling
-        .slice(0, 5)
-        .map((p, i) =>
+      ...input.topSelling.slice(0, 5).map((p, i) =>
           KpiCalculator.build({
             key: `top_selling_${i}`,
             label: `Mais Vendido: ${p.name ?? p.id}`,
@@ -277,9 +275,7 @@ export const DashboardBuilders = {
             scope,
           }),
         ),
-      ...input.topProfitable
-        .slice(0, 5)
-        .map((p, i) =>
+      ...input.topProfitable.slice(0, 5).map((p, i) =>
           KpiCalculator.build({
             key: `top_profit_${i}`,
             label: `Mais Lucrativo: ${p.name ?? p.id}`,
