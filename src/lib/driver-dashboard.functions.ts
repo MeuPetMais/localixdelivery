@@ -37,7 +37,7 @@ type Row = {
   driver_earning_calculated_at?: string | null;
   driver_base_fee?: number | null;
   driver_per_km_fee?: number | null;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
   delivered_at: string | null;
   departed_at?: string | null;
   picked_up_at?: string | null;
