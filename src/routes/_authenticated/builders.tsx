@@ -306,7 +306,7 @@ function BuildersPage() {
       const { data: menuItems, error: menuError } = await supabase
         .from("menu_items")
         .select(
-          "id,name,price,promo_price,promo_starts_at,promo_ends_at,recurrence_days,recurrence_start_time,recurrence_end_time,is_active,is_available,is_paused",
+          "id,restaurant_id,name,price,promo_price,promo_starts_at,promo_ends_at,recurrence_days,recurrence_start_time,recurrence_end_time,is_active,is_available,is_paused",
         )
         .in("id", menuItemIds);
       if (menuError) throw menuError;
@@ -411,7 +411,7 @@ function BuildersPage() {
         emoji: b.emoji,
         description: b.description,
         image_url: b.image_url,
-        base_price: b.base_price,
+        base_price: parseBuilderCurrencyInput(b.base_price),
         position: (builders?.length ?? 0) + 1,
       })
       .select("id")
@@ -423,8 +423,8 @@ function BuildersPage() {
         .insert({
           builder_id: nb.id,
           name: g.name,
-          min_select: g.min_select,
-          max_select: g.max_select,
+          min_select: Number(g.min_select),
+          max_select: Number(g.max_select),
           is_required: g.is_required,
           position: g.position,
           source_type: g.source_type ?? "MANUAL",
@@ -436,8 +436,8 @@ function BuildersPage() {
       const opts = (g.builder_options ?? []).map((o) => ({
         group_id: ng.id,
         name: o.name,
-        price_delta: o.price_delta,
-        max_qty: o.max_qty,
+        price_delta: parseBuilderCurrencyInput(o.price_delta),
+        max_qty: Number(o.max_qty),
         position: o.position,
         menu_item_id: o.menu_item_id ?? null,
       }));
@@ -661,6 +661,7 @@ function BuilderEditor({
   };
 
   function validate(): string | null {
+    if (!form) return "Modelo não carregado.";
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
       return "O Preço Inicial não pode ser negativo.";
@@ -690,6 +691,7 @@ function BuilderEditor({
   }
 
   function validateAllForConclude(): string | null {
+    if (!form) return "Modelo não carregado.";
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
       return "O Preço Inicial não pode ser negativo.";
@@ -721,6 +723,7 @@ function BuilderEditor({
   }
 
   async function saveMeta() {
+    if (!form || !builder) return;
     const err = validate();
     if (err) return toast.error(err);
     const { error } = await supabase
@@ -738,6 +741,7 @@ function BuilderEditor({
   }
 
   async function addGroup() {
+    if (!builder) return;
     const { data } = await supabase
       .from("builder_groups")
       .insert({
@@ -872,7 +876,7 @@ function BuilderEditor({
   }
 
   async function concludeAndSave() {
-    if (savingAll) return;
+    if (!form || !builder || savingAll) return;
     const validationError = validateAllForConclude();
     if (validationError) return toast.error(validationError);
 
