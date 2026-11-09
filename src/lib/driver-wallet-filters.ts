@@ -8,6 +8,7 @@ export type HistoryItem = {
   delivered_at: string | null;
   created_at?: string | null;
   earnings: number;
+  earningsSource?: string | null;
   order?: { order_number?: number | null; customer_name?: string | null; address?: string | null } | null;
 };
 
