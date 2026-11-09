@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_restaurant_memberships: {
+        Row: {
+          id: string
+          owner_id: string
+          driver_id: string
+          restaurant_id: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          driver_id: string
+          restaurant_id: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          driver_id?: string
+          restaurant_id?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       builder_option_ingredients: {
         Row: {
           id: string
