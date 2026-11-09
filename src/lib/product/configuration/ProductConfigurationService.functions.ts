@@ -296,7 +296,7 @@ export const upsertOption = createServerFn({ method: "POST" })
       payload.metadata = mergeExistingOptionMetadata(
         (existing as { metadata?: ProductOption["metadata"] } | null)?.metadata,
         payload.metadata,
-      );
+      ) ?? undefined;
     }
 
     const { data: row, error } = await context.supabase
