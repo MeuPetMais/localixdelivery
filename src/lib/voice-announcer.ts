@@ -38,7 +38,9 @@ export function setVoiceSettings(patch: Partial<VoiceSettings>) {
   const next = { ...getVoiceSettings(), ...patch };
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(next));
-  } catch {}
+  } catch {
+    // Best-effort cleanup; the main flow must continue.
+  }
   return next;
 }
 
@@ -60,7 +62,9 @@ export function speak(text: string, opts?: { dedupeMs?: number; force?: boolean 
     // Cancela qualquer fala pendente para manter o alerta responsivo.
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
-  } catch {}
+  } catch {
+    // Best-effort cleanup; the main flow must continue.
+  }
 }
 
 /* --------------------------- Mensagens prontas --------------------------- */
