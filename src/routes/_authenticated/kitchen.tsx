@@ -215,7 +215,7 @@ function KitchenPage() {
   }
 
   function toggleFullscreen() {
-    const doc = document as Document & { 
+    const doc = document as Document & {
       webkitExitFullscreen?: () => Promise<void>;
       documentElement: HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
     };
