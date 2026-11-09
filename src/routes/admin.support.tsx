@@ -87,9 +87,9 @@ function AdminSupportQueuePage() {
     };
   }, [queryClient]);
 
-  const tickets = query.data?.tickets ?? [];
+  const tickets: import("@/lib/support-admin").SupportTicketListItem[] = query.data?.tickets ?? [];
   const metrics = query.data?.metrics;
-  const teamOptions = team.data ?? [];
+  const teamOptions: Array<{ user_id: string; label: string }> = team.data ?? [];
 
   const activeFilterCount = useMemo(
     () => Object.values(filters).filter((value) => value !== undefined && value !== "" && value !== false).length,
