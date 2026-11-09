@@ -32,13 +32,13 @@ describe("security helpers", () => {
   it("redacts sensitive keys deeply", () => {
     const out = sanitizeLogPayload({
       user: { email: "a@b.co", password: "x", nested: { api_key: "k", cpf: "123" } },
-    }) as any;
+    }) as { user: { password: string; nested: { api_key: string; cpf: string } } };
     expect(out.user.password).toBe("[redacted]");
     expect(out.user.nested.api_key).toBe("[redacted]");
     expect(out.user.nested.cpf).toBe("[redacted]");
   });
   it("survives cycles", () => {
-    const a: any = { name: "x" };
+    const a: { name: string; self?: unknown } = { name: "x" };
     a.self = a;
     expect(() => sanitizeLogPayload(a)).not.toThrow();
   });
