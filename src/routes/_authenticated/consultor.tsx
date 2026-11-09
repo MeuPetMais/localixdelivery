@@ -51,8 +51,8 @@ function ConsultorPage() {
     try {
       const res = await chat({ data: { restaurantId: restaurant.id, messages: next.slice(-20) } });
       setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha no consultor");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Falha no consultor");
       setMessages((m) => [
         ...m,
         { role: "assistant", content: "⚠️ Não consegui responder agora. Tente novamente." },
