@@ -34,7 +34,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
     onSuccess: ({ authorizeUrl }) => {
       window.location.href = authorizeUrl;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar Mercado Pago"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar Mercado Pago"),
   });
 
   const refresh = useMutation({
@@ -46,7 +47,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
       toast.success("Sincronizado com Mercado Pago");
       qc.invalidateQueries({ queryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao sincronizar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao sincronizar"),
   });
 
   const disconnect = useMutation({
@@ -58,7 +60,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
       toast.success("Mercado Pago desconectado");
       qc.invalidateQueries({ queryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao desconectar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao desconectar"),
   });
 
   const status = statusQuery.data;
