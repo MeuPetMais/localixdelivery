@@ -73,7 +73,9 @@ export function DemoTour() {
         // Start on dashboard
         if (pathname !== STEPS[0].to) navigate({ to: STEPS[0].to });
       }
-    } catch {}
+    } catch {
+      // Best-effort UI operation; failure is non-critical.
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -82,7 +84,9 @@ export function DemoTour() {
   function finish() {
     try {
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    } catch {}
+    } catch {
+      // Best-effort UI operation; failure is non-critical.
+    }
     setOpen(false);
   }
 
