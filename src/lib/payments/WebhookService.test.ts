@@ -84,7 +84,7 @@ describe("handleWebhook - fluxos", () => {
   beforeEach(() => EventBus._reset());
 
   it("pagamento aprovado: atualiza tudo e publica PaymentApproved", async () => {
-    const published: any[] = [];
+    const published: Array<{ name: Parameters<typeof EventBus.subscribe>[0] extends (name: infer N, ...args: never[]) => unknown ? N : string; p: unknown }> = [];
     EventBus.subscribe((name, p) => {
       published.push({ name, p });
     });
