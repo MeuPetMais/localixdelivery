@@ -7031,6 +7031,9 @@ export type Database = {
           payment_timeout_minutes: number
           restaurant_id: string
           updated_at: string
+          service_fee_payer: string
+          service_fee_last_changed_at: string | null
+          service_fee_change_locked_until: string | null
         }
         Insert: {
           accept_cash?: boolean
@@ -7047,6 +7050,9 @@ export type Database = {
           payment_timeout_minutes?: number
           restaurant_id: string
           updated_at?: string
+          service_fee_payer?: string
+          service_fee_last_changed_at?: string | null
+          service_fee_change_locked_until?: string | null
         }
         Update: {
           accept_cash?: boolean
@@ -7063,6 +7069,9 @@ export type Database = {
           payment_timeout_minutes?: number
           restaurant_id?: string
           updated_at?: string
+          service_fee_payer?: string
+          service_fee_last_changed_at?: string | null
+          service_fee_change_locked_until?: string | null
         }
         Relationships: []
       }
