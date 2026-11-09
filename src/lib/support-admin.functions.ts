@@ -690,12 +690,12 @@ export const listSupportQuickReplies = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { data, error } = await (supabaseAdmin.from("support_quick_replies") as any)
+    const { data, error } = await supabaseAdmin.from("support_quick_replies")
       .select("id, code, title, body, category, position")
       .eq("active", true)
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((reply: any) => ({
+    return (data ?? []).map((reply) => ({
       ...reply,
       body: sanitizeSupportText(reply.body ?? ""),
     }));
@@ -711,7 +711,7 @@ export const suggestSupportArticles = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => articleSuggestionSchema.parse(d ?? { query: "" }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await (supabaseAdmin.from("support_articles") as any)
+    const { data: rows, error } = await supabaseAdmin.from("support_articles")
       .select("id, title, content, category, position, published, video_url")
       .eq("published", true)
       .eq("archived", false)
@@ -744,7 +744,7 @@ export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
     const { supabaseAdmin, role } = await assertSupportRole(context.userId);
     if (role === "support_agent") throw new Error("Forbidden");
 
-    let query = (supabaseAdmin.from("support_articles") as any)
+    let query = supabaseAdmin.from("support_articles")
       .select("*")
       .order("position", { ascending: true })
       .order("updated_at", { ascending: false });
@@ -752,7 +752,7 @@ export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     const term = data.search?.toLowerCase();
-    return (rows ?? []).filter((article: any) => {
+    return (rows ?? []).filter((article) => {
       if (!term) return true;
       return [article.title, article.content, article.category]
         .join(" ")
@@ -777,8 +777,8 @@ export const saveKnowledgeArticleAdmin = createServerFn({ method: "POST" })
       archived: false,
     };
     const query = data.id
-      ? (supabaseAdmin.from("support_articles") as any).update(row).eq("id", data.id)
-      : (supabaseAdmin.from("support_articles") as any).insert(row);
+      ? supabaseAdmin.from("support_articles").update(row).eq("id", data.id)
+      : supabaseAdmin.from("support_articles").insert(row);
     const { data: article, error } = await query.select("*").single();
     if (error) throw new Error(error.message);
     await auditSupportTeam({
@@ -806,11 +806,11 @@ export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST"
       patch.archived = data.archived;
       if (data.archived) patch.published = false;
     }
-    const { data: before } = await (supabaseAdmin.from("support_articles") as any)
+    const { data: before } = await supabaseAdmin.from("support_articles")
       .select("*")
       .eq("id", data.id)
       .single();
-    const { data: after, error } = await (supabaseAdmin.from("support_articles") as any)
+    const { data: after, error } = await supabaseAdmin.from("support_articles")
       .update(patch)
       .eq("id", data.id)
       .select("*")
