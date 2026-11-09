@@ -60,6 +60,7 @@ export type SupportArticleSuggestion = {
 export type SupportReportTicket = SupportSlaTicketInput & {
   restaurant_id: string;
   restaurant_name: string;
+  subject?: string;
   category: SupportCategory;
   assigned_to?: string | null;
   assignee_label?: string | null;
