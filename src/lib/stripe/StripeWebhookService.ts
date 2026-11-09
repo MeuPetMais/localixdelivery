@@ -30,7 +30,7 @@ export type PaymentEventHandler = (
 const paymentHandlers = new Set<PaymentEventHandler>();
 
 export const StripeWebhookService = {
-  parse(raw: Record<string, any>): StripeWebhookEvent {
+  parse(raw: Parameters<typeof StripeMapper.webhookEvent>[0]): StripeWebhookEvent {
     return StripeMapper.webhookEvent(raw);
   },
 
