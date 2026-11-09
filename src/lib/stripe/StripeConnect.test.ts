@@ -75,13 +75,13 @@ describe("StripeConnectService", () => {
 
   it("propaga erro da edge", async () => {
     invoke.mockResolvedValue({ data: null, error: { message: "boom" } });
-    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow("boom");
+    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow("Não foi possível concluir a operação com a Stripe.");
   });
 
   it("propaga erro semântico do payload", async () => {
     invoke.mockResolvedValue({ data: { error: "restaurant_not_found" }, error: null });
     await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow(
-      "restaurant_not_found",
+      "Restaurante não encontrado.",
     );
   });
 });
