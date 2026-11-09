@@ -39,7 +39,7 @@ export const resolveUniversalDriverEmail = createServerFn({ method: "POST" })
         .in("driver_id", driverIds)
         .eq("status", "ativo");
       if (membershipError) throw new Error(membershipError.message);
-      ownerId = memberships?.find((membership: any) => membership.owner_id)?.owner_id ?? null;
+      ownerId = memberships?.find((membership) => membership.owner_id)?.owner_id ?? null;
     }
 
     if (!ownerId) return { found: false as const };
