@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getPasswordVisibilityConfig, togglePasswordVisibility } from "@/lib/password-visibility";
 
-export interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type"> {}
+export type PasswordInputProps = Omit<React.ComponentProps<"input">, "type">;
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, ...props }, ref) => {
