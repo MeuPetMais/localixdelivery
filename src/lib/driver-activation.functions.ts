@@ -152,7 +152,7 @@ export const registerDriverPending = createServerFn({ method: "POST" })
       .eq("restaurant_id", data.restaurantId);
     if (
       (dup ?? []).some(
-        (r: DriverLookupRow) => digits(r.cpf) === cpfDigits || digits(r.phone) === phoneDigits,
+        (r) => digits(r.cpf) === cpfDigits || digits(r.phone) === phoneDigits,
       )
     ) {
       throw new Error("Já existe um entregador com esse CPF ou telefone neste restaurante.");
@@ -214,7 +214,7 @@ export const validateDriverActivation = createServerFn({ method: "POST" })
       .is("owner_id", null);
 
     const match = (rows ?? []).find(
-      (r: DriverLookupRow) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
+      (r) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
     );
 
     if (!match) {
