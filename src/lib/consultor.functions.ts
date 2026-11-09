@@ -105,7 +105,7 @@ async function buildContext(restaurantId: string, ownerId: string) {
   const inactiveCustomers = (customers ?? []).length - activeCustomers;
 
   const lowStock = (ingredients ?? []).filter(
-    (i) => Number(i.current_stock) <= Number(i.min_stock),
+    (i: any) => Number(i.current_stock) <= Number(i.min_stock),
   );
 
   const revenueFin = (finance ?? [])
@@ -131,7 +131,7 @@ async function buildContext(restaurantId: string, ownerId: string) {
     menuSize: (items ?? []).length,
     unavailableItems: (items ?? []).filter((i) => !i.is_available).length,
     activeCoupons: (coupons ?? []).length,
-    lowStockItems: lowStock.map((i) => i.name).slice(0, 8),
+    lowStockItems: lowStock.map((i: any) => i.name).slice(0, 8),
     finance: { revenueRegistered: revenueFin, expenses, balance: revenueFin - expenses },
   };
 }
