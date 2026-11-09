@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createOrchestrator, type OrchestratorDeps, type OrderSnapshot } from "./OrderOrchestrator";
+import { createOrchestrator, type OrchestratorDeps, type OrderSnapshot, type StatusHistoryRow } from "./OrderOrchestrator";
 import { OrderEventBus } from "./domain-events";
 import { TransitionValidator } from "./TransitionValidator";
 import { canTransition, isTerminal } from "./OrderStateMachine";
@@ -7,13 +7,13 @@ import { OrderTimelineService } from "./OrderTimelineService";
 import { canActorPerform } from "./OrderPermissions";
 
 function makeDeps(order: OrderSnapshot | null): OrchestratorDeps & {
-  history: any[];
-  updated: any[];
-  published: any[];
+  history: Omit<StatusHistoryRow, "id" | "created_at">[];
+  updated: Array<{ id: string; s: OrderSnapshot["status"] }>;
+  published: Array<{ name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0]; payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1] }>;
 } {
-  const history: any[] = [];
-  const updated: any[] = [];
-  const published: any[] = [];
+  const history: Omit<StatusHistoryRow, "id" | "created_at">[] = [];
+  const updated: Array<{ id: string; s: OrderSnapshot["status"] }> = [];
+  const published: Array<{ name: Parameters<NonNullable<OrchestratorDeps["publish"]>>[0]; payload: Parameters<NonNullable<OrchestratorDeps["publish"]>>[1] }> = [];
   return {
     history,
     updated,
