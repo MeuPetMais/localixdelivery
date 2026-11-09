@@ -267,9 +267,9 @@ function SuccessPage() {
   async function shareOrder() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const text = `Pedido #${order?.order_number} em ${restaurant?.name} — acompanhe: ${url}`;
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await (navigator as any).share({ title: `Pedido #${order?.order_number}`, text, url });
+        await navigator.share({ title: `Pedido #${order?.order_number}`, text, url });
         return;
       } catch {
         // Best-effort cleanup; failure must not interrupt the main flow.
@@ -585,8 +585,8 @@ function SuccessPage() {
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
-                  } catch (err: any) {
-                    toast.error(err?.message ?? "Não foi possível cancelar o pedido");
+                  } catch (err: unknown) {
+                    toast.error(err instanceof Error ? err.message : "Não foi possível cancelar o pedido");
                   } finally {
                     setCancelling(false);
                   }
