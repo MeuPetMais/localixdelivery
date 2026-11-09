@@ -11,7 +11,10 @@ import {
 import type { VersionRow, VersioningRepository } from "./TenantConfigurationVersioning";
 import type { AuditEntry, AuditRepository } from "./TenantAudit";
 
-function makeRepo(): TenantConfigRepository & { data: Map<string, Partial<import("./types").TenantConfiguration>>; version: number } {
+function makeRepo(): TenantConfigRepository & {
+  data: Map<string, Partial<import("./types").TenantConfiguration>>;
+  version: number;
+} {
   const data = new Map<string, Partial<import("./types").TenantConfiguration>>();
   return {
     data,
@@ -39,22 +42,22 @@ function makeVersioningRepo(): VersioningRepository & { rows: VersionRow[] } {
     async append(row) {
       const full = { ...row, created_at: new Date().toISOString() } as VersionRow;
       rows.push(full);
-      return full;
+      return full as any;
     },
     async latest(rid, group) {
       const filtered = rows.filter((r) => r.restaurant_id === rid && r.group_name === group);
-      return filtered[filtered.length - 1] ?? null;
+      return (filtered[filtered.length - 1] as any) ?? null;
     },
     async history(rid, group, limit = 20) {
       return rows
         .filter((r) => r.restaurant_id === rid && r.group_name === group)
-        .slice(-limit);
+        .slice(-limit) as any;
     },
     async at(rid, group, version) {
       return (
         (rows.find(
           (r) => r.restaurant_id === rid && r.group_name === group && r.version === version,
-        )) ?? null
+        ) as any) ?? null
       );
     },
   };
