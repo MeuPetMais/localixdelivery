@@ -70,14 +70,18 @@ function DriverRestaurantsPage() {
         )}
 
         {q.isError && (
-          <Card className="p-4 text-sm text-destructive">Não foi possível carregar seus vínculos.</Card>
+          <Card className="p-4 text-sm text-destructive">
+            Não foi possível carregar seus vínculos.
+          </Card>
         )}
 
         {!q.isLoading && !q.isError && contexts.length === 0 && (
           <Card className="p-5 text-center">
             <Store className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
             <p className="font-semibold">Nenhum estabelecimento vinculado</p>
-            <p className="mt-1 text-sm text-muted-foreground">Peça ao parceiro para cadastrar seu CPF e telefone.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Peça ao parceiro para cadastrar seu CPF e telefone.
+            </p>
           </Card>
         )}
 
@@ -116,7 +120,8 @@ function DriverRestaurantsPage() {
 
         {contexts.length > 1 && (
           <p className="mt-5 text-xs text-muted-foreground">
-            Para trocar de estabelecimento, você precisa estar offline, fora da fila e sem entrega em andamento.
+            Para trocar de estabelecimento, você precisa estar offline, fora da fila e sem entrega
+            em andamento.
           </p>
         )}
       </div>

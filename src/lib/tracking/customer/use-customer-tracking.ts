@@ -40,7 +40,10 @@ export function useCustomerTracking(orderId: string | null | undefined): UseCust
 
   useEffect(() => {
     mountedRef.current = true;
-    if (!orderId) { setLoading(false); return; }
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
     void load();
     const poll = setInterval(load, 20000);
     const onFocus = () => void load();

@@ -114,9 +114,36 @@ export function MerchantNotificationsBell({ restaurantId }: { restaurantId: stri
       qc.invalidateQueries({ queryKey: ["merchant-notifications", restaurantId] });
     const ch = supabase
       .channel(`merchant-notify-${restaurantId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` }, invalidate)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reviews", filter: `restaurant_id=eq.${restaurantId}` }, invalidate)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "support_tickets", filter: `restaurant_id=eq.${restaurantId}` }, invalidate)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reviews",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "support_tickets",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        invalidate,
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -161,10 +188,18 @@ export function MerchantNotificationsBell({ restaurantId }: { restaurantId: stri
           <div>
             <div className="text-sm font-semibold">Notificações</div>
             <div className="text-[11px] text-muted-foreground">
-              {unreadCount === 0 ? "Você está em dia" : `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}`}
+              {unreadCount === 0
+                ? "Você está em dia"
+                : `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}`}
             </div>
           </div>
-          <Button size="sm" variant="ghost" onClick={markAllRead} disabled={unreadCount === 0} className="h-7 gap-1 px-2 text-xs">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={markAllRead}
+            disabled={unreadCount === 0}
+            className="h-7 gap-1 px-2 text-xs"
+          >
             <CheckCheck className="h-3.5 w-3.5" /> Marcar todas
           </Button>
         </div>
@@ -177,11 +212,19 @@ export function MerchantNotificationsBell({ restaurantId }: { restaurantId: stri
             items.map((n) => {
               const isRead = readIds.has(n.id);
               const Icon =
-                n.kind === "order_new" ? Package :
-                n.kind === "order_cancel" ? XCircle :
-                n.kind === "review" ? Star : LifeBuoy;
+                n.kind === "order_new"
+                  ? Package
+                  : n.kind === "order_cancel"
+                    ? XCircle
+                    : n.kind === "review"
+                      ? Star
+                      : LifeBuoy;
               const dot =
-                n.priority === "high" ? "bg-red-500" : n.priority === "normal" ? "bg-amber-500" : "bg-muted-foreground";
+                n.priority === "high"
+                  ? "bg-red-500"
+                  : n.priority === "normal"
+                    ? "bg-amber-500"
+                    : "bg-muted-foreground";
               return (
                 <Link
                   key={n.id}
@@ -193,7 +236,11 @@ export function MerchantNotificationsBell({ restaurantId }: { restaurantId: stri
                     <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted">
                       <Icon className="h-4 w-4" />
                     </div>
-                    {!isRead && <span className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${dot}`} />}
+                    {!isRead && (
+                      <span
+                        className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${dot}`}
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{n.title}</div>

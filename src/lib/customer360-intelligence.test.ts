@@ -46,18 +46,28 @@ describe("GROWTH-6 Customer 360 intelligence", () => {
   });
 
   it("identifies at-risk and inactive customers without new thresholds", () => {
-    expect(buildCustomer360Intelligence(model("AT_RISK")).some((i) => i.type === "AT_RISK")).toBe(true);
-    expect(buildCustomer360Intelligence(model("INACTIVE")).some((i) => i.type === "INACTIVE")).toBe(true);
+    expect(buildCustomer360Intelligence(model("AT_RISK")).some((i) => i.type === "AT_RISK")).toBe(
+      true,
+    );
+    expect(buildCustomer360Intelligence(model("INACTIVE")).some((i) => i.type === "INACTIVE")).toBe(
+      true,
+    );
   });
 
   it("identifies high-value, loyal and reactivated lifecycle outcomes", () => {
-    expect(buildCustomer360Intelligence(model("HIGH_VALUE")).some((i) => i.type === "HIGH_VALUE")).toBe(true);
+    expect(
+      buildCustomer360Intelligence(model("HIGH_VALUE")).some((i) => i.type === "HIGH_VALUE"),
+    ).toBe(true);
     expect(buildCustomer360Intelligence(model("LOYAL")).some((i) => i.type === "LOYAL")).toBe(true);
-    expect(buildCustomer360Intelligence(model("REACTIVATED")).some((i) => i.type === "REACTIVATED")).toBe(true);
+    expect(
+      buildCustomer360Intelligence(model("REACTIVATED")).some((i) => i.type === "REACTIVATED"),
+    ).toBe(true);
   });
 
   it("uses favorite product evidence already present in Customer 360", () => {
-    const insight = buildCustomer360Intelligence(model("RECURRING")).find((i) => i.type === "FAVORITE_PRODUCT");
+    const insight = buildCustomer360Intelligence(model("RECURRING")).find(
+      (i) => i.type === "FAVORITE_PRODUCT",
+    );
     expect(insight?.evidence.product_id).toBe("p1");
     expect(insight?.evidence.quantity).toBe(4);
   });

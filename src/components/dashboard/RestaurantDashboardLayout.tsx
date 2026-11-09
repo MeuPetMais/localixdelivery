@@ -22,7 +22,12 @@ interface Props {
 }
 
 export function RestaurantDashboardLayout({
-  restaurantName, role, status, branding, commands = [], children,
+  restaurantName,
+  role,
+  status,
+  branding,
+  commands = [],
+  children,
 }: Props) {
   const [workspace, setWorkspace] = useState<WorkspaceId>("operation");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -31,7 +36,11 @@ export function RestaurantDashboardLayout({
 
   return (
     <div style={style} className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      <DashboardHeader restaurantName={restaurantName} status={status} scheduleLabel={status?.scheduleLabel} />
+      <DashboardHeader
+        restaurantName={restaurantName}
+        status={status}
+        scheduleLabel={status?.scheduleLabel}
+      />
       <RestaurantWorkspace
         role={role}
         active={workspace}
@@ -41,7 +50,9 @@ export function RestaurantDashboardLayout({
         }}
       />
       <div className="flex min-h-0 flex-1">
-        <aside className={`shrink-0 border-r transition-all ${sidebarOpen ? "w-56" : "w-14"} hidden md:block`}>
+        <aside
+          className={`shrink-0 border-r transition-all ${sidebarOpen ? "w-56" : "w-14"} hidden md:block`}
+        >
           <button
             className="w-full border-b px-3 py-2 text-left text-xs text-muted-foreground hover:bg-muted"
             onClick={() => setSidebarOpen((v) => !v)}

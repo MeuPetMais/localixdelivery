@@ -13,26 +13,48 @@ function makeRepo(seed: Ingredient[]): InventoryRepository & { movements: StockM
   const movements: StockMovement[] = [];
   return {
     movements,
-    async getIngredient(id) { return store.get(id) ?? null; },
-    async listIngredients(rid) { return [...store.values()].filter((i) => i.restaurant_id === rid); },
+    async getIngredient(id) {
+      return store.get(id) ?? null;
+    },
+    async listIngredients(rid) {
+      return [...store.values()].filter((i) => i.restaurant_id === rid);
+    },
     async updateIngredient(id, patch) {
-      const cur = store.get(id)!; const next = { ...cur, ...patch } as Ingredient;
-      store.set(id, next); return next;
+      const cur = store.get(id)!;
+      const next = { ...cur, ...patch } as Ingredient;
+      store.set(id, next);
+      return next;
     },
     async recordMovement(m) {
-      const full = { ...m, id: String(movements.length + 1), created_at: new Date().toISOString() } as StockMovement;
-      movements.push(full); return full;
+      const full = {
+        ...m,
+        id: String(movements.length + 1),
+        created_at: new Date().toISOString(),
+      } as StockMovement;
+      movements.push(full);
+      return full;
     },
   };
 }
 
 const baseIng = (over: Partial<Ingredient> = {}): Ingredient => ({
-  id: "i1", restaurant_id: "r1", name: "Queijo", unit: "kg",
-  stock: 10, reserved_stock: 0, min_stock: 2, unit_cost: 30, active: true, ...over,
+  id: "i1",
+  restaurant_id: "r1",
+  name: "Queijo",
+  unit: "kg",
+  stock: 10,
+  reserved_stock: 0,
+  min_stock: 2,
+  unit_cost: 30,
+  active: true,
+  ...over,
 });
 
 describe("InventoryService", () => {
-  beforeEach(() => { InventoryAudit.clear(); InventoryEventBus.clear(); });
+  beforeEach(() => {
+    InventoryAudit.clear();
+    InventoryEventBus.clear();
+  });
 
   it("entry increases stock and records movement", async () => {
     const repo = makeRepo([baseIng()]);
@@ -100,7 +122,12 @@ describe("InventoryService", () => {
   it("writes audit entries", async () => {
     const repo = makeRepo([baseIng()]);
     const svc = createInventoryService(repo);
-    await svc.increaseStock({ ingredientId: "i1", quantity: 1, performedBy: "u1", referenceType: "manual" });
+    await svc.increaseStock({
+      ingredientId: "i1",
+      quantity: 1,
+      performedBy: "u1",
+      referenceType: "manual",
+    });
     expect(InventoryAudit.list()).toHaveLength(1);
     expect(InventoryAudit.list()[0].who).toBe("u1");
   });
@@ -124,7 +151,13 @@ describe("StockAlerts", () => {
 describe("CostEngine + MarginEngine", () => {
   it("computes recipe cost", () => {
     const ings = [baseIng({ id: "i1", unit_cost: 10 }), baseIng({ id: "i2", unit_cost: 5 })];
-    const cost = CostEngine.recipeCost([{ ingredient_id: "i1", quantity: 2 }, { ingredient_id: "i2", quantity: 3 }], ings);
+    const cost = CostEngine.recipeCost(
+      [
+        { ingredient_id: "i1", quantity: 2 },
+        { ingredient_id: "i2", quantity: 3 },
+      ],
+      ings,
+    );
     expect(cost).toBe(35);
   });
   it("computes margin and suggests price", () => {
@@ -142,21 +175,34 @@ describe("PurchaseOrderService", () => {
     const poStore = new Map<string, { po: PurchaseOrder; items: PurchaseOrderItem[] }>();
     const poRepo: PurchaseOrderRepository = {
       async create(po, items) {
-        const id = "po1"; const full: PurchaseOrder = { ...po, id };
+        const id = "po1";
+        const full: PurchaseOrder = { ...po, id };
         poStore.set(id, {
           po: full,
-          items: items.map((it, idx) => ({ ...it, id: String(idx), purchase_order_id: id, total: it.quantity * it.unit_price })),
+          items: items.map((it, idx) => ({
+            ...it,
+            id: String(idx),
+            purchase_order_id: id,
+            total: it.quantity * it.unit_price,
+          })),
         });
         return full;
       },
       async updateStatus(id, status) {
-        const e = poStore.get(id)!; e.po.status = status; return e.po;
+        const e = poStore.get(id)!;
+        e.po.status = status;
+        return e.po;
       },
-      async getItems(id) { return poStore.get(id)!.items; },
+      async getItems(id) {
+        return poStore.get(id)!.items;
+      },
     };
     const svc = createPurchaseOrderService(poRepo, inv);
     const po = await svc.createDraft({
-      supplier_id: "s1", restaurant_id: "r1", expected_date: null, notes: null,
+      supplier_id: "s1",
+      restaurant_id: "r1",
+      expected_date: null,
+      notes: null,
       items: [{ ingredient_id: "i1", quantity: 4, unit_price: 30 }],
     });
     expect(po.total_cost).toBe(120);

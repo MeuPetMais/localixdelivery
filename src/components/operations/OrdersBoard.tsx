@@ -38,9 +38,7 @@ export function OrdersBoard({ cards, onCardClick }: Props) {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold">{c.number}</span>
-                      <span className="text-xs text-muted-foreground">
-                        R$ {c.total.toFixed(2)}
-                      </span>
+                      <span className="text-xs text-muted-foreground">R$ {c.total.toFixed(2)}</span>
                     </div>
                     <p className="mt-1 truncate text-sm">{c.customerName}</p>
                     <p className="truncate text-xs text-muted-foreground">{c.itemsSummary}</p>

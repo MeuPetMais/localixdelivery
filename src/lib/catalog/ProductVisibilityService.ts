@@ -17,14 +17,22 @@ export const ProductVisibilityService = {
   isVisible(flags: VisibilityFlags, channel: CatalogChannel): boolean {
     if (flags.is_available === false) return false;
     switch (channel) {
-      case "delivery":     return flags.available_delivery !== false;
-      case "pickup":       return flags.available_pickup !== false;
-      case "dine_in":      return flags.available_dine_in !== false;
-      case "qr":           return flags.available_dine_in !== false;
-      case "totem":        return flags.available_pickup !== false || flags.available_dine_in !== false;
-      case "marketplace":  return flags.available_marketplace === true;
-      case "api":          return flags.available_api === true;
-      default:             return true;
+      case "delivery":
+        return flags.available_delivery !== false;
+      case "pickup":
+        return flags.available_pickup !== false;
+      case "dine_in":
+        return flags.available_dine_in !== false;
+      case "qr":
+        return flags.available_dine_in !== false;
+      case "totem":
+        return flags.available_pickup !== false || flags.available_dine_in !== false;
+      case "marketplace":
+        return flags.available_marketplace === true;
+      case "api":
+        return flags.available_api === true;
+      default:
+        return true;
     }
   },
 } as const;

@@ -11,7 +11,9 @@ export const JourneyBuilder = {
     store.set(j.id, j);
     return j;
   },
-  get(id: string): Journey | null { return store.get(id) ?? null; },
+  get(id: string): Journey | null {
+    return store.get(id) ?? null;
+  },
   list(restaurantId: string): Journey[] {
     return [...store.values()].filter((j) => j.restaurant_id === restaurantId);
   },
@@ -19,7 +21,8 @@ export const JourneyBuilder = {
     const errs: string[] = [];
     if (!j.steps[j.entry]) errs.push("entry step not found");
     for (const [key, step] of Object.entries(j.steps)) {
-      for (const n of step.next ?? []) if (!j.steps[n]) errs.push(`step ${key} references missing ${n}`);
+      for (const n of step.next ?? [])
+        if (!j.steps[n]) errs.push(`step ${key} references missing ${n}`);
     }
     return errs;
   },
@@ -27,9 +30,15 @@ export const JourneyBuilder = {
     const j = store.get(journeyId);
     if (!j || !j.active) return null;
     await MarketingEventBus.publish({
-      type: "JourneyStarted", journeyId, customerId, at: new Date().toISOString(),
+      type: "JourneyStarted",
+      journeyId,
+      customerId,
+      at: new Date().toISOString(),
     });
     return j.steps[j.entry] ?? null;
   },
-  clear(): void { store.clear(); seq = 0; },
+  clear(): void {
+    store.clear();
+    seq = 0;
+  },
 } as const;

@@ -110,7 +110,13 @@ export function DriverWalletTab({ earnings, history }: Props) {
               range === r ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
-            {r === "today" ? "Hoje" : r === "week" ? "Semana" : r === "month" ? "Mês" : "Personalizado"}
+            {r === "today"
+              ? "Hoje"
+              : r === "week"
+                ? "Semana"
+                : r === "month"
+                  ? "Mês"
+                  : "Personalizado"}
           </button>
         ))}
       </div>
@@ -135,14 +141,18 @@ export function DriverWalletTab({ earnings, history }: Props) {
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
-            <p className="mt-1 font-display text-lg font-extrabold text-emerald-600">{BRL(summary.total)}</p>
+            <p className="mt-1 font-display text-lg font-extrabold text-emerald-600">
+              {BRL(summary.total)}
+            </p>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Entregas</p>
             <p className="mt-1 font-display text-lg font-extrabold">{summary.count}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Ticket médio</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Ticket médio
+            </p>
             <p className="mt-1 font-display text-lg font-extrabold">{BRL(summary.ticket)}</p>
           </div>
         </div>
@@ -155,7 +165,9 @@ export function DriverWalletTab({ earnings, history }: Props) {
         </p>
         <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
           {filtered.length === 0 && (
-            <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma entrega no período.</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              Nenhuma entrega no período.
+            </div>
           )}
           {filtered.map((h) => {
             const dt = new Date(h.delivered_at ?? h.created_at ?? "");
@@ -166,13 +178,21 @@ export function DriverWalletTab({ earnings, history }: Props) {
                     Pedido {h.order?.order_number ? `#${h.order.order_number}` : ""}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {dt.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
+                    {dt.toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
                   </p>
                   {h.earningsSource === "legacy_fallback" && (
                     <p className="text-[10px] text-muted-foreground">Cálculo legado</p>
                   )}
                 </div>
-                <p className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}>
+                <p
+                  className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}
+                >
                   {h.status === "ENTREGUE" ? `+ ${BRL(h.earnings)}` : "—"}
                 </p>
               </div>
@@ -185,7 +205,8 @@ export function DriverWalletTab({ earnings, history }: Props) {
       <Card className="rounded-2xl border-none p-4 shadow-sm">
         <p className="text-sm font-semibold">Ações da carteira</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Pagamentos via PIX e extrato oficial em breve — nesta fase do piloto apenas exportação está ativa.
+          Pagamentos via PIX e extrato oficial em breve — nesta fase do piloto apenas exportação
+          está ativa.
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           <Button variant="outline" className="rounded-2xl" disabled title="Em breve">

@@ -27,6 +27,7 @@ Após a conversão, pedidos e receita devem ser medidos a partir das fontes serv
 ### North Star de aquisição
 
 A principal métrica de mídia paga é **CAC por Parceiro Ativo**, complementada por:
+
 - CAC por primeiro pedido;
 - taxa lead → qualificado;
 - taxa qualificado → demonstração;

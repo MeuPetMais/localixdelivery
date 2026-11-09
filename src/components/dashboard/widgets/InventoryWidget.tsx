@@ -25,10 +25,16 @@ export function InventoryWidget({ restaurantId }: { restaurantId: string }) {
     (async () => {
       const [ing, mov, po] = await Promise.all([
         supabase.from("ingredients").select("*").eq("restaurant_id", restaurantId),
-        supabase.from("stock_movements").select("id, movement_type, quantity, created_at, ingredient_id")
-          .order("created_at", { ascending: false }).limit(5),
-        supabase.from("purchase_orders").select("id", { count: "exact", head: true })
-          .eq("restaurant_id", restaurantId).in("status", ["PENDING", "APPROVED", "ORDERED"]),
+        supabase
+          .from("stock_movements")
+          .select("id, movement_type, quantity, created_at, ingredient_id")
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("purchase_orders")
+          .select("id", { count: "exact", head: true })
+          .eq("restaurant_id", restaurantId)
+          .in("status", ["PENDING", "APPROVED", "ORDERED"]),
       ]);
       const items = (ing.data ?? []) as Ingredient[];
       setIngredients(items);
@@ -39,7 +45,12 @@ export function InventoryWidget({ restaurantId }: { restaurantId: string }) {
     })();
   }, [restaurantId]);
 
-  if (loading) return <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando estoque…</CardContent></Card>;
+  if (loading)
+    return (
+      <Card>
+        <CardContent className="p-6 text-sm text-muted-foreground">Carregando estoque…</CardContent>
+      </Card>
+    );
 
   const critical = alerts.filter((a) => a.level === "OUT" || a.level === "LOW").length;
 
@@ -53,7 +64,12 @@ export function InventoryWidget({ restaurantId }: { restaurantId: string }) {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-3 text-center">
           <Stat label="Itens" value={ingredients.length} />
-          <Stat label="Críticos" value={critical} tone={critical ? "critical" : undefined} icon={AlertTriangle} />
+          <Stat
+            label="Críticos"
+            value={critical}
+            tone={critical ? "critical" : undefined}
+            icon={AlertTriangle}
+          />
           <Stat label="Compras" value={pendingPos} icon={ShoppingCart} />
         </div>
         <div>
@@ -65,10 +81,15 @@ export function InventoryWidget({ restaurantId }: { restaurantId: string }) {
           ) : (
             <ul className="space-y-1 text-sm">
               {movements.map((m) => (
-                <li key={m.id} className="flex items-center justify-between rounded bg-muted/40 px-2 py-1">
+                <li
+                  key={m.id}
+                  className="flex items-center justify-between rounded bg-muted/40 px-2 py-1"
+                >
                   <Badge variant="secondary">{m.movement_type}</Badge>
                   <span>{Number(m.quantity)}</span>
-                  <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("pt-BR")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(m.created_at).toLocaleString("pt-BR")}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -79,12 +100,23 @@ export function InventoryWidget({ restaurantId }: { restaurantId: string }) {
   );
 }
 
-function Stat({ label, value, tone, icon: Icon }: { label: string; value: number; tone?: "critical"; icon?: any }) {
+function Stat({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  tone?: "critical";
+  icon?: any;
+}) {
   const color = tone === "critical" ? "text-destructive" : "text-foreground";
   return (
     <div className="rounded-lg border p-3">
       <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-        {Icon ? <Icon className="h-3.5 w-3.5" /> : null}{label}
+        {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+        {label}
       </div>
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
     </div>

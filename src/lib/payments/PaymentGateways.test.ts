@@ -9,11 +9,9 @@ import { PaymentService } from "./PaymentService";
 import { supabase } from "@/integrations/supabase/client";
 const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
 
-
 beforeEach(() => {
   from.mockReset();
 });
-
 
 function chain(result: any) {
   const q: any = {

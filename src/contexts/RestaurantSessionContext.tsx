@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -26,10 +35,10 @@ export type RestaurantSession = {
 };
 
 export type RestaurantSessionStatus =
-  | "restoring"    // validando snapshot persistido contra o banco
-  | "ready"        // restaurante ativo confirmado no banco
-  | "unavailable"  // restaurante salvo não existe mais no banco
-  | "empty";       // nenhum restaurante visitado nesta sessão
+  | "restoring" // validando snapshot persistido contra o banco
+  | "ready" // restaurante ativo confirmado no banco
+  | "unavailable" // restaurante salvo não existe mais no banco
+  | "empty"; // nenhum restaurante visitado nesta sessão
 
 type RestaurantSessionContextValue = {
   session: RestaurantSession | null;
@@ -150,7 +159,9 @@ export function RestaurantSessionProvider({ children }: { children: ReactNode })
     [session, status, setActiveRestaurant, markUnavailable],
   );
 
-  return <RestaurantSessionContext.Provider value={value}>{children}</RestaurantSessionContext.Provider>;
+  return (
+    <RestaurantSessionContext.Provider value={value}>{children}</RestaurantSessionContext.Provider>
+  );
 }
 
 export function useRestaurantSession() {

@@ -4,7 +4,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import {
-  classifyDriver, returnGapsMinutes, averageMinutes,
+  classifyDriver,
+  returnGapsMinutes,
+  averageMinutes,
   type CentralGroup,
 } from "./operations-central";
 
@@ -22,13 +24,16 @@ async function assertOwner(supabase: any, userId: string, restaurantId: string) 
 }
 
 type DriverRow = {
-  id: string; name: string; phone: string | null; photo_url: string | null;
-  vehicle_type: string; vehicle_plate: string | null;
-  status: string; online: boolean;
+  id: string;
+  name: string;
+  phone: string | null;
+  photo_url: string | null;
+  vehicle_type: string;
+  vehicle_plate: string | null;
+  status: string;
+  online: boolean;
   last_seen_at: string | null;
 };
-
-
 
 export type CentralDriver = DriverRow & {
   group: CentralGroup;
@@ -40,8 +45,8 @@ export type CentralDriver = DriverRow & {
 };
 
 export type CentralMetrics = {
-  avgTotalMinutes: number | null;   // média por entrega (atribuído → entregue)
-  avgReturnMinutes: number | null;  // média entregue → próxima atribuição
+  avgTotalMinutes: number | null; // média por entrega (atribuído → entregue)
+  avgReturnMinutes: number | null; // média entregue → próxima atribuição
   queueLength: number;
   delivering: number;
   returning: number;
@@ -58,30 +63,46 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
     const sb = context.supabase;
     const rid = data.restaurantId;
 
-    const [{ data: drivers }, { data: queueRows }, { data: assigns }, { data: shifts }] = await Promise.all([
-      sb.from("delivery_drivers")
-        .select("id, name, phone, photo_url, vehicle_type, vehicle_plate, status, online, last_seen_at")
-        .eq("restaurant_id", rid),
-      sb.from("delivery_queue")
-        .select("driver_id, position, status, entered_at")
-        .eq("restaurant_id", rid)
-        .in("status", ["AGUARDANDO", "RETORNANDO", "EM_ENTREGA"]),
-      sb.from("delivery_assignments")
-        .select("id, driver_id, order_id, status, assigned_at, delivered_at")
-        .eq("restaurant_id", rid)
-        .gte("assigned_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-        .order("assigned_at", { ascending: false }),
-      sb.from("driver_shifts")
-        .select("driver_id, status, current_state")
-        .eq("restaurant_id", rid)
-        .neq("status", "FINALIZADO"),
-    ]);
+    const [{ data: drivers }, { data: queueRows }, { data: assigns }, { data: shifts }] =
+      await Promise.all([
+        sb
+          .from("delivery_drivers")
+          .select(
+            "id, name, phone, photo_url, vehicle_type, vehicle_plate, status, online, last_seen_at",
+          )
+          .eq("restaurant_id", rid),
+        sb
+          .from("delivery_queue")
+          .select("driver_id, position, status, entered_at")
+          .eq("restaurant_id", rid)
+          .in("status", ["AGUARDANDO", "RETORNANDO", "EM_ENTREGA"]),
+        sb
+          .from("delivery_assignments")
+          .select("id, driver_id, order_id, status, assigned_at, delivered_at")
+          .eq("restaurant_id", rid)
+          .gte("assigned_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+          .order("assigned_at", { ascending: false }),
+        sb
+          .from("driver_shifts")
+          .select("driver_id, status, current_state")
+          .eq("restaurant_id", rid)
+          .neq("status", "FINALIZADO"),
+      ]);
 
     const dl = (drivers ?? []) as DriverRow[];
-    const ql = (queueRows ?? []) as { driver_id: string; position: number; status: string; entered_at: string }[];
+    const ql = (queueRows ?? []) as {
+      driver_id: string;
+      position: number;
+      status: string;
+      entered_at: string;
+    }[];
     const al = (assigns ?? []) as {
-      id: string; driver_id: string | null; order_id: string | null;
-      status: string; assigned_at: string | null; delivered_at: string | null;
+      id: string;
+      driver_id: string | null;
+      order_id: string | null;
+      status: string;
+      assigned_at: string | null;
+      delivered_at: string | null;
     }[];
 
     // Load related orders for customer/order_number
@@ -97,17 +118,24 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
       }
     }
 
-    const activeByDriver = new Map<string, typeof al[number]>();
+    const activeByDriver = new Map<string, (typeof al)[number]>();
     for (const a of al) {
       if (!a.driver_id) continue;
       if (!["ATRIBUIDO", "COLETANDO", "EM_ROTA"].includes(a.status)) continue;
       if (!activeByDriver.has(a.driver_id)) activeByDriver.set(a.driver_id, a);
     }
 
-    const queueByDriver = new Map<string, typeof ql[number]>();
+    const queueByDriver = new Map<string, (typeof ql)[number]>();
     for (const q of ql) queueByDriver.set(q.driver_id, q);
-    const shiftByDriver = new Map<string, { driver_id: string; status: string; current_state: string }>();
-    for (const s of (shifts ?? []) as { driver_id: string; status: string; current_state: string }[]) {
+    const shiftByDriver = new Map<
+      string,
+      { driver_id: string; status: string; current_state: string }
+    >();
+    for (const s of (shifts ?? []) as {
+      driver_id: string;
+      status: string;
+      current_state: string;
+    }[]) {
       shiftByDriver.set(s.driver_id, s);
     }
 
@@ -132,14 +160,20 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
     const delivered = al
       .filter((a) => a.status === "ENTREGUE" && a.assigned_at && a.delivered_at)
       .slice(0, 50);
-    const totalDeltas = delivered.map(
-      (a) => Math.max(0, (new Date(a.delivered_at!).getTime() - new Date(a.assigned_at!).getTime()) / 60000),
+    const totalDeltas = delivered.map((a) =>
+      Math.max(
+        0,
+        (new Date(a.delivered_at!).getTime() - new Date(a.assigned_at!).getTime()) / 60000,
+      ),
     );
     const avgTotalMinutes = averageMinutes(totalDeltas);
     const avgReturnMinutes = averageMinutes(returnGapsMinutes(al));
 
     const counts = enriched.reduce(
-      (acc, d) => { acc[d.group] = (acc[d.group] ?? 0) + 1; return acc; },
+      (acc, d) => {
+        acc[d.group] = (acc[d.group] ?? 0) + 1;
+        return acc;
+      },
       {} as Record<CentralGroup, number>,
     );
 

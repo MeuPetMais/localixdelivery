@@ -4,35 +4,91 @@ import { useEffect, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Activity, Clock, Users, Bike, Package, RotateCcw, PauseCircle, WifiOff,
+  Activity,
+  Clock,
+  Users,
+  Bike,
+  Package,
+  RotateCcw,
+  PauseCircle,
+  WifiOff,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getOperationsCentral, type CentralDriver, type CentralGroup, type CentralMetrics,
+  getOperationsCentral,
+  type CentralDriver,
+  type CentralGroup,
+  type CentralMetrics,
 } from "@/lib/operations-central.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/central")({
-  head: () => ({ meta: [
-    { title: "Central Operacional — Localix" },
-    { name: "description", content: "Painel operacional em tempo real: fila, entregas em andamento, retornos e pausas." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Central Operacional — Localix" },
+      {
+        name: "description",
+        content:
+          "Painel operacional em tempo real: fila, entregas em andamento, retornos e pausas.",
+      },
+    ],
+  }),
   component: CentralPage,
 });
 
-const GROUP_META: Record<CentralGroup, { label: string; icon: React.ReactNode; tone: string; ring: string }> = {
-  disponivel:  { label: "Disponível",  icon: <Activity className="h-4 w-4" />,    tone: "text-emerald-700 bg-emerald-500/10",   ring: "ring-emerald-500/30" },
-  na_fila:     { label: "Na fila",      icon: <Users className="h-4 w-4" />,       tone: "text-blue-700 bg-blue-500/10",         ring: "ring-blue-500/30" },
-  em_entrega:  { label: "Em entrega",  icon: <Package className="h-4 w-4" />,     tone: "text-sky-700 bg-sky-500/10",           ring: "ring-sky-500/30" },
-  retornando:  { label: "Retornando",  icon: <RotateCcw className="h-4 w-4" />,   tone: "text-amber-700 bg-amber-400/10",       ring: "ring-amber-400/30" },
-  pausa:       { label: "Pausa",       icon: <PauseCircle className="h-4 w-4" />, tone: "text-orange-700 bg-orange-500/10",     ring: "ring-orange-500/30" },
-  offline:     { label: "Offline",     icon: <WifiOff className="h-4 w-4" />,     tone: "text-muted-foreground bg-muted",        ring: "ring-border" },
+const GROUP_META: Record<
+  CentralGroup,
+  { label: string; icon: React.ReactNode; tone: string; ring: string }
+> = {
+  disponivel: {
+    label: "Disponível",
+    icon: <Activity className="h-4 w-4" />,
+    tone: "text-emerald-700 bg-emerald-500/10",
+    ring: "ring-emerald-500/30",
+  },
+  na_fila: {
+    label: "Na fila",
+    icon: <Users className="h-4 w-4" />,
+    tone: "text-blue-700 bg-blue-500/10",
+    ring: "ring-blue-500/30",
+  },
+  em_entrega: {
+    label: "Em entrega",
+    icon: <Package className="h-4 w-4" />,
+    tone: "text-sky-700 bg-sky-500/10",
+    ring: "ring-sky-500/30",
+  },
+  retornando: {
+    label: "Retornando",
+    icon: <RotateCcw className="h-4 w-4" />,
+    tone: "text-amber-700 bg-amber-400/10",
+    ring: "ring-amber-400/30",
+  },
+  pausa: {
+    label: "Pausa",
+    icon: <PauseCircle className="h-4 w-4" />,
+    tone: "text-orange-700 bg-orange-500/10",
+    ring: "ring-orange-500/30",
+  },
+  offline: {
+    label: "Offline",
+    icon: <WifiOff className="h-4 w-4" />,
+    tone: "text-muted-foreground bg-muted",
+    ring: "ring-border",
+  },
 };
 
-const GROUP_ORDER: CentralGroup[] = ["disponivel", "na_fila", "em_entrega", "retornando", "pausa", "offline"];
+const GROUP_ORDER: CentralGroup[] = [
+  "disponivel",
+  "na_fila",
+  "em_entrega",
+  "retornando",
+  "pausa",
+  "offline",
+];
 
 function CentralPage() {
   const restaurant = useRestaurant();
@@ -53,27 +109,62 @@ function CentralPage() {
     const invalidate = () => qc.invalidateQueries({ queryKey });
     const ch = supabase
       .channel(`central-${restaurant.id}`)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_queue", filter: `restaurant_id=eq.${restaurant.id}` },
-        invalidate)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_assignments", filter: `restaurant_id=eq.${restaurant.id}` },
-        invalidate)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_drivers", filter: `restaurant_id=eq.${restaurant.id}` },
-        invalidate)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "driver_shifts", filter: `restaurant_id=eq.${restaurant.id}` },
-        invalidate)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_queue",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_assignments",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_drivers",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "driver_shifts",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
+        invalidate,
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [restaurant.id, qc]);
 
   const drivers = data?.drivers ?? [];
   const metrics = data?.metrics;
   const grouped = useMemo(() => {
     const map: Record<CentralGroup, CentralDriver[]> = {
-      disponivel: [], na_fila: [], em_entrega: [], retornando: [], pausa: [], offline: [],
+      disponivel: [],
+      na_fila: [],
+      em_entrega: [],
+      retornando: [],
+      pausa: [],
+      offline: [],
     };
     for (const d of drivers) map[d.group].push(d);
     return map;
@@ -84,7 +175,9 @@ function CentralPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold">Central Operacional</h1>
-          <p className="text-sm text-muted-foreground">Atualização em tempo real do time de entregas.</p>
+          <p className="text-sm text-muted-foreground">
+            Atualização em tempo real do time de entregas.
+          </p>
         </div>
         <Badge variant="outline" className="gap-1 text-xs">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Ao vivo
@@ -102,27 +195,45 @@ function CentralPage() {
   );
 }
 
-function MetricsRow({ metrics, loading }: { metrics: CentralMetrics | undefined; loading: boolean }) {
+function MetricsRow({
+  metrics,
+  loading,
+}: {
+  metrics: CentralMetrics | undefined;
+  loading: boolean;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       <MetricCard
-        icon={<Clock className="h-4 w-4" />} label="Tempo médio"
+        icon={<Clock className="h-4 w-4" />}
+        label="Tempo médio"
         value={metrics?.avgTotalMinutes != null ? `${metrics.avgTotalMinutes} min` : "—"}
         hint="Última 24h"
       />
       <MetricCard
-        icon={<Users className="h-4 w-4" />} label="Fila"
+        icon={<Users className="h-4 w-4" />}
+        label="Fila"
         value={loading ? "…" : String(metrics?.queueLength ?? 0)}
         hint="Aguardando"
       />
       <MetricCard
-        icon={<RotateCcw className="h-4 w-4" />} label="Tempo de retorno"
+        icon={<RotateCcw className="h-4 w-4" />}
+        label="Tempo de retorno"
         value={metrics?.avgReturnMinutes != null ? `${metrics.avgReturnMinutes} min` : "—"}
         hint="Média entre entregas"
       />
       <MetricCard
-        icon={<Activity className="h-4 w-4" />} label="Ativos"
-        value={loading ? "…" : String((metrics?.delivering ?? 0) + (metrics?.returning ?? 0) + (metrics?.queueLength ?? 0))}
+        icon={<Activity className="h-4 w-4" />}
+        label="Ativos"
+        value={
+          loading
+            ? "…"
+            : String(
+                (metrics?.delivering ?? 0) +
+                  (metrics?.returning ?? 0) +
+                  (metrics?.queueLength ?? 0),
+              )
+        }
         hint={`${metrics?.total ?? 0} no total`}
       />
     </div>
@@ -133,7 +244,9 @@ function MetricCard(props: { icon: React.ReactNode; label: string; value: string
   return (
     <Card className="rounded-2xl border-none p-4 shadow-sm">
       <div className="flex items-center justify-between text-muted-foreground">
-        <span className="flex items-center gap-1 text-xs font-medium">{props.icon} {props.label}</span>
+        <span className="flex items-center gap-1 text-xs font-medium">
+          {props.icon} {props.label}
+        </span>
       </div>
       <p className="mt-1 font-display text-2xl font-extrabold">{props.value}</p>
       <p className="text-[11px] text-muted-foreground">{props.hint}</p>
@@ -146,7 +259,13 @@ function GroupColumn({ group, drivers }: { group: CentralGroup; drivers: Central
   return (
     <Card className="flex flex-col rounded-2xl border-none p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <div className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ring-1", m.tone, m.ring)}>
+        <div
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ring-1",
+            m.tone,
+            m.ring,
+          )}
+        >
           {m.icon} {m.label}
         </div>
         <span className="text-xs text-muted-foreground">{drivers.length}</span>
@@ -157,7 +276,9 @@ function GroupColumn({ group, drivers }: { group: CentralGroup; drivers: Central
         </p>
       ) : (
         <ul className="space-y-2">
-          {drivers.map((d) => <DriverRow key={d.id} d={d} />)}
+          {drivers.map((d) => (
+            <DriverRow key={d.id} d={d} />
+          ))}
         </ul>
       )}
     </Card>
@@ -182,14 +303,19 @@ function DriverRow({ d }: { d: CentralDriver }) {
           <Bike className="h-3 w-3" />
           {d.vehicle_plate ?? d.vehicle_type}
           {d.group === "em_entrega" && d.active_order_number != null && (
-            <span className="ml-1">• #{d.active_order_number}{d.active_customer ? ` · ${d.active_customer}` : ""}</span>
+            <span className="ml-1">
+              • #{d.active_order_number}
+              {d.active_customer ? ` · ${d.active_customer}` : ""}
+            </span>
           )}
         </p>
       </div>
       {d.group === "na_fila" && d.queue_position != null && (
         <Badge variant="secondary">
           #{d.queue_position}
-          {d.queue_entered_at ? ` · ${new Date(d.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+          {d.queue_entered_at
+            ? ` · ${new Date(d.queue_entered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+            : ""}
         </Badge>
       )}
       {d.group === "em_entrega" && d.active_since && (

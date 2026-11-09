@@ -59,11 +59,41 @@ const TOGGLES: Array<{
     emoji: "⭐",
     desc: "Apenas mostra ou oculta a seção na página pública. Crie e gerencie promoções no módulo Promoções.",
   },
-  { key: "weekly_favorites_enabled", diagKey: "weekly_favorites", label: "Queridinhos da Semana", emoji: "🔥", desc: "Marcados manualmente na lista abaixo." },
-  { key: "top_rated_enabled", diagKey: "top_rated", label: "Mais Bem Avaliados", emoji: "🏆", desc: "Produtos com pelo menos 5 avaliações." },
-  { key: "new_items_enabled", diagKey: "new_items", label: "Novidades", emoji: "🆕", desc: "Produtos cadastrados nos últimos 30 dias." },
-  { key: "customer_favorites_enabled", diagKey: "customer_favorites", label: "Favoritos dos Clientes", emoji: "❤️", desc: "Os produtos mais salvos pelos clientes." },
-  { key: "half_half_pizza_enabled", diagKey: "half_half_pizza", label: "Pizza Meio a Meio", emoji: "🍕", desc: "Requer um Builder de montagem cadastrado." },
+  {
+    key: "weekly_favorites_enabled",
+    diagKey: "weekly_favorites",
+    label: "Queridinhos da Semana",
+    emoji: "🔥",
+    desc: "Marcados manualmente na lista abaixo.",
+  },
+  {
+    key: "top_rated_enabled",
+    diagKey: "top_rated",
+    label: "Mais Bem Avaliados",
+    emoji: "🏆",
+    desc: "Produtos com pelo menos 5 avaliações.",
+  },
+  {
+    key: "new_items_enabled",
+    diagKey: "new_items",
+    label: "Novidades",
+    emoji: "🆕",
+    desc: "Produtos cadastrados nos últimos 30 dias.",
+  },
+  {
+    key: "customer_favorites_enabled",
+    diagKey: "customer_favorites",
+    label: "Favoritos dos Clientes",
+    emoji: "❤️",
+    desc: "Os produtos mais salvos pelos clientes.",
+  },
+  {
+    key: "half_half_pizza_enabled",
+    diagKey: "half_half_pizza",
+    label: "Pizza Meio a Meio",
+    emoji: "🍕",
+    desc: "Requer um Builder de montagem cadastrado.",
+  },
 ];
 
 function FeaturedPage() {
@@ -111,7 +141,11 @@ function FeaturedPage() {
   const saveConfig = useMutation({
     mutationFn: async (patch: Partial<Config>) => {
       if (!restaurantId) return;
-      const merged = { ...(config ?? { restaurant_id: restaurantId, ...DEFAULTS }), ...patch, restaurant_id: restaurantId };
+      const merged = {
+        ...(config ?? { restaurant_id: restaurantId, ...DEFAULTS }),
+        ...patch,
+        restaurant_id: restaurantId,
+      };
       const { error } = await supabase
         .from("featured_sections" as any)
         .upsert(merged, { onConflict: "restaurant_id" });
@@ -142,7 +176,10 @@ function FeaturedPage() {
 
   const toggleWeekly = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
-      const { error } = await supabase.from("menu_items").update({ is_weekly_favorite: value } as any).eq("id", id);
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ is_weekly_favorite: value } as any)
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -161,7 +198,8 @@ function FeaturedPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold">Categorias em Destaque</h1>
           <p className="text-sm text-muted-foreground">
-            Ative coleções que organizam o cardápio automaticamente na página pública. Categorias vazias ficam ocultas.
+            Ative coleções que organizam o cardápio automaticamente na página pública. Categorias
+            vazias ficam ocultas.
           </p>
         </div>
         <Dialog>
@@ -175,22 +213,36 @@ function FeaturedPage() {
               <DialogTitle>🔍 Diagnóstico das Categorias</DialogTitle>
             </DialogHeader>
             {diagLoading && diagnostics.length === 0 ? (
-              <div className="space-y-2">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-10" />)}</div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-10" />
+                ))}
+              </div>
             ) : (
               <ul className="divide-y">
                 {diagnostics.map((d) => (
                   <li key={d.key} className="flex items-center justify-between gap-3 py-2 text-sm">
                     <div className="min-w-0">
-                      <p className="font-semibold">{d.emoji} {d.label}</p>
+                      <p className="font-semibold">
+                        {d.emoji} {d.label}
+                      </p>
                       <p className="text-xs text-muted-foreground">{d.note}</p>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <Badge variant={d.enabled ? "default" : "secondary"} className="gap-1">
-                        {d.enabled ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {d.enabled ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
                         {d.enabled ? "habilitada" : "desativada"}
                       </Badge>
                       <Badge variant={d.rendered ? "default" : "outline"} className="gap-1">
-                        {d.rendered ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {d.rendered ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
                         {d.count} {d.count === 1 ? "item" : "itens"}
                       </Badge>
                     </div>
@@ -206,15 +258,19 @@ function FeaturedPage() {
         <p className="font-semibold">Sobre Promoções</p>
         <p className="text-muted-foreground">
           O único lugar para criar, editar, pausar ou encerrar promoções é o módulo{" "}
-          <Link to="/promotions" className="font-semibold text-primary underline">Promoções</Link>.
-          Aqui você só decide se a seção aparece na página pública.
+          <Link to="/promotions" className="font-semibold text-primary underline">
+            Promoções
+          </Link>
+          . Aqui você só decide se a seção aparece na página pública.
         </p>
       </Card>
 
       <Card className="divide-y p-0">
         {isLoading ? (
           <div className="p-4 space-y-3">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-14" />
+            ))}
           </div>
         ) : (
           TOGGLES.map((t) => {
@@ -223,19 +279,31 @@ function FeaturedPage() {
             return (
               <div key={t.key} className="flex items-center justify-between gap-4 p-4">
                 <div className="min-w-0 flex-1">
-                  <Label htmlFor={t.key} className="flex items-center gap-2 text-base font-semibold">
+                  <Label
+                    htmlFor={t.key}
+                    className="flex items-center gap-2 text-base font-semibold"
+                  >
                     <span>{t.emoji}</span> {t.label}
                   </Label>
                   <p className="text-xs text-muted-foreground">{t.desc}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Badge variant={enabled ? "default" : "secondary"} className="gap-1 text-[10px]">
-                      {enabled ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                    <Badge
+                      variant={enabled ? "default" : "secondary"}
+                      className="gap-1 text-[10px]"
+                    >
+                      {enabled ? (
+                        <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <XCircle className="h-3 w-3" />
+                      )}
                       {enabled ? "Ativa" : "Desativada"}
                     </Badge>
                     {d && (
                       <Badge variant={d.rendered ? "default" : "outline"} className="text-[10px]">
                         {t.diagKey === "half_half_pizza"
-                          ? (d.count > 0 ? "Builder encontrado" : "Builder inexistente")
+                          ? d.count > 0
+                            ? "Builder encontrado"
+                            : "Builder inexistente"
                           : `${d.count} ${d.count === 1 ? "produto encontrado" : "produtos encontrados"}`}
                       </Badge>
                     )}
@@ -275,7 +343,11 @@ function FeaturedPage() {
           )}
         </div>
         {loadingItems ? (
-          <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
         ) : (
           <ul className="divide-y">
             {items.map((it) => {
@@ -284,7 +356,9 @@ function FeaturedPage() {
               return (
                 <li key={it.id} className="flex items-center gap-3 py-2">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                    {it.image_url && <img src={it.image_url} alt="" className="h-full w-full object-cover" />}
+                    {it.image_url && (
+                      <img src={it.image_url} alt="" className="h-full w-full object-cover" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{it.name}</p>
@@ -295,7 +369,13 @@ function FeaturedPage() {
                     disabled={disabled || toggleWeekly.isPending}
                     onClick={() => toggleWeekly.mutate({ id: it.id, value: !marked })}
                   >
-                    {toggleWeekly.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : marked ? "Marcado" : "Marcar"}
+                    {toggleWeekly.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : marked ? (
+                      "Marcado"
+                    ) : (
+                      "Marcar"
+                    )}
                   </Button>
                 </li>
               );

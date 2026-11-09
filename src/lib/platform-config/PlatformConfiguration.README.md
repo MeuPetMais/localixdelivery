@@ -33,31 +33,35 @@ manter configurações isoladas.
 
 ## Módulos
 
-| Arquivo | Responsabilidade |
-| --- | --- |
-| `types.ts` | Flags, remote config, kill switch, contexto de avaliação, eventos |
-| `rollout.ts` | Bucketing determinístico FNV-1a (0..99) |
-| `FeatureFlagEngine.ts` | Avaliação pura de flags |
-| `FeatureFlagService.ts` | CRUD + versionamento + rollback + kill switch por flag |
-| `RemoteConfigService.ts` | Valores versionados + resolve com targeting |
-| `KillSwitchService.ts` | Kill switches por domínio |
-| `PlanFeatureService.ts` | Overrides de features por plano |
-| `PlatformConfigAuditService.ts` | Auditoria append-only frozen |
-| `PlatformConfigEventBus.ts` | Barramento de eventos |
-| `ConfigurationTemplateService.ts` | Templates/snapshots de configuração |
-| `PlatformConfigurationService.ts` | Facade central + `platformConfiguration` singleton |
+| Arquivo                           | Responsabilidade                                                  |
+| --------------------------------- | ----------------------------------------------------------------- |
+| `types.ts`                        | Flags, remote config, kill switch, contexto de avaliação, eventos |
+| `rollout.ts`                      | Bucketing determinístico FNV-1a (0..99)                           |
+| `FeatureFlagEngine.ts`            | Avaliação pura de flags                                           |
+| `FeatureFlagService.ts`           | CRUD + versionamento + rollback + kill switch por flag            |
+| `RemoteConfigService.ts`          | Valores versionados + resolve com targeting                       |
+| `KillSwitchService.ts`            | Kill switches por domínio                                         |
+| `PlanFeatureService.ts`           | Overrides de features por plano                                   |
+| `PlatformConfigAuditService.ts`   | Auditoria append-only frozen                                      |
+| `PlatformConfigEventBus.ts`       | Barramento de eventos                                             |
+| `ConfigurationTemplateService.ts` | Templates/snapshots de configuração                               |
+| `PlatformConfigurationService.ts` | Facade central + `platformConfiguration` singleton                |
 
 ## Consumo típico
 
 ```ts
 import { platformConfiguration } from "@/lib/platform-config";
 
-if (platformConfiguration.isFeatureEnabled("checkout.v2", { tenantId, plan, environment: "prod" })) {
+if (
+  platformConfiguration.isFeatureEnabled("checkout.v2", { tenantId, plan, environment: "prod" })
+) {
   // ...
 }
 
 const timeoutMs = platformConfiguration.remoteConfig.resolve<number>(
-  "checkout.timeout_ms", { plan }, 3000,
+  "checkout.timeout_ms",
+  { plan },
+  3000,
 );
 
 platformConfiguration.killSwitch.assertOperational("payments");

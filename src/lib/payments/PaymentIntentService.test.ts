@@ -23,7 +23,11 @@ describe("runIntent — create (Pix)", () => {
       expiration_date: "2030-01-01T00:00:00Z",
     });
     const r = await runIntent(invoke, "create", { order_id: "o1", payment_method: "pix" });
-    expect(invoke).toHaveBeenCalledWith({ action: "create", order_id: "o1", payment_method: "pix" });
+    expect(invoke).toHaveBeenCalledWith({
+      action: "create",
+      order_id: "o1",
+      payment_method: "pix",
+    });
     expect(r.payment_id).toBe("MP-1");
     expect(r.qr_code).toBe("PIX-COPIA-COLA");
     expect(r.qr_code_base64).toBe("BASE64==");
@@ -50,12 +54,16 @@ describe("runIntent — create (cartão)", () => {
 describe("runIntent — erros", () => {
   it("propaga erro do Mercado Pago", async () => {
     const invoke = vi.fn().mockResolvedValue({ error: "invalid access token" });
-    await expect(runIntent(invoke, "create", { order_id: "o1" })).rejects.toThrow(/invalid access token/i);
+    await expect(runIntent(invoke, "create", { order_id: "o1" })).rejects.toThrow(
+      /invalid access token/i,
+    );
   });
 
   it("propaga erro de pedido inexistente", async () => {
     const invoke = vi.fn().mockResolvedValue({ error: "Pedido não encontrado" });
-    await expect(runIntent(invoke, "create", { order_id: "o1" })).rejects.toThrow(/não encontrado/i);
+    await expect(runIntent(invoke, "create", { order_id: "o1" })).rejects.toThrow(
+      /não encontrado/i,
+    );
   });
 
   it("propaga exceção lançada pelo invoke (falha de rede)", async () => {

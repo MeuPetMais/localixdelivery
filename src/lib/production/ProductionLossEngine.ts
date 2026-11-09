@@ -1,7 +1,17 @@
 import type { Ingredient } from "@/lib/inventory/types";
 
-export interface LossInput { ingredientId: string | null; quantity: number; reason?: string; cost?: number; }
-export interface LossComputed { ingredientId: string | null; quantity: number; reason: string | null; cost: number; }
+export interface LossInput {
+  ingredientId: string | null;
+  quantity: number;
+  reason?: string;
+  cost?: number;
+}
+export interface LossComputed {
+  ingredientId: string | null;
+  quantity: number;
+  reason: string | null;
+  cost: number;
+}
 
 export const ProductionLossEngine = {
   compute(losses: LossInput[], ingredients: Ingredient[]): LossComputed[] {
@@ -10,7 +20,10 @@ export const ProductionLossEngine = {
       ingredientId: l.ingredientId,
       quantity: Number(l.quantity),
       reason: l.reason ?? null,
-      cost: l.cost != null ? Number(l.cost) : Number(l.quantity) * (cost.get(l.ingredientId ?? "") ?? 0),
+      cost:
+        l.cost != null
+          ? Number(l.cost)
+          : Number(l.quantity) * (cost.get(l.ingredientId ?? "") ?? 0),
     }));
   },
   totalCost(losses: LossComputed[]): number {

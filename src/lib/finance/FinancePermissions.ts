@@ -2,11 +2,11 @@ import type { FinanceRole, FinanceTab } from "./types";
 
 // Read-only permission matrix. Enforcement happens in RLS + server functions.
 const MATRIX: Record<FinanceRole, FinanceTab[]> = {
-  ADMIN:      ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
-  MANAGER:    ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
-  FINANCE:    ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
+  ADMIN: ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
+  MANAGER: ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
+  FINANCE: ["summary", "cashflow", "receivables", "payables", "dre", "profitability", "reports"],
   ACCOUNTANT: ["summary", "cashflow", "dre", "reports"],
-  VIEWER:     ["summary"],
+  VIEWER: ["summary"],
 };
 
 export const FinancePermissions = {

@@ -58,7 +58,8 @@ const FRIENDLY: Record<string, string> = {
 
 function friendly(code: string): string {
   if (FRIENDLY[code]) return FRIENDLY[code];
-  if (code.startsWith("Stripe:")) return `Stripe recusou a operação: ${code.replace(/^Stripe:\s*/, "")}`;
+  if (code.startsWith("Stripe:"))
+    return `Stripe recusou a operação: ${code.replace(/^Stripe:\s*/, "")}`;
   return "Não foi possível concluir a operação com a Stripe. Tente novamente.";
 }
 

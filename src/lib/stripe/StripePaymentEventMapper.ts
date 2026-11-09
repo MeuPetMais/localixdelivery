@@ -55,7 +55,9 @@ export const StripePaymentEventMapper = {
     return stripeType in TYPE_TO_DOMAIN;
   },
 
-  toDomain(event: StripeWebhookEvent): { name: DomainPaymentEvent; payload: DomainPaymentPayload } | null {
+  toDomain(
+    event: StripeWebhookEvent,
+  ): { name: DomainPaymentEvent; payload: DomainPaymentPayload } | null {
     const name = TYPE_TO_DOMAIN[event.type];
     if (!name) return null;
 
@@ -67,11 +69,16 @@ export const StripePaymentEventMapper = {
       payload: {
         provider: "stripe",
         eventId: event.id,
-        paymentIntentId: isCheckout ? obj.payment_intent ?? null : obj.id ?? null,
-        checkoutSessionId: isCheckout ? obj.id ?? null : null,
+        paymentIntentId: isCheckout ? (obj.payment_intent ?? null) : (obj.id ?? null),
+        checkoutSessionId: isCheckout ? (obj.id ?? null) : null,
         orderId: pickMetadata(obj, "order_id"),
         restaurantId: pickMetadata(obj, "restaurant_id"),
-        amount: typeof obj.amount === "number" ? obj.amount : typeof obj.amount_total === "number" ? obj.amount_total : null,
+        amount:
+          typeof obj.amount === "number"
+            ? obj.amount
+            : typeof obj.amount_total === "number"
+              ? obj.amount_total
+              : null,
         currency: String(obj.currency ?? "brl"),
         status: obj.status ?? null,
         raw: obj as Record<string, unknown>,

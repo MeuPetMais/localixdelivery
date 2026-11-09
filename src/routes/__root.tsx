@@ -27,7 +27,6 @@ import { RestaurantSessionProvider } from "@/contexts/RestaurantSessionContext";
 import { CustomerNotificationsProvider } from "@/contexts/CustomerNotificationsContext";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -37,7 +36,10 @@ function NotFoundComponent() {
         <p className="mt-2 text-sm text-muted-foreground">
           O link que você abriu não existe ou foi movido.
         </p>
-        <Link to="/" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+        <Link
+          to="/"
+          className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
           Voltar para o início
         </Link>
       </div>
@@ -60,12 +62,18 @@ function ErrorComponent({ error, reset }: { error: unknown; reset?: () => void }
         <p className="mt-2 text-sm text-muted-foreground">Tente novamente em instantes.</p>
         <div className="mt-6 flex justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset?.(); }}
+            onClick={() => {
+              router.invalidate();
+              reset?.();
+            }}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Tentar novamente
           </button>
-          <a href="/" className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent">
+          <a
+            href="/"
+            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
             Início
           </a>
         </div>
@@ -80,15 +88,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { name: "description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
+      {
+        name: "description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
       { property: "og:title", content: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { property: "og:description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
+      {
+        property: "og:description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Localix Delivery — Pedidos direto pelo WhatsApp" },
-      { name: "twitter:description", content: "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Plataforma de delivery própria para restaurantes, pizzarias e hamburguerias. Receba pedidos via WhatsApp e cardápio digital sem marketplaces.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0a5582d-3d69-47ff-b7d2-7604975196fd/id-preview-49811661--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app-1782334396836.png",
+      },
       { name: "theme-color", content: "#0f172a" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -110,7 +138,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -167,26 +197,37 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isPartnerGrowthArea = pathname === "/partner-growth" || pathname.startsWith("/partner-growth/");
+  const isPartnerGrowthArea =
+    pathname === "/partner-growth" || pathname.startsWith("/partner-growth/");
 
   useEffect(() => {
     const isDriverAppRoute = pathname.startsWith("/motoboy") || pathname.startsWith("/entregador");
     if (isDriverAppRoute) return;
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => registration.unregister());
-      }).catch(() => {});
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => registration.unregister());
+        })
+        .catch(() => {});
     }
     if ("caches" in window && import.meta.env.DEV) {
-      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key))).catch(() => {});
+      caches
+        .keys()
+        .then((keys) => keys.forEach((key) => caches.delete(key)))
+        .catch(() => {});
     }
   }, [pathname]);
-
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (import.meta.env.DEV) {
-        console.info("[auth-debug] onAuthStateChange(root)", { event, hasSession: !!session, userId: session?.user?.id, expiresAt: session?.expires_at });
+        console.info("[auth-debug] onAuthStateChange(root)", {
+          event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+          expiresAt: session?.expires_at,
+        });
       }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
@@ -211,7 +252,6 @@ function RootComponent() {
       <RestaurantSessionProvider>
         <CustomerNavigationProvider>
           <CustomerNotificationsProvider>
-        
             <Outlet />
             <CustomerBottomNav />
           </CustomerNotificationsProvider>
@@ -223,14 +263,52 @@ function RootComponent() {
 }
 
 const RESERVED_TOP = new Set([
-  "", "home", "beneficios", "favoritos", "meus-pedidos", "meus-enderecos",
-  "cliente", "pedido", "pedido-sucesso", "auth", "entrar", "esqueci-senha",
-  "redefinir-senha", "admin", "dashboard", "menu", "orders", "settings", "ai",
-  "consultor", "customers", "finance", "finance-ai", "financial-center",
-  "inventory", "loyalty", "promotions", "reviews", "suppliers", "units",
-  "builders", "r", "featured", "kitchen", "perfil", "print-settings",
-  "support", "escolher-ambiente", "pagamentos", "analytics", "relatorios",
-  "entregador", "motoboy", "motoboy-estabelecimentos", "partner-growth", "supabase-raw-fetch-temp",
+  "",
+  "home",
+  "beneficios",
+  "favoritos",
+  "meus-pedidos",
+  "meus-enderecos",
+  "cliente",
+  "pedido",
+  "pedido-sucesso",
+  "auth",
+  "entrar",
+  "esqueci-senha",
+  "redefinir-senha",
+  "admin",
+  "dashboard",
+  "menu",
+  "orders",
+  "settings",
+  "ai",
+  "consultor",
+  "customers",
+  "finance",
+  "finance-ai",
+  "financial-center",
+  "inventory",
+  "loyalty",
+  "promotions",
+  "reviews",
+  "suppliers",
+  "units",
+  "builders",
+  "r",
+  "featured",
+  "kitchen",
+  "perfil",
+  "print-settings",
+  "support",
+  "escolher-ambiente",
+  "pagamentos",
+  "analytics",
+  "relatorios",
+  "entregador",
+  "motoboy",
+  "motoboy-estabelecimentos",
+  "partner-growth",
+  "supabase-raw-fetch-temp",
 ]);
 
 const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
@@ -246,13 +324,12 @@ const CUSTOMER_NAV_MATCHERS: Array<(p: string) => boolean> = [
   },
 ];
 
-
 function CustomerBottomNav() {
   const { pathname, isAdminArea } = useRouterState({
     select: (s) => ({
       pathname: s.location.pathname,
-      isAdminArea: s.matches.some((m) =>
-        m.routeId?.startsWith("/_authenticated") || m.routeId?.startsWith("/admin"),
+      isAdminArea: s.matches.some(
+        (m) => m.routeId?.startsWith("/_authenticated") || m.routeId?.startsWith("/admin"),
       ),
     }),
   });
@@ -266,5 +343,3 @@ function CustomerBottomNav() {
     </>
   );
 }
-
-

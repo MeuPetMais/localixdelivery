@@ -1,6 +1,7 @@
 # Central de Gateways — Payment Domain
 
 ## Objetivo
+
 Permitir que cada restaurante conecte múltiplos gateways de pagamento e
 escolha qual será utilizado no checkout. A tela `/pagamentos` é a única
 superfície de configuração; o restante da aplicação nunca conhece o

@@ -57,18 +57,26 @@ export function ProductOptionGroupWizard({
   }, [group.description, group.min_selection, group.max_selection]);
 
   const stepTitle = useMemo(
-    () => ({
-      1: "Pergunta",
-      2: "Opções",
-      3: "Regras",
-    })[step],
+    () =>
+      ({
+        1: "Pergunta",
+        2: "Opções",
+        3: "Regras",
+      })[step],
     [step],
   );
 
   async function saveBasics() {
     const cleanName = name.trim();
     if (!cleanName) return;
-    const min = type === "SINGLE" ? (required ? 1 : 0) : required ? Math.max(1, group.min_selection) : group.min_selection;
+    const min =
+      type === "SINGLE"
+        ? required
+          ? 1
+          : 0
+        : required
+          ? Math.max(1, group.min_selection)
+          : group.min_selection;
     const max = type === "SINGLE" ? 1 : Math.max(min || 1, group.max_selection || 4);
     await onSaveGroup(group, {
       name: cleanName,
@@ -166,7 +174,11 @@ export function ProductOptionGroupWizard({
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="button" onClick={saveBasics} disabled={!name.trim() || savingId === group.id}>
+            <Button
+              type="button"
+              onClick={saveBasics}
+              disabled={!name.trim() || savingId === group.id}
+            >
               Continuar
             </Button>
           </div>
@@ -178,7 +190,8 @@ export function ProductOptionGroupWizard({
           <div>
             <p className="text-base font-semibold">Quais opções o cliente poderá escolher?</p>
             <p className="text-xs text-muted-foreground">
-              Cadastre as respostas deste grupo. O Turbine será configurado depois, fora desta etapa.
+              Cadastre as respostas deste grupo. O Turbine será configurado depois, fora desta
+              etapa.
             </p>
           </div>
 
@@ -189,7 +202,9 @@ export function ProductOptionGroupWizard({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{option.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {option.price_adjustment > 0 ? `+ ${brl(option.price_adjustment)}` : "Sem acréscimo"}
+                      {option.price_adjustment > 0
+                        ? `+ ${brl(option.price_adjustment)}`
+                        : "Sem acréscimo"}
                       {" · "}Máx. {option.max_quantity}
                     </p>
                   </div>

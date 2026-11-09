@@ -6,7 +6,7 @@
 (src/lib/payments/PricingEngine.ts) → OrderService
 (src/lib/checkout/OrderService.ts) → PaymentService
 (src/lib/payments/PaymentService.ts) → Provider (Mercado Pago hoje) →
-Edge Function mp-webhook → tabelas `payments` / `payment_webhook_events`
+Edge Function mp-webhook → tabelas `payments`/`payment_webhook_events`
 → Finance / Loyalty / Analytics (leitura).`
 
 Detalhes em `CHECKOUT_INFRASTRUCTURE.md`. Nenhum passo foi alterado.

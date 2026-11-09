@@ -36,7 +36,9 @@ const WEEKDAY_INDEX: Record<string, number> = {
 
 function parseTime(value?: string | null): number | null {
   if (!value) return null;
-  const match = String(value).trim().match(/^(\d{1,2}):(\d{2})/);
+  const match = String(value)
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})/);
   if (!match) return null;
   const h = Number(match[1]);
   const m = Number(match[2]);
@@ -61,7 +63,9 @@ function getZonedNow(now: Date, timeZone: string) {
     const minute = Number(get("minute"));
     return {
       dayIndex: WEEKDAY_INDEX[weekday] ?? now.getDay(),
-      minuteOfDay: (Number.isFinite(hour) ? hour % 24 : now.getHours()) * 60 + (Number.isFinite(minute) ? minute : now.getMinutes()),
+      minuteOfDay:
+        (Number.isFinite(hour) ? hour % 24 : now.getHours()) * 60 +
+        (Number.isFinite(minute) ? minute : now.getMinutes()),
     };
   } catch {
     return { dayIndex: now.getDay(), minuteOfDay: now.getHours() * 60 + now.getMinutes() };
@@ -71,7 +75,10 @@ function getZonedNow(now: Date, timeZone: string) {
 function isPointInsideWeeklyInterval(point: number, start: number, end: number): boolean {
   // Also compare point + WEEK_MINUTES so Saturday overnight intervals can cover
   // the first minutes of Sunday in the same normalized calculation.
-  return (point >= start && point <= end) || (point + WEEK_MINUTES >= start && point + WEEK_MINUTES <= end);
+  return (
+    (point >= start && point <= end) ||
+    (point + WEEK_MINUTES >= start && point + WEEK_MINUTES <= end)
+  );
 }
 
 export function isWithinSchedule(
@@ -124,11 +131,14 @@ export type RestaurantStatus = {
   timeZone: string;
 };
 
-export function getRestaurantStatus(input: {
-  is_open?: boolean | null;
-  opening_hours?: OpeningHours;
-  timeZone?: string | null;
-}, now: Date = new Date()): RestaurantStatus {
+export function getRestaurantStatus(
+  input: {
+    is_open?: boolean | null;
+    opening_hours?: OpeningHours;
+    timeZone?: string | null;
+  },
+  now: Date = new Date(),
+): RestaurantStatus {
   const timeZone = input.timeZone || DEFAULT_RESTAURANT_TIME_ZONE;
   const manualStatus = input.is_open !== false; // null/undefined treated as open
   const withinSchedule = isWithinSchedule(input.opening_hours, now, timeZone);

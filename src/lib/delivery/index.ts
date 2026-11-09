@@ -24,4 +24,3 @@ export * from "./DriverShiftStateMachine";
 export * from "./DriverShiftService";
 export { getDeliveryProvider, registerDeliveryProvider } from "./providers";
 export type { DeliveryProvider } from "./providers";
-

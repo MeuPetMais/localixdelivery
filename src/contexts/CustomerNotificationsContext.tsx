@@ -188,9 +188,7 @@ export function CustomerNotificationsProvider({ children }: { children: ReactNod
     [notifications, unreadCount, markRead, markAllRead, loading],
   );
 
-  return (
-    <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>
-  );
+  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
 
 export function useCustomerNotifications(): Ctx {

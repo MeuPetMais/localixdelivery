@@ -233,6 +233,7 @@ Templates automatizados de relatório: **Não implementado na v1.0**.
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/LOCALIX_ONBOARDING_PLAYBOOK.md`
 - `docs/LOCALIX_SUPPORT_PLAYBOOK.md`
@@ -253,6 +254,7 @@ Consistência conferida contra:
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - Prazo formal do piloto por merchant.
 - Automação de "pilot cohort" com múltiplos merchants em paralelo.
 - Metas quantitativas formais (NPS mínimo, GMV alvo).

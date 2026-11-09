@@ -16,12 +16,12 @@ Categories / Products (references, not copies)
 
 ## Tables
 
-| Table | Purpose |
-| --- | --- |
-| `catalog_menus` | One row per menu (name, channel, status, weekday/time window) |
-| `catalog_menu_categories` | Join between a menu and existing `menu_categories` |
-| `catalog_menu_products` | Join between a menu and existing `menu_items`, with `is_featured` |
-| `catalog_events` | Internal audit trail of catalog operations |
+| Table                     | Purpose                                                           |
+| ------------------------- | ----------------------------------------------------------------- |
+| `catalog_menus`           | One row per menu (name, channel, status, weekday/time window)     |
+| `catalog_menu_categories` | Join between a menu and existing `menu_categories`                |
+| `catalog_menu_products`   | Join between a menu and existing `menu_items`, with `is_featured` |
+| `catalog_events`          | Internal audit trail of catalog operations                        |
 
 All tables are owner-scoped RLS via `restaurants.owner_id`. Never
 cross-tenant. Reuses `menu_categories` and `menu_items` — no duplication.

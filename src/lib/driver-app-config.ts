@@ -11,8 +11,7 @@ export const APP_DOWNLOAD_URL: string =
 
 /** Deep link para abrir o app instalado (Android intent scheme opcional). */
 export const APP_OPEN_URL: string =
-  (import.meta.env.VITE_DRIVER_APP_OPEN_URL as string | undefined) ??
-  "localixentregador://open";
+  (import.meta.env.VITE_DRIVER_APP_OPEN_URL as string | undefined) ?? "localixentregador://open";
 
 /** Indica se o download aponta para a Play Store (afeta o texto do botão). */
 export const IS_PLAY_STORE = APP_DOWNLOAD_URL.includes("play.google.com");

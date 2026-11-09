@@ -8,16 +8,56 @@ const STORAGE_KEY = "localix.demo.tour.completed";
 type Step = { to: string; title: string; description: string };
 
 const STEPS: Step[] = [
-  { to: "/dashboard", title: "Painel", description: "Visão geral do seu negócio: vendas, pedidos e indicadores em tempo real." },
-  { to: "/orders", title: "Pedidos", description: "Acompanhe e gerencie todos os pedidos por status em um Kanban prático." },
-  { to: "/menu", title: "Cardápio", description: "Cadastre categorias e produtos com fotos, preços e disponibilidade." },
-  { to: "/promotions", title: "Promoções", description: "Crie ofertas inteligentes com recorrência, KPIs e ações rápidas." },
-  { to: "/builders", title: "Monte do Seu Jeito", description: "Permita que clientes montem pizzas, combos e produtos personalizados." },
-  { to: "/customers", title: "Clientes", description: "CRM completo com histórico, segmentação e contato direto." },
-  { to: "/loyalty", title: "Fidelidade", description: "Programa de pontos e cashback para reter e recompensar clientes." },
-  { to: "/finance", title: "Financeiro", description: "Controle de receitas, despesas e fluxo de caixa do estabelecimento." },
-  { to: "/ai", title: "Central de IA", description: "Insights automáticos e automações de marketing com inteligência artificial." },
-  { to: "/consultor", title: "Consultor IA", description: "Tire dúvidas e receba recomendações estratégicas do consultor virtual." },
+  {
+    to: "/dashboard",
+    title: "Painel",
+    description: "Visão geral do seu negócio: vendas, pedidos e indicadores em tempo real.",
+  },
+  {
+    to: "/orders",
+    title: "Pedidos",
+    description: "Acompanhe e gerencie todos os pedidos por status em um Kanban prático.",
+  },
+  {
+    to: "/menu",
+    title: "Cardápio",
+    description: "Cadastre categorias e produtos com fotos, preços e disponibilidade.",
+  },
+  {
+    to: "/promotions",
+    title: "Promoções",
+    description: "Crie ofertas inteligentes com recorrência, KPIs e ações rápidas.",
+  },
+  {
+    to: "/builders",
+    title: "Monte do Seu Jeito",
+    description: "Permita que clientes montem pizzas, combos e produtos personalizados.",
+  },
+  {
+    to: "/customers",
+    title: "Clientes",
+    description: "CRM completo com histórico, segmentação e contato direto.",
+  },
+  {
+    to: "/loyalty",
+    title: "Fidelidade",
+    description: "Programa de pontos e cashback para reter e recompensar clientes.",
+  },
+  {
+    to: "/finance",
+    title: "Financeiro",
+    description: "Controle de receitas, despesas e fluxo de caixa do estabelecimento.",
+  },
+  {
+    to: "/ai",
+    title: "Central de IA",
+    description: "Insights automáticos e automações de marketing com inteligência artificial.",
+  },
+  {
+    to: "/consultor",
+    title: "Consultor IA",
+    description: "Tire dúvidas e receba recomendações estratégicas do consultor virtual.",
+  },
 ];
 
 export function DemoTour() {
@@ -40,7 +80,9 @@ export function DemoTour() {
   const step = useMemo(() => STEPS[index], [index]);
 
   function finish() {
-    try { localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+    } catch {}
     setOpen(false);
   }
 

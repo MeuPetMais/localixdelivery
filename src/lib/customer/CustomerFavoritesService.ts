@@ -23,19 +23,38 @@ export const CustomerFavoritesService = {
   },
 
   async add(customerId: string, targetType: FavoriteTargetType, targetId: string): Promise<void> {
-    const { error } = await T().insert({ customer_id: customerId, target_type: targetType, target_id: targetId });
+    const { error } = await T().insert({
+      customer_id: customerId,
+      target_type: targetType,
+      target_id: targetId,
+    });
     if (error && !String(error.message ?? "").includes("duplicate")) throw error;
     await CustomerEventBus.publish({
-      type: "FavoriteAdded", customerId, targetType, targetId, at: new Date().toISOString(),
+      type: "FavoriteAdded",
+      customerId,
+      targetType,
+      targetId,
+      at: new Date().toISOString(),
     });
   },
 
-  async remove(customerId: string, targetType: FavoriteTargetType, targetId: string): Promise<void> {
-    const { error } = await T().delete()
-      .eq("customer_id", customerId).eq("target_type", targetType).eq("target_id", targetId);
+  async remove(
+    customerId: string,
+    targetType: FavoriteTargetType,
+    targetId: string,
+  ): Promise<void> {
+    const { error } = await T()
+      .delete()
+      .eq("customer_id", customerId)
+      .eq("target_type", targetType)
+      .eq("target_id", targetId);
     if (error) throw error;
     await CustomerEventBus.publish({
-      type: "FavoriteRemoved", customerId, targetType, targetId, at: new Date().toISOString(),
+      type: "FavoriteRemoved",
+      customerId,
+      targetType,
+      targetId,
+      at: new Date().toISOString(),
     });
   },
 } as const;

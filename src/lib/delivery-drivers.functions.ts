@@ -48,7 +48,10 @@ export const listDrivers = createServerFn({ method: "GET" })
     if (adminErr) throw new Error(adminErr.message);
     if (!isAdmin) {
       const { data: rest, error: restErr } = await context.supabase
-        .from("restaurants").select("owner_id").eq("id", data.restaurantId).maybeSingle();
+        .from("restaurants")
+        .select("owner_id")
+        .eq("id", data.restaurantId)
+        .maybeSingle();
       if (restErr) throw new Error(restErr.message);
       if (rest?.owner_id !== context.userId) {
         throw new Error("Sem permissão para gerenciar este restaurante");
@@ -113,18 +116,20 @@ export const listDrivers = createServerFn({ method: "GET" })
 export const createDriver = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      restaurantId: z.string().uuid(),
-      name: z.string().trim().min(2).max(120),
-      phone: z.string().trim().max(30).optional().nullable(),
-      email: z.string().trim().email().max(200),
-      password: z.string().min(6).max(100),
-      cpf: z.string().trim().max(20).optional().nullable(),
-      vehicleType: z.enum(VEHICLES).default("moto"),
-      vehiclePlate: z.string().trim().max(20).optional().nullable(),
-      photoUrl: z.string().url().max(2048).optional().nullable(),
-      documentUrl: z.string().url().max(2048).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        name: z.string().trim().min(2).max(120),
+        phone: z.string().trim().max(30).optional().nullable(),
+        email: z.string().trim().email().max(200),
+        password: z.string().min(6).max(100),
+        cpf: z.string().trim().max(20).optional().nullable(),
+        vehicleType: z.enum(VEHICLES).default("moto"),
+        vehiclePlate: z.string().trim().max(20).optional().nullable(),
+        photoUrl: z.string().url().max(2048).optional().nullable(),
+        documentUrl: z.string().url().max(2048).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId, data.restaurantId);
@@ -138,11 +143,14 @@ export const createDriver = createServerFn({ method: "POST" })
       user_metadata: { full_name: data.name, kind: "delivery_driver" },
       app_metadata: { provider: "email" },
     });
-    if (authErr || !created?.user) throw new Error(authErr?.message ?? "Falha ao criar acesso do motoboy");
+    if (authErr || !created?.user)
+      throw new Error(authErr?.message ?? "Falha ao criar acesso do motoboy");
     const newUserId = created.user.id;
 
     // Concede role delivery_driver
-    await supabaseAdmin.from("user_roles").insert({ user_id: newUserId, role: "delivery_driver" as any });
+    await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: newUserId, role: "delivery_driver" as any });
 
     // Insere driver
     const { data: driver, error } = await supabaseAdmin
@@ -174,34 +182,46 @@ export const createDriver = createServerFn({ method: "POST" })
 export const updateDriver = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      restaurantId: z.string().uuid(),
-      patch: z.object({
-        name: z.string().trim().min(2).max(120).optional(),
-        phone: z.string().trim().max(30).nullable().optional(),
-        cpf: z.string().trim().max(20).nullable().optional(),
-        vehicle_type: z.enum(VEHICLES).optional(),
-        vehicle_plate: z.string().trim().max(20).nullable().optional(),
-        photo_url: z.string().url().max(2048).nullable().optional(),
-        document_url: z.string().url().max(2048).nullable().optional(),
-        status: z.enum(STATUSES).optional(),
-      }),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        restaurantId: z.string().uuid(),
+        patch: z.object({
+          name: z.string().trim().min(2).max(120).optional(),
+          phone: z.string().trim().max(30).nullable().optional(),
+          cpf: z.string().trim().max(20).nullable().optional(),
+          vehicle_type: z.enum(VEHICLES).optional(),
+          vehicle_plate: z.string().trim().max(20).nullable().optional(),
+          photo_url: z.string().url().max(2048).nullable().optional(),
+          document_url: z.string().url().max(2048).nullable().optional(),
+          status: z.enum(STATUSES).optional(),
+        }),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId, data.restaurantId);
     const { data: before } = await context.supabase
-      .from("delivery_drivers").select("*").eq("id", data.id).maybeSingle();
+      .from("delivery_drivers")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     const { data: after, error } = await context.supabase
       .from("delivery_drivers")
       .update(data.patch)
       .eq("id", data.id)
       .eq("restaurant_id", data.restaurantId)
-      .select().single();
+      .select()
+      .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, data.restaurantId, data.id,
-      data.patch.status ? "STATUS_CHANGE" : "UPDATE", before, after);
+    await audit(
+      context.userId,
+      data.restaurantId,
+      data.id,
+      data.patch.status ? "STATUS_CHANGE" : "UPDATE",
+      before,
+      after,
+    );
     return after;
   });
 
@@ -213,7 +233,10 @@ export const deleteDriver = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId, data.restaurantId);
     const { data: before } = await context.supabase
-      .from("delivery_drivers").select("*").eq("id", data.id).maybeSingle();
+      .from("delivery_drivers")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await context.supabase
       .from("delivery_drivers")
       .delete()
@@ -235,16 +258,21 @@ export const getMyDriverProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await context.supabase
-      .from("delivery_drivers").select("*").eq("owner_id", context.userId).maybeSingle();
+      .from("delivery_drivers")
+      .select("*")
+      .eq("owner_id", context.userId)
+      .maybeSingle();
     return data ?? null;
   });
 
 export const setMyPresence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      online: z.boolean(),
-    }).parse(d),
+    z
+      .object({
+        online: z.boolean(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     // Whitelist rígido: apenas presença/localização. Nada mais pode ser mutado por aqui.
@@ -259,7 +287,8 @@ export const setMyPresence = createServerFn({ method: "POST" })
       .from("delivery_drivers")
       .update(patch as any)
       .eq("owner_id", context.userId)
-      .select().maybeSingle();
+      .select()
+      .maybeSingle();
     if (error) throw new Error(error.message);
     if (row) {
       await supabaseAdmin.from("delivery_driver_audit").insert({
@@ -281,31 +310,37 @@ export const setMyPresence = createServerFn({ method: "POST" })
 export const updateMyDriverProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      patch: z.object({
-        name: z.string().trim().min(2).max(120).optional(),
-        phone: z.string().trim().max(30).nullable().optional(),
-        cpf: z.string().trim().max(20).nullable().optional(),
-        vehicle_type: z.enum(VEHICLES).optional(),
-        vehicle_model: z.string().trim().max(80).nullable().optional(),
-        vehicle_plate: z.string().trim().max(20).nullable().optional(),
-        photo_url: z.string().url().max(2048).nullable().optional(),
-        cnh_url: z.string().url().max(2048).nullable().optional(),
-        address_proof_url: z.string().url().max(2048).nullable().optional(),
-        document_url: z.string().url().max(2048).nullable().optional(),
-      }),
-    }).parse(d),
+    z
+      .object({
+        patch: z.object({
+          name: z.string().trim().min(2).max(120).optional(),
+          phone: z.string().trim().max(30).nullable().optional(),
+          cpf: z.string().trim().max(20).nullable().optional(),
+          vehicle_type: z.enum(VEHICLES).optional(),
+          vehicle_model: z.string().trim().max(80).nullable().optional(),
+          vehicle_plate: z.string().trim().max(20).nullable().optional(),
+          photo_url: z.string().url().max(2048).nullable().optional(),
+          cnh_url: z.string().url().max(2048).nullable().optional(),
+          address_proof_url: z.string().url().max(2048).nullable().optional(),
+          document_url: z.string().url().max(2048).nullable().optional(),
+        }),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: before } = await supabaseAdmin
-      .from("delivery_drivers").select("*").eq("owner_id", context.userId).maybeSingle();
+      .from("delivery_drivers")
+      .select("*")
+      .eq("owner_id", context.userId)
+      .maybeSingle();
     if (!before) throw new Error("Perfil de entregador não encontrado");
     const { data: after, error } = await supabaseAdmin
       .from("delivery_drivers")
       .update(data.patch as any)
       .eq("owner_id", context.userId)
-      .select().single();
+      .select()
+      .single();
     if (error) throw new Error(error.message);
     await supabaseAdmin.from("delivery_driver_audit").insert({
       actor_id: context.userId,

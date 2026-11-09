@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getPasswordVisibilityConfig, togglePasswordVisibility } from "@/lib/password-visibility";
 
-export interface PasswordInputProps
-  extends Omit<React.ComponentProps<"input">, "type"> {}
+export interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type"> {}
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, ...props }, ref) => {
@@ -13,12 +12,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
     const visibility = getPasswordVisibilityConfig(visible);
     return (
       <div className="relative">
-        <Input
-          ref={ref}
-          type={visibility.type}
-          className={cn("pr-11", className)}
-          {...props}
-        />
+        <Input ref={ref} type={visibility.type} className={cn("pr-11", className)} {...props} />
         <button
           type="button"
           onClick={() => setVisible(togglePasswordVisibility)}

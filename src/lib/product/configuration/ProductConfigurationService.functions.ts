@@ -45,7 +45,6 @@ export const listConfiguration = createServerFn({ method: "GET" })
     } as { groups: ProductOptionGroup[]; options: ProductOption[] };
   });
 
-
 type CloneConfigurationData = {
   source_product_id: string;
   target_product_id: string;
@@ -56,10 +55,7 @@ export function normalizeGroupName(value: string) {
   return value.trim().toLocaleLowerCase("pt-BR");
 }
 
-export function validateCloneDependencies(
-  groups: ProductOptionGroup[],
-  options: ProductOption[],
-) {
+export function validateCloneDependencies(groups: ProductOptionGroup[], options: ProductOption[]) {
   const selectedGroupIds = new Set(groups.map((group) => group.id));
   const selectedOptionIds = new Set(options.map((option) => option.id));
   const errors: string[] = [];
@@ -71,9 +67,7 @@ export function validateCloneDependencies(
       );
     }
     if (group.depends_on_option_id && !selectedOptionIds.has(group.depends_on_option_id)) {
-      errors.push(
-        `O grupo "${group.name}" depende de uma opção que também precisa ser copiada.`,
-      );
+      errors.push(`O grupo "${group.name}" depende de uma opção que também precisa ser copiada.`);
     }
   }
 
@@ -232,10 +226,10 @@ export const cloneConfigurationGroups = createServerFn({ method: "POST" })
         if (!newGroupId) continue;
 
         const dependsOnGroupId = sourceGroup.depends_on_group_id
-          ? groupIdMap.get(sourceGroup.depends_on_group_id) ?? null
+          ? (groupIdMap.get(sourceGroup.depends_on_group_id) ?? null)
           : null;
         const dependsOnOptionId = sourceGroup.depends_on_option_id
-          ? optionIdMap.get(sourceGroup.depends_on_option_id) ?? null
+          ? (optionIdMap.get(sourceGroup.depends_on_option_id) ?? null)
           : null;
 
         if (dependsOnGroupId || dependsOnOptionId) {
@@ -293,10 +287,11 @@ export const upsertOption = createServerFn({ method: "POST" })
         .eq("id", payload.id)
         .single();
       if (existingErr) throw existingErr;
-      payload.metadata = mergeExistingOptionMetadata(
-        (existing as { metadata?: ProductOption["metadata"] } | null)?.metadata,
-        payload.metadata,
-      ) ?? undefined;
+      payload.metadata =
+        mergeExistingOptionMetadata(
+          (existing as { metadata?: ProductOption["metadata"] } | null)?.metadata,
+          payload.metadata,
+        ) ?? undefined;
     }
 
     const { data: row, error } = await context.supabase

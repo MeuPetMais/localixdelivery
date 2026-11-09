@@ -2,7 +2,10 @@
 // Interfaces expostas a outros domínios / camada de apresentação.
 
 import type {
-  TrackingSnapshot, TrackingTimelineEntry, TrackingStatus, TrackingConfidence,
+  TrackingSnapshot,
+  TrackingTimelineEntry,
+  TrackingStatus,
+  TrackingConfidence,
 } from "./tracking.types";
 
 export type { TrackingSnapshot, TrackingTimelineEntry, TrackingStatus, TrackingConfidence };

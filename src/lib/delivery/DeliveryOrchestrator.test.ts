@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  createDeliveryOrchestrator,
-  type AssignmentSnapshot,
-} from "./DeliveryOrchestrator";
+import { createDeliveryOrchestrator, type AssignmentSnapshot } from "./DeliveryOrchestrator";
 import { canTransition } from "./DeliveryAssignmentStateMachine";
 
 function makeSnap(overrides: Partial<AssignmentSnapshot> = {}): AssignmentSnapshot {
@@ -53,9 +50,14 @@ describe("DeliveryOrchestrator", () => {
     expect(res.ok).toBe(true);
     expect(applyAtomic).toHaveBeenCalledOnce();
     expect(onAssigned).toHaveBeenCalledOnce();
-    expect(publish).toHaveBeenCalledWith("DeliveryAssigned", expect.objectContaining({
-      assignmentId: "a1", currentState: "ATRIBUIDO", previousState: "PENDENTE",
-    }));
+    expect(publish).toHaveBeenCalledWith(
+      "DeliveryAssigned",
+      expect.objectContaining({
+        assignmentId: "a1",
+        currentState: "ATRIBUIDO",
+        previousState: "PENDENTE",
+      }),
+    );
   });
 
   it("recusa transição inválida sem chamar applyAtomic", async () => {

@@ -24,7 +24,9 @@ export const getCustomerTracking = createServerFn({ method: "POST" })
 
     const { data: snap } = await supabaseAdmin
       .from("tracking_snapshots")
-      .select("status, eta_seconds, driver_id, updated_at, last_lat, last_lng, last_accuracy, last_seen_at")
+      .select(
+        "status, eta_seconds, driver_id, updated_at, last_lat, last_lng, last_accuracy, last_seen_at",
+      )
       .eq("order_id", data.orderId)
       .maybeSingle();
 

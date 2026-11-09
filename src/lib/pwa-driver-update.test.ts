@@ -29,8 +29,12 @@ describe("checkForDriverAppUpdate", () => {
   it("returns 'updated' when a new worker is installed after update", async () => {
     let installing: unknown = null;
     const reg = {
-      get waiting() { return null; },
-      get installing() { return installing; },
+      get waiting() {
+        return null;
+      },
+      get installing() {
+        return installing;
+      },
       update: vi.fn().mockImplementation(async () => {
         installing = { state: "installing" };
       }),

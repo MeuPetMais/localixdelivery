@@ -13,14 +13,7 @@ import { ORDER_STATES, type OrderState } from "@/lib/orders/OrderStateMachine";
 import { createOrchestrator, type OrderSnapshot } from "@/lib/orders/OrderOrchestrator";
 import type { OrderActorType } from "@/lib/orders/OrderPermissions";
 
-const ActorSchema = z.enum([
-  "customer",
-  "restaurant",
-  "admin",
-  "system",
-  "webhook",
-  "courier",
-]);
+const ActorSchema = z.enum(["customer", "restaurant", "admin", "system", "webhook", "courier"]);
 
 const InputSchema = z.object({
   orderId: z.string().uuid(),
@@ -39,7 +32,10 @@ function safeEqualStr(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-async function authenticate(request: Request, rawBody: string): Promise<{ ok: true } | { ok: false; error: string }> {
+async function authenticate(
+  request: Request,
+  rawBody: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const hmacSecret = process.env.INTERNAL_TRANSITION_HMAC_SECRET;
   if (!hmacSecret) return { ok: false, error: "internal_auth_not_configured" };
@@ -75,7 +71,11 @@ export const Route = createFileRoute("/api/public/orders/transition")({
           parsed = InputSchema.parse(JSON.parse(rawBody));
         } catch (err) {
           return new Response(
-            JSON.stringify({ ok: false, error: "invalid_payload", detail: String((err as Error).message) }),
+            JSON.stringify({
+              ok: false,
+              error: "invalid_payload",
+              detail: String((err as Error).message),
+            }),
             { status: 400, headers: { "content-type": "application/json" } },
           );
         }
@@ -92,7 +92,11 @@ export const Route = createFileRoute("/api/public/orders/transition")({
               .eq("id", id)
               .maybeSingle();
             if (!data) return null;
-            return { id: data.id, restaurant_id: data.restaurant_id, status: data.status as OrderState };
+            return {
+              id: data.id,
+              restaurant_id: data.restaurant_id,
+              status: data.status as OrderState,
+            };
           },
           // Não usados no path atômico, mas exigidos pelo tipo.
           updateOrderStatus: async () => {},
@@ -108,9 +112,13 @@ export const Route = createFileRoute("/api/public/orders/transition")({
               _metadata: row.metadata,
             } as never);
 
-
             if (error) throw new Error(`rpc_failed:${error.message}`);
-            const result = data as { ok: boolean; reason?: string; current?: string; expected?: string } | null;
+            const result = data as {
+              ok: boolean;
+              reason?: string;
+              current?: string;
+              expected?: string;
+            } | null;
             if (!result?.ok) {
               throw new Error(`rpc_rejected:${result?.reason ?? "UNKNOWN"}`);
             }
@@ -130,13 +138,16 @@ export const Route = createFileRoute("/api/public/orders/transition")({
             metadata: parsed.metadata,
           });
           if (result.ok && result.to === "pronto") {
-            const { error: assignErr } = await supabaseAdmin.rpc("delivery_auto_assign_order" as never, {
-              _order_id: parsed.orderId,
-              _reason: "ORDER_READY",
-              _correlation_id: correlationId,
-              _forced_driver_id: null,
-              _actor_id: null,
-            } as never);
+            const { error: assignErr } = await supabaseAdmin.rpc(
+              "delivery_auto_assign_order" as never,
+              {
+                _order_id: parsed.orderId,
+                _reason: "ORDER_READY",
+                _correlation_id: correlationId,
+                _forced_driver_id: null,
+                _actor_id: null,
+              } as never,
+            );
             if (assignErr) {
               console.error("[internal.orders.transition] auto assignment failed", {
                 orderId: parsed.orderId,
@@ -153,10 +164,10 @@ export const Route = createFileRoute("/api/public/orders/transition")({
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           console.error("[internal.orders.transition] failed", { correlationId, msg });
-          return new Response(
-            JSON.stringify({ ok: false, error: msg, correlationId }),
-            { status: 500, headers: { "content-type": "application/json" } },
-          );
+          return new Response(JSON.stringify({ ok: false, error: msg, correlationId }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
       },
     },

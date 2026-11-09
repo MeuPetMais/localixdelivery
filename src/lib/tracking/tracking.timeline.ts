@@ -47,7 +47,9 @@ export function createInMemoryTimelineStore(): TimelineStore {
     list(assignmentId) {
       return entries.filter((e) => e.assignment_id === assignmentId);
     },
-    clear() { entries.length = 0; },
+    clear() {
+      entries.length = 0;
+    },
   };
 }
 

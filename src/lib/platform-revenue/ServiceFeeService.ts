@@ -5,7 +5,9 @@ import type {
   ServiceFeeCalculationResult,
 } from "./types";
 
-function round2(n: number) { return Math.round(n * 100) / 100; }
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
 
 export const ServiceFeeService = {
   compute(policy: RevenuePolicy, input: ServiceFeeCalculationInput): ServiceFeeCalculationResult {

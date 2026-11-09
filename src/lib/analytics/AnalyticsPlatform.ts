@@ -1,6 +1,11 @@
 import type {
-  AnalyticsFilter, AnalyticsScope, DashboardSection, DashboardSnapshot,
-  AnalyticsInsight, ExportFormat, ExportResult,
+  AnalyticsFilter,
+  AnalyticsScope,
+  DashboardSection,
+  DashboardSnapshot,
+  AnalyticsInsight,
+  ExportFormat,
+  ExportResult,
 } from "./types";
 import { SnapshotStore } from "./SnapshotStore";
 import { AnalyticsEventBus } from "./AnalyticsEventBus";
@@ -37,9 +42,20 @@ export const AnalyticsPlatform = {
   async generateDashboard(req: DashboardRequest): Promise<DashboardSnapshot> {
     const { scope, filter, sections = [], insights = [], fresh } = req;
     if (!fresh) {
-      const cached = SnapshotStore.get(scope, filter.restaurantId, filter.range.from, filter.range.to);
+      const cached = SnapshotStore.get(
+        scope,
+        filter.restaurantId,
+        filter.range.from,
+        filter.range.to,
+      );
       if (cached) {
-        AnalyticsAudit.record({ scope, action: "dashboard_read", restaurantId: filter.restaurantId, actorId: req.actorId, metadata: { cache: true } });
+        AnalyticsAudit.record({
+          scope,
+          action: "dashboard_read",
+          restaurantId: filter.restaurantId,
+          actorId: req.actorId,
+          metadata: { cache: true },
+        });
         return cached;
       }
     }
@@ -51,8 +67,18 @@ export const AnalyticsPlatform = {
       sections,
     };
     SnapshotStore.set(snapshot);
-    AnalyticsAudit.record({ scope, action: "dashboard_read", restaurantId: filter.restaurantId, actorId: req.actorId });
-    await AnalyticsEventBus.publish({ type: "DashboardGenerated", scope, restaurantId: filter.restaurantId, at: snapshot.generatedAt });
+    AnalyticsAudit.record({
+      scope,
+      action: "dashboard_read",
+      restaurantId: filter.restaurantId,
+      actorId: req.actorId,
+    });
+    await AnalyticsEventBus.publish({
+      type: "DashboardGenerated",
+      scope,
+      restaurantId: filter.restaurantId,
+      at: snapshot.generatedAt,
+    });
     await AnalyticsEventBus.publish({ type: "SnapshotStored", scope, at: snapshot.generatedAt });
     for (const insight of insights) {
       await AnalyticsEventBus.publish({ type: "InsightPublished", insight });
@@ -66,8 +92,17 @@ export const AnalyticsPlatform = {
 
   export(snapshot: DashboardSnapshot, format: ExportFormat, filename?: string): ExportResult {
     const result = AnalyticsExportService.export(snapshot, format, filename);
-    AnalyticsAudit.record({ scope: snapshot.scope, action: "export", restaurantId: snapshot.restaurantId, metadata: { format } });
-    void AnalyticsEventBus.publish({ type: "ExportGenerated", format, at: new Date().toISOString() });
+    AnalyticsAudit.record({
+      scope: snapshot.scope,
+      action: "export",
+      restaurantId: snapshot.restaurantId,
+      metadata: { format },
+    });
+    void AnalyticsEventBus.publish({
+      type: "ExportGenerated",
+      format,
+      at: new Date().toISOString(),
+    });
     return result;
   },
 };

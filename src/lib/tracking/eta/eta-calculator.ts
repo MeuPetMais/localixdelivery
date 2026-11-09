@@ -4,9 +4,7 @@ import type { EtaInput, EtaAlgorithm, EtaEngineConfig } from "./eta.types";
 import { DEFAULT_ETA_CONFIG } from "./eta.types";
 
 const R = 6371_000; // metros
-export function haversineMeters(
-  aLat: number, aLng: number, bLat: number, bLng: number,
-): number {
+export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const toRad = (v: number) => (v * Math.PI) / 180;
   const dLat = toRad(bLat - aLat);
   const dLng = toRad(bLng - aLng);
@@ -18,7 +16,10 @@ export function haversineMeters(
 
 export interface EtaStrategy {
   readonly id: EtaAlgorithm;
-  estimate(input: EtaInput, config: EtaEngineConfig): {
+  estimate(
+    input: EtaInput,
+    config: EtaEngineConfig,
+  ): {
     eta_seconds: number;
     distance_km: number;
     reasons: string[];
@@ -34,8 +35,10 @@ export const DistanceStrategy: EtaStrategy = {
       return { eta_seconds: 0, distance_km: 0, reasons };
     }
     const meters = haversineMeters(
-      input.driver_lat, input.driver_lng,
-      input.destination_lat, input.destination_lng,
+      input.driver_lat,
+      input.driver_lng,
+      input.destination_lat,
+      input.destination_lng,
     );
     let speed = input.speed_ms ?? config.default_speed_ms;
     if (!Number.isFinite(speed) || speed < config.min_speed_ms) {

@@ -10,18 +10,30 @@ import type { CashFlowService, PayablesService, ReceivablesService } from "../Ca
 const stubDashboard = {
   async getExecutiveKPIs() {
     return {
-      grossRevenue: 1000, netRevenue: 900, grossProfit: 500, netProfit: 300,
-      cmv: 400, marginPct: 33.33, orders: 10, averageTicket: 90,
-      currentBalance: 1500, pendingReceivables: 200, pendingPayables: 100, currency: "BRL",
+      grossRevenue: 1000,
+      netRevenue: 900,
+      grossProfit: 500,
+      netProfit: 300,
+      cmv: 400,
+      marginPct: 33.33,
+      orders: 10,
+      averageTicket: 90,
+      currentBalance: 1500,
+      pendingReceivables: 200,
+      pendingPayables: 100,
+      currency: "BRL",
     };
   },
-  async getStatus() { return { balance: 0, currency: "BRL" }; },
+  async getStatus() {
+    return { balance: 0, currency: "BRL" };
+  },
 } as unknown as FinancialDashboardService;
 
 const stubCashflow = {
   async getSummary() {
     return {
-      balance: 500, currency: "BRL",
+      balance: 500,
+      currency: "BRL",
       today: { inflow: 100, outflow: 20 },
       period: { inflow: 500, outflow: 200, net: 300 },
       timeline: [{ date: "2026-07-01", inflow: 100, outflow: 20, net: 80, runningBalance: 580 }],
@@ -59,7 +71,7 @@ describe("ReportEngine", () => {
   it("builds executive summary from dashboard KPIs", async () => {
     const r = await engine.build({ restaurantId: "r1", type: "executive_ceo" });
     expect(r.columns).toEqual(["metric", "value"]);
-    expect(r.rows.find(x => x.metric === "Receita líquida")?.value).toBe(900);
+    expect(r.rows.find((x) => x.metric === "Receita líquida")?.value).toBe(900);
   });
 
   it("returns comparative delta between periods", async () => {
@@ -73,8 +85,15 @@ describe("ReportEngine", () => {
 describe("ExportEngine", () => {
   const exporter = new ExportEngine();
   const sample: ReportResult = {
-    type: "cashflow", title: "Fluxo", generatedAt: new Date().toISOString(), filters: {},
-    columns: ["a", "b"], rows: [{ a: 1, b: "x,y" }, { a: 2, b: 'q"z' }],
+    type: "cashflow",
+    title: "Fluxo",
+    generatedAt: new Date().toISOString(),
+    filters: {},
+    columns: ["a", "b"],
+    rows: [
+      { a: 1, b: "x,y" },
+      { a: 2, b: 'q"z' },
+    ],
   };
 
   it("csv escapes quotes and commas", () => {

@@ -40,7 +40,10 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error("Falha ao localizar restaurante");
     if (!rest) throw new Error("Restaurante não encontrado");
-    const status = getRestaurantStatus({ is_open: rest.is_open, opening_hours: rest.opening_hours as any });
+    const status = getRestaurantStatus({
+      is_open: rest.is_open,
+      opening_hours: rest.opening_hours as any,
+    });
     if (!status.isOpen) throw new Error("Restaurante fechado no momento");
     const phone = String(rest.whatsapp_phone ?? "").replace(/\D+/g, "");
     if (!phone) throw new Error("WhatsApp do restaurante não configurado");
@@ -61,7 +64,10 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
         .eq("code", code)
         .maybeSingle();
       if (!coupon || !coupon.is_active) throw new Error("Cupom inválido");
-      if (coupon.valid_until && new Date(coupon.valid_until) < new Date(new Date().toDateString())) {
+      if (
+        coupon.valid_until &&
+        new Date(coupon.valid_until) < new Date(new Date().toDateString())
+      ) {
         throw new Error("Cupom expirado");
       }
       couponId = coupon.id;
@@ -91,8 +97,10 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     if (!orderPayload.customer_phone?.trim()) missing.push("customer_phone");
     if (!orderPayload.address?.trim()) missing.push("address");
     if (!orderPayload.payment_method?.trim()) missing.push("payment_method");
-    if (!Array.isArray(orderPayload.items) || orderPayload.items.length === 0) missing.push("items");
-    if (typeof orderPayload.total !== "number" || Number.isNaN(orderPayload.total)) missing.push("total");
+    if (!Array.isArray(orderPayload.items) || orderPayload.items.length === 0)
+      missing.push("items");
+    if (typeof orderPayload.total !== "number" || Number.isNaN(orderPayload.total))
+      missing.push("total");
     if (missing.length) throw new Error(`Campos obrigatórios ausentes: ${missing.join(", ")}`);
 
     console.log("[order] payload", JSON.stringify(orderPayload));
@@ -134,4 +142,3 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       demo: isDemo,
     };
   });
-

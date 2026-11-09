@@ -132,7 +132,7 @@ Pedido:
 
 cash
 
-+
+-
 
 novo
 
@@ -146,7 +146,7 @@ Pedido:
 
 pix
 
-+
+-
 
 aguardando_pagamento
 
@@ -160,7 +160,7 @@ Pedido:
 
 pix
 
-+
+-
 
 pago
 

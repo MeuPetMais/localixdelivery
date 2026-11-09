@@ -12,39 +12,39 @@
 
 ## 0. Mapa de Capítulos
 
-| # | Capítulo | Novo em R1 |
-| - | -------- | ---------- |
-| 1 | Objetivos | — |
-| 2 | Princípios Arquiteturais | ✅ novo |
-| 3 | Responsabilidades | ajustado |
-| 4 | Limites do Domínio | — |
-| 5 | Subdomínios | — |
-| 6 | Modelo Conceitual | — |
-| 7 | Tracking Snapshot (oficial) | ✅ novo |
-| 8 | Tracking Timeline (oficial) | ✅ novo |
-| 9 | Estados Operacionais | ajustado |
-| 10 | Eventos (renomeados) | ajustado |
-| 11 | GPS Ingest | ✅ novo |
-| 12 | Anti GPS Spoofing | ✅ novo |
-| 13 | Geofencing | ajustado |
-| 14 | ETA Engine (ownership) | ajustado |
-| 15 | Tracking Confidence | ✅ novo |
-| 16 | Realtime | ajustado |
-| 17 | Payload por Ator (matriz) | ✅ novo |
-| 18 | Notifications (delegação) | ajustado |
-| 19 | Rate Limits | ✅ novo |
-| 20 | Índices Recomendados | ✅ novo |
-| 21 | Escalabilidade | ✅ novo |
-| 22 | SLOs | ✅ novo |
-| 23 | RLS | ajustado |
-| 24 | Observabilidade | — |
-| 25 | Migração do TrackingService atual | ✅ novo |
-| 26 | Arquitetura Proposta | — |
-| 27 | Fluxos | — |
-| 28 | Fora do escopo — RC5.3 | — |
-| 29 | Roadmap Futuro | — |
-| 30 | ADR-017 (referência) | ✅ novo |
-| 31 | Checklist Final de Certificação | ✅ novo |
+| #   | Capítulo                          | Novo em R1 |
+| --- | --------------------------------- | ---------- |
+| 1   | Objetivos                         | —          |
+| 2   | Princípios Arquiteturais          | ✅ novo    |
+| 3   | Responsabilidades                 | ajustado   |
+| 4   | Limites do Domínio                | —          |
+| 5   | Subdomínios                       | —          |
+| 6   | Modelo Conceitual                 | —          |
+| 7   | Tracking Snapshot (oficial)       | ✅ novo    |
+| 8   | Tracking Timeline (oficial)       | ✅ novo    |
+| 9   | Estados Operacionais              | ajustado   |
+| 10  | Eventos (renomeados)              | ajustado   |
+| 11  | GPS Ingest                        | ✅ novo    |
+| 12  | Anti GPS Spoofing                 | ✅ novo    |
+| 13  | Geofencing                        | ajustado   |
+| 14  | ETA Engine (ownership)            | ajustado   |
+| 15  | Tracking Confidence               | ✅ novo    |
+| 16  | Realtime                          | ajustado   |
+| 17  | Payload por Ator (matriz)         | ✅ novo    |
+| 18  | Notifications (delegação)         | ajustado   |
+| 19  | Rate Limits                       | ✅ novo    |
+| 20  | Índices Recomendados              | ✅ novo    |
+| 21  | Escalabilidade                    | ✅ novo    |
+| 22  | SLOs                              | ✅ novo    |
+| 23  | RLS                               | ajustado   |
+| 24  | Observabilidade                   | —          |
+| 25  | Migração do TrackingService atual | ✅ novo    |
+| 26  | Arquitetura Proposta              | —          |
+| 27  | Fluxos                            | —          |
+| 28  | Fora do escopo — RC5.3            | —          |
+| 29  | Roadmap Futuro                    | —          |
+| 30  | ADR-017 (referência)              | ✅ novo    |
+| 31  | Checklist Final de Certificação   | ✅ novo    |
 
 ---
 
@@ -135,16 +135,16 @@ Fluxo é sempre unidirecional. Não há callback de Tracking → Orders/Delivery
 
 ## 5. Subdomínios
 
-| Subdomínio             | Responsabilidade                                                       |
-| ---------------------- | ---------------------------------------------------------------------- |
-| GPS Ingest             | Recepção, throttle, dedup, cache offline, spoofing check              |
-| Snapshot Projection    | Projeta estado atual da entrega                                        |
-| Timeline               | Log auditável de transições                                            |
-| ETA Engine             | Cálculo pós-assignment (reusa `src/lib/delivery/ETAEngine.ts`)         |
-| Geofencing             | Raios com histerese e dwell time                                       |
-| Confidence Engine      | Classifica confiança de cada informação derivada                       |
-| Realtime               | Canais Supabase Realtime por ator                                      |
-| Public API             | Server functions consumidas pelas UIs                                  |
+| Subdomínio          | Responsabilidade                                               |
+| ------------------- | -------------------------------------------------------------- |
+| GPS Ingest          | Recepção, throttle, dedup, cache offline, spoofing check       |
+| Snapshot Projection | Projeta estado atual da entrega                                |
+| Timeline            | Log auditável de transições                                    |
+| ETA Engine          | Cálculo pós-assignment (reusa `src/lib/delivery/ETAEngine.ts`) |
+| Geofencing          | Raios com histerese e dwell time                               |
+| Confidence Engine   | Classifica confiança de cada informação derivada               |
+| Realtime            | Canais Supabase Realtime por ator                              |
+| Public API          | Server functions consumidas pelas UIs                          |
 
 ---
 
@@ -177,18 +177,18 @@ Uma entrega tem exatamente **um** snapshot ativo entre `DeliveryAssigned` e o fe
 
 Campos oficiais:
 
-| Campo               | Descrição                                                        |
-| ------------------- | ---------------------------------------------------------------- |
-| `assignment_id`     | Referência ao assignment ativo                                   |
-| `order_id`          | Referência ao pedido                                             |
-| `driver_id`         | Motoboy atribuído                                                |
-| `restaurant_id`     | Restaurante origem                                               |
-| `state`             | Estado semântico (ver §9)                                        |
-| `eta_minutes`       | ETA atual (pós-assignment)                                       |
-| `eta_confidence`    | Alta / Média / Baixa (ver §15)                                   |
-| `last_position`     | Última coordenada válida (ver §11)                               |
-| `last_updated_at`   | Timestamp da última atualização                                  |
-| `correlation_id`    | Propagado do Delivery Assignment                                 |
+| Campo             | Descrição                          |
+| ----------------- | ---------------------------------- |
+| `assignment_id`   | Referência ao assignment ativo     |
+| `order_id`        | Referência ao pedido               |
+| `driver_id`       | Motoboy atribuído                  |
+| `restaurant_id`   | Restaurante origem                 |
+| `state`           | Estado semântico (ver §9)          |
+| `eta_minutes`     | ETA atual (pós-assignment)         |
+| `eta_confidence`  | Alta / Média / Baixa (ver §15)     |
+| `last_position`   | Última coordenada válida (ver §11) |
+| `last_updated_at` | Timestamp da última atualização    |
+| `correlation_id`  | Propagado do Delivery Assignment   |
 
 Snapshot **não** contém histórico de posições, lista de eventos, timeline, wallet, ranking, ganhos.
 
@@ -202,17 +202,17 @@ Append-only. Imutável. Uma linha por transição relevante.
 
 Campos oficiais:
 
-| Campo             | Descrição                                                  |
-| ----------------- | ---------------------------------------------------------- |
-| `id`              | PK                                                         |
-| `snapshot_id`     | Snapshot ao qual pertence                                  |
-| `event`           | Nome canônico do evento                                    |
-| `from_state`      | Estado semântico anterior                                  |
-| `to_state`        | Estado semântico novo                                      |
-| `actor`           | driver / restaurant / system                               |
-| `metadata`        | JSON auxiliar (ex.: confiança, distância)                  |
-| `correlation_id`  | Herdado do snapshot                                        |
-| `created_at`      | Timestamp                                                  |
+| Campo            | Descrição                                 |
+| ---------------- | ----------------------------------------- |
+| `id`             | PK                                        |
+| `snapshot_id`    | Snapshot ao qual pertence                 |
+| `event`          | Nome canônico do evento                   |
+| `from_state`     | Estado semântico anterior                 |
+| `to_state`       | Estado semântico novo                     |
+| `actor`          | driver / restaurant / system              |
+| `metadata`       | JSON auxiliar (ex.: confiança, distância) |
+| `correlation_id` | Herdado do snapshot                       |
+| `created_at`     | Timestamp                                 |
 
 Separação estrita: consulta de UI sempre lê o snapshot; auditoria sempre lê a timeline. Nada mistura os dois.
 
@@ -220,17 +220,17 @@ Separação estrita: consulta de UI sempre lê o snapshot; auditoria sempre lê 
 
 ## 9. Estados Operacionais
 
-| Estado                        | Origem                                             |
-| ----------------------------- | -------------------------------------------------- |
-| `AGUARDANDO_COLETA`           | assignment `ATRIBUIDO`                             |
-| `COLETANDO`                   | assignment `COLETANDO` + geofence restaurante      |
-| `EM_ROTA`                     | assignment `EM_ROTA`                               |
-| `PROXIMO_AO_DESTINO`          | geofence cliente + dwell time                      |
-| `ENTREGUE`                    | assignment `ENTREGUE`                              |
-| `RETORNANDO`                  | shift event `RETURN_STARTED`                       |
-| `NO_RESTAURANTE`              | geofence restaurante + shift `AGUARDANDO`          |
-| `RETORNO_NAO_CONFIRMADO`      | shift finalizado sem geofence restaurante          |
-| `SEM_SINAL`                   | heartbeat ausente > threshold (ver §11)            |
+| Estado                   | Origem                                        |
+| ------------------------ | --------------------------------------------- |
+| `AGUARDANDO_COLETA`      | assignment `ATRIBUIDO`                        |
+| `COLETANDO`              | assignment `COLETANDO` + geofence restaurante |
+| `EM_ROTA`                | assignment `EM_ROTA`                          |
+| `PROXIMO_AO_DESTINO`     | geofence cliente + dwell time                 |
+| `ENTREGUE`               | assignment `ENTREGUE`                         |
+| `RETORNANDO`             | shift event `RETURN_STARTED`                  |
+| `NO_RESTAURANTE`         | geofence restaurante + shift `AGUARDANDO`     |
+| `RETORNO_NAO_CONFIRMADO` | shift finalizado sem geofence restaurante     |
+| `SEM_SINAL`              | heartbeat ausente > threshold (ver §11)       |
 
 ---
 
@@ -271,13 +271,13 @@ GPS bruto → Tracking Ingest → (spoofing check + throttle) → Snapshot → R
 
 ### 11.1 Heartbeat adaptativo
 
-| Contexto                              | Intervalo recomendado |
-| ------------------------------------- | --------------------- |
-| Foreground + em rota                  | 5 s                   |
-| Foreground + aguardando               | 15 s                  |
-| Background                            | 30 s                  |
-| Modo economia de bateria              | 60 s                  |
-| Sem entrega ativa                     | 120 s ou desligado    |
+| Contexto                 | Intervalo recomendado |
+| ------------------------ | --------------------- |
+| Foreground + em rota     | 5 s                   |
+| Foreground + aguardando  | 15 s                  |
+| Background               | 30 s                  |
+| Modo economia de bateria | 60 s                  |
+| Sem entrega ativa        | 120 s ou desligado    |
 
 ### 11.2 Cache offline
 
@@ -305,14 +305,14 @@ Objetivo: **detectar e sinalizar**. Nunca bloquear automaticamente.
 
 Regras de detecção:
 
-| Regra                                     | Descrição                                                       |
-| ----------------------------------------- | --------------------------------------------------------------- |
-| Velocidade máxima plausível               | > 120 km/h em contexto urbano → suspeito                        |
-| Teletransporte                            | Salto > 500 m em < 5 s                                          |
-| Mudanças impossíveis                      | Heading invertido 180° com velocidade > 40 km/h                 |
-| Distância incompatível                    | Distância percorrida ≠ integral de velocidades reportadas       |
-| Turno longe do restaurante                | `SHIFT_STARTED` a > 5 km do restaurante ativo                   |
-| Precisão degradada persistente            | `accuracy` > 100 m por > 10 pontos consecutivos                 |
+| Regra                          | Descrição                                                 |
+| ------------------------------ | --------------------------------------------------------- |
+| Velocidade máxima plausível    | > 120 km/h em contexto urbano → suspeito                  |
+| Teletransporte                 | Salto > 500 m em < 5 s                                    |
+| Mudanças impossíveis           | Heading invertido 180° com velocidade > 40 km/h           |
+| Distância incompatível         | Distância percorrida ≠ integral de velocidades reportadas |
+| Turno longe do restaurante     | `SHIFT_STARTED` a > 5 km do restaurante ativo             |
+| Precisão degradada persistente | `accuracy` > 100 m por > 10 pontos consecutivos           |
 
 Saída: cada snapshot recebe um **spoof_score** (0–100). Score alto:
 
@@ -358,11 +358,11 @@ Reusa `src/lib/delivery/ETAEngine.ts`. Não duplica lógica.
 
 Nova primitiva. Toda informação derivada carrega um nível de confiança:
 
-| Nível  | Critério exemplo                                                         |
-| ------ | ------------------------------------------------------------------------ |
-| Alta   | Heartbeat < 15 s, accuracy < 20 m, spoof_score < 20                      |
-| Média  | Heartbeat < 60 s, accuracy < 60 m, spoof_score < 50                      |
-| Baixa  | Heartbeat ≥ 60 s ou accuracy ≥ 60 m ou spoof_score ≥ 50 ou reconexão   |
+| Nível | Critério exemplo                                                     |
+| ----- | -------------------------------------------------------------------- |
+| Alta  | Heartbeat < 15 s, accuracy < 20 m, spoof_score < 20                  |
+| Média | Heartbeat < 60 s, accuracy < 60 m, spoof_score < 50                  |
+| Baixa | Heartbeat ≥ 60 s ou accuracy ≥ 60 m ou spoof_score ≥ 50 ou reconexão |
 
 Aplicável a:
 
@@ -379,12 +379,12 @@ UI decide como comunicar (ex.: cliente vê apenas texto amigável; Ops vê o ní
 
 Canais Supabase Realtime:
 
-| Ator          | Canal                                     | Filtro          | Payload                          |
-| ------------- | ----------------------------------------- | --------------- | -------------------------------- |
-| Cliente       | `tracking-order-{order_id}`               | `order_id`      | payload cliente (§17)            |
-| Motoboy       | `tracking-driver-{driver_id}`             | `driver_id`     | payload motoboy (§17)            |
-| Restaurante   | `tracking-restaurant-{restaurant_id}`     | `restaurant_id` | payload restaurante (§17)        |
-| Operations    | `tracking-ops-{region}`                   | região/shard    | payload consolidado (RBAC admin) |
+| Ator        | Canal                                 | Filtro          | Payload                          |
+| ----------- | ------------------------------------- | --------------- | -------------------------------- |
+| Cliente     | `tracking-order-{order_id}`           | `order_id`      | payload cliente (§17)            |
+| Motoboy     | `tracking-driver-{driver_id}`         | `driver_id`     | payload motoboy (§17)            |
+| Restaurante | `tracking-restaurant-{restaurant_id}` | `restaurant_id` | payload restaurante (§17)        |
+| Operations  | `tracking-ops-{region}`               | região/shard    | payload consolidado (RBAC admin) |
 
 Notas:
 
@@ -454,14 +454,14 @@ Notifications é removido da lista de responsabilidades internas do Tracking (§
 
 ## 19. Rate Limits
 
-| Fluxo                       | Limite                                              |
-| --------------------------- | --------------------------------------------------- |
-| Heartbeat por motoboy       | Mín. intervalo 3 s (server-side drop se abaixo)     |
-| Ingest global               | 200 pontos/s por região (backpressure em fila)      |
-| ETA recompute               | 1 recálculo / 30 s por snapshot                     |
-| TrackingSnapshotUpdated     | Máx. 1 evento / 2 s por snapshot (coalescência)     |
-| Payload Realtime            | Máx. 4 KB por mensagem                              |
-| Anomaly events              | Máx. 1 / 30 s por driver                            |
+| Fluxo                   | Limite                                          |
+| ----------------------- | ----------------------------------------------- |
+| Heartbeat por motoboy   | Mín. intervalo 3 s (server-side drop se abaixo) |
+| Ingest global           | 200 pontos/s por região (backpressure em fila)  |
+| ETA recompute           | 1 recálculo / 30 s por snapshot                 |
+| TrackingSnapshotUpdated | Máx. 1 evento / 2 s por snapshot (coalescência) |
+| Payload Realtime        | Máx. 4 KB por mensagem                          |
+| Anomaly events          | Máx. 1 / 30 s por driver                        |
 
 ---
 
@@ -518,31 +518,31 @@ Arquitetura:
 
 ## 22. SLOs
 
-| SLO                                    | Meta                        |
-| -------------------------------------- | --------------------------- |
-| Latência ingest → snapshot             | p95 < 500 ms                |
-| Latência snapshot → Realtime cliente   | p95 < 1500 ms               |
-| Frescor de ETA pós-assignment          | ≤ 30 s                      |
-| Heartbeat perdido → estado `SEM_SINAL` | ≤ 90 s                      |
-| Disponibilidade do canal Realtime      | 99.9% mensal                |
-| Precisão de geofence                   | ≥ 95% (dwell + histerese)   |
+| SLO                                    | Meta                      |
+| -------------------------------------- | ------------------------- |
+| Latência ingest → snapshot             | p95 < 500 ms              |
+| Latência snapshot → Realtime cliente   | p95 < 1500 ms             |
+| Frescor de ETA pós-assignment          | ≤ 30 s                    |
+| Heartbeat perdido → estado `SEM_SINAL` | ≤ 90 s                    |
+| Disponibilidade do canal Realtime      | 99.9% mensal              |
+| Precisão de geofence                   | ≥ 95% (dwell + histerese) |
 
 ---
 
 ## 23. RLS
 
-| Tabela                | Ator         | Regra                                                    |
-| --------------------- | ------------ | -------------------------------------------------------- |
-| `tracking_snapshots`  | Cliente      | `order_id` pertence ao usuário                           |
-| `tracking_snapshots`  | Motoboy      | `driver_id = auth.uid()`                                 |
-| `tracking_snapshots`  | Restaurante  | `restaurant_id` + `has_role(auth.uid(), 'restaurant')`   |
-| `tracking_snapshots`  | Admin        | `has_role(auth.uid(), 'admin')`                          |
-| `tracking_timeline`   | Cliente      | join via `snapshot_id` + owner do pedido                 |
-| `tracking_timeline`   | Motoboy      | join via `snapshot_id` + `driver_id = auth.uid()`        |
-| `tracking_timeline`   | Restaurante  | join via `snapshot_id` + restaurante                     |
-| `tracking_timeline`   | Admin        | `has_role(auth.uid(), 'admin')`                          |
-| `driver_locations`    | Motoboy      | próprios pontos                                          |
-| `driver_locations`    | Admin        | leitura completa                                         |
+| Tabela               | Ator        | Regra                                                  |
+| -------------------- | ----------- | ------------------------------------------------------ |
+| `tracking_snapshots` | Cliente     | `order_id` pertence ao usuário                         |
+| `tracking_snapshots` | Motoboy     | `driver_id = auth.uid()`                               |
+| `tracking_snapshots` | Restaurante | `restaurant_id` + `has_role(auth.uid(), 'restaurant')` |
+| `tracking_snapshots` | Admin       | `has_role(auth.uid(), 'admin')`                        |
+| `tracking_timeline`  | Cliente     | join via `snapshot_id` + owner do pedido               |
+| `tracking_timeline`  | Motoboy     | join via `snapshot_id` + `driver_id = auth.uid()`      |
+| `tracking_timeline`  | Restaurante | join via `snapshot_id` + restaurante                   |
+| `tracking_timeline`  | Admin       | `has_role(auth.uid(), 'admin')`                        |
+| `driver_locations`   | Motoboy     | próprios pontos                                        |
+| `driver_locations`   | Admin       | leitura completa                                       |
 
 Todas as tabelas seguem o padrão obrigatório: `CREATE TABLE` → `GRANT` → `ENABLE RLS` → `CREATE POLICY`.
 

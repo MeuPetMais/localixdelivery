@@ -29,7 +29,9 @@ describe("PlatformPermissionRegistry", () => {
     expect(PlatformPermissionRegistry.can("finance_admin", "platform.support.write")).toBe(false);
   });
   it("assertCan throws when forbidden", () => {
-    expect(() => PlatformPermissionRegistry.assertCan("read_only", "platform.tenants.write")).toThrow();
+    expect(() =>
+      PlatformPermissionRegistry.assertCan("read_only", "platform.tenants.write"),
+    ).toThrow();
   });
 });
 
@@ -53,8 +55,11 @@ describe("PlatformAuditService", () => {
   it("records and lists entries", async () => {
     const svc = new PlatformAuditService(new InMemoryPlatformAuditRepository());
     await svc.record({
-      actor_id: "u1", actor_role: "super_admin",
-      action: "tenant.suspended", target_type: "restaurant", target_id: "r1",
+      actor_id: "u1",
+      actor_role: "super_admin",
+      action: "tenant.suspended",
+      target_type: "restaurant",
+      target_id: "r1",
     });
     const list = await svc.list();
     expect(list).toHaveLength(1);
@@ -71,10 +76,15 @@ describe("PlatformEventBus", () => {
   it("dispatches events to subscribers", async () => {
     PlatformEventBus.clear();
     const seen: string[] = [];
-    PlatformEventBus.subscribe((e) => { seen.push(e.type); });
+    PlatformEventBus.subscribe((e) => {
+      seen.push(e.type);
+    });
     await PlatformEventBus.publish({
       type: "PlatformTenantStatusChanged",
-      tenantId: "r1", from: "active", to: "suspended", actorId: "u1",
+      tenantId: "r1",
+      from: "active",
+      to: "suspended",
+      actorId: "u1",
     });
     expect(seen).toEqual(["PlatformTenantStatusChanged"]);
     PlatformEventBus.clear();
@@ -83,13 +93,27 @@ describe("PlatformEventBus", () => {
 
 describe("TenantAdministrationService", () => {
   const tenants = [
-    { id: "r1", name: "Alpha", plan: "pro" as const, active: true, is_open: true, created_at: new Date().toISOString() },
-    { id: "r2", name: "Beta",  plan: "free" as const, active: false, is_open: false, created_at: new Date().toISOString() },
+    {
+      id: "r1",
+      name: "Alpha",
+      plan: "pro" as const,
+      active: true,
+      is_open: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "r2",
+      name: "Beta",
+      plan: "free" as const,
+      active: false,
+      is_open: false,
+      created_at: new Date().toISOString(),
+    },
   ];
   const orders = [
     { restaurant_id: "r1", total: 100, created_at: new Date().toISOString() },
-    { restaurant_id: "r1", total: 50,  created_at: new Date().toISOString() },
-    { restaurant_id: "r2", total: 30,  created_at: new Date().toISOString() },
+    { restaurant_id: "r1", total: 50, created_at: new Date().toISOString() },
+    { restaurant_id: "r2", total: 30, created_at: new Date().toISOString() },
   ];
   it("computes tenant summary with commission", () => {
     const dir = TenantAdministrationService.buildDirectory(tenants, orders);
@@ -117,7 +141,11 @@ describe("SubscriptionMonitorService", () => {
   });
   it("detects trialing", () => {
     const future = new Date(Date.now() + 86400000).toISOString();
-    const s = SubscriptionMonitorService.project({ tenantId: "r1", plan: "starter", trialEndsAt: future });
+    const s = SubscriptionMonitorService.project({
+      tenantId: "r1",
+      plan: "starter",
+      trialEndsAt: future,
+    });
     expect(s.status).toBe("trialing");
   });
 });
@@ -127,12 +155,26 @@ describe("PlatformDashboardService", () => {
     const now = new Date();
     const snap = PlatformDashboardService.build({
       tenants: [
-        { id: "r1", name: "A", plan: "pro", active: true, is_open: true, created_at: now.toISOString() },
-        { id: "r2", name: "B", plan: "free", active: false, is_open: false, created_at: now.toISOString() },
+        {
+          id: "r1",
+          name: "A",
+          plan: "pro",
+          active: true,
+          is_open: true,
+          created_at: now.toISOString(),
+        },
+        {
+          id: "r2",
+          name: "B",
+          plan: "free",
+          active: false,
+          is_open: false,
+          created_at: now.toISOString(),
+        },
       ],
       orders: [
         { restaurant_id: "r1", total: 200, created_at: now.toISOString() },
-        { restaurant_id: "r2", total: 40,  created_at: now.toISOString() },
+        { restaurant_id: "r2", total: 40, created_at: now.toISOString() },
       ],
       subscriptions: [
         { plan: "pro", monthly_price: 199 },
@@ -165,23 +207,70 @@ describe("Support / Moderation / Incident / Notifications", () => {
   it("sorts and detects SLA breach", () => {
     const oldTs = new Date(Date.now() - 3 * 3600_000).toISOString();
     const tickets = [
-      { id: "a", ticket_number: 1, subject: "x", status: "open" as const, priority: "low" as const, assignee_id: null, restaurant_id: "r1", created_at: oldTs, last_message_at: oldTs },
-      { id: "b", ticket_number: 2, subject: "y", status: "open" as const, priority: "urgent" as const, assignee_id: null, restaurant_id: "r1", created_at: oldTs, last_message_at: oldTs },
+      {
+        id: "a",
+        ticket_number: 1,
+        subject: "x",
+        status: "open" as const,
+        priority: "low" as const,
+        assignee_id: null,
+        restaurant_id: "r1",
+        created_at: oldTs,
+        last_message_at: oldTs,
+      },
+      {
+        id: "b",
+        ticket_number: 2,
+        subject: "y",
+        status: "open" as const,
+        priority: "urgent" as const,
+        assignee_id: null,
+        restaurant_id: "r1",
+        created_at: oldTs,
+        last_message_at: oldTs,
+      },
     ];
     expect(SupportCenterService.sort(tickets)[0].id).toBe("b");
     expect(SupportCenterService.slaBreached(tickets[1])).toBe(true);
   });
   it("validates moderation events", () => {
-    expect(() => ModerationCenterService.validate({ target_type: "review", target_id: "", action: "hidden", actor_id: "u1" })).toThrow();
+    expect(() =>
+      ModerationCenterService.validate({
+        target_type: "review",
+        target_id: "",
+        action: "hidden",
+        actor_id: "u1",
+      }),
+    ).toThrow();
   });
   it("computes incident duration", () => {
     const now = new Date();
-    const inc = { title: "x", severity: "high" as const, status: "open" as const, affected_area: "orders", opened_at: new Date(now.getTime() - 60_000).toISOString() };
+    const inc = {
+      title: "x",
+      severity: "high" as const,
+      status: "open" as const,
+      affected_area: "orders",
+      opened_at: new Date(now.getTime() - 60_000).toISOString(),
+    };
     expect(IncidentCenterService.isOpen(inc)).toBe(true);
     expect(IncidentCenterService.duration(inc, now)).toBeGreaterThanOrEqual(60_000);
   });
   it("validates global notifications", () => {
-    expect(() => GlobalNotificationCenterService.validate({ audience: "specific_tenants", title: "t", body: "b", severity: "info" })).toThrow();
-    expect(() => GlobalNotificationCenterService.validate({ audience: "all_tenants", title: "t", body: "b", severity: "info" })).not.toThrow();
+    expect(() =>
+      GlobalNotificationCenterService.validate({
+        audience: "specific_tenants",
+        title: "t",
+        body: "b",
+        severity: "info",
+      }),
+    ).toThrow();
+    expect(() =>
+      GlobalNotificationCenterService.validate({
+        audience: "all_tenants",
+        title: "t",
+        body: "b",
+        severity: "info",
+      }),
+    ).not.toThrow();
   });
 });

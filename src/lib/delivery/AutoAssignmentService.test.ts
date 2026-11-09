@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createAutoAssignmentService,
-  type AutoAssignState,
-} from "./AutoAssignmentService";
+import { createAutoAssignmentService, type AutoAssignState } from "./AutoAssignmentService";
 
 function baseState(): AutoAssignState {
   return {
@@ -50,7 +47,9 @@ describe("AutoAssignmentService", () => {
     const svc = createAutoAssignmentService(state);
     const [a, b] = await Promise.all([svc.assign("o1"), svc.assign("o2")]);
 
-    expect(new Set([a.assignment?.driverId, b.assignment?.driverId])).toEqual(new Set(["d1", "d2"]));
+    expect(new Set([a.assignment?.driverId, b.assignment?.driverId])).toEqual(
+      new Set(["d1", "d2"]),
+    );
   });
 
   it("corrida simultanea nao duplica atribuicao do mesmo pedido", async () => {
@@ -114,7 +113,9 @@ describe("AutoAssignmentService", () => {
 
     expect(result.assignment?.driverId).toBe("d2");
     expect(state.assignments).toHaveLength(1);
-    expect(state.queue.find((q) => q.driverId === "d1" && q.status === "AGUARDANDO")?.position).toBe(1);
+    expect(
+      state.queue.find((q) => q.driverId === "d1" && q.status === "AGUARDANDO")?.position,
+    ).toBe(1);
   });
 
   it("motoboy conclui entrega e entra em retornando", () => {
@@ -136,6 +137,8 @@ describe("AutoAssignmentService", () => {
     svc.completeDelivery(assignment.id);
     svc.finishReturn("r1", "d1");
 
-    expect(state.queue.find((q) => q.driverId === "d1" && q.status === "AGUARDANDO")?.position).toBe(2);
+    expect(
+      state.queue.find((q) => q.driverId === "d1" && q.status === "AGUARDANDO")?.position,
+    ).toBe(2);
   });
 });

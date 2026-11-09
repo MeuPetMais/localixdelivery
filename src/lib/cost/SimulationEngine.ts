@@ -11,7 +11,9 @@ export interface SimulationInput {
 export const SimulationEngine = {
   simulate(input: SimulationInput) {
     const base = MarginEngine.calculate({
-      price: input.currentPrice, cost: input.currentCost, extraCosts: input.extraCosts,
+      price: input.currentPrice,
+      cost: input.currentCost,
+      extraCosts: input.extraCosts,
     });
     const scenario = MarginEngine.calculate({
       price: input.newPrice ?? input.currentPrice,

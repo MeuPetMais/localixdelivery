@@ -241,10 +241,15 @@ function baseCss(paper: PaperSize): string {
 function headerBlock(o: PrintableOrder): string {
   const dt = new Date(o.created_at).toLocaleString("pt-BR");
   const consumo =
-    o.order_type === "delivery" ? "ENTREGA" :
-    o.order_type === "pickup" ? "RETIRADA" :
-    o.order_type === "table" ? `MESA${o.table_number ? " " + o.table_number : ""}` :
-    o.address ? "ENTREGA" : "RETIRADA";
+    o.order_type === "delivery"
+      ? "ENTREGA"
+      : o.order_type === "pickup"
+        ? "RETIRADA"
+        : o.order_type === "table"
+          ? `MESA${o.table_number ? " " + o.table_number : ""}`
+          : o.address
+            ? "ENTREGA"
+            : "RETIRADA";
   return `
     ${o.restaurant_logo ? `<div class="center"><img src="${esc(o.restaurant_logo)}" alt="" style="max-width:60%;max-height:60px;filter:grayscale(1) contrast(2)"/></div>` : ""}
     <h1>${esc(o.restaurant_name || "Localix")}</h1>
@@ -330,10 +335,7 @@ function itemLineCustomer(it: PrintableItem): string {
 function groupedBlock(items: PrintableItem[], lineFn: (it: PrintableItem) => string): string {
   const groups = groupItems(items);
   return groups
-    .map(
-      ([g, list]) =>
-        `<div class="group-title">${esc(g)}</div>${list.map(lineFn).join("")}`,
-    )
+    .map(([g, list]) => `<div class="group-title">${esc(g)}</div>${list.map(lineFn).join("")}`)
     .join("");
 }
 

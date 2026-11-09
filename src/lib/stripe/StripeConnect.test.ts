@@ -75,7 +75,9 @@ describe("StripeConnectService", () => {
 
   it("propaga erro da edge", async () => {
     invoke.mockResolvedValue({ data: null, error: { message: "boom" } });
-    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow("Não foi possível concluir a operação com a Stripe.");
+    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow(
+      "Não foi possível concluir a operação com a Stripe.",
+    );
   });
 
   it("propaga erro semântico do payload", async () => {

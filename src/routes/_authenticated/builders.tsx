@@ -685,8 +685,7 @@ function BuilderEditor({
         return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
       if (g.is_required && savedOptions.length === 0)
         return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
-      if (g.is_required && min < 1)
-        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
@@ -717,8 +716,7 @@ function BuilderEditor({
       }
       if (g.is_required && options.length === 0)
         return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
-      if (g.is_required && min < 1)
-        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
@@ -755,12 +753,18 @@ function BuilderEditor({
       })
       .select("*")
       .single();
-    if (data) setGroups((g) => [...g, {
-      ...data,
-      source_type: data.source_type === "MENU_ITEMS" ? "MENU_ITEMS" as const : "MANUAL" as const,
-      price_strategy: data.price_strategy === "MAX_MENU_ITEM" ? "MAX_MENU_ITEM" as const : "SUM" as const,
-      builder_options: [],
-    }]);
+    if (data)
+      setGroups((g) => [
+        ...g,
+        {
+          ...data,
+          source_type:
+            data.source_type === "MENU_ITEMS" ? ("MENU_ITEMS" as const) : ("MANUAL" as const),
+          price_strategy:
+            data.price_strategy === "MAX_MENU_ITEM" ? ("MAX_MENU_ITEM" as const) : ("SUM" as const),
+          builder_options: [],
+        },
+      ]);
   }
 
   async function saveGroup(g: EditorGroup) {
@@ -806,9 +810,7 @@ function BuilderEditor({
   async function saveOption(gid: string, o: EditorOption) {
     const group = groups.find((g) => g.id === gid);
     if (isCatalogGroup(group))
-      return toast.error(
-        "Sabores vinculados ao cardápio não podem ser editados manualmente aqui.",
-      );
+      return toast.error("Sabores vinculados ao cardápio não podem ser editados manualmente aqui.");
 
     const name = String(o.name ?? "").trim();
     if (!name || name.toLowerCase() === "nova opção")
@@ -830,8 +832,7 @@ function BuilderEditor({
         })
         .select("*")
         .single();
-      if (error || !data)
-        return toast.error(error?.message ?? "Não foi possível salvar a opção.");
+      if (error || !data) return toast.error(error?.message ?? "Não foi possível salvar a opção.");
       setGroups((gs) =>
         gs.map((g) =>
           g.id === gid
@@ -925,8 +926,7 @@ function BuilderEditor({
               })
               .select("*")
               .single();
-            if (error || !data)
-              throw error ?? new Error("Não foi possível salvar uma das opções.");
+            if (error || !data) throw error ?? new Error("Não foi possível salvar uma das opções.");
             setGroups((gs) =>
               gs.map((group) =>
                 group.id === g.id
@@ -1028,8 +1028,8 @@ function BuilderEditor({
           ) : (
             <>
               <p className="text-muted-foreground">
-                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente
-                + diferenças de preço entre opções (quando existirem).
+                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente +
+                diferenças de preço entre opções (quando existirem).
               </p>
               <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
                 <div className="flex justify-between">
@@ -1152,9 +1152,7 @@ function BuilderEditor({
                       </div>
                       <div className="grid gap-3 sm:grid-cols-[1fr_110px_110px]">
                         <div className="rounded-lg border bg-muted/30 p-2">
-                          <p className="mb-1 text-xs font-bold">
-                            O cliente é obrigado a escolher?
-                          </p>
+                          <p className="mb-1 text-xs font-bold">O cliente é obrigado a escolher?</p>
                           <div className="flex gap-1">
                             <button
                               type="button"
@@ -1255,8 +1253,7 @@ function BuilderEditor({
                           ) : (
                             <p>
                               Cada opção poderá: <strong>✔ não alterar o preço</strong> ou{" "}
-                              <strong>✔ acrescentar um valor ao preço inicial do produto</strong>
-                              .
+                              <strong>✔ acrescentar um valor ao preço inicial do produto</strong>.
                             </p>
                           )}
                         </div>

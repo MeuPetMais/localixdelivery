@@ -2,7 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 type ChangeHandler = (p: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => void;
-const registered: Array<{ channel: string; filter: string; table: string; handler: ChangeHandler }> = [];
+const registered: Array<{
+  channel: string;
+  filter: string;
+  table: string;
+  handler: ChangeHandler;
+}> = [];
 
 vi.mock("@/integrations/supabase/client", () => {
   return {
@@ -14,7 +19,9 @@ vi.mock("@/integrations/supabase/client", () => {
             registered.push({ channel: name, filter: cfg.filter, table: cfg.table, handler });
             return chan;
           },
-          subscribe() { return chan; },
+          subscribe() {
+            return chan;
+          },
         };
         return chan;
       },
@@ -45,7 +52,9 @@ const snapshotRow = {
   correlation_id: "c1",
 };
 
-beforeEach(() => { registered.length = 0; });
+beforeEach(() => {
+  registered.length = 0;
+});
 
 describe("Realtime channels & filters", () => {
   it("restaurant channel usa filtro restaurant_id", () => {
@@ -73,8 +82,8 @@ describe("Realtime payload", () => {
     const received: unknown[] = [];
     subscribeRestaurantTracking("r1", { onUpdate: (p) => received.push(p) });
     const h = registered[0].handler;
-    h({ new: snapshotRow });                    // INSERT/UPDATE
-    h({ old: snapshotRow });                    // DELETE
+    h({ new: snapshotRow }); // INSERT/UPDATE
+    h({ old: snapshotRow }); // DELETE
     expect(received).toHaveLength(2);
     for (const p of received as Array<Record<string, unknown>>) {
       expect(p).not.toHaveProperty("last_lat");
@@ -85,7 +94,12 @@ describe("Realtime payload", () => {
 
   it("erros no mapper acionam onError e não quebram o canal", () => {
     const onError = vi.fn();
-    subscribeRestaurantTracking("r1", { onUpdate: () => { throw new Error("boom"); }, onError });
+    subscribeRestaurantTracking("r1", {
+      onUpdate: () => {
+        throw new Error("boom");
+      },
+      onError,
+    });
     registered[0].handler({ new: snapshotRow });
     expect(onError).toHaveBeenCalled();
   });

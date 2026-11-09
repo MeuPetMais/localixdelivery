@@ -4,8 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Package, FlaskConical, Printer, Briefcase, Truck, LayoutDashboard,
-  Handshake, Flame, GraduationCap, Star, BellRing, CheckCircle2, Sparkles,
+  Package,
+  FlaskConical,
+  Printer,
+  Briefcase,
+  Truck,
+  LayoutDashboard,
+  Handshake,
+  Flame,
+  GraduationCap,
+  Star,
+  BellRing,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,13 +26,55 @@ export const Route = createFileRoute("/_authenticated/suppliers")({
 });
 
 const CATEGORIES = [
-  { icon: Package, title: "Embalagens", desc: "Caixas de pizza, hambúrguer, sacolas, copos, talheres, guardanapos.", tint: "from-amber-500/20 to-amber-500/5", fg: "text-amber-600" },
-  { icon: FlaskConical, title: "Insumos", desc: "Molhos, temperos, ingredientes, bebidas e descartáveis.", tint: "from-emerald-500/20 to-emerald-500/5", fg: "text-emerald-600" },
-  { icon: Printer, title: "Equipamentos", desc: "Impressoras térmicas, tablets, leitores e máquinas de cartão.", tint: "from-sky-500/20 to-sky-500/5", fg: "text-sky-600" },
-  { icon: Briefcase, title: "Serviços", desc: "Contabilidade, marketing, redes sociais, fotografia e cardápios.", tint: "from-violet-500/20 to-violet-500/5", fg: "text-violet-600" },
-  { icon: Truck, title: "Delivery", desc: "Mochilas térmicas, bags, suportes e rastreadores.", tint: "from-orange-500/20 to-orange-500/5", fg: "text-orange-600" },
-  { icon: LayoutDashboard, title: "Gestão", desc: "ERP, financeiro, emissão fiscal, automação e CRM.", tint: "from-indigo-500/20 to-indigo-500/5", fg: "text-indigo-600" },
-  { icon: Handshake, title: "Parceiros Localix", desc: "Empresas homologadas com benefícios exclusivos para parceiros.", tint: "from-rose-500/20 to-rose-500/5", fg: "text-rose-600" },
+  {
+    icon: Package,
+    title: "Embalagens",
+    desc: "Caixas de pizza, hambúrguer, sacolas, copos, talheres, guardanapos.",
+    tint: "from-amber-500/20 to-amber-500/5",
+    fg: "text-amber-600",
+  },
+  {
+    icon: FlaskConical,
+    title: "Insumos",
+    desc: "Molhos, temperos, ingredientes, bebidas e descartáveis.",
+    tint: "from-emerald-500/20 to-emerald-500/5",
+    fg: "text-emerald-600",
+  },
+  {
+    icon: Printer,
+    title: "Equipamentos",
+    desc: "Impressoras térmicas, tablets, leitores e máquinas de cartão.",
+    tint: "from-sky-500/20 to-sky-500/5",
+    fg: "text-sky-600",
+  },
+  {
+    icon: Briefcase,
+    title: "Serviços",
+    desc: "Contabilidade, marketing, redes sociais, fotografia e cardápios.",
+    tint: "from-violet-500/20 to-violet-500/5",
+    fg: "text-violet-600",
+  },
+  {
+    icon: Truck,
+    title: "Delivery",
+    desc: "Mochilas térmicas, bags, suportes e rastreadores.",
+    tint: "from-orange-500/20 to-orange-500/5",
+    fg: "text-orange-600",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Gestão",
+    desc: "ERP, financeiro, emissão fiscal, automação e CRM.",
+    tint: "from-indigo-500/20 to-indigo-500/5",
+    fg: "text-indigo-600",
+  },
+  {
+    icon: Handshake,
+    title: "Parceiros Localix",
+    desc: "Empresas homologadas com benefícios exclusivos para parceiros.",
+    tint: "from-rose-500/20 to-rose-500/5",
+    fg: "text-rose-600",
+  },
 ];
 
 const TIPS = [
@@ -60,7 +113,8 @@ function BusinessHub() {
           Central de Negócios
         </h1>
         <p className="mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">
-          Tudo o que seu estabelecimento precisa para crescer — embalagens, insumos, equipamentos, serviços e soluções de gestão, em um só lugar.
+          Tudo o que seu estabelecimento precisa para crescer — embalagens, insumos, equipamentos,
+          serviços e soluções de gestão, em um só lugar.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           {notified ? (
@@ -78,7 +132,9 @@ function BusinessHub() {
       {/* Coming soon notice */}
       <Card className="border-dashed bg-muted/30 p-6">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Estamos firmando parcerias com fornecedores e prestadores de serviço para oferecer condições exclusivas aos estabelecimentos parceiros. Em breve você poderá adquirir tudo diretamente pela plataforma.
+          Estamos firmando parcerias com fornecedores e prestadores de serviço para oferecer
+          condições exclusivas aos estabelecimentos parceiros. Em breve você poderá adquirir tudo
+          diretamente pela plataforma.
         </p>
       </Card>
 
@@ -90,13 +146,20 @@ function BusinessHub() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {CATEGORIES.map((c) => (
-            <Card key={c.title} className={`group relative overflow-hidden border-0 bg-gradient-to-br ${c.tint} p-5 transition hover:scale-[1.02]`}>
-              <div className={`mb-3 grid h-11 w-11 place-items-center rounded-xl bg-background/80 ${c.fg} shadow-sm`}>
+            <Card
+              key={c.title}
+              className={`group relative overflow-hidden border-0 bg-gradient-to-br ${c.tint} p-5 transition hover:scale-[1.02]`}
+            >
+              <div
+                className={`mb-3 grid h-11 w-11 place-items-center rounded-xl bg-background/80 ${c.fg} shadow-sm`}
+              >
                 <c.icon className="h-5 w-5" />
               </div>
               <h3 className="font-semibold">{c.title}</h3>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{c.desc}</p>
-              <Badge variant="outline" className="mt-3 rounded-full text-[10px]">Em breve</Badge>
+              <Badge variant="outline" className="mt-3 rounded-full text-[10px]">
+                Em breve
+              </Badge>
             </Card>
           ))}
         </div>

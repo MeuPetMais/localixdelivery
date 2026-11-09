@@ -15,15 +15,21 @@ describe("partner growth access foundation migration", () => {
     )?.[0] ?? "";
 
   it("adds partner_growth as an isolated app role", () => {
-    expect(enumSql).toContain("ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'partner_growth'");
+    expect(enumSql).toContain(
+      "ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'partner_growth'",
+    );
     expect(hookSource).toContain('| "partner_growth"');
   });
 
   it("creates the minimal assignment wallet with required constraints", () => {
     expect(accessSql).toContain("CREATE TABLE IF NOT EXISTS public.partner_growth_assignments");
     expect(accessSql).toContain("id uuid PRIMARY KEY DEFAULT gen_random_uuid()");
-    expect(accessSql).toContain("user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE");
-    expect(accessSql).toContain("restaurant_id uuid NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE");
+    expect(accessSql).toContain(
+      "user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE",
+    );
+    expect(accessSql).toContain(
+      "restaurant_id uuid NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE",
+    );
     expect(accessSql).toContain("assigned_at timestamptz NOT NULL DEFAULT now()");
     expect(accessSql).toContain("assigned_by uuid REFERENCES auth.users(id) ON DELETE SET NULL");
     expect(accessSql).toContain("active boolean NOT NULL DEFAULT true");
@@ -38,7 +44,9 @@ describe("partner growth access foundation migration", () => {
   });
 
   it("protects assignments with RLS and owner-only portfolio reads", () => {
-    expect(accessSql).toContain("ALTER TABLE public.partner_growth_assignments ENABLE ROW LEVEL SECURITY");
+    expect(accessSql).toContain(
+      "ALTER TABLE public.partner_growth_assignments ENABLE ROW LEVEL SECURITY",
+    );
     expect(accessSql).toContain('CREATE POLICY "partner growth assignments own select"');
     expect(accessSql).toContain("ON public.partner_growth_assignments FOR SELECT TO authenticated");
     expect(accessSql).toContain("USING (user_id = auth.uid())");
@@ -48,24 +56,36 @@ describe("partner growth access foundation migration", () => {
     expect(accessSql).toContain('CREATE POLICY "partner growth assignments admin manage"');
     expect(accessSql).toContain("ON public.partner_growth_assignments FOR ALL TO authenticated");
     expect(accessSql).toContain("USING (public.has_role(auth.uid(), 'admin'::public.app_role))");
-    expect(accessSql).toContain("WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role))");
+    expect(accessSql).toContain(
+      "WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role))",
+    );
   });
 
   it("creates a private helper that derives the user from auth.uid only", () => {
-    expect(accessSql).toContain("DROP FUNCTION IF EXISTS private.has_partner_growth_restaurant(uuid, uuid)");
-    expect(accessSql).toContain("CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(_restaurant_id uuid)");
-    expect(accessSql).not.toContain("CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(\n  _user_id uuid");
+    expect(accessSql).toContain(
+      "DROP FUNCTION IF EXISTS private.has_partner_growth_restaurant(uuid, uuid)",
+    );
+    expect(accessSql).toContain(
+      "CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(_restaurant_id uuid)",
+    );
+    expect(accessSql).not.toContain(
+      "CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(\n  _user_id uuid",
+    );
     expect(helperSql).not.toContain("_user_id");
     expect(helperSql).toContain("FROM (SELECT auth.uid() AS user_id) current_user_context");
     expect(helperSql).toContain("current_user_context.user_id IS NOT NULL");
   });
 
   it("creates a private helper that requires role plus active restaurant assignment", () => {
-    expect(helperSql).toContain("CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(_restaurant_id uuid)");
+    expect(helperSql).toContain(
+      "CREATE OR REPLACE FUNCTION private.has_partner_growth_restaurant(_restaurant_id uuid)",
+    );
     expect(accessSql).toContain("STABLE");
     expect(accessSql).toContain("SECURITY DEFINER");
     expect(helperSql).toContain("SET search_path TO 'pg_catalog'");
-    expect(helperSql).toContain("private.has_role(current_user_context.user_id, 'partner_growth'::public.app_role)");
+    expect(helperSql).toContain(
+      "private.has_role(current_user_context.user_id, 'partner_growth'::public.app_role)",
+    );
     expect(helperSql).toContain("pga.user_id = current_user_context.user_id");
     expect(helperSql).toContain("pga.restaurant_id = _restaurant_id");
     expect(helperSql).toContain("pga.active = true");
@@ -75,14 +95,24 @@ describe("partner growth access foundation migration", () => {
     expect(accessSql).toContain(
       "REVOKE ALL ON FUNCTION private.has_partner_growth_restaurant(uuid) FROM PUBLIC, anon, authenticated",
     );
-    expect(accessSql).toContain("GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO authenticated");
-    expect(accessSql).not.toContain("GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO anon");
-    expect(accessSql).not.toContain("GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO service_role");
-    expect(accessSql).not.toContain("GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid, uuid)");
+    expect(accessSql).toContain(
+      "GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO authenticated",
+    );
+    expect(accessSql).not.toContain(
+      "GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO anon",
+    );
+    expect(accessSql).not.toContain(
+      "GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid) TO service_role",
+    );
+    expect(accessSql).not.toContain(
+      "GRANT EXECUTE ON FUNCTION private.has_partner_growth_restaurant(uuid, uuid)",
+    );
   });
 
   it("provides an admin-only role provisioning function without creating restaurant ownership", () => {
-    expect(accessSql).toContain("CREATE OR REPLACE FUNCTION public.admin_assign_partner_growth_role");
+    expect(accessSql).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_assign_partner_growth_role",
+    );
     expect(accessSql).toContain("NOT private.has_role(auth.uid(), 'admin'::public.app_role)");
     expect(accessSql).toContain("DELETE FROM public.user_roles");
     expect(accessSql).toContain("AND role = 'partner'::public.app_role");

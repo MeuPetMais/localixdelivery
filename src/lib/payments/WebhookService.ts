@@ -54,28 +54,45 @@ export interface StoredEvent {
 // -------- Núcleo puro --------
 export function mapStatus(s: string | null | undefined): LocalPaymentStatus {
   switch ((s ?? "").toLowerCase()) {
-    case "approved": return "APPROVED";
-    case "in_process": return "PROCESSING";
-    case "pending": return "PENDING";
-    case "rejected": return "REJECTED";
-    case "cancelled": return "CANCELLED";
-    case "expired": return "EXPIRED";
-    case "refunded": return "REFUNDED";
-    case "charged_back": return "CHARGEBACK";
-    default: return "PENDING";
+    case "approved":
+      return "APPROVED";
+    case "in_process":
+      return "PROCESSING";
+    case "pending":
+      return "PENDING";
+    case "rejected":
+      return "REJECTED";
+    case "cancelled":
+      return "CANCELLED";
+    case "expired":
+      return "EXPIRED";
+    case "refunded":
+      return "REFUNDED";
+    case "charged_back":
+      return "CHARGEBACK";
+    default:
+      return "PENDING";
   }
 }
 
 export function eventNameFromStatus(status: LocalPaymentStatus): PaymentEventName {
   switch (status) {
-    case "APPROVED": return "PaymentApproved";
-    case "REJECTED": return "PaymentRejected";
-    case "PENDING": return "PaymentPending";
-    case "PROCESSING": return "PaymentProcessing";
-    case "CANCELLED": return "PaymentCancelled";
-    case "EXPIRED": return "PaymentExpired";
-    case "REFUNDED": return "PaymentRefunded";
-    case "CHARGEBACK": return "PaymentChargeback";
+    case "APPROVED":
+      return "PaymentApproved";
+    case "REJECTED":
+      return "PaymentRejected";
+    case "PENDING":
+      return "PaymentPending";
+    case "PROCESSING":
+      return "PaymentProcessing";
+    case "CANCELLED":
+      return "PaymentCancelled";
+    case "EXPIRED":
+      return "PaymentExpired";
+    case "REFUNDED":
+      return "PaymentRefunded";
+    case "CHARGEBACK":
+      return "PaymentChargeback";
   }
 }
 
@@ -134,23 +151,31 @@ export interface WebhookDeps {
   markProcessed(eventPk: string, ok: boolean, error?: string | null): Promise<void>;
   enqueueRetry(eventPk: string, err: string): Promise<void>;
   fetchMpPayment(paymentId: string): Promise<MpPayment | null>;
-  updateOrderPayment(orderId: string, status: LocalPaymentStatus, patch: Record<string, any>): Promise<void>;
+  updateOrderPayment(
+    orderId: string,
+    status: LocalPaymentStatus,
+    patch: Record<string, any>,
+  ): Promise<void>;
   updateOrder(orderId: string, patch: Record<string, any>): Promise<void>;
   recordLedger(entry: {
     orderId: string;
     restaurantId: string | null;
     provider: string;
     transactionType:
-      | "PAYMENT_APPROVED" | "PAYMENT_PENDING" | "PAYMENT_FAILED"
-      | "REFUND" | "CHARGEBACK";
+      | "PAYMENT_APPROVED"
+      | "PAYMENT_PENDING"
+      | "PAYMENT_FAILED"
+      | "REFUND"
+      | "CHARGEBACK";
     amount: number;
     referenceId: string | null;
     description: string;
     metadata?: Record<string, any>;
   }): Promise<void>;
-  getOrderByPayment(paymentId: string, externalReference: string | null): Promise<
-    { orderId: string; restaurantId: string | null } | null
-  >;
+  getOrderByPayment(
+    paymentId: string,
+    externalReference: string | null,
+  ): Promise<{ orderId: string; restaurantId: string | null } | null>;
 }
 
 export interface WebhookOutcome {
@@ -171,10 +196,9 @@ export async function handleWebhook(
   const body = input.parsed ?? safeJson(input.rawBody);
   const eventType = String(body?.type ?? body?.topic ?? "").toLowerCase() || null;
   const action = String(body?.action ?? "").toLowerCase() || null;
-  const resourceId = String(
-    body?.data?.id ?? body?.resource ?? body?.id ?? "",
-  ) || null;
-  const eventId = String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
+  const resourceId = String(body?.data?.id ?? body?.resource ?? body?.id ?? "") || null;
+  const eventId =
+    String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalReference = body?.external_reference ?? body?.data?.external_reference ?? null;
   const signature = input.headers["x-signature"] ?? null;
 
@@ -194,7 +218,8 @@ export async function handleWebhook(
   }
 
   // Só tratamos eventos de payment.
-  const isPayment = (eventType && eventType.includes("payment")) || (action && action.startsWith("payment."));
+  const isPayment =
+    (eventType && eventType.includes("payment")) || (action && action.startsWith("payment."));
   if (!isPayment || !resourceId) {
     await deps.markProcessed(stored.id, true, "ignored: not a payment event");
     return { ok: true, duplicated: false, reason: "ignored" };
@@ -207,7 +232,10 @@ export async function handleWebhook(
       return { ok: false, duplicated: false, reason: "mp_not_found" };
     }
     const local = mapStatus(mp.status);
-    const link = await deps.getOrderByPayment(String(mp.id), mp.external_reference ?? externalReference);
+    const link = await deps.getOrderByPayment(
+      String(mp.id),
+      mp.external_reference ?? externalReference,
+    );
     if (!link) {
       await deps.markProcessed(stored.id, true, "order not found");
       return { ok: true, duplicated: false, status: local, reason: "order_not_found" };

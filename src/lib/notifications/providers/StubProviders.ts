@@ -4,7 +4,10 @@ import type { NotificationProvider } from "./NotificationProvider";
 import type { NotificationChannel, NotificationRecord, ProviderSendResult } from "../types";
 
 class NotImplementedProvider implements NotificationProvider {
-  constructor(public readonly channel: NotificationChannel, public readonly name: string) {}
+  constructor(
+    public readonly channel: NotificationChannel,
+    public readonly name: string,
+  ) {}
   async send(_r: NotificationRecord): Promise<ProviderSendResult> {
     return { ok: false, status: "PENDING", error_message: `${this.name}_not_implemented` };
   }

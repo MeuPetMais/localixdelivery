@@ -39,8 +39,7 @@ export const CampaignAnalyticsService = {
   },
 
   aggregate(list: CampaignMetrics[]): Omit<CampaignMetrics, "campaign_id"> & { campaigns: number } {
-    const sum = (k: keyof CampaignMetrics) =>
-      list.reduce((s, m) => s + (Number(m[k]) || 0), 0);
+    const sum = (k: keyof CampaignMetrics) => list.reduce((s, m) => s + (Number(m[k]) || 0), 0);
     const delivered = sum("delivered");
     return {
       campaigns: list.length,
@@ -51,7 +50,9 @@ export const CampaignAnalyticsService = {
       converted: sum("converted"),
       revenue: sum("revenue"),
       coupon_uses: sum("coupon_uses"),
-      roi: list.length ? Math.round((list.reduce((s, m) => s + m.roi, 0) / list.length) * 100) / 100 : 0,
+      roi: list.length
+        ? Math.round((list.reduce((s, m) => s + m.roi, 0) / list.length) * 100) / 100
+        : 0,
       open_rate: rate(sum("opened"), delivered),
       click_rate: rate(sum("clicked"), delivered),
       conversion_rate: rate(sum("converted"), delivered),

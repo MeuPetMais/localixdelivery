@@ -11,9 +11,15 @@ export const AIForecastService = {
     if (pts.length < 2) {
       const flat = pts[0]?.value ?? 0;
       return {
-        kind: req.kind, horizon_days: req.horizon_days, trend: "flat", confidence: 0,
+        kind: req.kind,
+        horizon_days: req.horizon_days,
+        trend: "flat",
+        confidence: 0,
         points: Array.from({ length: req.horizon_days }, (_, i) => ({
-          date: addDays(new Date(), i + 1), value: flat, lower: flat, upper: flat,
+          date: addDays(new Date(), i + 1),
+          value: flat,
+          lower: flat,
+          upper: flat,
         })),
       };
     }
@@ -49,12 +55,21 @@ export const AIForecastService = {
     }
 
     const trend = slope > 0.001 ? "up" : slope < -0.001 ? "down" : "flat";
-    return { kind: req.kind, horizon_days: req.horizon_days, points, trend, confidence: Math.round(r2 * 100) / 100 };
+    return {
+      kind: req.kind,
+      horizon_days: req.horizon_days,
+      points,
+      trend,
+      confidence: Math.round(r2 * 100) / 100,
+    };
   },
 } as const;
 
 function addDays(base: Date, d: number): string {
-  const nd = new Date(base); nd.setDate(nd.getDate() + d);
+  const nd = new Date(base);
+  nd.setDate(nd.getDate() + d);
   return nd.toISOString().slice(0, 10);
 }
-function round(v: number) { return Math.round(v * 100) / 100; }
+function round(v: number) {
+  return Math.round(v * 100) / 100;
+}

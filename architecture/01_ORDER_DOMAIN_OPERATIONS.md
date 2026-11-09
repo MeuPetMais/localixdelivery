@@ -19,19 +19,19 @@ Cada operação deve:
 
 # Status Geral
 
-| Operação | Nome | Status |
-|----------|------|--------|
-|001|Fundação do Order Domain|⬜ Não iniciada|
-|002|Migração das Constantes|⬜ Não iniciada|
-|003|Order Column Resolver|⬜ Não iniciada|
-|004|Correção do Fluxo Dinheiro|⬜ Não iniciada|
-|005|Order State Machine|⬜ Não iniciada|
-|006|Order Actions|⬜ Não iniciada|
-|007|Migração do Kanban|⬜ Não iniciada|
-|008|Dashboard|⬜ Não iniciada|
-|009|Checkout|⬜ Não iniciada|
-|010|Motoboy|⬜ Não iniciada|
-|011|Remoção do Código Legado|⬜ Não iniciada|
+| Operação | Nome                       | Status          |
+| -------- | -------------------------- | --------------- |
+| 001      | Fundação do Order Domain   | ⬜ Não iniciada |
+| 002      | Migração das Constantes    | ⬜ Não iniciada |
+| 003      | Order Column Resolver      | ⬜ Não iniciada |
+| 004      | Correção do Fluxo Dinheiro | ⬜ Não iniciada |
+| 005      | Order State Machine        | ⬜ Não iniciada |
+| 006      | Order Actions              | ⬜ Não iniciada |
+| 007      | Migração do Kanban         | ⬜ Não iniciada |
+| 008      | Dashboard                  | ⬜ Não iniciada |
+| 009      | Checkout                   | ⬜ Não iniciada |
+| 010      | Motoboy                    | ⬜ Não iniciada |
+| 011      | Remoção do Código Legado   | ⬜ Não iniciada |
 
 ---
 

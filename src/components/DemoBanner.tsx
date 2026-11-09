@@ -55,7 +55,9 @@ export function DemoBanner() {
         </div>
         <div className="flex flex-wrap gap-2 sm:shrink-0">
           <Button asChild variant="outline" size="sm">
-            <a href="/" target="_blank" rel="noreferrer">Conhecer o sistema</a>
+            <a href="/" target="_blank" rel="noreferrer">
+              Conhecer o sistema
+            </a>
           </Button>
           <Button asChild size="sm" className="bg-gradient-warm">
             <a href="/auth?mode=signup" target="_blank" rel="noreferrer">
@@ -63,7 +65,6 @@ export function DemoBanner() {
             </a>
           </Button>
         </div>
-
       </div>
     </div>
   );

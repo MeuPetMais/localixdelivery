@@ -72,11 +72,15 @@ export function PaymentGatewaysCenter({ restaurantId, stripeParam }: Props) {
         >
           <div className="flex items-center gap-2 rounded border p-3">
             <RadioGroupItem value="stripe" id="pp-stripe" />
-            <Label htmlFor="pp-stripe" className="cursor-pointer flex-1">Stripe Connect</Label>
+            <Label htmlFor="pp-stripe" className="cursor-pointer flex-1">
+              Stripe Connect
+            </Label>
           </div>
           <div className="flex items-center gap-2 rounded border p-3">
             <RadioGroupItem value="mercado_pago" id="pp-mp" />
-            <Label htmlFor="pp-mp" className="cursor-pointer flex-1">Mercado Pago</Label>
+            <Label htmlFor="pp-mp" className="cursor-pointer flex-1">
+              Mercado Pago
+            </Label>
           </div>
         </RadioGroup>
       </Card>

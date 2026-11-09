@@ -307,7 +307,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
       const cutoff = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
       const news = items
         .filter((i) => new Date(i.created_at ?? 0).getTime() >= cutoff)
-        .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime())
+        .sort(
+          (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+        )
         .slice(0, 15)
         .map(toItem);
       const rendered = config.new_items_enabled && news.length > 0;

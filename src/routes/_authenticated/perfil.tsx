@@ -186,12 +186,23 @@ function MyProfilePage() {
   async function handleChangeEmail() {
     if (!newEmail) return;
     setSecurityBusy(true);
-    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/perfil", reason: "change email", fields: ["email"], newEmail });
+    if (import.meta.env.DEV)
+      console.info("[auth-debug] updateUser:before", {
+        screen: "/perfil",
+        reason: "change email",
+        fields: ["email"],
+        newEmail,
+      });
     try {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (import.meta.env.DEV) {
         const er = error as { code?: string; status?: number; message?: string } | null;
-        console.info("[auth-debug] updateUser:after", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        console.info("[auth-debug] updateUser:after", {
+          ok: !error,
+          errorCode: er?.code,
+          errorStatus: er?.status,
+          errorMessage: er?.message,
+        });
       }
       if (error) throw error;
       toast.success("Enviamos um link de confirmação para o novo e-mail");
@@ -209,12 +220,23 @@ function MyProfilePage() {
       return;
     }
     setSecurityBusy(true);
-    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/perfil", reason: "change password", fields: ["password"], passwordLength: newPassword.length });
+    if (import.meta.env.DEV)
+      console.info("[auth-debug] updateUser:before", {
+        screen: "/perfil",
+        reason: "change password",
+        fields: ["password"],
+        passwordLength: newPassword.length,
+      });
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (import.meta.env.DEV) {
         const er = error as { code?: string; status?: number; message?: string } | null;
-        console.info("[auth-debug] updateUser:after", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        console.info("[auth-debug] updateUser:after", {
+          ok: !error,
+          errorCode: er?.code,
+          errorStatus: er?.status,
+          errorMessage: er?.message,
+        });
       }
       if (error) throw error;
       toast.success("Senha alterada com sucesso");
@@ -314,7 +336,11 @@ function MyProfilePage() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
               >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
                 {avatarUrl ? "Trocar" : "Enviar"}
               </Button>
               {avatarUrl && (
@@ -328,7 +354,12 @@ function MyProfilePage() {
           <div className="grid flex-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="fullName">Nome completo</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" />
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Seu nome"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
@@ -336,19 +367,39 @@ function MyProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="role">Cargo / Função</Label>
-              <Input id="role" value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="Proprietário" />
+              <Input
+                id="role"
+                value={roleTitle}
+                onChange={(e) => setRoleTitle(e.target.value)}
+                placeholder="Proprietário"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Conta criada em</Label>
-              <Input value={user.created_at ? new Date(user.created_at).toLocaleString("pt-BR") : "—"} disabled />
+              <Input
+                value={user.created_at ? new Date(user.created_at).toLocaleString("pt-BR") : "—"}
+                disabled
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Último acesso</Label>
-              <Input value={user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("pt-BR") : "—"} disabled />
+              <Input
+                value={
+                  user.last_sign_in_at
+                    ? new Date(user.last_sign_in_at).toLocaleString("pt-BR")
+                    : "—"
+                }
+                disabled
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>ID da conta</Label>
@@ -420,13 +471,18 @@ function MyProfilePage() {
             </p>
           </div>
           <Button variant="outline" onClick={handleSignOutOthers} disabled={signingOutOthers}>
-            {signingOutOthers ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            {signingOutOthers ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
             Encerrar outras
           </Button>
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          Último login: {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("pt-BR") : "—"}
+          Último login:{" "}
+          {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("pt-BR") : "—"}
         </p>
       </Card>
 
@@ -441,7 +497,9 @@ function MyProfilePage() {
           <div className="space-y-1.5">
             <Label>Idioma</Label>
             <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
                 <SelectItem value="en-US">English (US)</SelectItem>
@@ -452,7 +510,9 @@ function MyProfilePage() {
           <div className="space-y-1.5">
             <Label>Tema</Label>
             <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="auto">Automático</SelectItem>
                 <SelectItem value="light">Claro</SelectItem>
@@ -464,12 +524,24 @@ function MyProfilePage() {
 
         <div className="mt-5 space-y-3">
           {[
-            { id: "email", label: "Notificações por e-mail", value: emailNotif, set: setEmailNotif },
+            {
+              id: "email",
+              label: "Notificações por e-mail",
+              value: emailNotif,
+              set: setEmailNotif,
+            },
             { id: "push", label: "Notificações push", value: pushNotif, set: setPushNotif },
-            { id: "mkt", label: "Receber novidades da plataforma", value: marketing, set: setMarketing },
+            {
+              id: "mkt",
+              label: "Receber novidades da plataforma",
+              value: marketing,
+              set: setMarketing,
+            },
           ].map((opt) => (
             <div key={opt.id} className="flex items-center justify-between rounded-lg border p-3">
-              <Label htmlFor={opt.id} className="cursor-pointer">{opt.label}</Label>
+              <Label htmlFor={opt.id} className="cursor-pointer">
+                {opt.label}
+              </Label>
               <Switch id={opt.id} checked={opt.value} onCheckedChange={opt.set} />
             </div>
           ))}
@@ -515,10 +587,15 @@ function MyProfilePage() {
             <div>
               <p className="text-sm font-semibold">
                 {browser} · {os}
-                <Badge variant="secondary" className="ml-2">Esta sessão</Badge>
+                <Badge variant="secondary" className="ml-2">
+                  Esta sessão
+                </Badge>
               </p>
               <p className="text-xs text-muted-foreground">
-                Último acesso: {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("pt-BR") : "—"}
+                Último acesso:{" "}
+                {user.last_sign_in_at
+                  ? new Date(user.last_sign_in_at).toLocaleString("pt-BR")
+                  : "—"}
               </p>
             </div>
           </div>
@@ -526,7 +603,11 @@ function MyProfilePage() {
 
         <div className="mt-4 flex justify-end">
           <Button variant="outline" onClick={handleSignOutOthers} disabled={signingOutOthers}>
-            {signingOutOthers ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            {signingOutOthers ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
             Encerrar outras sessões
           </Button>
         </div>

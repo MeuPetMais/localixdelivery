@@ -1,14 +1,24 @@
 import {
-  DEFAULT_CONFIG, type ConfigGroup, type GroupPayload, type TenantConfiguration,
+  DEFAULT_CONFIG,
+  type ConfigGroup,
+  type GroupPayload,
+  type TenantConfiguration,
 } from "./types";
 import { TenantConfigurationCache, tenantConfigCache } from "./TenantConfigurationCache";
 import { validateGroup, type ValidationResult } from "./TenantConfigurationValidator";
-import { TenantConfigurationVersioning, type VersioningRepository } from "./TenantConfigurationVersioning";
+import {
+  TenantConfigurationVersioning,
+  type VersioningRepository,
+} from "./TenantConfigurationVersioning";
 import { TenantAudit, type AuditRepository } from "./TenantAudit";
 
 export interface TenantConfigRepository {
   loadAll(restaurantId: string): Promise<Partial<TenantConfiguration>>;
-  saveGroup<G extends ConfigGroup>(restaurantId: string, group: G, value: GroupPayload<G>): Promise<void>;
+  saveGroup<G extends ConfigGroup>(
+    restaurantId: string,
+    group: G,
+    value: GroupPayload<G>,
+  ): Promise<void>;
   bumpVersion(restaurantId: string): Promise<number>;
 }
 
@@ -61,7 +71,10 @@ export class TenantConfigurationService {
   }
 
   async update<G extends ConfigGroup>(
-    restaurantId: string, group: G, value: GroupPayload<G>, changedBy?: string,
+    restaurantId: string,
+    group: G,
+    value: GroupPayload<G>,
+    changedBy?: string,
   ): Promise<{ ok: true; version: number } | { ok: false; issues: ValidationResult["issues"] }> {
     const result = this.validate(group, value);
     if (!result.valid) return { ok: false, issues: result.issues };
@@ -73,8 +86,11 @@ export class TenantConfigurationService {
     if (this.versioning) await this.versioning.record(restaurantId, group, value, changedBy);
     if (this.audit) {
       await this.audit.diff(
-        restaurantId, group, (previous as any)[group] as Record<string, any>,
-        value as Record<string, any>, changedBy,
+        restaurantId,
+        group,
+        (previous as any)[group] as Record<string, any>,
+        value as Record<string, any>,
+        changedBy,
       );
     }
     this.cache.invalidate(restaurantId);
@@ -82,7 +98,10 @@ export class TenantConfigurationService {
   }
 
   async rollback<G extends ConfigGroup>(
-    restaurantId: string, group: G, targetVersion: number, changedBy?: string,
+    restaurantId: string,
+    group: G,
+    targetVersion: number,
+    changedBy?: string,
   ): Promise<{ ok: true; version: number }> {
     if (!this.versioning) throw new Error("Versioning is not configured");
     const snapshot = await this.versioning.rollback(restaurantId, group, targetVersion);
@@ -98,11 +117,17 @@ export class TenantConfigurationService {
 
 export function createTenantConfigurationService(
   repo: TenantConfigRepository,
-  extras?: { versioningRepo?: VersioningRepository; auditRepo?: AuditRepository; cache?: TenantConfigurationCache },
+  extras?: {
+    versioningRepo?: VersioningRepository;
+    auditRepo?: AuditRepository;
+    cache?: TenantConfigurationCache;
+  },
 ): TenantConfigurationService {
   return new TenantConfigurationService({
     repo,
-    versioning: extras?.versioningRepo ? new TenantConfigurationVersioning(extras.versioningRepo) : undefined,
+    versioning: extras?.versioningRepo
+      ? new TenantConfigurationVersioning(extras.versioningRepo)
+      : undefined,
     audit: extras?.auditRepo ? new TenantAudit(extras.auditRepo) : undefined,
     cache: extras?.cache,
   });

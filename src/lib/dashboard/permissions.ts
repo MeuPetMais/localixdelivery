@@ -1,4 +1,9 @@
-import { normalizeRestaurantRole, type DashboardRole, type NavigationItem, type WorkspaceDefinition } from "./types";
+import {
+  normalizeRestaurantRole,
+  type DashboardRole,
+  type NavigationItem,
+  type WorkspaceDefinition,
+} from "./types";
 
 export const ROLE_HIERARCHY: Record<DashboardRole, number> = {
   OWNER: 100,
@@ -12,10 +17,7 @@ export const ROLE_HIERARCHY: Record<DashboardRole, number> = {
   DRIVER: 30, // legacy alias for DELIVERY
 };
 
-export function canAccess(
-  role: DashboardRole,
-  required?: DashboardRole[],
-): boolean {
+export function canAccess(role: DashboardRole, required?: DashboardRole[]): boolean {
   if (!required || required.length === 0) return true;
   // OWNER (and its legacy alias ADMIN) always have full access to the restaurant panel.
   const canonical = normalizeRestaurantRole(role);
@@ -24,10 +26,7 @@ export function canAccess(
   return normalizedRequired.includes(canonical);
 }
 
-export function filterNavigation(
-  items: NavigationItem[],
-  role: DashboardRole,
-): NavigationItem[] {
+export function filterNavigation(items: NavigationItem[], role: DashboardRole): NavigationItem[] {
   return items
     .filter((i) => canAccess(role, i.requiredRoles))
     .map((i) => ({

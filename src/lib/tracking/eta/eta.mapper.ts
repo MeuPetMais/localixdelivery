@@ -28,7 +28,8 @@ export interface OperationsEtaView extends RestaurantEtaView {
 function friendlyMessage(result: EtaResult): string {
   const minMin = Math.max(1, Math.round(result.window.min_seconds / 60));
   const maxMin = Math.max(minMin + 1, Math.round(result.window.max_seconds / 60));
-  if (result.confidence === "LOW") return `Chegada estimada entre ${minMin}–${maxMin} min (estimativa aproximada).`;
+  if (result.confidence === "LOW")
+    return `Chegada estimada entre ${minMin}–${maxMin} min (estimativa aproximada).`;
   return `Chegada estimada entre ${minMin}–${maxMin} min.`;
 }
 

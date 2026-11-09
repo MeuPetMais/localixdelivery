@@ -1,13 +1,36 @@
-import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  Link,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCanAccessAdminSupport } from "@/hooks/use-role";
-import { Loader2, LayoutDashboard, Wallet, Store, Users, Receipt, LogOut, ShieldCheck, Settings, ShoppingBag, Percent, UserCheck, FileBarChart, ScrollText, LifeBuoy, BookOpen } from "lucide-react";
+import {
+  Loader2,
+  LayoutDashboard,
+  Wallet,
+  Store,
+  Users,
+  Receipt,
+  LogOut,
+  ShieldCheck,
+  Settings,
+  ShoppingBag,
+  Percent,
+  UserCheck,
+  FileBarChart,
+  ScrollText,
+  LifeBuoy,
+  BookOpen,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnvSwitcherButton } from "@/components/EnvSwitcherButton";
 import { InternalNotificationsBell } from "@/components/admin/InternalNotificationsBell";
 import { clearImpersonation } from "@/lib/admin-mode";
-
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -15,8 +38,7 @@ export const Route = createFileRoute("/admin")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/admin/login" });
     // RC2-SEC-001: admin exige autenticação por e-mail/senha.
-    const provider =
-      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    const provider = (data.user.app_metadata?.provider as string | undefined) ?? "email";
     if (provider !== "email") {
       await supabase.auth.signOut();
       throw redirect({ to: "/admin/login" });
@@ -35,7 +57,10 @@ function AdminLayout() {
   const role = supportAccess?.role ?? null;
   const isAdmin = role === "admin";
   const canManageKnowledge = isAdmin || role === "support_manager";
-  const isSupportPath = pathname === "/admin/support" || pathname.startsWith("/admin/support/") || pathname === "/admin/suporte";
+  const isSupportPath =
+    pathname === "/admin/support" ||
+    pathname.startsWith("/admin/support/") ||
+    pathname === "/admin/suporte";
   const isKnowledgePath = pathname === "/admin/knowledge";
   const isAllowedInternalPath = isSupportPath || (isKnowledgePath && canManageKnowledge);
 
@@ -46,7 +71,6 @@ function AdminLayout() {
     // Admin never carries impersonation into /admin
     if (isAdmin || canAccessSupport) clearImpersonation();
   }, [isLoading, isAdmin, canAccessSupport, isAllowedInternalPath, navigate]);
-
 
   async function logout() {
     await supabase.auth.signOut();
@@ -78,28 +102,47 @@ function AdminLayout() {
   ];
   const visibleNav = isAdmin
     ? nav
-    : nav.filter((item) => item.to === "/admin/support" || (canManageKnowledge && item.to === "/admin/knowledge"));
+    : nav.filter(
+        (item) =>
+          item.to === "/admin/support" || (canManageKnowledge && item.to === "/admin/knowledge"),
+      );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-800 bg-slate-900 lg:block">
         <div className="flex h-16 items-center gap-2 border-b border-slate-800 px-5 font-bold">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground"><ShieldCheck className="h-5 w-5" /></span>
-          <span>Localix <span className="text-primary">Admin</span></span>
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <ShieldCheck className="h-5 w-5" />
+          </span>
+          <span>
+            Localix <span className="text-primary">Admin</span>
+          </span>
         </div>
         <nav className="space-y-1 p-3">
           {visibleNav.map(({ to, label, icon: Icon, exact }) => {
-            const active = exact ? pathname === to : (pathname === to || pathname.startsWith(`${to}/`));
+            const active = exact
+              ? pathname === to
+              : pathname === to || pathname.startsWith(`${to}/`);
             return (
-              <Link key={to} to={to} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${active ? "bg-primary/20 text-primary" : "text-slate-300 hover:bg-slate-800"}`}>
-                <Icon className="h-4 w-4" />{label}
+              <Link
+                key={to}
+                to={to}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${active ? "bg-primary/20 text-primary" : "text-slate-300 hover:bg-slate-800"}`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
               </Link>
             );
           })}
         </nav>
         <div className="absolute bottom-0 w-full border-t border-slate-800 p-3">
           <div className="mb-2 truncate px-2 text-xs text-slate-400">{user.email}</div>
-          <Button variant="ghost" size="sm" onClick={logout} className="w-full justify-start text-slate-200 hover:bg-slate-800 hover:text-white">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="w-full justify-start text-slate-200 hover:bg-slate-800 hover:text-white"
+          >
             <LogOut className="mr-2 h-4 w-4" /> Sair
           </Button>
         </div>
@@ -110,8 +153,13 @@ function AdminLayout() {
             {visibleNav.map(({ to, label, icon: Icon }) => {
               const active = pathname === to;
               return (
-                <Link key={to} to={to} className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${active ? "bg-primary text-primary-foreground" : "text-slate-300"}`}>
-                  <Icon className="h-3.5 w-3.5" />{label}
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${active ? "bg-primary text-primary-foreground" : "text-slate-300"}`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
                 </Link>
               );
             })}
@@ -121,9 +169,10 @@ function AdminLayout() {
             <EnvSwitcherButton className="text-slate-200" />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8"><Outlet /></main>
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
+          <Outlet />
+        </main>
       </div>
-
     </div>
   );
 }

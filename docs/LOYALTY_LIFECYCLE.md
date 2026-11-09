@@ -23,8 +23,8 @@ EARN → (uso) REDEEM → REDEEM commit/rollback → EXPIRE (após validity_days
 
 ## Eventos
 
-| Tipo | Payload |
-|------|---------|
+| Tipo           | Payload                                           |
+| -------------- | ------------------------------------------------- |
 | PointsExpiring | `{ points, days, expire_at }` — `days ∈ {30,7,1}` |
 
 ## Superfícies

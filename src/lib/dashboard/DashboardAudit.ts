@@ -12,7 +12,11 @@ export const DashboardAudit = {
     buffer.push(full);
     if (buffer.length > MAX_BUFFER) buffer.shift();
     listeners.forEach((l) => {
-      try { l(full); } catch { /* noop */ }
+      try {
+        l(full);
+      } catch {
+        /* noop */
+      }
     });
   },
   subscribe(l: Listener): () => void {

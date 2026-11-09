@@ -2,13 +2,16 @@
 // Puro. Sem I/O. Consumido pelo dashboard.
 
 import type {
-  OperationsActiveDelivery, OperationsAlert, OperationsDriverRow, OperationsQueueRow,
+  OperationsActiveDelivery,
+  OperationsAlert,
+  OperationsDriverRow,
+  OperationsQueueRow,
 } from "./operations-tracking.types";
 
 export interface OperationsAlertConfig {
-  stuck_minutes: number;         // pedido sem status change
+  stuck_minutes: number; // pedido sem status change
   heartbeat_lost_seconds: number; // sem last_seen_at
-  no_movement_seconds: number;   // driver parado
+  no_movement_seconds: number; // driver parado
   now?: number;
 }
 
@@ -32,10 +35,12 @@ export const OperationsAlertService = {
       if (d.minutes_since_start >= config.stuck_minutes && d.status !== "ENTREGUE") {
         alerts.push({
           id: `stuck:${d.assignment_id}`,
-          kind: "ORDER_STUCK", severity: "critical",
+          kind: "ORDER_STUCK",
+          severity: "critical",
           title: `Pedido #${d.order_number ?? "—"} parado há ${d.minutes_since_start}min`,
           detail: `Cliente ${d.customer_name}. Status atual: ${d.status}.`,
-          ref_order_id: d.order_id, ref_driver_id: d.driver_id,
+          ref_order_id: d.order_id,
+          ref_driver_id: d.driver_id,
           at: new Date(now).toISOString(),
         });
       }
@@ -44,10 +49,12 @@ export const OperationsAlertService = {
         if (gap >= config.heartbeat_lost_seconds) {
           alerts.push({
             id: `heartbeat:${d.driver_id}`,
-            kind: "HEARTBEAT_LOST", severity: gap > config.no_movement_seconds ? "critical" : "warn",
+            kind: "HEARTBEAT_LOST",
+            severity: gap > config.no_movement_seconds ? "critical" : "warn",
             title: `Heartbeat perdido — ${d.driver_name}`,
             detail: `Sem sinal há ${Math.floor(gap)}s.`,
-            ref_driver_id: d.driver_id, ref_order_id: d.order_id,
+            ref_driver_id: d.driver_id,
+            ref_order_id: d.order_id,
             at: new Date(now).toISOString(),
           });
         }
@@ -55,10 +62,12 @@ export const OperationsAlertService = {
       if (d.confidence === "LOW") {
         alerts.push({
           id: `eta:${d.assignment_id}`,
-          kind: "ETA_LOW_CONFIDENCE", severity: "info",
+          kind: "ETA_LOW_CONFIDENCE",
+          severity: "info",
           title: `ETA com baixa confiança — Pedido #${d.order_number ?? "—"}`,
           detail: `Motoboy ${d.driver_name}.`,
-          ref_order_id: d.order_id, ref_driver_id: d.driver_id,
+          ref_order_id: d.order_id,
+          ref_driver_id: d.driver_id,
           at: new Date(now).toISOString(),
         });
       }
@@ -68,10 +77,12 @@ export const OperationsAlertService = {
       if (d.state === "OFFLINE" && d.current_order_id) {
         alerts.push({
           id: `offline:${d.driver_id}`,
-          kind: "DRIVER_OFFLINE", severity: "critical",
+          kind: "DRIVER_OFFLINE",
+          severity: "critical",
           title: `Motoboy offline — ${d.name}`,
           detail: `Possui entrega em andamento.`,
-          ref_driver_id: d.driver_id, ref_order_id: d.current_order_id,
+          ref_driver_id: d.driver_id,
+          ref_order_id: d.current_order_id,
           at: new Date(now).toISOString(),
         });
       }
@@ -80,7 +91,8 @@ export const OperationsAlertService = {
     if (queue.length === 0 && active.length > 0) {
       alerts.push({
         id: "queue:empty",
-        kind: "QUEUE_EMPTY", severity: "warn",
+        kind: "QUEUE_EMPTY",
+        severity: "warn",
         title: "Fila vazia",
         detail: "Nenhum motoboy aguardando para próxima entrega.",
         at: new Date(now).toISOString(),

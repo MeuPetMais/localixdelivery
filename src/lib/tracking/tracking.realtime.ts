@@ -27,11 +27,15 @@ function subscribeSnapshotFilter(channelName: string, filter: string, opts: Subs
           const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
           if (!row) return;
           opts.onUpdate(toPublicPayload(toSnapshot(row)));
-        } catch (err) { opts.onError?.(err); }
+        } catch (err) {
+          opts.onError?.(err);
+        }
       },
     )
     .subscribe();
-  return () => { void supabase.removeChannel(channel); };
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 export function subscribeRestaurantTracking(restaurantId: string, opts: SubscribeOptions) {

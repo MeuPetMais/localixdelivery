@@ -44,7 +44,10 @@ export const persistIntelligenceSnapshot = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (data.replace) {
-      await context.supabase.from("product_insights" as any).delete().eq("restaurant_id", data.restaurant_id);
+      await context.supabase
+        .from("product_insights" as any)
+        .delete()
+        .eq("restaurant_id", data.restaurant_id);
       await context.supabase
         .from("product_recommendations" as any)
         .delete()
@@ -64,5 +67,9 @@ export const persistIntelligenceSnapshot = createServerFn({ method: "POST" })
         );
       if (error) throw new Error(error.message);
     }
-    return { ok: true, insights: data.insights.length, recommendations: data.recommendations.length };
+    return {
+      ok: true,
+      insights: data.insights.length,
+      recommendations: data.recommendations.length,
+    };
   });

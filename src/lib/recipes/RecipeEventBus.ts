@@ -10,7 +10,15 @@ export const RecipeEventBus = {
     return () => handlers.get(name)!.delete(h);
   },
   emit(e: RecipeEvent) {
-    handlers.get(e.name)?.forEach((h) => { try { h(e); } catch { /* ignore */ } });
+    handlers.get(e.name)?.forEach((h) => {
+      try {
+        h(e);
+      } catch {
+        /* ignore */
+      }
+    });
   },
-  clear() { handlers.clear(); },
+  clear() {
+    handlers.clear();
+  },
 };

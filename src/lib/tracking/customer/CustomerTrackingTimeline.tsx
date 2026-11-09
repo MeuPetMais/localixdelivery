@@ -13,7 +13,8 @@ const STEP_ICONS: Record<(typeof CUSTOMER_STEPS)[number]["key"], typeof CheckCir
 };
 
 function activeIndex(step: CustomerTrackingStep): number {
-  if (step === "proximo_do_destino") return CUSTOMER_STEPS.findIndex((s) => s.key === "saiu_para_entrega");
+  if (step === "proximo_do_destino")
+    return CUSTOMER_STEPS.findIndex((s) => s.key === "saiu_para_entrega");
   const i = CUSTOMER_STEPS.findIndex((s) => s.key === step);
   return i === -1 ? 0 : i;
 }
@@ -34,13 +35,23 @@ export function CustomerTrackingTimeline({ step }: { step: CustomerTrackingStep 
                 done && "border-success bg-success/15 text-success",
                 active && "border-primary bg-primary/15 text-primary animate-pulse",
                 !done && !active && "border-muted bg-muted/30 text-muted-foreground",
-              ].filter(Boolean).join(" ")}
+              ]
+                .filter(Boolean)
+                .join(" ")}
               aria-current={active ? "step" : undefined}
             >
-              {done ? <CheckCircle2 className="h-4 w-4" /> : active ? <Icon className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+              {done ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : active ? (
+                <Icon className="h-4 w-4" />
+              ) : (
+                <Circle className="h-4 w-4" />
+              )}
             </div>
             <div className="flex-1">
-              <p className={`text-sm font-medium ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>
+              <p
+                className={`text-sm font-medium ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}
+              >
                 {s.label}
               </p>
             </div>

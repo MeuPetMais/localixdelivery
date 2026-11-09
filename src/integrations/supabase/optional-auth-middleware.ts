@@ -33,8 +33,7 @@ export const optionalSupabaseAuth = createMiddleware({ type: "function" }).serve
 
     const req = getRequest();
     const authHeader = req?.headers.get("authorization") ?? "";
-    const token =
-      authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 
     let userId: string | null = null;
 

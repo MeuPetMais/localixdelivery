@@ -1,5 +1,11 @@
 import { InAppProvider } from "./InAppProvider";
-import { PushProvider, EmailProvider, SMSProvider, WhatsAppProvider, WebSocketProvider } from "./StubProviders";
+import {
+  PushProvider,
+  EmailProvider,
+  SMSProvider,
+  WhatsAppProvider,
+  WebSocketProvider,
+} from "./StubProviders";
 import type { NotificationChannel } from "../types";
 import type { NotificationProvider } from "./NotificationProvider";
 

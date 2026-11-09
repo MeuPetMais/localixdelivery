@@ -3,48 +3,82 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bike, Search, Send, Loader2, MapPin, Timer, Users, PackageCheck, Truck } from "lucide-react";
+import {
+  Bike,
+  Search,
+  Send,
+  Loader2,
+  MapPin,
+  Timer,
+  Users,
+  PackageCheck,
+  Truck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { supabase } from "@/integrations/supabase/client";
 import { listDrivers } from "@/lib/delivery-drivers.functions";
 import { queueList } from "@/lib/delivery-queue.functions";
 import {
-  listAssignments, assignDelivery, collectDelivery, departDelivery, deliverDelivery,
-  cancelDelivery, listAutoAssignmentAudit,
+  listAssignments,
+  assignDelivery,
+  collectDelivery,
+  departDelivery,
+  deliverDelivery,
+  cancelDelivery,
+  listAutoAssignmentAudit,
 } from "@/lib/delivery-assignment.functions";
 import { brl } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/entregas")({
-  head: () => ({ meta: [
-    { title: "Central de Entregas — Localix" },
-    { name: "description", content: "Painel operacional de entregas em tempo real." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Central de Entregas — Localix" },
+      { name: "description", content: "Painel operacional de entregas em tempo real." },
+    ],
+  }),
   component: EntregasPage,
 });
 
 type Order = {
-  id: string; order_number: number | null; customer_name: string;
-  address: string | null; total: number; status: string; created_at: string;
+  id: string;
+  order_number: number | null;
+  customer_name: string;
+  address: string | null;
+  total: number;
+  status: string;
+  created_at: string;
 };
 type Driver = {
-  id: string; name: string; online: boolean;
+  id: string;
+  name: string;
+  online: boolean;
   status: "ativo" | "inativo" | "afastado";
 };
 type QueueEntry = {
-  id: string; driver_id: string; position: number;
+  id: string;
+  driver_id: string;
+  position: number;
   status: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "INATIVO";
   entered_at: string;
 };
 type Assignment = {
-  id: string; order_id: string; driver_id: string; status: string;
-  assigned_at: string | null; distance_km: number | null;
+  id: string;
+  order_id: string;
+  driver_id: string;
+  status: string;
+  assigned_at: string | null;
+  distance_km: number | null;
   estimated_minutes: number | null;
 };
 type AssignmentIssue = {
@@ -130,12 +164,45 @@ function EntregasPage() {
     };
     const ch = supabase
       .channel(`ops-entregas-${rid}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_assignments", filter: `restaurant_id=eq.${rid}` }, invalidate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_queue", filter: `restaurant_id=eq.${rid}` }, invalidate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${rid}` }, invalidate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_drivers", filter: `restaurant_id=eq.${rid}` }, invalidate)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_assignments",
+          filter: `restaurant_id=eq.${rid}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_queue",
+          filter: `restaurant_id=eq.${rid}`,
+        },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${rid}` },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_drivers",
+          filter: `restaurant_id=eq.${rid}`,
+        },
+        invalidate,
+      )
       .subscribe();
-    return () => { void supabase.removeChannel(ch); };
+    return () => {
+      void supabase.removeChannel(ch);
+    };
   }, [rid, qc]);
 
   // Tick a cada 30s para tempos relativos
@@ -162,7 +229,9 @@ function EntregasPage() {
     return map;
   }, [auditRows]);
 
-  const inFlight = assignments.filter((a) => ["ATRIBUIDO", "COLETANDO", "EM_ROTA"].includes(a.status));
+  const inFlight = assignments.filter((a) =>
+    ["ATRIBUIDO", "COLETANDO", "EM_ROTA"].includes(a.status),
+  );
   const assignedOrderIds = new Set(inFlight.map((a) => a.order_id));
   const readyOrders = orders.filter((o) => o.status === "pronto" && !assignedOrderIds.has(o.id));
   const delivered = assignments.filter((a) => a.status === "ENTREGUE");
@@ -212,7 +281,9 @@ function EntregasPage() {
     },
     onSuccess: () => {
       toast.success("Entrega despachada");
-      setDispatchOrder(null); setPickDriverId(null); setChoosingOther(false);
+      setDispatchOrder(null);
+      setPickDriverId(null);
+      setChoosingOther(false);
       invalidateDeliveryQueries();
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao despachar"),
@@ -252,7 +323,8 @@ function EntregasPage() {
 
   const cancelRunner = useServerFn(cancelDelivery);
   const cancelMut = useMutation({
-    mutationFn: async (assignmentId: string) => cancelRunner({ data: { assignmentId, reason: "Cancelamento administrativo" } }),
+    mutationFn: async (assignmentId: string) =>
+      cancelRunner({ data: { assignmentId, reason: "Cancelamento administrativo" } }),
     onSuccess: () => {
       toast.success("Atribuicao cancelada");
       invalidateDeliveryQueries();
@@ -279,10 +351,26 @@ function EntregasPage() {
     <div className="space-y-4 p-3 sm:p-6">
       {/* Header + indicadores */}
       <header className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <IndicatorCard icon={<PackageCheck className="h-4 w-4" />} label="Pedidos prontos" value={readyOrders.length} />
-        <IndicatorCard icon={<Users className="h-4 w-4" />} label="Motoboys disponíveis" value={availableQueue.length} />
-        <IndicatorCard icon={<Truck className="h-4 w-4" />} label="Em rota" value={inFlight.length} />
-        <IndicatorCard icon={<Timer className="h-4 w-4" />} label="Tempo médio" value={`${avgMin}min`} />
+        <IndicatorCard
+          icon={<PackageCheck className="h-4 w-4" />}
+          label="Pedidos prontos"
+          value={readyOrders.length}
+        />
+        <IndicatorCard
+          icon={<Users className="h-4 w-4" />}
+          label="Motoboys disponíveis"
+          value={availableQueue.length}
+        />
+        <IndicatorCard
+          icon={<Truck className="h-4 w-4" />}
+          label="Em rota"
+          value={inFlight.length}
+        />
+        <IndicatorCard
+          icon={<Timer className="h-4 w-4" />}
+          label="Tempo médio"
+          value={`${avgMin}min`}
+        />
       </header>
 
       {/* Filtros + busca */}
@@ -320,9 +408,12 @@ function EntregasPage() {
                 <div key={o.id} className="rounded-lg border bg-card p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">#{o.order_number ?? o.id.slice(0, 6)} • {o.customer_name}</p>
+                      <p className="truncate font-semibold">
+                        #{o.order_number ?? o.id.slice(0, 6)} • {o.customer_name}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        <MapPin className="mr-1 inline h-3 w-3" />{o.address ?? "—"}
+                        <MapPin className="mr-1 inline h-3 w-3" />
+                        {o.address ?? "—"}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {brl(o.total)} • {minutesSince(o.created_at)}min aguardando
@@ -359,11 +450,16 @@ function EntregasPage() {
                 .map((q) => {
                   const d = driverById.get(q.driver_id);
                   const badge =
-                    q.status === "AGUARDANDO" ? { icon: "🟢", label: "Disponível" }
-                    : q.status === "EM_ENTREGA" ? { icon: "🚚", label: "Em entrega" }
-                    : { icon: "↩", label: "Retornando" };
+                    q.status === "AGUARDANDO"
+                      ? { icon: "🟢", label: "Disponível" }
+                      : q.status === "EM_ENTREGA"
+                        ? { icon: "🚚", label: "Em entrega" }
+                        : { icon: "↩", label: "Retornando" };
                   return (
-                    <div key={q.id} className="flex items-center justify-between rounded-lg border bg-card p-2 text-sm">
+                    <div
+                      key={q.id}
+                      className="flex items-center justify-between rounded-lg border bg-card p-2 text-sm"
+                    >
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold">
                           {q.position}
@@ -403,7 +499,9 @@ function EntregasPage() {
                           {a.assigned_at ? `${minutesSince(a.assigned_at)}min` : "—"}
                           {a.distance_km ? ` • ${a.distance_km.toFixed(1)}km` : ""}
                         </p>
-                        <Badge variant="outline" className="mt-1 text-[10px]">{a.status}</Badge>
+                        <Badge variant="outline" className="mt-1 text-[10px]">
+                          {a.status}
+                        </Badge>
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         {a.status === "ATRIBUIDO" && (
@@ -483,7 +581,9 @@ function EntregasPage() {
                   const d = driverById.get(a.driver_id);
                   return (
                     <div key={a.id} className="flex items-center justify-between text-xs">
-                      <span className="truncate">#{o?.order_number ?? a.order_id.slice(0, 6)} • {d?.name ?? "—"}</span>
+                      <span className="truncate">
+                        #{o?.order_number ?? a.order_id.slice(0, 6)} • {d?.name ?? "—"}
+                      </span>
                       <span className="text-muted-foreground">{a.estimated_minutes ?? "—"}min</span>
                     </div>
                   );
@@ -496,7 +596,15 @@ function EntregasPage() {
       </div>
 
       {/* Dispatch Modal */}
-      <Dialog open={!!dispatchOrder} onOpenChange={(o) => { if (!o) { setDispatchOrder(null); setChoosingOther(false); } }}>
+      <Dialog
+        open={!!dispatchOrder}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDispatchOrder(null);
+            setChoosingOther(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Despachar entrega</DialogTitle>
@@ -504,8 +612,14 @@ function EntregasPage() {
           {dispatchOrder && (
             <div className="space-y-3 text-sm">
               <div>
-                <p className="font-semibold">#{dispatchOrder.order_number ?? dispatchOrder.id.slice(0, 6)} • {dispatchOrder.customer_name}</p>
-                <p className="text-xs text-muted-foreground"><MapPin className="mr-1 inline h-3 w-3" />{dispatchOrder.address ?? "—"}</p>
+                <p className="font-semibold">
+                  #{dispatchOrder.order_number ?? dispatchOrder.id.slice(0, 6)} •{" "}
+                  {dispatchOrder.customer_name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <MapPin className="mr-1 inline h-3 w-3" />
+                  {dispatchOrder.address ?? "—"}
+                </p>
                 <p className="text-xs text-muted-foreground">Total: {brl(dispatchOrder.total)}</p>
               </div>
 
@@ -528,10 +642,14 @@ function EntregasPage() {
                         onClick={() => setPickDriverId(q.driver_id)}
                         className={
                           "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm " +
-                          (pickDriverId === q.driver_id ? "border-primary bg-primary/10" : "hover:bg-muted")
+                          (pickDriverId === q.driver_id
+                            ? "border-primary bg-primary/10"
+                            : "hover:bg-muted")
                         }
                       >
-                        <span className="truncate">#{q.position} • {d.name}</span>
+                        <span className="truncate">
+                          #{q.position} • {d.name}
+                        </span>
                         <span className="text-xs text-muted-foreground">🟢</span>
                       </button>
                     );
@@ -546,9 +664,17 @@ function EntregasPage() {
             </Button>
             <Button
               disabled={!pickDriverId || assignMut.isPending}
-              onClick={() => dispatchOrder && pickDriverId && assignMut.mutate({ orderId: dispatchOrder.id, driverId: pickDriverId })}
+              onClick={() =>
+                dispatchOrder &&
+                pickDriverId &&
+                assignMut.mutate({ orderId: dispatchOrder.id, driverId: pickDriverId })
+              }
             >
-              {assignMut.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Send className="mr-1 h-3 w-3" />}
+              {assignMut.isPending ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Send className="mr-1 h-3 w-3" />
+              )}
               Confirmar
             </Button>
           </DialogFooter>
@@ -559,10 +685,21 @@ function EntregasPage() {
 }
 
 // -- helpers de UI --
-function IndicatorCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
+function IndicatorCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+}) {
   return (
     <Card className="p-3">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{label}</div>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {icon}
+        {label}
+      </div>
       <p className="mt-1 text-xl font-bold">{value}</p>
     </Card>
   );
@@ -584,7 +721,11 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 function EmptyMsg({ text }: { text: string }) {
-  return <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">{text}</p>;
+  return (
+    <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+      {text}
+    </p>
+  );
 }
 
 // Pequeno helper para manter uma ref estável de um server function runner

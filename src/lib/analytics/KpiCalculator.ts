@@ -2,8 +2,12 @@ import type { KpiFormat, KpiTrend, KpiValue, AnalyticsScope } from "./types";
 
 export const KpiCalculator = {
   build(input: {
-    key: string; label: string; value: number; scope: AnalyticsScope;
-    format?: KpiFormat; previous?: number;
+    key: string;
+    label: string;
+    value: number;
+    scope: AnalyticsScope;
+    format?: KpiFormat;
+    previous?: number;
   }): KpiValue {
     const format = input.format ?? "number";
     const previous = input.previous;

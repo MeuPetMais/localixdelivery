@@ -1,17 +1,17 @@
 # GO LIVE SCORE — Localix RC1
 
-| Módulo | Nota | Status |
-|---|---|---|
-| Arquitetura | 95 | 🟢 |
-| Pedidos (E2E) | 98 | 🟢 |
-| Stripe | 90 | 🟡 |
-| Financeiro | 88 | 🟡 |
-| Loyalty | 97 | 🟢 |
-| Marketplace | 95 | 🟢 |
-| Painéis | 85 | 🟡 |
-| Segurança | 96 | 🟢 |
-| Performance | 93 | 🟢 |
-| Produção / Ops | 86 | 🟡 |
+| Módulo         | Nota | Status |
+| -------------- | ---- | ------ |
+| Arquitetura    | 95   | 🟢     |
+| Pedidos (E2E)  | 98   | 🟢     |
+| Stripe         | 90   | 🟡     |
+| Financeiro     | 88   | 🟡     |
+| Loyalty        | 97   | 🟢     |
+| Marketplace    | 95   | 🟢     |
+| Painéis        | 85   | 🟡     |
+| Segurança      | 96   | 🟢     |
+| Performance    | 93   | 🟢     |
+| Produção / Ops | 86   | 🟡     |
 
 **Nota geral: 92 / 100**
 

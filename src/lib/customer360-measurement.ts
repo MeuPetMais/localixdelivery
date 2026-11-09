@@ -52,7 +52,8 @@ export function summarizeGrowthMeasurement(
     actions_executed: actionsExecuted,
     attributed_orders: orders.length,
     attributed_order_total:
-      Math.round(orders.reduce((sum, e) => sum + Number(e.attributed_order_total ?? 0), 0) * 100) / 100,
+      Math.round(orders.reduce((sum, e) => sum + Number(e.attributed_order_total ?? 0), 0) * 100) /
+      100,
     customers_with_attributed_order: customersWithAttributedOrder,
     view_to_action_rate: rate(actionsSelected, opportunityViews),
     action_to_order_rate: rate(orders.length, actionsExecuted),

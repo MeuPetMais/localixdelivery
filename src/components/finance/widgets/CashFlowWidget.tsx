@@ -1,8 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { FinanceDomain, normalizeFilters, type FinanceFilters } from "@/lib/finance";
-import { WidgetCard, WidgetHeader, WidgetLoading, WidgetEmpty } from "@/components/dashboard/WidgetPrimitives";
+import {
+  WidgetCard,
+  WidgetHeader,
+  WidgetLoading,
+  WidgetEmpty,
+} from "@/components/dashboard/WidgetPrimitives";
 import { brl } from "@/lib/format";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 const service = FinanceDomain.createCashFlowService();
 
@@ -21,8 +34,20 @@ export function CashFlowWidget({
     staleTime: 30_000,
   });
 
-  if (q.isLoading) return <WidgetCard span={4}><WidgetHeader title="Fluxo de caixa" /><WidgetLoading /></WidgetCard>;
-  if (!q.data) return <WidgetCard span={4}><WidgetHeader title="Fluxo de caixa" /><WidgetEmpty /></WidgetCard>;
+  if (q.isLoading)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Fluxo de caixa" />
+        <WidgetLoading />
+      </WidgetCard>
+    );
+  if (!q.data)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Fluxo de caixa" />
+        <WidgetEmpty />
+      </WidgetCard>
+    );
 
   const d = q.data;
   const cards: Array<[string, string]> = [
@@ -46,16 +71,45 @@ export function CashFlowWidget({
         ))}
       </div>
       <div className="mt-4 h-56">
-        {d.timeline.length === 0 ? <WidgetEmpty description="Sem movimentações no período." /> : (
+        {d.timeline.length === 0 ? (
+          <WidgetEmpty description="Sem movimentações no período." />
+        ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={d.timeline}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-              <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
-              <Line type="monotone" dataKey="runningBalance" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="inflow" name="Entradas" stroke="#10b981" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="outflow" name="Saídas" stroke="#ef4444" strokeWidth={2} dot={false} />
+              <Tooltip
+                formatter={(v: number) => brl(v)}
+                contentStyle={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="runningBalance"
+                name="Saldo"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="inflow"
+                name="Entradas"
+                stroke="#10b981"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="outflow"
+                name="Saídas"
+                stroke="#ef4444"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         )}

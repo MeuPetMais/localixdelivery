@@ -6,11 +6,20 @@ type NominatimHit = {
   lon: string;
   display_name: string;
   address?: {
-    road?: string; pedestrian?: string; footway?: string; cycleway?: string;
+    road?: string;
+    pedestrian?: string;
+    footway?: string;
+    cycleway?: string;
     house_number?: string;
-    suburb?: string; neighbourhood?: string; city_district?: string;
-    city?: string; town?: string; village?: string; municipality?: string;
-    state?: string; "ISO3166-2-lvl4"?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    city_district?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    state?: string;
+    "ISO3166-2-lvl4"?: string;
     postcode?: string;
     country_code?: string;
   };
@@ -41,7 +50,9 @@ function toSuggestion(hit: NominatimHit): AddressSuggestion {
   const secondary = [
     pickNeighborhood(hit.address),
     [pickCity(hit.address), pickState(hit.address)].filter(Boolean).join("/"),
-  ].filter(Boolean).join(" — ");
+  ]
+    .filter(Boolean)
+    .join(" — ");
   return { id: String(hit.place_id), label: primary, secondary, raw: hit };
 }
 

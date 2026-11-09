@@ -5,12 +5,7 @@
 
 export type FinancePeriod = "today" | "week" | "month" | "year" | "custom";
 
-export type FinanceRole =
-  | "ADMIN"
-  | "MANAGER"
-  | "FINANCE"
-  | "ACCOUNTANT"
-  | "VIEWER";
+export type FinanceRole = "ADMIN" | "MANAGER" | "FINANCE" | "ACCOUNTANT" | "VIEWER";
 
 export type FinanceTab =
   | "summary"
@@ -24,7 +19,7 @@ export type FinanceTab =
 export interface FinanceFilters {
   period: FinancePeriod;
   from?: string; // ISO
-  to?: string;   // ISO
+  to?: string; // ISO
   gateway?: string;
   channel?: string;
   paymentMethod?: string;
@@ -56,12 +51,7 @@ export interface FinanceStatus {
 }
 
 export interface FinanceAuditEvent {
-  type:
-    | "VIEW"
-    | "FILTER_CHANGE"
-    | "PERIOD_CHANGE"
-    | "EXPORT"
-    | "TAB_CHANGE";
+  type: "VIEW" | "FILTER_CHANGE" | "PERIOD_CHANGE" | "EXPORT" | "TAB_CHANGE";
   actorId?: string;
   restaurantId: string;
   payload?: Record<string, unknown>;

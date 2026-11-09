@@ -67,27 +67,90 @@ function AdminDashboard() {
               key={key}
               onClick={() => setRange(key as keyof typeof RANGES)}
               className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                range === key ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"
+                range === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
-              {key === "today" ? "Hoje" : key === "month" ? "Este mes" : key === "year" ? "Este ano" : key}
+              {key === "today"
+                ? "Hoje"
+                : key === "month"
+                  ? "Este mes"
+                  : key === "year"
+                    ? "Este ano"
+                    : key}
             </button>
           ))}
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Pedidos hoje" value={String(data?.ordersToday ?? 0)} icon={ShoppingBag} loading={isLoading} />
-        <Kpi label="Pedidos do mes" value={String(data?.ordersMonth ?? 0)} icon={ShoppingBag} loading={isLoading} />
-        <Kpi label="Total cliente (GMV)" value={brl(data?.gmv ?? 0)} icon={CircleDollarSign} loading={isLoading} />
-        <Kpi label="Receita da plataforma" value={brl(data?.platformRevenue ?? 0)} icon={DollarSign} loading={isLoading} />
-        <Kpi label="Receita realizada" value={brl(data?.realizedPlatformRevenue ?? 0)} icon={Receipt} loading={isLoading} />
-        <Kpi label="Restaurantes ativos" value={String(data?.restaurantsActive ?? 0)} icon={Building2} loading={isLoading} />
-        <Kpi label="Restaurantes inativos" value={String(data?.restaurantsInactive ?? 0)} icon={Building2} loading={isLoading} />
-        <Kpi label="Clientes cadastrados" value={String(data?.customersTotal ?? 0)} icon={Users} loading={isLoading} />
-        <Kpi label="Novos cadastros (periodo)" value={String(data?.customersNew ?? 0)} icon={Users} loading={isLoading} />
-        <Kpi label="Ticket medio" value={brl(data?.avgTicket ?? 0)} icon={CircleDollarSign} loading={isLoading} />
-        <Kpi label="Pedidos sem snapshot" value={String(data?.missingSnapshotOrders ?? 0)} icon={ShoppingBag} loading={isLoading} />
+        <Kpi
+          label="Pedidos hoje"
+          value={String(data?.ordersToday ?? 0)}
+          icon={ShoppingBag}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Pedidos do mes"
+          value={String(data?.ordersMonth ?? 0)}
+          icon={ShoppingBag}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Total cliente (GMV)"
+          value={brl(data?.gmv ?? 0)}
+          icon={CircleDollarSign}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Receita da plataforma"
+          value={brl(data?.platformRevenue ?? 0)}
+          icon={DollarSign}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Receita realizada"
+          value={brl(data?.realizedPlatformRevenue ?? 0)}
+          icon={Receipt}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Restaurantes ativos"
+          value={String(data?.restaurantsActive ?? 0)}
+          icon={Building2}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Restaurantes inativos"
+          value={String(data?.restaurantsInactive ?? 0)}
+          icon={Building2}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Clientes cadastrados"
+          value={String(data?.customersTotal ?? 0)}
+          icon={Users}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Novos cadastros (periodo)"
+          value={String(data?.customersNew ?? 0)}
+          icon={Users}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Ticket medio"
+          value={brl(data?.avgTicket ?? 0)}
+          icon={CircleDollarSign}
+          loading={isLoading}
+        />
+        <Kpi
+          label="Pedidos sem snapshot"
+          value={String(data?.missingSnapshotOrders ?? 0)}
+          icon={ShoppingBag}
+          loading={isLoading}
+        />
         <Kpi
           label="Crescimento diario"
           value={`${(data?.dailyGrowth ?? 0).toFixed(1)}%`}
@@ -105,7 +168,13 @@ function AdminDashboard() {
               <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
               <YAxis stroke="#94a3b8" fontSize={11} />
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
-              <Line type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#f97316"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </Panel>
@@ -125,8 +194,16 @@ function AdminDashboard() {
         <Panel title="Meios de pagamento">
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={data?.paymentMethods ?? []} dataKey="value" nameKey="name" outerRadius={90} label>
-                {(data?.paymentMethods ?? []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Pie
+                data={data?.paymentMethods ?? []}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={90}
+                label
+              >
+                {(data?.paymentMethods ?? []).map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
               </Pie>
               <Legend />
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
@@ -169,7 +246,9 @@ function Kpi({
         <span className="text-xs text-slate-400">{label}</span>
         <Icon className={`h-4 w-4 ${tone === "down" ? "text-red-400" : "text-primary"}`} />
       </div>
-      <div className={`mt-2 text-2xl font-bold ${tone === "down" ? "text-red-400" : tone === "up" ? "text-green-400" : ""}`}>
+      <div
+        className={`mt-2 text-2xl font-bold ${tone === "down" ? "text-red-400" : tone === "up" ? "text-green-400" : ""}`}
+      >
         {loading ? "..." : value}
       </div>
     </div>

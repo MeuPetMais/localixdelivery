@@ -27,8 +27,18 @@ async function authorizeRestaurantRead(userId: string, restaurantId: string) {
 
   const [restaurantQ, adminRoleQ, growthRoleQ, assignmentQ] = await Promise.all([
     supabaseAdmin.from("restaurants").select("id, owner_id").eq("id", restaurantId).maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "partner_growth").maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "partner_growth")
+      .maybeSingle(),
     supabaseAdmin
       .from("partner_growth_assignments")
       .select("id")
@@ -94,7 +104,9 @@ export const getCustomer360 = createServerFn({ method: "POST" })
 
     const { data: customer, error } = await sb
       .from("customers")
-      .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
+      .select(
+        "id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at",
+      )
       .eq("id", data.customerId)
       .eq("restaurant_id", data.restaurantId)
       .gt("total_orders", 0)
@@ -118,7 +130,9 @@ export const listCustomer360 = createServerFn({ method: "POST" })
 
     let query = sb
       .from("customers")
-      .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
+      .select(
+        "id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at",
+      )
       .eq("restaurant_id", data.restaurantId)
       .gt("total_orders", 0)
       .order("last_order_at", { ascending: false, nullsFirst: false })

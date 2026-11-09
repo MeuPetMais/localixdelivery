@@ -6,6 +6,7 @@ Inspiração: Stripe Dashboard, Linear, Notion, Uber Driver, Square POS.
 Princípios: minimalista, moderno, operacional, premium, rápido.
 
 Regras invioláveis:
+
 - Nunca usar classes de cor cruas (`text-white`, `bg-gray-500`, `bg-[#...]`). Sempre tokens semânticos.
 - Nunca definir tokens em componentes; tokens vivem em `src/styles.css`.
 - Nunca misturar bibliotecas de ícones. Padrão: **lucide-react**.
@@ -17,23 +18,23 @@ Regras invioláveis:
 
 Definidos em `src/styles.css` (`:root` + `.dark`) e mapeados em `@theme inline`.
 
-| Token | Utilitário Tailwind | Uso |
-|---|---|---|
-| `--primary` | `bg-primary` `text-primary` | Marca Localix (vermelho tomate) |
-| `--secondary` | `bg-secondary` | Superfícies secundárias, chips neutros |
-| `--background` | `bg-background` | Fundo global |
-| `--card` | `bg-card` | Cartões, superfícies elevadas |
-| `--muted` / `--muted-foreground` | `bg-muted` `text-muted-foreground` | Zonas neutras, legendas |
-| `--border` | `border-border` | Bordas |
-| `--ring` | `ring-ring` | Foco acessível |
-| `--success` | `bg-success text-success-foreground` | Estados de sucesso, "Pago", "Online" |
-| `--destructive` | `bg-destructive text-destructive-foreground` | Erros, "Cancelado", "Danger" |
-| `--warning` | `bg-warning text-warning-foreground` | Alertas, "Pendente" |
-| `--info` | `bg-info text-info-foreground` | Informativos |
-| `--queue` | `bg-queue text-queue-foreground` | Amarelo — Fila |
-| `--delivery` | `bg-delivery text-delivery-foreground` | Azul — Em entrega |
-| `--returning` | `bg-returning text-returning-foreground` | Roxo — Em retorno |
-| `--offline` | `bg-offline text-offline-foreground` | Cinza — Offline |
+| Token                            | Utilitário Tailwind                          | Uso                                    |
+| -------------------------------- | -------------------------------------------- | -------------------------------------- |
+| `--primary`                      | `bg-primary` `text-primary`                  | Marca Localix (vermelho tomate)        |
+| `--secondary`                    | `bg-secondary`                               | Superfícies secundárias, chips neutros |
+| `--background`                   | `bg-background`                              | Fundo global                           |
+| `--card`                         | `bg-card`                                    | Cartões, superfícies elevadas          |
+| `--muted` / `--muted-foreground` | `bg-muted` `text-muted-foreground`           | Zonas neutras, legendas                |
+| `--border`                       | `border-border`                              | Bordas                                 |
+| `--ring`                         | `ring-ring`                                  | Foco acessível                         |
+| `--success`                      | `bg-success text-success-foreground`         | Estados de sucesso, "Pago", "Online"   |
+| `--destructive`                  | `bg-destructive text-destructive-foreground` | Erros, "Cancelado", "Danger"           |
+| `--warning`                      | `bg-warning text-warning-foreground`         | Alertas, "Pendente"                    |
+| `--info`                         | `bg-info text-info-foreground`               | Informativos                           |
+| `--queue`                        | `bg-queue text-queue-foreground`             | Amarelo — Fila                         |
+| `--delivery`                     | `bg-delivery text-delivery-foreground`       | Azul — Em entrega                      |
+| `--returning`                    | `bg-returning text-returning-foreground`     | Roxo — Em retorno                      |
+| `--offline`                      | `bg-offline text-offline-foreground`         | Cinza — Offline                        |
 
 > Suporte a tema claro/escuro é automático via `.dark` no `<html>`.
 
@@ -41,15 +42,15 @@ Definidos em `src/styles.css` (`:root` + `.dark`) e mapeados em `@theme inline`.
 
 Fontes: `--font-sans` (Inter) para corpo; `--font-display` (Plus Jakarta Sans) para títulos.
 
-| Papel | Classe |
-|---|---|
-| H1 / página | `font-display text-3xl font-extrabold tracking-tight` |
-| H2 / seção | `font-display text-2xl font-bold` |
-| Card title | `font-display text-lg font-semibold` |
+| Papel         | Classe                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| H1 / página   | `font-display text-3xl font-extrabold tracking-tight`                 |
+| H2 / seção    | `font-display text-2xl font-bold`                                     |
+| Card title    | `font-display text-lg font-semibold`                                  |
 | Tabela header | `text-xs font-semibold uppercase tracking-wide text-muted-foreground` |
-| Body | `text-sm text-foreground` |
-| Legenda | `text-xs text-muted-foreground` |
-| Botão | `text-sm font-medium` |
+| Body          | `text-sm text-foreground`                                             |
+| Legenda       | `text-xs text-muted-foreground`                                       |
+| Botão         | `text-sm font-medium`                                                 |
 
 ## 3. Bordas & Sombras
 
@@ -61,6 +62,7 @@ Fontes: `--font-sans` (Inter) para corpo; `--font-display` (Plus Jakarta Sans) p
 Variantes shadcn oficiais: `default` (primário), `secondary`, `outline`, `ghost`, `destructive` (danger), `link`. Tamanhos: `sm`, `default`, `lg`, `icon`.
 
 Regras:
+
 - Botão com ícone-only: sempre `aria-label`.
 - Botão de perigo: `variant="destructive"`, nunca hex custom.
 

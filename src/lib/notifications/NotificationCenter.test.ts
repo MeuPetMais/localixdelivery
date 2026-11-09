@@ -14,10 +14,12 @@ import type {
   NotificationTemplate,
 } from "./types";
 
-function makeCenter(overrides: {
-  prefs?: NotificationPreferences | null;
-  dropped?: (r: NotificationRequest, reason: string) => Promise<void>;
-} = {}) {
+function makeCenter(
+  overrides: {
+    prefs?: NotificationPreferences | null;
+    dropped?: (r: NotificationRequest, reason: string) => Promise<void>;
+  } = {},
+) {
   const inserts: any[] = [];
   const repo: NotificationRepo = {
     enqueue: async (input) => {

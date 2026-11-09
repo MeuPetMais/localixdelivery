@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { canReadCustomer360Restaurant } from "@/lib/customer360-access";
-import { resolveCustomer360LifecycleFromProjection, type Customer360Lifecycle } from "@/lib/customer360";
+import {
+  resolveCustomer360LifecycleFromProjection,
+  type Customer360Lifecycle,
+} from "@/lib/customer360";
 import { summarizeGrowthMeasurement } from "@/lib/customer360-measurement";
 
 const inputSchema = z.object({
@@ -13,10 +16,25 @@ async function authorizeRestaurant(userId: string, restaurantId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [restaurantQ, adminRoleQ, growthRoleQ, assignmentQ] = await Promise.all([
     supabaseAdmin.from("restaurants").select("id,owner_id").eq("id", restaurantId).maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "partner_growth").maybeSingle(),
-    supabaseAdmin.from("partner_growth_assignments").select("id")
-      .eq("user_id", userId).eq("restaurant_id", restaurantId).eq("active", true).maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "partner_growth")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("partner_growth_assignments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("restaurant_id", restaurantId)
+      .eq("active", true)
+      .maybeSingle(),
   ]);
 
   if (restaurantQ.error) throw new Error(restaurantQ.error.message);
@@ -43,23 +61,31 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
     const sb = await authorizeRestaurant(context.userId, data.restaurantId);
 
     const [customersQ, consentsQ, jobsQ, measurementQ] = await Promise.all([
-      sb.from("customers")
-        .select("id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
+      sb
+        .from("customers")
+        .select(
+          "id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at",
+        )
         .eq("restaurant_id", data.restaurantId)
         .gt("total_orders", 0)
         .order("last_order_at", { ascending: false, nullsFirst: false })
         .limit(500),
-      sb.from("customer_growth_marketing_consents")
+      sb
+        .from("customer_growth_marketing_consents")
         .select("id,customer_id,channel,granted,captured_at,revoked_at")
         .eq("restaurant_id", data.restaurantId)
         .order("captured_at", { ascending: false })
         .limit(5000),
-      sb.from("growth_campaign_automation_jobs")
-        .select("id,customer_id,trigger_type,channel,action_key,source_ref,status,reason,scheduled_for,sent_at,created_at")
+      sb
+        .from("growth_campaign_automation_jobs")
+        .select(
+          "id,customer_id,trigger_type,channel,action_key,source_ref,status,reason,scheduled_for,sent_at,created_at",
+        )
         .eq("restaurant_id", data.restaurantId)
         .order("created_at", { ascending: false })
         .limit(200),
-      sb.from("growth_measurement_events")
+      sb
+        .from("growth_measurement_events")
         .select("*")
         .eq("restaurant_id", data.restaurantId)
         .order("occurred_at", { ascending: true })
@@ -104,7 +130,11 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
     });
 
     const opportunityPriority = opportunities
-      .filter((c) => ["AWAITING_SECOND_PURCHASE", "AT_RISK", "INACTIVE", "REACTIVATED", "RECURRING"].includes(c.lifecycle))
+      .filter((c) =>
+        ["AWAITING_SECOND_PURCHASE", "AT_RISK", "INACTIVE", "REACTIVATED", "RECURRING"].includes(
+          c.lifecycle,
+        ),
+      )
       .sort((a, b) => {
         const priority: Record<string, number> = {
           AT_RISK: 0,
@@ -123,7 +153,9 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
       if (!latestConsentByCustomerChannel.has(key)) latestConsentByCustomerChannel.set(key, row);
     }
 
-    const consentByChannel = Object.fromEntries(CHANNELS.map((channel) => [channel, { granted: 0, denied: 0 }])) as Record<string, { granted: number; denied: number }>;
+    const consentByChannel = Object.fromEntries(
+      CHANNELS.map((channel) => [channel, { granted: 0, denied: 0 }]),
+    ) as Record<string, { granted: number; denied: number }>;
     for (const row of latestConsentByCustomerChannel.values()) {
       const active = Boolean(row.granted) && !row.revoked_at;
       consentByChannel[row.channel][active ? "granted" : "denied"] += 1;
@@ -135,7 +167,10 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
     }
 
     const providers = Object.fromEntries(
-      CHANNELS.map((channel) => [channel, process.env[`GROWTH_${channel}_PROVIDER_ENABLED`] === "true"]),
+      CHANNELS.map((channel) => [
+        channel,
+        process.env[`GROWTH_${channel}_PROVIDER_ENABLED`] === "true",
+      ]),
     );
 
     return {

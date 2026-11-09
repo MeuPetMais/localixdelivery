@@ -2,11 +2,7 @@
 
 import type { EtaConfidence, EtaResult } from "./eta.types";
 
-export type EtaEventType =
-  | "EtaCalculated"
-  | "EtaChanged"
-  | "EtaPublished"
-  | "EtaSkipped";
+export type EtaEventType = "EtaCalculated" | "EtaChanged" | "EtaPublished" | "EtaSkipped";
 
 export interface EtaEventPayload {
   type: EtaEventType;
@@ -27,18 +23,32 @@ type Listener = (evt: EtaEventPayload) => void;
 const listeners = new Set<Listener>();
 
 export function onEtaEvent(l: Listener): () => void {
-  listeners.add(l); return () => { listeners.delete(l); };
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
 }
 
 export function emitEtaEvent(evt: EtaEventPayload): void {
-  for (const l of listeners) { try { l(evt); } catch (e) { console.error("[eta-events]", e); } }
+  for (const l of listeners) {
+    try {
+      l(evt);
+    } catch (e) {
+      console.error("[eta-events]", e);
+    }
+  }
 }
 
 export function buildEtaEvent(
   type: EtaEventType,
   base: {
-    assignment_id: string; restaurant_id: string; order_id: string; driver_id: string | null;
-    result: EtaResult; previous_eta_seconds: number | null; correlation_id?: string;
+    assignment_id: string;
+    restaurant_id: string;
+    order_id: string;
+    driver_id: string | null;
+    result: EtaResult;
+    previous_eta_seconds: number | null;
+    correlation_id?: string;
   },
   meta?: Record<string, unknown>,
 ): EtaEventPayload {

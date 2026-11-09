@@ -4,6 +4,7 @@ Modo HOMOLOGAÇÃO. Nenhuma alteração de arquitetura, banco, Orders,
 Tracking, Driver, Queue ou Wallet.
 
 Base analisada:
+
 - `src/lib/payments/**` (PaymentService, Providers)
 - `supabase/functions/{stripe-*,mp-*}`
 - `supabase/functions/_shared/order-transition.ts`
@@ -16,18 +17,18 @@ Base analisada:
 
 ## Resumo executivo
 
-| Cenário | Resultado | Observação |
-|---|---|---|
-| 1 · PIX aprovado (ponta a ponta) | ✅ PASS | Fluxo completo Cliente→Kitchen→Tracking validado em produção sandbox (5 pedidos aprovados no histórico). |
-| 2 · PIX expirado | ✅ PASS | Cron `expire_pending_payment_orders` transiciona para `falha_pagamento` após 15 min. |
-| 3 · Pagamento recusado | ✅ PASS | `stripe-webhook` mapeia `rejected` → `falha_pagamento`. Cliente pode iniciar novo pagamento. |
-| 4 · Reembolso | ✅ PASS | `charge.refunded` → `reembolsado` via `transitionOrder`. |
-| 5 · Webhook duplicado | ✅ PASS | Idempotência por (`provider`,`event_id`) em `payment_webhook_events`. |
-| 6 · Eventos fora de ordem | ✅ PASS | `order_apply_transition` (CAS via `FOR UPDATE`) impede transições inválidas. |
-| 7 · Restaurante offline | ✅ PASS | Realtime replay via `OrdersRealtimeContext` + fallback pooling. |
-| 8 · Cliente fecha app | ✅ PASS | Estado persiste em banco; tela `pedido.$id` reconstrói do server. |
-| 9 · Reconexão Realtime | ✅ PASS | `supabase.channel` reconecta automaticamente; `useEffect` cleanup evita leaks. |
-| 10 · Auditoria | ✅ PASS | Correlation ID `stripe:<event_id>` propaga por webhook→transition→history. |
+| Cenário                          | Resultado | Observação                                                                                               |
+| -------------------------------- | --------- | -------------------------------------------------------------------------------------------------------- |
+| 1 · PIX aprovado (ponta a ponta) | ✅ PASS   | Fluxo completo Cliente→Kitchen→Tracking validado em produção sandbox (5 pedidos aprovados no histórico). |
+| 2 · PIX expirado                 | ✅ PASS   | Cron `expire_pending_payment_orders` transiciona para `falha_pagamento` após 15 min.                     |
+| 3 · Pagamento recusado           | ✅ PASS   | `stripe-webhook` mapeia `rejected` → `falha_pagamento`. Cliente pode iniciar novo pagamento.             |
+| 4 · Reembolso                    | ✅ PASS   | `charge.refunded` → `reembolsado` via `transitionOrder`.                                                 |
+| 5 · Webhook duplicado            | ✅ PASS   | Idempotência por (`provider`,`event_id`) em `payment_webhook_events`.                                    |
+| 6 · Eventos fora de ordem        | ✅ PASS   | `order_apply_transition` (CAS via `FOR UPDATE`) impede transições inválidas.                             |
+| 7 · Restaurante offline          | ✅ PASS   | Realtime replay via `OrdersRealtimeContext` + fallback pooling.                                          |
+| 8 · Cliente fecha app            | ✅ PASS   | Estado persiste em banco; tela `pedido.$id` reconstrói do server.                                        |
+| 9 · Reconexão Realtime           | ✅ PASS   | `supabase.channel` reconecta automaticamente; `useEffect` cleanup evita leaks.                           |
+| 10 · Auditoria                   | ✅ PASS   | Correlation ID `stripe:<event_id>` propaga por webhook→transition→history.                               |
 
 Nenhuma falha bloqueante encontrada. Duas recomendações operacionais
 (não bloqueiam release) listadas em §Correções.
@@ -57,9 +58,11 @@ Nenhuma falha bloqueante encontrada. Duas recomendações operacionais
    normal.
 
 **Amostra em banco:** 5 registros `stripe.approved` com `checkout.session.completed`
-+ `payment_intent.succeeded` (`payment_webhook_events`, `processed=true`).
+
+- `payment_intent.succeeded` (`payment_webhook_events`, `processed=true`).
 
 **Tempos observados (sandbox):**
+
 - checkout → payments.pending: ~700 ms
 - webhook receipt → payments.approved: 60–70 s (inclui tempo do cliente).
 - payments.approved → orders.pago: <300 ms (RPC `order_apply_transition`).
@@ -94,7 +97,7 @@ pedidos não reproduzem esse estado.
 - Stripe: `payment_intent.payment_failed` → `mapStatus` retorna
   `{local:'rejected', paid:false}`.
 - `stripe-webhook` executa `transitionOrder(..., 'falha_pagamento',
-  reason:'stripe:payment_intent.payment_failed')`.
+reason:'stripe:payment_intent.payment_failed')`.
 - Notificação `order_canceled` via `tg_order_notify_customer`.
 - Cliente pode iniciar novo pagamento: fluxo de checkout cria novo
   `orders` (sem reuso do anterior). ✅
@@ -120,7 +123,7 @@ pedidos não reproduzem esse estado.
 - Constraint única em `payment_webhook_events(provider, event_id)`.
 - `stripe-webhook` faz `SELECT ... maybeSingle()` antes de inserir e
   ainda captura violação de duplicidade no INSERT (`return
-  {duplicated:true}`).
+{duplicated:true}`).
 - Segunda entrega:
   - Não reinsere em `payment_webhook_events`.
   - Não atualiza `payments`.
@@ -183,14 +186,14 @@ Resultado: totalmente idempotente. ✅
 
 Cada pagamento aprovado produz:
 
-| Registro | Campo de correlação |
-|---|---|
-| `payment_webhook_events` | `id`, `event_id`, `payload_json` |
-| `payments` | `raw.last_event_id` |
-| `orders` | mudanças refletidas em `order_status_history` |
-| `order_status_history` | `correlation_id = stripe:<event_id>` |
-| `financial_ledger` | `reference_id = payment_intent_id` |
-| `payment_split` | `split_reference = payment_intent_id` |
+| Registro                 | Campo de correlação                           |
+| ------------------------ | --------------------------------------------- |
+| `payment_webhook_events` | `id`, `event_id`, `payload_json`              |
+| `payments`               | `raw.last_event_id`                           |
+| `orders`                 | mudanças refletidas em `order_status_history` |
+| `order_status_history`   | `correlation_id = stripe:<event_id>`          |
+| `financial_ledger`       | `reference_id = payment_intent_id`            |
+| `payment_split`          | `split_reference = payment_intent_id`         |
 
 Correlação end-to-end validada. ✅
 
@@ -198,13 +201,13 @@ Correlação end-to-end validada. ✅
 
 ## Performance (sandbox, p50)
 
-| Etapa | Tempo | Ferramenta |
-|---|---|---|
-| Checkout (client → `payments.pending`) | ~700 ms | server fn + Stripe API |
-| Webhook receive → `payments.approved` | 60–70 s | dependente do cliente PIX |
-| `payments.approved` → `orders.pago` | <300 ms | RPC CAS |
-| `orders.pago` → Realtime na cozinha | <500 ms | Supabase Realtime |
-| Cron expiração | 5 min (batch size 500) | pg_cron |
+| Etapa                                  | Tempo                  | Ferramenta                |
+| -------------------------------------- | ---------------------- | ------------------------- |
+| Checkout (client → `payments.pending`) | ~700 ms                | server fn + Stripe API    |
+| Webhook receive → `payments.approved`  | 60–70 s                | dependente do cliente PIX |
+| `payments.approved` → `orders.pago`    | <300 ms                | RPC CAS                   |
+| `orders.pago` → Realtime na cozinha    | <500 ms                | Supabase Realtime         |
+| Cron expiração                         | 5 min (batch size 500) | pg_cron                   |
 
 ---
 
@@ -226,6 +229,7 @@ Correlação end-to-end validada. ✅
 Nenhuma bloqueante. Recomendações não-bloqueantes:
 
 ### R1 · Refund não gera lançamento negativo no ledger
+
 `stripe-webhook` só grava `financial_ledger` quando `mapped.paid`.
 Refunds atualizam status mas não geram linha `PAYMENT_REFUNDED`. O
 financeiro consolida corretamente para conciliação básica, mas
@@ -234,12 +238,14 @@ deste modo):** ao entrar em `refunded`, inserir linha negativa
 idempotente por `reference_id = <pi>:refund`.
 
 ### R2 · Pedido histórico órfão
+
 `orders#1007` (2026-07-06) permanece em `aguardando_pagamento`
 (anterior ao cron). Correção operacional pontual: rodar manualmente
 `SELECT public.expire_pending_payment_orders();` uma vez para varrer
 o backlog. Não é bug de código; é limpeza de dado histórico.
 
 ### R3 · Signature normalization (MP)
+
 Já corrigida em RC anterior; `v1` normalizado para lowercase antes do
 XOR. Sem ação pendente.
 

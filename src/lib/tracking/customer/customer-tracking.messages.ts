@@ -11,7 +11,11 @@ export const CustomerTrackingMessageService = {
     if (orderStatus === "cancelado") return "cancelado";
     if (orderStatus === "entregue") return "entregue";
     if (trackingStatus === "PROXIMO_AO_DESTINO") return "proximo_do_destino";
-    if (orderStatus === "saiu_para_entrega" || trackingStatus === "EM_ROTA" || trackingStatus === "COLETANDO") {
+    if (
+      orderStatus === "saiu_para_entrega" ||
+      trackingStatus === "EM_ROTA" ||
+      trackingStatus === "COLETANDO"
+    ) {
       return "saiu_para_entrega";
     }
     if (orderStatus === "pronto") return "pronto";

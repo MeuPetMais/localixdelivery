@@ -28,11 +28,7 @@ import { Plus, Pencil, Trash2, Loader2, FolderPlus, Sparkles, Flame } from "luci
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
 import { ProductImageUploader, type ProductImage } from "@/components/ProductImageUploader";
-import {
-  deleteCategoryImage,
-  deleteProductImage,
-  uploadCategoryImage,
-} from "@/lib/image-upload";
+import { deleteCategoryImage, deleteProductImage, uploadCategoryImage } from "@/lib/image-upload";
 import type { ProductOption, ProductOptionGroup } from "@/lib/product/configuration/types";
 import { mergeOptionUpsellMetadata } from "@/lib/product/configuration/option-upsell-metadata";
 import { ProductOptionUpsellControls } from "@/components/product/ProductOptionUpsellControls";
@@ -125,7 +121,9 @@ function MenuPage() {
   };
 
   async function removeCategory(category: Category) {
-    const childCount = categories.filter((candidate) => candidate.parent_category_id === category.id).length;
+    const childCount = categories.filter(
+      (candidate) => candidate.parent_category_id === category.id,
+    ).length;
     const productCount = items.filter((item) => item.category_id === category.id).length;
 
     if (childCount > 0) {
@@ -160,7 +158,6 @@ function MenuPage() {
           <ItemDialog restaurantId={restaurant.id} categories={categories} onSaved={invalidate} />
         </div>
       </div>
-
       {categories.length === 0 && items.length === 0 ? (
         <Card className="p-12 text-center">
           <FolderPlus className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -354,7 +351,8 @@ function MenuPage() {
             </section>
           )}
         </div>
-      )}    </div>
+      )}{" "}
+    </div>
   );
 }
 
@@ -558,7 +556,11 @@ function CategoryDialog({
       <DialogTrigger asChild>
         {trigger ??
           (category ? (
-            <Button size="icon" variant="ghost" title={isSubcategory ? "Editar subcategoria" : "Editar categoria"}>
+            <Button
+              size="icon"
+              variant="ghost"
+              title={isSubcategory ? "Editar subcategoria" : "Editar categoria"}
+            >
               <Pencil className="h-4 w-4" />
             </Button>
           ) : (
@@ -638,9 +640,7 @@ function CategoryDialog({
                     {removeImage ? "Manter foto atual" : "Remover foto"}
                   </Button>
                 )}
-                <p className="text-[11px] text-muted-foreground">
-                  JPG, PNG ou WebP · máximo 5 MB.
-                </p>
+                <p className="text-[11px] text-muted-foreground">JPG, PNG ou WebP · máximo 5 MB.</p>
               </div>
             </>
           )}
@@ -767,7 +767,10 @@ function ItemDialog({
           .from("menu_item_images")
           .delete()
           .eq("menu_item_id", itemId!)
-          .in("id", toDelete.map((image) => image.id!));
+          .in(
+            "id",
+            toDelete.map((image) => image.id!),
+          );
         if (error) throw new Error("Falha ao remover fotos da galeria: " + error.message);
       }
 
@@ -790,22 +793,28 @@ function ItemDialog({
       if (toUpdate.length) {
         const results = await Promise.all(
           toUpdate.map((image, index) =>
-            supabase.from("menu_item_images")
+            supabase
+              .from("menu_item_images")
               .update({ is_primary: image.is_primary, position: index })
               .eq("menu_item_id", itemId!)
               .eq("id", image.id!),
           ),
         );
         const failure = results.find((result) => result.error);
-        if (failure?.error) throw new Error("Falha ao ordenar fotos da galeria: " + failure.error.message);
+        if (failure?.error)
+          throw new Error("Falha ao ordenar fotos da galeria: " + failure.error.message);
       }
 
       // Clean up storage only after the database no longer references deleted photos.
       // A storage cleanup failure must not misreport a successful database save.
       if (toDelete.length) {
-        const cleanup = await Promise.allSettled(toDelete.map((image) => deleteProductImage(image.storage_path)));
+        const cleanup = await Promise.allSettled(
+          toDelete.map((image) => deleteProductImage(image.storage_path)),
+        );
         if (cleanup.some((result) => result.status === "rejected")) {
-          console.warn("[product-gallery] Algumas fotos removidas do banco não puderam ser apagadas do storage.");
+          console.warn(
+            "[product-gallery] Algumas fotos removidas do banco não puderam ser apagadas do storage.",
+          );
         }
       }
 
@@ -1071,7 +1080,8 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       optionCount > 0
         ? ` O grupo possui ${optionCount} opção(ões), que também serão excluídas.`
         : "";
-    if (!confirm(`Excluir o grupo "${group.name}"?${detail} Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Excluir o grupo "${group.name}"?${detail} Esta ação não pode ser desfeita.`))
+      return;
     setSavingId(group.id);
     const { error } = await supabase.from("product_option_groups").delete().eq("id", group.id);
     setSavingId(null);

@@ -10,18 +10,34 @@ import type { AccountPayable, AccountReceivable } from "./cashflow.functions";
 // ---------- Ports ----------
 
 export interface ReceivablesPort {
-  list(input: { restaurantId: string; from?: string; to?: string; status?: string }): Promise<AccountReceivable[]>;
+  list(input: {
+    restaurantId: string;
+    from?: string;
+    to?: string;
+    status?: string;
+  }): Promise<AccountReceivable[]>;
 }
 
 export interface PayablesPort {
-  list(input: { restaurantId: string; from?: string; to?: string; status?: string }): Promise<AccountPayable[]>;
+  list(input: {
+    restaurantId: string;
+    from?: string;
+    to?: string;
+    status?: string;
+  }): Promise<AccountPayable[]>;
 }
 
 export interface LedgerStatementPort {
-  getStatement(input: { restaurantId: string; from?: string; to?: string }):
-    Promise<Array<{ transaction_type: string; amount: number; status: string; created_at: string }>>;
-  getBalance(input: { restaurantId: string }):
-    Promise<{ balance: number; currency: string; pendingIn?: number; pendingOut?: number }>;
+  getStatement(input: {
+    restaurantId: string;
+    from?: string;
+    to?: string;
+  }): Promise<
+    Array<{ transaction_type: string; amount: number; status: string; created_at: string }>
+  >;
+  getBalance(input: {
+    restaurantId: string;
+  }): Promise<{ balance: number; currency: string; pendingIn?: number; pendingOut?: number }>;
 }
 
 export interface CashFlowPorts {
@@ -79,23 +95,42 @@ export interface FinancialProjection {
 const REVENUE = new Set(["RESTAURANT_RECEIVABLE", "PAYMENT_APPROVED"]);
 const FEES = new Set(["PLATFORM_FEE", "GATEWAY_FEE", "PAYOUT", "REFUND"]);
 
-function dayKey(iso: string): string { return iso.slice(0, 10); }
-function todayKey(): string { return new Date().toISOString().slice(0, 10); }
-function addDays(base: Date, days: number): Date { const d = new Date(base); d.setDate(d.getDate() + days); return d; }
+function dayKey(iso: string): string {
+  return iso.slice(0, 10);
+}
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
 
 // ---------- Services ----------
 
 export class CashFlowService {
   constructor(private readonly ports: CashFlowPorts) {}
 
-  async getSummary(input: { restaurantId: string; from: string; to: string }): Promise<CashFlowSummary> {
+  async getSummary(input: {
+    restaurantId: string;
+    from: string;
+    to: string;
+  }): Promise<CashFlowSummary> {
     const [rows, balance] = await Promise.all([
-      this.ports.ledger.getStatement({ restaurantId: input.restaurantId, from: input.from, to: input.to }),
+      this.ports.ledger.getStatement({
+        restaurantId: input.restaurantId,
+        from: input.from,
+        to: input.to,
+      }),
       this.ports.ledger.getBalance({ restaurantId: input.restaurantId }),
     ]);
     const today = todayKey();
     const buckets = new Map<string, { inflow: number; outflow: number }>();
-    let periodIn = 0, periodOut = 0, todayIn = 0, todayOut = 0;
+    let periodIn = 0,
+      periodOut = 0,
+      todayIn = 0,
+      todayOut = 0;
 
     for (const r of rows) {
       if (r.status !== "COMPLETED") continue;
@@ -103,9 +138,13 @@ export class CashFlowService {
       const b = buckets.get(key) ?? { inflow: 0, outflow: 0 };
       const amt = Math.abs(Number(r.amount) || 0);
       if (REVENUE.has(r.transaction_type)) {
-        b.inflow += amt; periodIn += amt; if (key === today) todayIn += amt;
+        b.inflow += amt;
+        periodIn += amt;
+        if (key === today) todayIn += amt;
       } else if (FEES.has(r.transaction_type)) {
-        b.outflow += amt; periodOut += amt; if (key === today) todayOut += amt;
+        b.outflow += amt;
+        periodOut += amt;
+        if (key === today) todayOut += amt;
       }
       buckets.set(key, b);
     }
@@ -132,15 +171,25 @@ export class CashFlowService {
 export class ReceivablesService {
   constructor(private readonly ports: Pick<CashFlowPorts, "receivables">) {}
 
-  async getSummary(input: { restaurantId: string; from: string; to: string }): Promise<ReceivablesSummary> {
+  async getSummary(input: {
+    restaurantId: string;
+    from: string;
+    to: string;
+  }): Promise<ReceivablesSummary> {
     const items = await this.ports.receivables.list({
-      restaurantId: input.restaurantId, from: input.from, to: input.to,
+      restaurantId: input.restaurantId,
+      from: input.from,
+      to: input.to,
     });
     const today = todayKey();
     const in7 = addDays(new Date(), 7).toISOString().slice(0, 10);
     const in30 = addDays(new Date(), 30).toISOString().slice(0, 10);
 
-    let pending = 0, overdue = 0, received = 0, next7 = 0, next30 = 0;
+    let pending = 0,
+      overdue = 0,
+      received = 0,
+      next7 = 0,
+      next30 = 0;
     for (const r of items) {
       const amt = Number(r.net_amount) || 0;
       if (r.status === "RECEIVED") received += amt;
@@ -159,15 +208,25 @@ export class ReceivablesService {
 export class PayablesService {
   constructor(private readonly ports: Pick<CashFlowPorts, "payables">) {}
 
-  async getSummary(input: { restaurantId: string; from: string; to: string }): Promise<PayablesSummary> {
+  async getSummary(input: {
+    restaurantId: string;
+    from: string;
+    to: string;
+  }): Promise<PayablesSummary> {
     const items = await this.ports.payables.list({
-      restaurantId: input.restaurantId, from: input.from, to: input.to,
+      restaurantId: input.restaurantId,
+      from: input.from,
+      to: input.to,
     });
     const today = todayKey();
     const in7 = addDays(new Date(), 7).toISOString().slice(0, 10);
     const in30 = addDays(new Date(), 30).toISOString().slice(0, 10);
 
-    let open = 0, overdue = 0, paid = 0, next7 = 0, next30 = 0;
+    let open = 0,
+      overdue = 0,
+      paid = 0,
+      next7 = 0,
+      next30 = 0;
     for (const p of items) {
       const remaining = Math.max(0, (Number(p.amount) || 0) - (Number(p.paid_amount) || 0));
       if (p.status === "PAID") paid += Number(p.amount) || 0;
@@ -191,7 +250,12 @@ export class FinancialProjectionService {
     private readonly payables: PayablesService,
   ) {}
 
-  async project(input: { restaurantId: string; from: string; to: string; horizonDays: number }): Promise<FinancialProjection> {
+  async project(input: {
+    restaurantId: string;
+    from: string;
+    to: string;
+    horizonDays: number;
+  }): Promise<FinancialProjection> {
     const [flow, ar, ap] = await Promise.all([
       this.cashflow.getSummary(input),
       this.receivables.getSummary(input),

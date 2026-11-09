@@ -29,7 +29,11 @@ const settingsSchema = z.object({
   name: z.string().min(1).max(120),
   logo_url: z.string().url().nullable().optional().or(z.literal("")),
   banner_url: z.string().url().nullable().optional().or(z.literal("")),
-  primary_color: z.string().regex(/^#([0-9a-fA-F]{3}){1,2}$/).nullable().optional(),
+  primary_color: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}){1,2}$/)
+    .nullable()
+    .optional(),
   contact_email: z.string().email().nullable().optional().or(z.literal("")),
   contact_whatsapp: z.string().max(30).nullable().optional().or(z.literal("")),
   domain: z.string().max(120).nullable().optional().or(z.literal("")),
@@ -61,7 +65,11 @@ export const getPlatformSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PlatformSettings | null> => {
     const sb = await assertAdmin(context.userId);
-    const { data, error } = await (sb as any).from("platform_settings").select("*").eq("id", true).maybeSingle();
+    const { data, error } = await (sb as any)
+      .from("platform_settings")
+      .select("*")
+      .eq("id", true)
+      .maybeSingle();
     if (error) throw new Error(error.message);
     return data as PlatformSettings | null;
   });
@@ -80,7 +88,10 @@ export const updatePlatformSettings = createServerFn({ method: "POST" })
       domain: data.domain || null,
       updated_by: context.userId,
     };
-    const { error } = await sb.from("platform_settings" as any).update(payload).eq("id", true);
+    const { error } = await sb
+      .from("platform_settings" as any)
+      .update(payload)
+      .eq("id", true);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

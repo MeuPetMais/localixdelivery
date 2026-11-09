@@ -25,8 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
     // RC2-SEC-001: parceiros/admins só podem acessar via e-mail/senha.
     // Usuários autenticados por Google/Apple (área do cliente) são bloqueados
     // no painel do parceiro e devolvidos à área do cliente.
-    const provider =
-      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    const provider = (data.user.app_metadata?.provider as string | undefined) ?? "email";
     if (provider !== "email") {
       await supabase.auth.signOut();
       throw redirect({ to: "/entrar" });

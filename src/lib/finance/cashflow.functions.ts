@@ -162,12 +162,14 @@ export const createPayable = createServerFn({ method: "POST" })
 export const updatePayableStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["OPEN", "PARTIAL", "PAID", "OVERDUE", "CANCELLED"]),
-      paidAmount: z.number().nonnegative().optional(),
-      paidDate: z.string().optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["OPEN", "PARTIAL", "PAID", "OVERDUE", "CANCELLED"]),
+        paidAmount: z.number().nonnegative().optional(),
+        paidDate: z.string().optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
@@ -187,11 +189,13 @@ export const updatePayableStatus = createServerFn({ method: "POST" })
 export const updateReceivableStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["PENDING", "RECEIVED", "FAILED", "CANCELLED"]),
-      receivedDate: z.string().optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["PENDING", "RECEIVED", "FAILED", "CANCELLED"]),
+        receivedDate: z.string().optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase

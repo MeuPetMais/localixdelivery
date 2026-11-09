@@ -21,7 +21,10 @@ const base = {
 
 describe("EtaCalculator", () => {
   it("computes distance and eta from strategy", () => {
-    const r = DistanceStrategy.estimate({ ...base, now: "2026-01-01T00:00:00Z" } as any, DEFAULT_ETA_CONFIG);
+    const r = DistanceStrategy.estimate(
+      { ...base, now: "2026-01-01T00:00:00Z" } as any,
+      DEFAULT_ETA_CONFIG,
+    );
     expect(r.eta_seconds).toBeGreaterThan(0);
     expect(r.distance_km).toBeGreaterThan(0);
   });
@@ -34,16 +37,25 @@ describe("EtaCalculator", () => {
 
 describe("Confidence", () => {
   it("LOW without gps", () => {
-    const c = evaluateEtaConfidence({ ...base, driver_lat: null, driver_lng: null } as any, DEFAULT_ETA_CONFIG);
+    const c = evaluateEtaConfidence(
+      { ...base, driver_lat: null, driver_lng: null } as any,
+      DEFAULT_ETA_CONFIG,
+    );
     expect(c.confidence).toBe("LOW");
   });
   it("LOW when very stale", () => {
-    const c = evaluateEtaConfidence({ ...base, last_seen_at: "2020-01-01T00:00:00Z", now: "2026-01-01T00:00:00Z" } as any, DEFAULT_ETA_CONFIG);
+    const c = evaluateEtaConfidence(
+      { ...base, last_seen_at: "2020-01-01T00:00:00Z", now: "2026-01-01T00:00:00Z" } as any,
+      DEFAULT_ETA_CONFIG,
+    );
     expect(c.confidence).toBe("LOW");
   });
   it("HIGH with fresh + high gps", () => {
     const now = new Date().toISOString();
-    const c = evaluateEtaConfidence({ ...base, last_seen_at: now, now, location_confidence: "HIGH" } as any, DEFAULT_ETA_CONFIG);
+    const c = evaluateEtaConfidence(
+      { ...base, last_seen_at: now, now, location_confidence: "HIGH" } as any,
+      DEFAULT_ETA_CONFIG,
+    );
     expect(c.confidence).toBe("HIGH");
   });
 });
@@ -62,7 +74,9 @@ describe("Window", () => {
 
 describe("Engine", () => {
   let engine: ReturnType<typeof createEtaEngine>;
-  beforeEach(() => { engine = createEtaEngine(); });
+  beforeEach(() => {
+    engine = createEtaEngine();
+  });
 
   it("first calc always changes and stores history", () => {
     const now = new Date().toISOString();

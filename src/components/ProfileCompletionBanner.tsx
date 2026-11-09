@@ -25,7 +25,6 @@ export function ProfileCompletionBanner({ restaurant }: { restaurant: any }) {
 
   if (isComplete) return null;
 
-
   return (
     <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-orange-500/10 via-red-500/5 to-transparent p-5 shadow-sm">
       <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
@@ -40,8 +39,8 @@ export function ProfileCompletionBanner({ restaurant }: { restaurant: any }) {
                 🚀 Deixe seu Localix ainda mais completo
               </h3>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Complete as informações do seu estabelecimento para transmitir mais confiança aos clientes e
-                aumentar suas chances de receber pedidos.
+                Complete as informações do seu estabelecimento para transmitir mais confiança aos
+                clientes e aumentar suas chances de receber pedidos.
               </p>
             </div>
           </div>

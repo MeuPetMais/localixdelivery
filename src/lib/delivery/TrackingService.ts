@@ -33,7 +33,13 @@ export class TrackingService {
   etaMinutes(driverId: string, destination: GeoPoint, avgSpeedKmh = 25): number | null {
     const dist = this.distanceToDestination(driverId, destination);
     if (dist == null) return null;
-    return calculateETA({ distance_km: dist, avg_speed_kmh: avgSpeedKmh, prep_minutes: 0, wait_minutes: 0, delivery_minutes: 2 }).total_minutes;
+    return calculateETA({
+      distance_km: dist,
+      avg_speed_kmh: avgSpeedKmh,
+      prep_minutes: 0,
+      wait_minutes: 0,
+      delivery_minutes: 2,
+    }).total_minutes;
   }
 
   clear(driverId?: string) {

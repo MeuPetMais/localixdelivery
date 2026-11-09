@@ -67,7 +67,8 @@ export function calculateDriverEarning(
   const distanceKm = distanceMissing ? null : Math.max(0, Number(distanceKmInput));
   const gross = settings.base_fee + settings.per_km_fee * (distanceKm ?? 0);
   const withMinimum = Math.max(settings.minimum_fee, gross);
-  const capped = settings.maximum_fee != null ? Math.min(settings.maximum_fee, withMinimum) : withMinimum;
+  const capped =
+    settings.maximum_fee != null ? Math.min(settings.maximum_fee, withMinimum) : withMinimum;
   return { amount: money(capped), distanceKm, distanceMissing };
 }
 

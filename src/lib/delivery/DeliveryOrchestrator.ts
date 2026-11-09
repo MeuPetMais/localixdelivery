@@ -4,10 +4,7 @@
 // dependências injetáveis para leitura/gravação/publicação, permitindo testes
 // determinísticos sem tocar Supabase.
 
-import {
-  canTransition,
-  type DeliveryAssignmentState,
-} from "./DeliveryAssignmentStateMachine";
+import { canTransition, type DeliveryAssignmentState } from "./DeliveryAssignmentStateMachine";
 import {
   DeliveryAssignmentEventBus,
   STATE_TO_EVENT,
@@ -63,7 +60,8 @@ export interface TransitionResult {
 }
 
 export function createDeliveryOrchestrator(deps: OrchestratorDeps) {
-  const publish = deps.publish ?? DeliveryAssignmentEventBus.publish.bind(DeliveryAssignmentEventBus);
+  const publish =
+    deps.publish ?? DeliveryAssignmentEventBus.publish.bind(DeliveryAssignmentEventBus);
 
   async function transition(input: TransitionInput): Promise<TransitionResult> {
     const a = await deps.getAssignment(input.assignmentId);
@@ -85,7 +83,12 @@ export function createDeliveryOrchestrator(deps: OrchestratorDeps) {
         },
       });
       if (!departed.ok) {
-        return { ok: false, from: a.status, to: input.to, reason: departed.reason ?? "RECOVERY_DEPART_FAILED" };
+        return {
+          ok: false,
+          from: a.status,
+          to: input.to,
+          reason: departed.reason ?? "RECOVERY_DEPART_FAILED",
+        };
       }
       return transition(input);
     }
@@ -110,7 +113,8 @@ export function createDeliveryOrchestrator(deps: OrchestratorDeps) {
       correlationId,
       metadata,
     });
-    if (!res.ok) return { ok: false, from: a.status, to: input.to, reason: res.reason ?? "APPLY_FAILED" };
+    if (!res.ok)
+      return { ok: false, from: a.status, to: input.to, reason: res.reason ?? "APPLY_FAILED" };
 
     const next: AssignmentSnapshot = { ...a, status: input.to, correlation_id: correlationId };
 

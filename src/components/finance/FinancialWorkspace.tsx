@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WidgetGrid, WidgetCard, WidgetHeader, WidgetEmpty } from "@/components/dashboard/WidgetPrimitives";
+import {
+  WidgetGrid,
+  WidgetCard,
+  WidgetHeader,
+  WidgetEmpty,
+} from "@/components/dashboard/WidgetPrimitives";
 import {
   FinancePermissions,
   FinanceAudit,
@@ -44,20 +49,28 @@ export function FinancialWorkspace({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FinancialFilters period={period} onPeriodChange={(p) => {
-          setPeriod(p);
-          FinanceAudit.emit({ type: "PERIOD_CHANGE", restaurantId, payload: { period: p } });
-        }} />
+        <FinancialFilters
+          period={period}
+          onPeriodChange={(p) => {
+            setPeriod(p);
+            FinanceAudit.emit({ type: "PERIOD_CHANGE", restaurantId, payload: { period: p } });
+          }}
+        />
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => {
-        const next = v as FinanceTab;
-        setTab(next);
-        FinanceAudit.emit({ type: "TAB_CHANGE", restaurantId, payload: { tab: next } });
-      }}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          const next = v as FinanceTab;
+          setTab(next);
+          FinanceAudit.emit({ type: "TAB_CHANGE", restaurantId, payload: { tab: next } });
+        }}
+      >
         <TabsList className="flex-wrap">
           {allowedTabs.map((t) => (
-            <TabsTrigger key={t} value={t}>{TAB_LABELS[t]}</TabsTrigger>
+            <TabsTrigger key={t} value={t}>
+              {TAB_LABELS[t]}
+            </TabsTrigger>
           ))}
         </TabsList>
 
@@ -72,25 +85,33 @@ export function FinancialWorkspace({
 
         <TabsContent value="cashflow" className="mt-4 space-y-4">
           <FinancialErrorBoundary>
-            <WidgetGrid><CashFlowWidget restaurantId={restaurantId} filters={filters} /></WidgetGrid>
+            <WidgetGrid>
+              <CashFlowWidget restaurantId={restaurantId} filters={filters} />
+            </WidgetGrid>
           </FinancialErrorBoundary>
         </TabsContent>
 
         <TabsContent value="receivables" className="mt-4 space-y-4">
           <FinancialErrorBoundary>
-            <WidgetGrid><ReceivablesWidget restaurantId={restaurantId} filters={filters} /></WidgetGrid>
+            <WidgetGrid>
+              <ReceivablesWidget restaurantId={restaurantId} filters={filters} />
+            </WidgetGrid>
           </FinancialErrorBoundary>
         </TabsContent>
 
         <TabsContent value="payables" className="mt-4 space-y-4">
           <FinancialErrorBoundary>
-            <WidgetGrid><PayablesWidget restaurantId={restaurantId} filters={filters} /></WidgetGrid>
+            <WidgetGrid>
+              <PayablesWidget restaurantId={restaurantId} filters={filters} />
+            </WidgetGrid>
           </FinancialErrorBoundary>
         </TabsContent>
 
         <TabsContent value="reports" className="mt-4 space-y-4">
           <FinancialErrorBoundary>
-            <WidgetGrid><ReportsWidget restaurantId={restaurantId} filters={filters} /></WidgetGrid>
+            <WidgetGrid>
+              <ReportsWidget restaurantId={restaurantId} filters={filters} />
+            </WidgetGrid>
           </FinancialErrorBoundary>
         </TabsContent>
 

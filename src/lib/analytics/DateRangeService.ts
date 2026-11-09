@@ -2,10 +2,22 @@ import type { ComparisonPreset, DateRange } from "./types";
 
 const DAY = 86400000;
 
-function iso(d: Date) { return d.toISOString(); }
-function startOfDay(d: Date) { const x = new Date(d); x.setUTCHours(0,0,0,0); return x; }
-function endOfDay(d: Date) { const x = new Date(d); x.setUTCHours(23,59,59,999); return x; }
-function addDays(d: Date, n: number) { return new Date(d.getTime() + n * DAY); }
+function iso(d: Date) {
+  return d.toISOString();
+}
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setUTCHours(0, 0, 0, 0);
+  return x;
+}
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setUTCHours(23, 59, 59, 999);
+  return x;
+}
+function addDays(d: Date, n: number) {
+  return new Date(d.getTime() + n * DAY);
+}
 
 export const DateRangeService = {
   today(): DateRange {

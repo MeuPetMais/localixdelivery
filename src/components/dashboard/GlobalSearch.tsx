@@ -23,13 +23,18 @@ export function GlobalSearch({ onSearch, onSelect }: Props) {
 
   const submit = async (value: string) => {
     setQ(value);
-    if (!value.trim()) { setResults([]); return; }
+    if (!value.trim()) {
+      setResults([]);
+      return;
+    }
     setLoading(true);
     try {
       DashboardAudit.record({ type: "SEARCH", payload: { q: value } });
       const r = await onSearch(value);
       setResults(r);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,7 +49,9 @@ export function GlobalSearch({ onSearch, onSelect }: Props) {
       {q && (
         <div className="absolute z-40 mt-1 w-full rounded-lg border bg-popover p-1 shadow-md">
           {loading && <div className="p-2 text-xs text-muted-foreground">Buscando…</div>}
-          {!loading && results.length === 0 && <div className="p-2 text-xs text-muted-foreground">Sem resultados</div>}
+          {!loading && results.length === 0 && (
+            <div className="p-2 text-xs text-muted-foreground">Sem resultados</div>
+          )}
           {results.map((r) => (
             <button
               key={`${r.scope}-${r.id}`}

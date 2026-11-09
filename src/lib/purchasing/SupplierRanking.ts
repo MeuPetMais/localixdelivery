@@ -14,10 +14,10 @@ export interface RankedSupplier extends SupplierScoreInput {
 export const SupplierRanking = {
   rank(items: SupplierScoreInput[]): RankedSupplier[] {
     if (!items.length) return [];
-    const prices = items.map(i => i.avgPrice ?? 0).filter(p => p > 0);
+    const prices = items.map((i) => i.avgPrice ?? 0).filter((p) => p > 0);
     const minPrice = prices.length ? Math.min(...prices) : 0;
     return items
-      .map(i => {
+      .map((i) => {
         const priceScore = i.avgPrice && i.avgPrice > 0 ? minPrice / i.avgPrice : 0.5;
         const delivery = i.onTimeDeliveryRate ?? 0.8;
         const quality = (i.qualityRating ?? 3) / 5;

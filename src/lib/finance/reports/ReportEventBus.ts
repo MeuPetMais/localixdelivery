@@ -18,10 +18,19 @@ type Listener = (e: ReportEvent) => void;
 
 class Bus {
   private listeners = new Set<Listener>();
-  subscribe(l: Listener) { this.listeners.add(l); return () => this.listeners.delete(l); }
+  subscribe(l: Listener) {
+    this.listeners.add(l);
+    return () => this.listeners.delete(l);
+  }
   emit(e: Omit<ReportEvent, "at">) {
     const ev: ReportEvent = { ...e, at: new Date().toISOString() };
-    for (const l of this.listeners) { try { l(ev); } catch { /* noop */ } }
+    for (const l of this.listeners) {
+      try {
+        l(ev);
+      } catch {
+        /* noop */
+      }
+    }
   }
 }
 

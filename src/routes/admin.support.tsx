@@ -2,7 +2,16 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3, Clock, Filter, LifeBuoy, Search, ShieldAlert, UserRoundCheck, Users } from "lucide-react";
+import {
+  BarChart3,
+  Clock,
+  Filter,
+  LifeBuoy,
+  Search,
+  ShieldAlert,
+  UserRoundCheck,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,8 +88,16 @@ function AdminSupportQueuePage() {
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-support-queue"] });
     const channel = supabase
       .channel("admin-support-queue")
-      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, invalidate)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, invalidate)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "support_tickets" },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "support_messages" },
+        invalidate,
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -92,7 +109,10 @@ function AdminSupportQueuePage() {
   const teamOptions: Array<{ user_id: string; label: string }> = team.data ?? [];
 
   const activeFilterCount = useMemo(
-    () => Object.values(filters).filter((value) => value !== undefined && value !== "" && value !== false).length,
+    () =>
+      Object.values(filters).filter(
+        (value) => value !== undefined && value !== "" && value !== false,
+      ).length,
     [filters],
   );
 
@@ -104,7 +124,9 @@ function AdminSupportQueuePage() {
             <LifeBuoy className="h-5 w-5 text-primary" />
             Central de suporte
           </h1>
-          <p className="text-sm text-slate-400">Fila interna Localix para atendimento dos estabelecimentos.</p>
+          <p className="text-sm text-slate-400">
+            Fila interna Localix para atendimento dos estabelecimentos.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" className="gap-2 border-slate-700 text-slate-200">
@@ -119,7 +141,11 @@ function AdminSupportQueuePage() {
               Relatorios
             </Link>
           </Button>
-          <Button variant="outline" className="gap-2 border-slate-700 text-slate-200" onClick={() => setFilters({})}>
+          <Button
+            variant="outline"
+            className="gap-2 border-slate-700 text-slate-200"
+            onClick={() => setFilters({})}
+          >
             <Filter className="h-4 w-4" />
             Limpar filtros {activeFilterCount ? `(${activeFilterCount})` : ""}
           </Button>
@@ -143,7 +169,9 @@ function AdminSupportQueuePage() {
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
             <Input
               value={filters.search ?? ""}
-              onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value || undefined }))}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, search: event.target.value || undefined }))
+              }
               placeholder="Buscar por numero, assunto ou estabelecimento"
               className="border-slate-700 bg-slate-950 pl-9 text-slate-100"
             />
@@ -152,22 +180,37 @@ function AdminSupportQueuePage() {
             value={filters.status ?? "all"}
             placeholder="Status"
             options={SUPPORT_STATUSES.map((value) => ({ value, label: STATUS_LABEL[value] }))}
-            onChange={(value) => setFilters((current) => ({ ...current, status: value === "all" ? undefined : (value as LegacySupportStatus) }))}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                status: value === "all" ? undefined : (value as LegacySupportStatus),
+              }))
+            }
           />
           <FilterSelect
             value={filters.priority ?? "all"}
             placeholder="Prioridade"
             options={SUPPORT_PRIORITIES.map((value) => ({ value, label: PRIORITY_LABEL[value] }))}
-            onChange={(value) => setFilters((current) => ({ ...current, priority: value === "all" ? undefined : (value as SupportPriority) }))}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                priority: value === "all" ? undefined : (value as SupportPriority),
+              }))
+            }
           />
           <FilterSelect
             value={filters.category ?? "all"}
             placeholder="Categoria"
             options={SUPPORT_CATEGORIES.map((value) => ({ value, label: CATEGORY_LABEL[value] }))}
-            onChange={(value) => setFilters((current) => ({ ...current, category: value === "all" ? undefined : (value as SupportCategory) }))}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                category: value === "all" ? undefined : (value as SupportCategory),
+              }))
+            }
           />
           <FilterSelect
-            value={filters.unassigned ? "unassigned" : filters.assignedTo ?? "all"}
+            value={filters.unassigned ? "unassigned" : (filters.assignedTo ?? "all")}
             placeholder="Responsavel"
             options={[
               { value: "unassigned", label: "Nao atribuido" },
@@ -215,13 +258,17 @@ function AdminSupportQueuePage() {
               </div>
               <div className="min-w-0">
                 <div className="truncate font-medium text-slate-100">{ticket.subject}</div>
-                <div className="truncate text-xs text-slate-400">{ticket.last_message_body ?? "Sem mensagens"}</div>
+                <div className="truncate text-xs text-slate-400">
+                  {ticket.last_message_body ?? "Sem mensagens"}
+                </div>
               </div>
               <div className="truncate text-slate-300">{ticket.restaurant_name}</div>
               <div className="text-slate-300">{CATEGORY_LABEL[ticket.category]}</div>
               <PriorityBadge priority={ticket.priority} />
               <StatusBadge status={ticket.status} breached={isSlaBreached(ticket)} />
-              <div className="truncate text-slate-300">{ticket.assignee_label ?? "Nao atribuido"}</div>
+              <div className="truncate text-slate-300">
+                {ticket.assignee_label ?? "Nao atribuido"}
+              </div>
             </Link>
           ))
         )}
@@ -230,9 +277,23 @@ function AdminSupportQueuePage() {
   );
 }
 
-function Metric({ label, value, tone = "slate" }: { label: string; value: number | string; tone?: "slate" | "red" | "amber" | "green" }) {
+function Metric({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value: number | string;
+  tone?: "slate" | "red" | "amber" | "green";
+}) {
   const toneClass =
-    tone === "red" ? "text-red-300" : tone === "amber" ? "text-amber-300" : tone === "green" ? "text-emerald-300" : "text-slate-100";
+    tone === "red"
+      ? "text-red-300"
+      : tone === "amber"
+        ? "text-amber-300"
+        : tone === "green"
+          ? "text-emerald-300"
+          : "text-slate-100";
   return (
     <Card className="border-slate-800 bg-slate-900 p-4">
       <div className="text-xs text-slate-400">{label}</div>
@@ -283,7 +344,9 @@ function StatusBadge({ status, breached }: { status: LegacySupportStatus; breach
   return (
     <div className="flex items-center gap-2">
       <Badge className="border-slate-700 bg-slate-800 text-slate-200">{STATUS_LABEL[status]}</Badge>
-      {breached && !["resolvido", "fechado"].includes(status) && <ShieldAlert className="h-4 w-4 text-red-300" />}
+      {breached && !["resolvido", "fechado"].includes(status) && (
+        <ShieldAlert className="h-4 w-4 text-red-300" />
+      )}
       {status === "respondido" && <UserRoundCheck className="h-4 w-4 text-emerald-300" />}
     </div>
   );

@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  LoggingCenter, MetricsCenter, AuditCenter, HealthCenter,
-  AlertCenter, IncidentCenter, DiagnosticsCenter, OperationsDashboard,
+  LoggingCenter,
+  MetricsCenter,
+  AuditCenter,
+  HealthCenter,
+  AlertCenter,
+  IncidentCenter,
+  DiagnosticsCenter,
+  OperationsDashboard,
 } from "./index";
 
 beforeEach(() => {
@@ -25,15 +31,19 @@ describe("LoggingCenter", () => {
     expect(JSON.stringify(e.metadata)).not.toContain("abc.def.ghi");
   });
   it("filtra por nível", () => {
-    LoggingCenter.info("a", "x"); LoggingCenter.error("a", "y");
+    LoggingCenter.info("a", "x");
+    LoggingCenter.error("a", "y");
     expect(LoggingCenter.list({ level: "error" })).toHaveLength(1);
   });
 });
 
 describe("MetricsCenter", () => {
   it("calcula summary básico", () => {
-    MetricsCenter.incr("request"); MetricsCenter.incr("request"); MetricsCenter.incr("error");
-    MetricsCenter.timing("response_ms", 100); MetricsCenter.timing("response_ms", 200);
+    MetricsCenter.incr("request");
+    MetricsCenter.incr("request");
+    MetricsCenter.incr("error");
+    MetricsCenter.timing("response_ms", 100);
+    MetricsCenter.timing("response_ms", 200);
     const s = MetricsCenter.summary();
     expect(s.requests_per_minute).toBe(2);
     expect(s.errors_per_minute).toBe(1);
@@ -63,7 +73,11 @@ describe("AuditCenter", () => {
 describe("AlertCenter + IncidentCenter", () => {
   it("aciona alerta, faz ack e vincula incidente", () => {
     const a = AlertCenter.raise({ severity: "critical", kind: "service_down", title: "API down" });
-    const inc = IncidentCenter.open({ severity: "critical", title: "API down", related_alert_ids: [a.id] });
+    const inc = IncidentCenter.open({
+      severity: "critical",
+      title: "API down",
+      related_alert_ids: [a.id],
+    });
     AlertCenter.ack(a.id, "ops");
     IncidentCenter.mitigate(inc.id);
     expect(AlertCenter.list({ active: true })).toHaveLength(0);

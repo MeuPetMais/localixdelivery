@@ -1,4 +1,8 @@
-export interface LaborInput { hourlyRate: number; minutes: number; team?: number }
+export interface LaborInput {
+  hourlyRate: number;
+  minutes: number;
+  team?: number;
+}
 
 export const LaborCostEngine = {
   calculate({ hourlyRate, minutes, team = 1 }: LaborInput): number {

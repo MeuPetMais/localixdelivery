@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  isChromeAndroid,
-  isInstallSupported,
-  isStandaloneDisplay,
-} from "./pwa-driver";
+import { isChromeAndroid, isInstallSupported, isStandaloneDisplay } from "./pwa-driver";
 
 const originalWindow = globalThis.window;
 

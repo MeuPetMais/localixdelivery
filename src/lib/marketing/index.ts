@@ -1,7 +1,11 @@
 export * from "./types";
 export { MarketingAutomationPlatform } from "./MarketingAutomationPlatform";
 export { CampaignService } from "./CampaignService";
-export { AudienceBuilder, type AudienceCandidate, type AudienceResolution } from "./AudienceBuilder";
+export {
+  AudienceBuilder,
+  type AudienceCandidate,
+  type AudienceResolution,
+} from "./AudienceBuilder";
 export { AutomationEngine } from "./AutomationEngine";
 export { CampaignSchedulerService, type ScheduledCampaignJob } from "./CampaignSchedulerService";
 export { CampaignTemplateService } from "./CampaignTemplateService";

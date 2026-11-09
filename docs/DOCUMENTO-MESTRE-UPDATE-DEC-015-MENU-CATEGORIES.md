@@ -29,6 +29,7 @@ Regras oficiais:
 - a hierarquia é metadado de catálogo e não altera preço, checkout, pagamento, split ou benefícios.
 
 Componentes financeiros e de pedido permanecem autoritativos e independentes da hierarquia:
+
 - Checkout;
 - OrderService;
 - PricingEngine;

@@ -16,11 +16,15 @@ export const FinanceWidgetRegistry = {
     registry.set(def.id, def);
     return () => registry.delete(def.id);
   },
-  get(id: string) { return registry.get(id); },
+  get(id: string) {
+    return registry.get(id);
+  },
   listByTab(tab: FinanceTab, role: FinanceRole): FinanceWidgetDefinition[] {
-    return Array.from(registry.values()).filter(w =>
-      w.tab === tab && (!w.requiredRoles || w.requiredRoles.includes(role))
+    return Array.from(registry.values()).filter(
+      (w) => w.tab === tab && (!w.requiredRoles || w.requiredRoles.includes(role)),
     );
   },
-  clear() { registry.clear(); },
+  clear() {
+    registry.clear();
+  },
 };

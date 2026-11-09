@@ -5,17 +5,26 @@ function toCsv(snap: DashboardSnapshot): string {
   for (const s of snap.sections) {
     for (const k of s.kpis) {
       rows.push([
-        s.title, k.key, k.label, String(k.value),
+        s.title,
+        k.key,
+        k.label,
+        String(k.value),
         k.previous != null ? String(k.previous) : "",
         k.deltaPct != null ? String(k.deltaPct) : "",
         k.trend ?? "",
       ]);
     }
   }
-  return rows.map(r => r.map(cell => {
-    const v = String(cell ?? "");
-    return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-  }).join(",")).join("\n");
+  return rows
+    .map((r) =>
+      r
+        .map((cell) => {
+          const v = String(cell ?? "");
+          return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+        })
+        .join(","),
+    )
+    .join("\n");
 }
 
 function b64(str: string): string {
@@ -31,8 +40,11 @@ export const AnalyticsExportService = {
     if (format === "csv") {
       const content = toCsv(snapshot);
       return {
-        format, filename: `${base}.csv`, mimeType: "text/csv",
-        content, bytes: content.length,
+        format,
+        filename: `${base}.csv`,
+        mimeType: "text/csv",
+        content,
+        bytes: content.length,
       };
     }
     // xlsx / pdf: placeholder payloads reusing csv structure until report infra is wired.
@@ -41,7 +53,10 @@ export const AnalyticsExportService = {
     return {
       format,
       filename: `${base}.${format}`,
-      mimeType: format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      mimeType:
+        format === "pdf"
+          ? "application/pdf"
+          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       content: encoded,
       bytes: encoded.length,
     };

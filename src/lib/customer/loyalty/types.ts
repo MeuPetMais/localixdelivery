@@ -101,5 +101,10 @@ export type LoyaltyContext = {
 export type LoyaltyAccrual = {
   points: number;
   cashback: number;
-  applied_rules: Array<{ rule_id: string; rule_type: LoyaltyRuleType; points: number; cashback: number }>;
+  applied_rules: Array<{
+    rule_id: string;
+    rule_type: LoyaltyRuleType;
+    points: number;
+    cashback: number;
+  }>;
 };

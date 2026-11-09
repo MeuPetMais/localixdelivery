@@ -16,6 +16,7 @@ O Localix possui dois modelos de identidade de cliente:
 O Customer Intelligence existente consulta predominantemente `orders.customer_id`, enquanto a projeção `customers` cobre uma parcela maior da base comportamental, incluindo clientes guest.
 
 Sem uma fonte canônica explícita, a evolução do Growth pode:
+
 - excluir clientes sem cadastro;
 - duplicar identidades;
 - criar nova tabela desnecessária;
@@ -41,16 +42,19 @@ Também foram encontradas divergências entre código e schema em componentes de
 ## 3. Opções consideradas
 
 ### Opção A — Criar nova tabela `crm_customers` / `customer_360`
+
 **Rejeitada.**
 
 Duplicaria `customers`, criaria uma segunda projeção do mesmo fato comportamental e aumentaria risco de divergência.
 
 ### Opção B — Usar `customer_profiles` como raiz do Customer 360
+
 **Rejeitada.**
 
 Excluiria clientes guest e acoplaria inteligência comercial ao cadastro/autenticação global.
 
 ### Opção C — Usar `customers` como raiz partner-scoped e `orders` como verdade transacional
+
 **Escolhida.**
 
 Preserva a projeção já existente, cobre guest e autenticado, mantém isolamento por restaurante e minimiza mudanças.
@@ -139,22 +143,26 @@ Esta opção:
 ## 6. Impacto
 
 ### Positivo
+
 - Customer 360 pode ser construído majoritariamente por leitura.
 - Métricas comportamentais podem reutilizar histórico já existente.
 - Segmentação e insights podem ser conectados posteriormente sem recriar clientes.
 - Benefits, Rewards, promoções e cupons podem enriquecer o perfil sem assumir autoridade financeira.
 
 ### Restrição
+
 O Customer Intelligence atual não deve ser considerado operacionalmente completo enquanto continuar dependente apenas de `orders.customer_id` e enquanto persistirem incompatibilidades com o schema real.
 
 ## 7. Riscos
 
 ### ALTO
+
 - tratar `customer_profiles` como universo completo de clientes;
 - segmentar apenas clientes autenticados;
 - usar services de Intelligence com contratos de schema desatualizados.
 
 ### MÉDIO
+
 - mudança posterior de telefone em pedidos históricos;
 - ausência de snapshot histórico de categoria no item do pedido;
 - duplicidade conceitual de preferências/opt-in.

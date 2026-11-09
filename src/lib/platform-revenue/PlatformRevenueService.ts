@@ -39,7 +39,10 @@ export const PlatformRevenueService = {
     const p = await RevenueSettingsService.load();
     if (!RevenuePolicyService.isActive(p)) {
       const zero: ServiceFeeCalculationResult = {
-        amount: 0, type: p.service_fee_type, policyId: "platform_singleton", currency: p.currency,
+        amount: 0,
+        type: p.service_fee_type,
+        policyId: "platform_singleton",
+        currency: p.currency,
       };
       return zero;
     }

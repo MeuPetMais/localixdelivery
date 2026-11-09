@@ -27,8 +27,10 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
     }),
   });
   if (!res.ok) {
-    if (res.status === 429) throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
-    if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
+    if (res.status === 429)
+      throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
+    if (res.status === 402)
+      throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
     throw new Error(`Falha na IA (${res.status})`);
   }
   const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -50,17 +52,44 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
     const since30 = new Date(now - 30 * DAY).toISOString();
     const since60 = new Date(now - 60 * DAY).toISOString();
 
-    const [{ data: orders }, { data: items }, { data: categories }, { data: ingredients }, { data: recipes }, { data: moves }] = await Promise.all([
-      supabaseAdmin.from("orders").select("id, total, items, status, created_at").eq("restaurant_id", data.restaurantId).gte("created_at", since60).limit(2000),
-      supabaseAdmin.from("menu_items").select("id, name, price, category_id").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("menu_categories").select("id, name").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("ingredients").select("id, name, stock, min_stock, unit_cost, updated_at").eq("restaurant_id", data.restaurantId),
+    const [
+      { data: orders },
+      { data: items },
+      { data: categories },
+      { data: ingredients },
+      { data: recipes },
+      { data: moves },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("orders")
+        .select("id, total, items, status, created_at")
+        .eq("restaurant_id", data.restaurantId)
+        .gte("created_at", since60)
+        .limit(2000),
+      supabaseAdmin
+        .from("menu_items")
+        .select("id, name, price, category_id")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("menu_categories")
+        .select("id, name")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("ingredients")
+        .select("id, name, stock, min_stock, unit_cost, updated_at")
+        .eq("restaurant_id", data.restaurantId),
       supabaseAdmin.from("recipe_items").select("menu_item_id, ingredient_id, quantity"),
-      supabaseAdmin.from("financial_movements").select("type, amount, category, movement_date").eq("restaurant_id", data.restaurantId).gte("movement_date", since30.slice(0, 10)),
+      supabaseAdmin
+        .from("financial_movements")
+        .select("type, amount, category, movement_date")
+        .eq("restaurant_id", data.restaurantId)
+        .gte("movement_date", since30.slice(0, 10)),
     ]);
 
     const cutoff30 = new Date(now - 30 * DAY);
-    const validOrders30 = (orders ?? []).filter((o) => new Date(o.created_at) >= cutoff30 && o.status !== "cancelado");
+    const validOrders30 = (orders ?? []).filter(
+      (o) => new Date(o.created_at) >= cutoff30 && o.status !== "cancelado",
+    );
     const validOrdersPrev = (orders ?? []).filter((o) => {
       const t = new Date(o.created_at);
       return t < cutoff30 && o.status !== "cancelado";
@@ -73,14 +102,24 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
     for (const r of recipes ?? []) {
       const ing = ingMap.get(r.ingredient_id);
       if (!ing) continue;
-      costByItem.set(r.menu_item_id, (costByItem.get(r.menu_item_id) ?? 0) + Number(r.quantity) * Number(ing.unit_cost));
+      costByItem.set(
+        r.menu_item_id,
+        (costByItem.get(r.menu_item_id) ?? 0) + Number(r.quantity) * Number(ing.unit_cost),
+      );
     }
 
     // Vendas por produto (últimos 30d)
     const soldQty = new Map<string, number>();
     const revenueByItem = new Map<string, number>();
     for (const o of validOrders30) {
-      const arr = (o.items as unknown as Array<{ id?: string; name?: string; price?: number; qty?: number; quantity?: number }>) ?? [];
+      const arr =
+        (o.items as unknown as Array<{
+          id?: string;
+          name?: string;
+          price?: number;
+          qty?: number;
+          quantity?: number;
+        }>) ?? [];
       if (!Array.isArray(arr)) continue;
       for (const it of arr) {
         const id = it.id ?? it.name ?? "";
@@ -122,8 +161,12 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
     const cogs = products.reduce((s, p) => s + p.cost * p.qty, 0);
     const grossProfit = revenue30 - cogs;
 
-    const opex = (moves ?? []).filter((m) => m.type === "expense").reduce((s, m) => s + Number(m.amount), 0);
-    const extraRevenue = (moves ?? []).filter((m) => m.type === "income").reduce((s, m) => s + Number(m.amount), 0);
+    const opex = (moves ?? [])
+      .filter((m) => m.type === "expense")
+      .reduce((s, m) => s + Number(m.amount), 0);
+    const extraRevenue = (moves ?? [])
+      .filter((m) => m.type === "income")
+      .reduce((s, m) => s + Number(m.amount), 0);
     const operatingProfit = grossProfit + extraRevenue - opex;
     const taxRate = data.taxRate ?? 6;
     const taxes = Math.max(0, operatingProfit) * (taxRate / 100);
@@ -131,7 +174,8 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
 
     // Categorias por lucro
     const catProfit = new Map<string, number>();
-    for (const p of products) catProfit.set(p.category, (catProfit.get(p.category) ?? 0) + p.profit);
+    for (const p of products)
+      catProfit.set(p.category, (catProfit.get(p.category) ?? 0) + p.profit);
     const topCategory = [...catProfit.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
 
     const productsSold = products.filter((p) => p.qty > 0);
@@ -173,7 +217,8 @@ export const getFinancialIntelligence = createServerFn({ method: "POST" })
 
     // Insights via IA
     const lowMargin = products.filter((p) => p.qty > 0 && p.margin < 20).slice(0, 5);
-    const profitShare = mostProfitable && grossProfit > 0 ? (mostProfitable.profit / grossProfit) * 100 : 0;
+    const profitShare =
+      mostProfitable && grossProfit > 0 ? (mostProfitable.profit / grossProfit) * 100 : 0;
 
     const aiPrompt = `Restaurante "${rest.name}". Análise dos últimos 30 dias.
 Receita bruta: R$ ${revenue30.toFixed(2)} (anterior R$ ${revenuePrev.toFixed(2)}).
@@ -194,7 +239,11 @@ Gere de 4 a 6 insights financeiros curtos (máx 160 caracteres cada), em portugu
         "Você é um CFO virtual para restaurantes. Foque em margem, lucro, custos e ações práticas. Português brasileiro, direto.",
         aiPrompt,
       );
-      insights = text.split("\n").map((l) => l.replace(/^[-•\d.\s]+/, "").trim()).filter((l) => l.length > 4).slice(0, 8);
+      insights = text
+        .split("\n")
+        .map((l) => l.replace(/^[-•\d.\s]+/, "").trim())
+        .filter((l) => l.length > 4)
+        .slice(0, 8);
     } catch (e) {
       insights = [];
     }
@@ -204,6 +253,10 @@ Gere de 4 a 6 insights financeiros curtos (máx 160 caracteres cada), em portugu
       dre,
       executive,
       insights,
-      staleIngredients: stale.map((s) => ({ name: s.name, stock: Number(s.stock), updated_at: s.updated_at })),
+      staleIngredients: stale.map((s) => ({
+        name: s.name,
+        stock: Number(s.stock),
+        updated_at: s.updated_at,
+      })),
     };
   });

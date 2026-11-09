@@ -1,14 +1,7 @@
 // TrackingRetention — Testes (RC5.3.x.3).
 import { describe, it, expect } from "vitest";
-import {
-  TRACKING_RETENTION_POLICIES,
-  classifyAge,
-  classifyDate,
-} from "./retention.policy";
-import {
-  createTrackingRetentionService,
-  type RetentionQueryClient,
-} from "./retention.service";
+import { TRACKING_RETENTION_POLICIES, classifyAge, classifyDate } from "./retention.policy";
+import { createTrackingRetentionService, type RetentionQueryClient } from "./retention.service";
 import { retentionPreview } from "./retention.command";
 
 const NOW = new Date("2026-07-10T12:00:00.000Z");
@@ -33,13 +26,16 @@ describe("RetentionPolicy", () => {
   });
 
   it("cobre as duas tabelas do domínio", () => {
-    expect(Object.keys(TRACKING_RETENTION_POLICIES).sort()).toEqual(
-      ["tracking_eta_history", "tracking_timeline"],
-    );
+    expect(Object.keys(TRACKING_RETENTION_POLICIES).sort()).toEqual([
+      "tracking_eta_history",
+      "tracking_timeline",
+    ]);
   });
 });
 
-function fakeClient(counts: Record<string, { online: number; archive: number; purge: number }>): RetentionQueryClient {
+function fakeClient(
+  counts: Record<string, { online: number; archive: number; purge: number }>,
+): RetentionQueryClient {
   return {
     async countBetween(table, from, to) {
       const c = counts[table] ?? { online: 0, archive: 0, purge: 0 };
@@ -89,13 +85,15 @@ describe("TrackingRetentionService", () => {
 
   it("previewAll cobre as duas tabelas com mesmo correlation_id", async () => {
     const client = fakeClient({
-      tracking_timeline:    { online: 10, archive: 5, purge: 0 },
+      tracking_timeline: { online: 10, archive: 5, purge: 0 },
       tracking_eta_history: { online: 20, archive: 0, purge: 7 },
     });
     const svc = createTrackingRetentionService({ client, now: () => NOW, logger: () => {} });
     const reports = await svc.previewAll("cid-xyz");
     expect(reports).toHaveLength(2);
-    expect(new Set(reports.map((r) => r.table))).toEqual(new Set(["tracking_timeline", "tracking_eta_history"]));
+    expect(new Set(reports.map((r) => r.table))).toEqual(
+      new Set(["tracking_timeline", "tracking_eta_history"]),
+    );
     expect(reports.every((r) => r.correlation_id === "cid-xyz")).toBe(true);
   });
 
@@ -112,8 +110,8 @@ describe("retentionPreview command", () => {
     // usa serviço default (supabase); aqui apenas garantimos que a função existe e resolve com fake.
     // como o command usa o singleton, apenas validamos o formatador via um preview manual.
     const client = fakeClient({
-      tracking_timeline:    { online: 100, archive: 0, purge: 0 },
-      tracking_eta_history: { online: 0,   archive: 0, purge: 0 },
+      tracking_timeline: { online: 100, archive: 0, purge: 0 },
+      tracking_eta_history: { online: 0, archive: 0, purge: 0 },
     });
     const svc = createTrackingRetentionService({ client, now: () => NOW, logger: () => {} });
     const reports = await svc.previewAll("cid-1");

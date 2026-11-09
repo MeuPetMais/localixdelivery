@@ -114,21 +114,21 @@ apresentar como roadmap.
 
 Argumentos apenas com base na v1.0:
 
-- *"Já uso iFood/Rappi, por que trocar?"* → Sem comissão sobre
+- _"Já uso iFood/Rappi, por que trocar?"_ → Sem comissão sobre
   faturamento, cliente pertence ao restaurante, dados próprios,
   R$ 0,99 fixo previsível.
-- *"Tenho pouco volume."* → 600 pedidos/mês é meta de referência
+- _"Tenho pouco volume."_ → 600 pedidos/mês é meta de referência
   durante implantação, não critério de bloqueio; homologação avalia
   aderência.
-- *"Não sei operar Stripe."* → Implantação assistida gratuita, inclui
+- _"Não sei operar Stripe."_ → Implantação assistida gratuita, inclui
   criação/conexão da conta, KYC/KYB e homologação.
-- *"E a segurança dos pagamentos?"* → Stripe Connect Express: split
+- _"E a segurança dos pagamentos?"_ → Stripe Connect Express: split
   automático, webhooks assinados, dedupe idempotente, ledger
   append-only.
-- *"Posso usar outro gateway?"* → Stripe é o gateway oficial e único
+- _"Posso usar outro gateway?"_ → Stripe é o gateway oficial e único
   da plataforma (`LOCALIX_BUSINESS_MODEL_V1.md` §10). Outros gateways
   só via decisão estratégica formal futura.
-- *"Preciso de app próprio para meu cliente."* → App nativo é
+- _"Preciso de app próprio para meu cliente."_ → App nativo é
   roadmap; v1.0 entrega web/PWA em `/{slug}`.
 
 ---
@@ -182,19 +182,19 @@ QBR, upsell estruturado): **Não implementado na v1.0**.
 
 ## Capítulo 10 — FAQ Comercial
 
-- *"Qual a taxa?"* → R$ 0,99 fixa por pedido. Sem mensalidade, sem
+- _"Qual a taxa?"_ → R$ 0,99 fixa por pedido. Sem mensalidade, sem
   comissão sobre faturamento, sem setup.
-- *"Como o restaurante recebe?"* → Direto via Stripe Connect Express;
+- _"Como o restaurante recebe?"_ → Direto via Stripe Connect Express;
   a Localix recebe a taxa via split automático
   (`application_fee_amount` + `transfer_data.destination`).
-- *"Qual gateway?"* → Stripe Connect (oficial e único).
-- *"Cliente é de quem?"* → Do restaurante. CRM próprio integrado.
-- *"Tem fidelidade?"* → Sim: pontos, resgate, expiração — pronto na
+- _"Qual gateway?"_ → Stripe Connect (oficial e único).
+- _"Cliente é de quem?"_ → Do restaurante. CRM próprio integrado.
+- _"Tem fidelidade?"_ → Sim: pontos, resgate, expiração — pronto na
   v1.0.
-- *"Tem IA?"* → Sim, consultor operacional via Lovable AI Gateway.
-- *"Tem app?"* → Web/PWA em `/{slug}` na v1.0. App nativo é roadmap.
-- *"Tem marketplace de insumos?"* → Roadmap (não v1.0).
-- *"Aceita outros meios de pagamento?"* → Stripe (padrão); Mercado
+- _"Tem IA?"_ → Sim, consultor operacional via Lovable AI Gateway.
+- _"Tem app?"_ → Web/PWA em `/{slug}` na v1.0. App nativo é roadmap.
+- _"Tem marketplace de insumos?"_ → Roadmap (não v1.0).
+- _"Aceita outros meios de pagamento?"_ → Stripe (padrão); Mercado
   Pago permanece como integração legada; Dinheiro conforme
   configuração do restaurante.
 
@@ -218,6 +218,7 @@ QBR, upsell estruturado): **Não implementado na v1.0**.
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_BUSINESS_MODEL_V1.md`
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/LOCALIX_ONBOARDING_PLAYBOOK.md`
@@ -235,6 +236,7 @@ numerados; ordem preservada).
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - CRM comercial dedicado / pipeline automatizado.
 - Ferramenta de handoff automatizada entre Comercial e Onboarding.
 - Programa formal de Customer Success comercial (health score, QBR).

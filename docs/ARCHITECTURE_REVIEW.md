@@ -9,17 +9,17 @@ padroniza convenções e registra a nota de auditoria por domínio.
 
 ## 1. Inventário
 
-| Item | Quantidade |
-| --- | ---: |
-| Domínios em `src/lib/` | 60 pastas / 16 domínios de negócio |
-| Server functions (`*.functions.ts`) | consumidas por rotas TanStack |
-| Edge functions Supabase | 5 (mp-oauth, mp-oauth-callback, mp-payment-intent, mp-webhook, _shared) |
-| Tabelas Supabase | 115 |
-| Rotas TanStack | ~60 (`src/routes/`) |
-| Suites de teste (`*.test.ts`) | 37 |
-| EventBuses independentes | 14 (Catalog, Product, Promotion, Intelligence, Recipe, Production, Cost, Inventory, Finance*, Order*, RestaurantSettings, Platform, PlatformConfig, Marketing, AI, Notification, BusinessRules) |
+| Item                                |                                                                                                                                                                                      Quantidade |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| Domínios em `src/lib/`              |                                                                                                                                                              60 pastas / 16 domínios de negócio |
+| Server functions (`*.functions.ts`) |                                                                                                                                                                   consumidas por rotas TanStack |
+| Edge functions Supabase             |                                                                                                                        5 (mp-oauth, mp-oauth-callback, mp-payment-intent, mp-webhook, \_shared) |
+| Tabelas Supabase                    |                                                                                                                                                                                             115 |
+| Rotas TanStack                      |                                                                                                                                                                             ~60 (`src/routes/`) |
+| Suites de teste (`*.test.ts`)       |                                                                                                                                                                                              37 |
+| EventBuses independentes            | 14 (Catalog, Product, Promotion, Intelligence, Recipe, Production, Cost, Inventory, Finance*, Order*, RestaurantSettings, Platform, PlatformConfig, Marketing, AI, Notification, BusinessRules) |
 
-(*) Finance/Order não expõem EventBus dedicado — usam Audit + domain events.
+(\*) Finance/Order não expõem EventBus dedicado — usam Audit + domain events.
 
 ---
 
@@ -54,24 +54,24 @@ Regras reafirmadas:
 
 Escala 0–5 (5 = pronto para produção sem ressalvas).
 
-| Domínio | Arq. | Escala. | Seg. | Perf. | Testab. | Manut. | Doc. | Média |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Authentication (Supabase + gate managed) | 5 | 5 | 5 | 5 | 4 | 5 | 4 | 4.7 |
-| Authorization (user_roles + has_role) | 5 | 5 | 5 | 5 | 4 | 5 | 4 | 4.7 |
-| Platform Administration | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 4.4 |
-| Platform Configuration & Flags | 4 | 4 | 4 | 5 | 5 | 5 | 5 | 4.6 |
-| Analytics & BI | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 4.4 |
-| AI Platform | 4 | 4 | 5 | 4 | 5 | 5 | 5 | 4.6 |
-| Marketing Automation | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 4.4 |
-| Customer Domain | 5 | 4 | 5 | 4 | 4 | 5 | 4 | 4.4 |
-| Product Domain | 5 | 4 | 4 | 4 | 5 | 5 | 5 | 4.6 |
-| Inventory Domain | 5 | 4 | 4 | 4 | 5 | 5 | 5 | 4.6 |
-| Finance Domain | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 4.1 |
-| Payment Domain (MP + split) | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 4.1 |
-| Order Domain (OrderOrchestrator) | 5 | 4 | 5 | 4 | 5 | 5 | 5 | 4.7 |
-| Delivery Domain | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4.0 |
-| NotificationCenter | 5 | 4 | 5 | 4 | 4 | 5 | 4 | 4.4 |
-| BusinessRulesEngine | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5.0 |
+| Domínio                                  | Arq. | Escala. | Seg. | Perf. | Testab. | Manut. | Doc. | Média |
+| ---------------------------------------- | :--: | :-----: | :--: | :---: | :-----: | :----: | :--: | :---: |
+| Authentication (Supabase + gate managed) |  5   |    5    |  5   |   5   |    4    |   5    |  4   |  4.7  |
+| Authorization (user_roles + has_role)    |  5   |    5    |  5   |   5   |    4    |   5    |  4   |  4.7  |
+| Platform Administration                  |  4   |    4    |  4   |   4   |    5    |   5    |  5   |  4.4  |
+| Platform Configuration & Flags           |  4   |    4    |  4   |   5   |    5    |   5    |  5   |  4.6  |
+| Analytics & BI                           |  4   |    4    |  4   |   4   |    5    |   5    |  5   |  4.4  |
+| AI Platform                              |  4   |    4    |  5   |   4   |    5    |   5    |  5   |  4.6  |
+| Marketing Automation                     |  4   |    4    |  4   |   4   |    5    |   5    |  5   |  4.4  |
+| Customer Domain                          |  5   |    4    |  5   |   4   |    4    |   5    |  4   |  4.4  |
+| Product Domain                           |  5   |    4    |  4   |   4   |    5    |   5    |  5   |  4.6  |
+| Inventory Domain                         |  5   |    4    |  4   |   4   |    5    |   5    |  5   |  4.6  |
+| Finance Domain                           |  4   |    4    |  5   |   4   |    4    |   4    |  4   |  4.1  |
+| Payment Domain (MP + split)              |  4   |    4    |  5   |   4   |    4    |   4    |  4   |  4.1  |
+| Order Domain (OrderOrchestrator)         |  5   |    4    |  5   |   4   |    5    |   5    |  5   |  4.7  |
+| Delivery Domain                          |  4   |    4    |  4   |   4   |    4    |   4    |  4   |  4.0  |
+| NotificationCenter                       |  5   |    4    |  5   |   4   |    4    |   5    |  4   |  4.4  |
+| BusinessRulesEngine                      |  5   |    5    |  5   |   5   |    5    |   5    |  5   |  5.0  |
 
 **Média global:** 4.45 / 5.
 
@@ -106,22 +106,22 @@ Escala 0–5 (5 = pronto para produção sem ressalvas).
 
 ## 5. EventBus — mapa consolidado
 
-| Bus | Produtores | Consumidores diretos |
-| --- | --- | --- |
-| CatalogEventBus | CatalogService | (interno) |
-| ProductEventBus | ProductService, ProductLifecycle | Intelligence |
-| PromotionEventBus | Pricing/Promotions | Analytics (planejado) |
-| RecipeEventBus | RecipeService | Cost/Inventory |
-| ProductionEventBus | ProductionService | Inventory |
-| CostEventBus | CostEngine, MarginEngine | Analytics |
-| InventoryEventBus | InventoryService, StockMovementService | Cost |
-| RestaurantSettingsEventBus | Settings | NotificationCenter |
-| PlatformEventBus | TenantAdmin, SupportCenter | Audit |
-| PlatformConfigEventBus | FeatureFlag, KillSwitch, RemoteConfig | Audit |
-| MarketingEventBus | Campaign, Automation, Journey | Analytics (planejado) |
-| AIEventBus | Orchestrator, SafetyLayer | Audit, Usage |
-| IntelligenceEventBus | ProductIntelligence | (interno) |
-| BusinessRules RuleEventBus | RuleExecutor | Audit |
+| Bus                        | Produtores                             | Consumidores diretos  |
+| -------------------------- | -------------------------------------- | --------------------- |
+| CatalogEventBus            | CatalogService                         | (interno)             |
+| ProductEventBus            | ProductService, ProductLifecycle       | Intelligence          |
+| PromotionEventBus          | Pricing/Promotions                     | Analytics (planejado) |
+| RecipeEventBus             | RecipeService                          | Cost/Inventory        |
+| ProductionEventBus         | ProductionService                      | Inventory             |
+| CostEventBus               | CostEngine, MarginEngine               | Analytics             |
+| InventoryEventBus          | InventoryService, StockMovementService | Cost                  |
+| RestaurantSettingsEventBus | Settings                               | NotificationCenter    |
+| PlatformEventBus           | TenantAdmin, SupportCenter             | Audit                 |
+| PlatformConfigEventBus     | FeatureFlag, KillSwitch, RemoteConfig  | Audit                 |
+| MarketingEventBus          | Campaign, Automation, Journey          | Analytics (planejado) |
+| AIEventBus                 | Orchestrator, SafetyLayer              | Audit, Usage          |
+| IntelligenceEventBus       | ProductIntelligence                    | (interno)             |
+| BusinessRules RuleEventBus | RuleExecutor                           | Audit                 |
 
 Nenhum evento órfão (produtor sem tipo declarado) foi encontrado.
 Consumidores planejados de Analytics/Marketing são cobertos pelo Prompt 20.

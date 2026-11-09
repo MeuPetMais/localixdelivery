@@ -71,14 +71,27 @@ export interface PurchasingRepository {
   // suppliers
   listSuppliers(restaurantId: string): Promise<Supplier[]>;
   getSupplier(id: string): Promise<Supplier | null>;
-  upsertSupplier(s: Partial<Supplier> & { name: string; restaurant_id?: string | null }): Promise<Supplier>;
+  upsertSupplier(
+    s: Partial<Supplier> & { name: string; restaurant_id?: string | null },
+  ): Promise<Supplier>;
 
   // supplier products
-  listSupplierProducts(filter: { supplier_id?: string; ingredient_id?: string }): Promise<SupplierProduct[]>;
+  listSupplierProducts(filter: {
+    supplier_id?: string;
+    ingredient_id?: string;
+  }): Promise<SupplierProduct[]>;
 
   // purchase requests
-  createRequest(input: Omit<PurchaseRequest, "id" | "created_at" | "status"> & { status?: PurchaseRequestStatus }): Promise<PurchaseRequest>;
-  updateRequestStatus(id: string, status: PurchaseRequestStatus, actor?: string): Promise<PurchaseRequest>;
+  createRequest(
+    input: Omit<PurchaseRequest, "id" | "created_at" | "status"> & {
+      status?: PurchaseRequestStatus;
+    },
+  ): Promise<PurchaseRequest>;
+  updateRequestStatus(
+    id: string,
+    status: PurchaseRequestStatus,
+    actor?: string,
+  ): Promise<PurchaseRequest>;
   listRequests(restaurantId: string): Promise<PurchaseRequest[]>;
 
   // quotes

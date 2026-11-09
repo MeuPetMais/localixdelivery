@@ -47,21 +47,22 @@ export const getFinancialClosing = createServerFn({ method: "GET" })
     const { from, to } = periodBounds(data.period, { from: data.from, to: data.to });
 
     const [{ data: rows }, { data: driversList }] = await Promise.all([
-      sb.from("delivery_assignments")
-        .select("driver_id, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata")
+      sb
+        .from("delivery_assignments")
+        .select(
+          "driver_id, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata",
+        )
         .eq("restaurant_id", data.restaurantId)
         .eq("status", "ENTREGUE")
         .gte("delivered_at", from.toISOString())
         .lt("delivered_at", to.toISOString()),
-      sb.from("delivery_drivers")
+      sb
+        .from("delivery_drivers")
         .select("id, name, photo_url")
         .eq("restaurant_id", data.restaurantId),
     ]);
 
-    const drivers = aggregateByDriver(
-      (rows ?? []) as DeliveredRow[],
-      (driversList ?? []) as any[],
-    );
+    const drivers = aggregateByDriver((rows ?? []) as DeliveredRow[], (driversList ?? []) as any[]);
 
     return {
       period: data.period,

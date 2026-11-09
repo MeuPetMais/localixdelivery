@@ -27,14 +27,38 @@ afterEach(() => {
 });
 
 const candidates: AudienceCandidate[] = [
-  { customer_id: "c1", segment: "VIP", marketing_consent: true, total_orders: 10, total_spent: 900,
-    channels: { EMAIL: true, PUSH: true, SMS: false, WHATSAPP: true, IN_APP: true } },
-  { customer_id: "c2", segment: "INACTIVE", marketing_consent: true, total_orders: 2, total_spent: 60,
-    channels: { EMAIL: true, PUSH: false, SMS: false, WHATSAPP: false, IN_APP: true } },
-  { customer_id: "c3", segment: "VIP", marketing_consent: false, total_orders: 8, total_spent: 400,
-    channels: { EMAIL: true, PUSH: true, SMS: false, WHATSAPP: true, IN_APP: true } },
-  { customer_id: "c4", segment: "ACTIVE", marketing_consent: true, total_orders: 5, total_spent: 200,
-    channels: { EMAIL: false, PUSH: false, SMS: false, WHATSAPP: false, IN_APP: false } },
+  {
+    customer_id: "c1",
+    segment: "VIP",
+    marketing_consent: true,
+    total_orders: 10,
+    total_spent: 900,
+    channels: { EMAIL: true, PUSH: true, SMS: false, WHATSAPP: true, IN_APP: true },
+  },
+  {
+    customer_id: "c2",
+    segment: "INACTIVE",
+    marketing_consent: true,
+    total_orders: 2,
+    total_spent: 60,
+    channels: { EMAIL: true, PUSH: false, SMS: false, WHATSAPP: false, IN_APP: true },
+  },
+  {
+    customer_id: "c3",
+    segment: "VIP",
+    marketing_consent: false,
+    total_orders: 8,
+    total_spent: 400,
+    channels: { EMAIL: true, PUSH: true, SMS: false, WHATSAPP: true, IN_APP: true },
+  },
+  {
+    customer_id: "c4",
+    segment: "ACTIVE",
+    marketing_consent: true,
+    total_orders: 5,
+    total_spent: 200,
+    channels: { EMAIL: false, PUSH: false, SMS: false, WHATSAPP: false, IN_APP: false },
+  },
 ];
 
 describe("AudienceBuilder", () => {
@@ -69,9 +93,14 @@ describe("AudienceBuilder", () => {
 describe("CampaignService", () => {
   it("creates, launches and completes with lifecycle events", async () => {
     const events: string[] = [];
-    MarketingEventBus.subscribe((e) => { events.push(e.type); });
+    MarketingEventBus.subscribe((e) => {
+      events.push(e.type);
+    });
     const c = await CampaignService.create({
-      restaurant_id: R, name: "VIP push", type: "VIP", channels: ["PUSH", "EMAIL"],
+      restaurant_id: R,
+      name: "VIP push",
+      type: "VIP",
+      channels: ["PUSH", "EMAIL"],
       audience: { segment: "VIP" },
     });
     expect(c.status).toBe("draft");
@@ -79,13 +108,19 @@ describe("CampaignService", () => {
     expect(dispatch.audience_size).toBe(1);
     expect(CampaignService.get(c.id)!.status).toBe("running");
     await CampaignService.complete(c.id);
-    expect(events).toEqual(expect.arrayContaining(["CampaignCreated", "CampaignLaunched", "CampaignCompleted"]));
+    expect(events).toEqual(
+      expect.arrayContaining(["CampaignCreated", "CampaignLaunched", "CampaignCompleted"]),
+    );
   });
 
   it("schedules and cancels", async () => {
     const c = await CampaignService.create({
-      restaurant_id: R, name: "Later", type: "COUPON", channels: ["PUSH"],
-      audience: {}, scheduled_at: new Date(Date.now() + 60_000).toISOString(),
+      restaurant_id: R,
+      name: "Later",
+      type: "COUPON",
+      channels: ["PUSH"],
+      audience: {},
+      scheduled_at: new Date(Date.now() + 60_000).toISOString(),
     });
     expect(c.status).toBe("scheduled");
     expect(CampaignSchedulerService.list(R)).toHaveLength(1);
@@ -95,7 +130,11 @@ describe("CampaignService", () => {
 
   it("rejects invalid transitions", async () => {
     const c = await CampaignService.create({
-      restaurant_id: R, name: "x", type: "COUPON", channels: ["PUSH"], audience: {},
+      restaurant_id: R,
+      name: "x",
+      type: "COUPON",
+      channels: ["PUSH"],
+      audience: {},
     });
     await CampaignService.launch(c.id, candidates);
     await CampaignService.complete(c.id);
@@ -105,8 +144,16 @@ describe("CampaignService", () => {
 
 describe("A/B Testing", () => {
   it("distributes deterministically across variants", () => {
-    const config = { variants: [{ key: "A", weight: 1 }, { key: "B", weight: 1 }] };
-    const groups = ABTestingEngine.distribute(config, Array.from({ length: 200 }, (_, i) => `u${i}`));
+    const config = {
+      variants: [
+        { key: "A", weight: 1 },
+        { key: "B", weight: 1 },
+      ],
+    };
+    const groups = ABTestingEngine.distribute(
+      config,
+      Array.from({ length: 200 }, (_, i) => `u${i}`),
+    );
     expect(groups.A.length + groups.B.length).toBe(200);
     expect(groups.A.length).toBeGreaterThan(50);
     expect(groups.B.length).toBeGreaterThan(50);
@@ -119,11 +166,19 @@ describe("A/B Testing", () => {
 describe("Scheduler", () => {
   it("returns only due jobs", async () => {
     await CampaignService.create({
-      restaurant_id: R, name: "past", type: "COUPON", channels: ["PUSH"], audience: {},
+      restaurant_id: R,
+      name: "past",
+      type: "COUPON",
+      channels: ["PUSH"],
+      audience: {},
       scheduled_at: new Date(Date.now() - 5000).toISOString(),
     });
     await CampaignService.create({
-      restaurant_id: R, name: "future", type: "COUPON", channels: ["PUSH"], audience: {},
+      restaurant_id: R,
+      name: "future",
+      type: "COUPON",
+      channels: ["PUSH"],
+      audience: {},
       scheduled_at: new Date(Date.now() + 60_000).toISOString(),
     });
     expect(CampaignSchedulerService.due(new Date().toISOString())).toHaveLength(1);
@@ -140,8 +195,18 @@ describe("Templates", () => {
 
 describe("AutomationEngine", () => {
   it("fires only active automations for trigger", async () => {
-    const a1 = AutomationEngine.create({ restaurant_id: R, name: "Welcome", trigger: "WELCOME", channels: ["PUSH"] });
-    const a2 = AutomationEngine.create({ restaurant_id: R, name: "Repurchase", trigger: "REPURCHASE", channels: ["PUSH"] });
+    const a1 = AutomationEngine.create({
+      restaurant_id: R,
+      name: "Welcome",
+      trigger: "WELCOME",
+      channels: ["PUSH"],
+    });
+    const a2 = AutomationEngine.create({
+      restaurant_id: R,
+      name: "Repurchase",
+      trigger: "REPURCHASE",
+      channels: ["PUSH"],
+    });
     AutomationEngine.toggle(a2.id, false);
     const fired = await AutomationEngine.fire(R, "WELCOME", "c1");
     expect(fired.map((x) => x.id)).toEqual([a1.id]);
@@ -151,12 +216,18 @@ describe("AutomationEngine", () => {
 describe("JourneyBuilder", () => {
   it("validates step references", () => {
     const j = JourneyBuilder.create({
-      restaurant_id: R, name: "onb", active: true, entry: "s1",
+      restaurant_id: R,
+      name: "onb",
+      active: true,
+      entry: "s1",
       steps: { s1: { id: "s1", next: ["s2"] }, s2: { id: "s2" } },
     });
     expect(JourneyBuilder.validate(j)).toEqual([]);
     const bad = JourneyBuilder.create({
-      restaurant_id: R, name: "bad", active: true, entry: "s1",
+      restaurant_id: R,
+      name: "bad",
+      active: true,
+      entry: "s1",
       steps: { s1: { id: "s1", next: ["s9"] } },
     });
     expect(JourneyBuilder.validate(bad)).not.toEqual([]);
@@ -166,8 +237,14 @@ describe("JourneyBuilder", () => {
 describe("CampaignAnalytics", () => {
   it("computes rates and ROI", () => {
     const m = CampaignAnalyticsService.compute({
-      campaign_id: "c1", audience_size: 100, delivered: 100, opened: 40, clicked: 20, converted: 10,
-      revenue: 500, cost: 100,
+      campaign_id: "c1",
+      audience_size: 100,
+      delivered: 100,
+      opened: 40,
+      clicked: 20,
+      converted: 10,
+      revenue: 500,
+      cost: 100,
     });
     expect(m.open_rate).toBe(40);
     expect(m.click_rate).toBe(20);
@@ -176,8 +253,22 @@ describe("CampaignAnalytics", () => {
   });
 
   it("aggregates multiple campaigns", () => {
-    const a = CampaignAnalyticsService.compute({ campaign_id: "a", audience_size: 100, delivered: 100, opened: 20, revenue: 100, cost: 50 });
-    const b = CampaignAnalyticsService.compute({ campaign_id: "b", audience_size: 200, delivered: 200, opened: 60, revenue: 300, cost: 100 });
+    const a = CampaignAnalyticsService.compute({
+      campaign_id: "a",
+      audience_size: 100,
+      delivered: 100,
+      opened: 20,
+      revenue: 100,
+      cost: 50,
+    });
+    const b = CampaignAnalyticsService.compute({
+      campaign_id: "b",
+      audience_size: 200,
+      delivered: 200,
+      opened: 60,
+      revenue: 300,
+      cost: 100,
+    });
     const agg = CampaignAnalyticsService.aggregate([a, b]);
     expect(agg.campaigns).toBe(2);
     expect(agg.revenue).toBe(400);
@@ -188,11 +279,17 @@ describe("CampaignAnalytics", () => {
 describe("MarketingAudit", () => {
   it("records immutable entries scoped by tenant", async () => {
     await CampaignService.create({
-      restaurant_id: R, name: "a", type: "COUPON", channels: ["PUSH"], audience: {},
+      restaurant_id: R,
+      name: "a",
+      type: "COUPON",
+      channels: ["PUSH"],
+      audience: {},
     });
     const rows = MarketingAudit.list(R);
     expect(rows.length).toBeGreaterThan(0);
-    expect(() => { (rows[0] as any).action = "hacked"; }).toThrow();
+    expect(() => {
+      (rows[0] as any).action = "hacked";
+    }).toThrow();
   });
 });
 

@@ -13,9 +13,8 @@ export const CustomerScoreService = {
     ctx: { loyaltyPoints?: number; loyaltyLevelRank?: number; engagementSignals?: number } = {},
   ): CustomerScore {
     // Recency: 100 if <=3d, 0 if >=90d
-    const recency = a.days_since_last_order >= 90
-      ? 0
-      : clamp(100 - (a.days_since_last_order / 90) * 100);
+    const recency =
+      a.days_since_last_order >= 90 ? 0 : clamp(100 - (a.days_since_last_order / 90) * 100);
 
     // Frequency: 100 at >=8 orders/month
     const frequency = clamp((a.frequency_per_month / 8) * 100);
@@ -40,11 +39,11 @@ export const CustomerScoreService = {
     };
 
     const health_score = Math.round(
-      breakdown.recency * 0.30 +
-      breakdown.frequency * 0.25 +
-      breakdown.monetary * 0.25 +
-      breakdown.loyalty * 0.15 +
-      breakdown.engagement * 0.05,
+      breakdown.recency * 0.3 +
+        breakdown.frequency * 0.25 +
+        breakdown.monetary * 0.25 +
+        breakdown.loyalty * 0.15 +
+        breakdown.engagement * 0.05,
     );
 
     return {

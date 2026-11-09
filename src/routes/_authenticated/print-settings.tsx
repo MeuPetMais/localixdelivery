@@ -34,7 +34,11 @@ const PAPER_OPTIONS: Array<{ v: PaperSize; label: string; hint: string }> = [
 function PrintSettingsPage() {
   const [paper, setPaper] = useState<PaperSize>("80mm");
   const [auto, setAuto] = useState(false);
-  const [copies, setCopies] = useState<AutoCopies>({ kitchen: true, delivery: false, customer: false });
+  const [copies, setCopies] = useState<AutoCopies>({
+    kitchen: true,
+    delivery: false,
+    customer: false,
+  });
 
   useEffect(() => {
     setPaper(getPaperSize());
@@ -144,7 +148,9 @@ function PrintSettingsPage() {
             />
             <div>
               <div className="font-medium">Cozinha</div>
-              <div className="text-xs text-muted-foreground">Comanda sem preços, com opções e observações.</div>
+              <div className="text-xs text-muted-foreground">
+                Comanda sem preços, com opções e observações.
+              </div>
             </div>
           </label>
           <label className="flex items-center gap-3">
@@ -157,7 +163,9 @@ function PrintSettingsPage() {
             />
             <div>
               <div className="font-medium">Entrega</div>
-              <div className="text-xs text-muted-foreground">Cupom completo para o entregador levar junto ao pedido.</div>
+              <div className="text-xs text-muted-foreground">
+                Cupom completo para o entregador levar junto ao pedido.
+              </div>
             </div>
           </label>
           <label className="flex items-center gap-3">
@@ -170,7 +178,9 @@ function PrintSettingsPage() {
             />
             <div>
               <div className="font-medium">Cliente</div>
-              <div className="text-xs text-muted-foreground">Via para o cliente acompanhar / conferir.</div>
+              <div className="text-xs text-muted-foreground">
+                Via para o cliente acompanhar / conferir.
+              </div>
             </div>
           </label>
         </div>
@@ -180,7 +190,9 @@ function PrintSettingsPage() {
         <div className="flex items-center gap-2">
           <TestTube2 className="h-4 w-4 text-primary" />
           <h2 className="font-semibold">Teste de impressão</h2>
-          <Badge variant="outline" className="ml-auto">{paper.toUpperCase()}</Badge>
+          <Badge variant="outline" className="ml-auto">
+            {paper.toUpperCase()}
+          </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           Imprima um pedido de exemplo para validar o layout no seu papel.
@@ -189,9 +201,7 @@ function PrintSettingsPage() {
           <Button variant="outline" onClick={() => testPrint("kitchen")}>
             🍳 Testar Comanda da Cozinha
           </Button>
-          <Button onClick={() => testPrint("customer")}>
-            🧾 Testar Cupom do Cliente
-          </Button>
+          <Button onClick={() => testPrint("customer")}>🧾 Testar Cupom do Cliente</Button>
         </div>
       </Card>
 

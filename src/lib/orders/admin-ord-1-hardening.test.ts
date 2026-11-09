@@ -65,7 +65,9 @@ describe("ADMIN-ORD-1 order transition hardening", () => {
     expect(migrationSql).toContain("REVOKE UPDATE (");
     expect(migrationSql).toContain("status,");
     expect(migrationSql).not.toMatch(/GRANT\s+UPDATE\s*\([^)]*\bstatus\b/i);
-    expect(migrationSql).not.toMatch(/GRANT\s+UPDATE\s+ON\s+public\.orders\s+TO\s+(anon|authenticated)/i);
+    expect(migrationSql).not.toMatch(
+      /GRANT\s+UPDATE\s+ON\s+public\.orders\s+TO\s+(anon|authenticated)/i,
+    );
     expect(migrationSql).toContain("GRANT ALL ON public.orders TO service_role");
   });
 
@@ -80,6 +82,6 @@ describe("ADMIN-ORD-1 order transition hardening", () => {
     expect(transitionFnSource).toContain("applyAtomic");
     expect(transitionFnSource).toContain('rpc("order_apply_transition"');
     expect(transitionFnSource).not.toContain(".update({ status: next })");
-    expect(transitionFnSource).not.toContain(".from(\"order_status_history\")");
+    expect(transitionFnSource).not.toContain('.from("order_status_history")');
   });
 });

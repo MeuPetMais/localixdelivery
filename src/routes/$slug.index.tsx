@@ -468,7 +468,9 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (activeCat) return;
-    const firstRoot = (data?.categories ?? []).find((category: any) => !category.parent_category_id);
+    const firstRoot = (data?.categories ?? []).find(
+      (category: any) => !category.parent_category_id,
+    );
     if (firstRoot?.id) setActiveCat(firstRoot.id);
   }, [data, activeCat]);
 
@@ -1372,7 +1374,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                   subcategories,
                   totalCount:
                     directItems.length +
-                    subcategories.reduce((total, group) => total + group.subcategoryItems.length, 0),
+                    subcategories.reduce(
+                      (total, group) => total + group.subcategoryItems.length,
+                      0,
+                    ),
                 };
               })
               .filter(({ totalCount }) => totalCount > 0);
@@ -1465,10 +1470,7 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                       disabled={!effectiveOpen}
                       onClick={(event) => {
                         event.stopPropagation();
-                        quickAddOrConfigure(
-                          it,
-                          Number(hasPromo ? it.promo_price : it.price),
-                        );
+                        quickAddOrConfigure(it, Number(hasPromo ? it.promo_price : it.price));
                       }}
                     >
                       <Plus className="h-4 w-4" />
@@ -1497,7 +1499,10 @@ export function PublicMenuScreen({ slug }: { slug: string }) {
                           />
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
                           <div className="localix-category-steam" aria-hidden="true" />
-                          <div className="localix-category-steam localix-category-steam-alt" aria-hidden="true" />
+                          <div
+                            className="localix-category-steam localix-category-steam-alt"
+                            aria-hidden="true"
+                          />
                           <div className="localix-category-light-sweep" />
                           <span className="localix-category-badge absolute left-3 top-3 rounded-full border border-white/35 bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
                             Em destaque

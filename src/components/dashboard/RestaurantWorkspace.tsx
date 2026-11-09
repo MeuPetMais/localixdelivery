@@ -1,4 +1,9 @@
-import { filterWorkspaces, WORKSPACES, type DashboardRole, type WorkspaceId } from "@/lib/dashboard";
+import {
+  filterWorkspaces,
+  WORKSPACES,
+  type DashboardRole,
+  type WorkspaceId,
+} from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
 
 interface Props {

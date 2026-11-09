@@ -3,14 +3,75 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const DEMO_SLUG = "demo";
 
-const FIRST_NAMES = ["Ana", "Bruno", "Carla", "Diego", "Eduarda", "Felipe", "Gabriela", "Henrique", "Isabela", "João", "Karina", "Lucas", "Mariana", "Nicolas", "Olívia", "Pedro", "Renata", "Rafael", "Sofia", "Thiago"];
-const LAST_NAMES = ["Silva", "Souza", "Oliveira", "Costa", "Ferreira", "Almeida", "Pereira", "Lima", "Carvalho", "Ribeiro", "Gomes", "Martins"];
-const STREETS = ["Rua das Flores", "Av. Brasil", "Rua das Acácias", "Av. Paulista", "Rua Augusta", "Rua dos Pinheiros", "Av. Atlântica", "Rua do Comércio"];
-const PAYMENTS = ["Pix", "Dinheiro", "Cartão de Crédito (na entrega)", "Cartão de Débito (na entrega)"];
-const NOTES = ["Sem cebola, por favor", "Capricha no molho!", "Tocar interfone duas vezes", "Entregar na portaria", "Ponto da carne ao ponto", "", "", ""];
+const FIRST_NAMES = [
+  "Ana",
+  "Bruno",
+  "Carla",
+  "Diego",
+  "Eduarda",
+  "Felipe",
+  "Gabriela",
+  "Henrique",
+  "Isabela",
+  "João",
+  "Karina",
+  "Lucas",
+  "Mariana",
+  "Nicolas",
+  "Olívia",
+  "Pedro",
+  "Renata",
+  "Rafael",
+  "Sofia",
+  "Thiago",
+];
+const LAST_NAMES = [
+  "Silva",
+  "Souza",
+  "Oliveira",
+  "Costa",
+  "Ferreira",
+  "Almeida",
+  "Pereira",
+  "Lima",
+  "Carvalho",
+  "Ribeiro",
+  "Gomes",
+  "Martins",
+];
+const STREETS = [
+  "Rua das Flores",
+  "Av. Brasil",
+  "Rua das Acácias",
+  "Av. Paulista",
+  "Rua Augusta",
+  "Rua dos Pinheiros",
+  "Av. Atlântica",
+  "Rua do Comércio",
+];
+const PAYMENTS = [
+  "Pix",
+  "Dinheiro",
+  "Cartão de Crédito (na entrega)",
+  "Cartão de Débito (na entrega)",
+];
+const NOTES = [
+  "Sem cebola, por favor",
+  "Capricha no molho!",
+  "Tocar interfone duas vezes",
+  "Entregar na portaria",
+  "Ponto da carne ao ponto",
+  "",
+  "",
+  "",
+];
 
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
-function randInt(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 export const createDemoOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -90,4 +151,3 @@ export const resetDemoEnvironment = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return data;
   });
-

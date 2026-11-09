@@ -62,7 +62,11 @@ describe("OrderStateMachine", () => {
 describe("TransitionValidator", () => {
   it("rejeita mesmo estado", () => {
     expect(
-      TransitionValidator.validate({ from: "em_preparo", to: "em_preparo", actorType: "restaurant" }).reason,
+      TransitionValidator.validate({
+        from: "em_preparo",
+        to: "em_preparo",
+        actorType: "restaurant",
+      }).reason,
     ).toBe("SAME_STATE");
   });
   it("rejeita transição inválida", () => {
@@ -72,12 +76,14 @@ describe("TransitionValidator", () => {
   });
   it("rejeita ator sem permissão", () => {
     expect(
-      TransitionValidator.validate({ from: "em_preparo", to: "pronto", actorType: "customer" }).reason,
+      TransitionValidator.validate({ from: "em_preparo", to: "pronto", actorType: "customer" })
+        .reason,
     ).toBe("FORBIDDEN_ACTOR");
   });
   it("aceita transição válida com ator permitido", () => {
     expect(
-      TransitionValidator.validate({ from: "em_preparo", to: "pronto", actorType: "restaurant" }).ok,
+      TransitionValidator.validate({ from: "em_preparo", to: "pronto", actorType: "restaurant" })
+        .ok,
     ).toBe(true);
   });
 });
@@ -141,11 +147,15 @@ describe("OrderOrchestrator.transition", () => {
 
   it("EventBus recebe eventos externos quando publish default", async () => {
     const seen: string[] = [];
-    OrderEventBus.subscribe((n) => { seen.push(n); });
+    OrderEventBus.subscribe((n) => {
+      seen.push(n);
+    });
     const order: OrderSnapshot = { id: "o1", restaurant_id: "r1", status: "novo" };
     const orch = createOrchestrator({
       getOrder: async () => order,
-      updateOrderStatus: async (_i, s) => { order.status = s; },
+      updateOrderStatus: async (_i, s) => {
+        order.status = s;
+      },
       insertHistory: async () => {},
     });
     await orch.transition({ orderId: "o1", to: "aguardando_pagamento", audit });
@@ -156,8 +166,28 @@ describe("OrderOrchestrator.transition", () => {
 describe("OrderTimelineService", () => {
   it("ordena por data e traduz labels", () => {
     const rows = [
-      { id: "a", order_id: "o1", previous_status: "novo", current_status: "aguardando_pagamento", reason: null, performed_by: null, performed_by_type: "system", metadata: {}, created_at: "2025-01-01T11:33:00Z" },
-      { id: "b", order_id: "o1", previous_status: null, current_status: "novo", reason: null, performed_by: null, performed_by_type: "system", metadata: {}, created_at: "2025-01-01T11:32:00Z" },
+      {
+        id: "a",
+        order_id: "o1",
+        previous_status: "novo",
+        current_status: "aguardando_pagamento",
+        reason: null,
+        performed_by: null,
+        performed_by_type: "system",
+        metadata: {},
+        created_at: "2025-01-01T11:33:00Z",
+      },
+      {
+        id: "b",
+        order_id: "o1",
+        previous_status: null,
+        current_status: "novo",
+        reason: null,
+        performed_by: null,
+        performed_by_type: "system",
+        metadata: {},
+        created_at: "2025-01-01T11:32:00Z",
+      },
     ] as any;
     const tl = OrderTimelineService.build(rows);
     expect(tl[0].label).toBe("Pedido criado");

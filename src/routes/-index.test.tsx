@@ -33,13 +33,7 @@ describe("public landing delivery operation section", () => {
   });
 
   it("shows the expected delivery timeline steps", () => {
-    for (const step of [
-      "Pedido recebido",
-      "Em preparação",
-      "Entregador",
-      "Em rota",
-      "Entregue",
-    ]) {
+    for (const step of ["Pedido recebido", "Em preparação", "Entregador", "Em rota", "Entregue"]) {
       expect(landingSource).toContain(step);
     }
   });

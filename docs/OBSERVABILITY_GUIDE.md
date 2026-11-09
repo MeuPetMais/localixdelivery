@@ -5,15 +5,15 @@ impacto mínimo em performance (buffers circulares, agregação sob demanda).
 
 ## Componentes
 
-| Center | Papel |
-| --- | --- |
-| `LoggingCenter` | Logs padronizados (`info`/`warning`/`error`/`critical`) sanitizados via `@/lib/security`. |
-| `MetricsCenter` | Contadores/timings em janela de 60s (`request`, `error`, `response_ms`, `edge_function_ms`, `job_executed`, `queue_pending`). |
-| `AuditCenter` | Auditoria unificada por categoria (`login`, `admin`, `financial`, `settings`, `ai`, `marketing`, `feature_flag`, `operations`). |
-| `HealthCenter` | Registro/report de componentes (`database`, `edge_function`, `api`, `event_bus`, `worker`, `job`, `cache`, `queue`, `service`). |
-| `AlertCenter` / `IncidentCenter` | Estrutura para alertas e incidentes (open → mitigated → closed). |
-| `DiagnosticsCenter` | Módulos, dependências e última sincronização. |
-| `OperationsDashboard` | Snapshot consolidado para o painel operacional. |
+| Center                           | Papel                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `LoggingCenter`                  | Logs padronizados (`info`/`warning`/`error`/`critical`) sanitizados via `@/lib/security`.                                       |
+| `MetricsCenter`                  | Contadores/timings em janela de 60s (`request`, `error`, `response_ms`, `edge_function_ms`, `job_executed`, `queue_pending`).   |
+| `AuditCenter`                    | Auditoria unificada por categoria (`login`, `admin`, `financial`, `settings`, `ai`, `marketing`, `feature_flag`, `operations`). |
+| `HealthCenter`                   | Registro/report de componentes (`database`, `edge_function`, `api`, `event_bus`, `worker`, `job`, `cache`, `queue`, `service`). |
+| `AlertCenter` / `IncidentCenter` | Estrutura para alertas e incidentes (open → mitigated → closed).                                                                |
+| `DiagnosticsCenter`              | Módulos, dependências e última sincronização.                                                                                   |
+| `OperationsDashboard`            | Snapshot consolidado para o painel operacional.                                                                                 |
 
 ## Regras
 

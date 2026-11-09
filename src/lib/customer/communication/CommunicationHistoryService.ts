@@ -30,7 +30,10 @@ export const CommunicationHistoryService = {
     return (data ?? row) as CommunicationHistoryEntry;
   },
 
-  async list(customerId: string, filter: CommunicationHistoryFilter = {}): Promise<CommunicationHistoryEntry[]> {
+  async list(
+    customerId: string,
+    filter: CommunicationHistoryFilter = {},
+  ): Promise<CommunicationHistoryEntry[]> {
     let q = T().select("*").eq("customer_id", customerId).order("created_at", { ascending: false });
     if (filter.channel) q = q.eq("channel", filter.channel);
     if (filter.status) q = q.eq("status", filter.status);

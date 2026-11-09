@@ -48,22 +48,27 @@ próprio slug, cardápio, pedidos, motoboys e financeiro.
 ## Releases Concluídas
 
 ### RC1 — Arquitetura Base
+
 - **Status:** ✅ Concluído
 - Multi-tenant, RLS, autenticação, base de domínios.
 
 ### RC2 — Payment Domain
+
 - **Status:** ✅ Concluído
 - Pricing Engine, Ledger append-only, Split, Stripe Connect Express.
 
 ### RC3 — Checkout
+
 - **Status:** ✅ Concluído
 - OrderService, Checkout Unificado (Stripe + PIX + Cash + MP).
 
 ### RC4 — Order Domain
+
 - **Status:** ✅ Concluído
 - State Machine, Timeline, Audit, EventBus, Kanban, Webhook idempotente.
 
 ### RC5.1 — Delivery Drivers
+
 - **Status:** ✅ Concluído
 - Auth, Realtime, RLS hardening (RC5.1.3), Audit, presença.
 
@@ -72,6 +77,7 @@ próprio slug, cardápio, pedidos, motoboys e financeiro.
 ## Em Desenvolvimento
 
 ### RC5.2 — Delivery Assignment
+
 - **Status:** 🟡 Em andamento
 - Planejamento, Arquitetura, Assignment, Delivery State Machine,
   Delivery Timeline, DeliveryOrchestrator.
@@ -81,18 +87,23 @@ próprio slug, cardápio, pedidos, motoboys e financeiro.
 ## Próximas Releases
 
 ### RC5.3 — Tracking
+
 Localização em tempo real (cliente, motoboy, restaurante), Realtime.
 
 ### RC5.4 — Delivery Operations
+
 Notificações operacionais, painéis de operação, gestão de fila.
 
 ### RC6 — Financeiro Operacional
+
 Repasses, extratos, conciliação Stripe ↔ Ledger, saques.
 
 ### RC7 — Inteligência Artificial
+
 Atendimento assistido, automações, insights, recomendações.
 
 ### RC8 — Observabilidade
+
 Logs estruturados, tracing, health check, performance, alertas proativos.
 
 ---
@@ -152,19 +163,19 @@ Produção
 
 ## Métricas
 
-| Release | Status         | Data        | Responsável | Certificação |
-|---------|----------------|-------------|-------------|--------------|
-| RC1     | ✅ Concluído   | 2026-05     | Localix     | Aprovada     |
-| RC2     | ✅ Concluído   | 2026-05     | Localix     | Aprovada     |
-| RC3     | ✅ Concluído   | 2026-06     | Localix     | Aprovada     |
-| RC4     | ✅ Concluído   | 2026-06     | Localix     | Aprovada     |
-| RC5.1   | ✅ Concluído   | 2026-07-09  | Localix     | Aprovada     |
-| RC5.2   | 🟡 Em andamento| —           | Localix     | Pendente     |
-| RC5.3   | ⏳ Planejada   | —           | Localix     | Pendente     |
-| RC5.4   | ⏳ Planejada   | —           | Localix     | Pendente     |
-| RC6     | ⏳ Planejada   | —           | Localix     | Pendente     |
-| RC7     | ⏳ Planejada   | —           | Localix     | Pendente     |
-| RC8     | ⏳ Planejada   | —           | Localix     | Pendente     |
+| Release | Status          | Data       | Responsável | Certificação |
+| ------- | --------------- | ---------- | ----------- | ------------ |
+| RC1     | ✅ Concluído    | 2026-05    | Localix     | Aprovada     |
+| RC2     | ✅ Concluído    | 2026-05    | Localix     | Aprovada     |
+| RC3     | ✅ Concluído    | 2026-06    | Localix     | Aprovada     |
+| RC4     | ✅ Concluído    | 2026-06    | Localix     | Aprovada     |
+| RC5.1   | ✅ Concluído    | 2026-07-09 | Localix     | Aprovada     |
+| RC5.2   | 🟡 Em andamento | —          | Localix     | Pendente     |
+| RC5.3   | ⏳ Planejada    | —          | Localix     | Pendente     |
+| RC5.4   | ⏳ Planejada    | —          | Localix     | Pendente     |
+| RC6     | ⏳ Planejada    | —          | Localix     | Pendente     |
+| RC7     | ⏳ Planejada    | —          | Localix     | Pendente     |
+| RC8     | ⏳ Planejada    | —          | Localix     | Pendente     |
 
 ---
 
@@ -207,9 +218,9 @@ Produção
 
 ## Histórico de Revisões
 
-| Versão | Data       | Autor    | Mudanças                              |
-|--------|------------|----------|---------------------------------------|
-| 1.0    | 2026-07-10 | Localix  | Criação do roadmap oficial da plataforma. |
+| Versão | Data       | Autor   | Mudanças                                  |
+| ------ | ---------- | ------- | ----------------------------------------- |
+| 1.0    | 2026-07-10 | Localix | Criação do roadmap oficial da plataforma. |
 
 ---
 

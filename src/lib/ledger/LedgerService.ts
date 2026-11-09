@@ -71,7 +71,9 @@ export interface BalanceSummary {
 // ------------- Núcleo puro (testável) -------------
 // Regras de sinal para cálculo de saldo do restaurante.
 // Positivo => entra para o restaurante; Negativo => sai.
-export function signedAmount(entry: Pick<LedgerEntry, "transaction_type" | "amount" | "status">): number {
+export function signedAmount(
+  entry: Pick<LedgerEntry, "transaction_type" | "amount" | "status">,
+): number {
   if (entry.status !== "COMPLETED") return 0;
   const a = Number(entry.amount) || 0;
   switch (entry.transaction_type) {
@@ -128,15 +130,23 @@ const recordSchema = z.object({
   customerId: z.string().uuid().nullable().optional(),
   provider: z.string().nullable().optional(),
   transactionType: z.enum([
-    "ORDER_CREATED","PAYMENT_PENDING","PAYMENT_APPROVED","PAYMENT_FAILED",
-    "PLATFORM_FEE","GATEWAY_FEE","RESTAURANT_RECEIVABLE",
-    "REFUND","CHARGEBACK","PAYOUT","ADJUSTMENT",
+    "ORDER_CREATED",
+    "PAYMENT_PENDING",
+    "PAYMENT_APPROVED",
+    "PAYMENT_FAILED",
+    "PLATFORM_FEE",
+    "GATEWAY_FEE",
+    "RESTAURANT_RECEIVABLE",
+    "REFUND",
+    "CHARGEBACK",
+    "PAYOUT",
+    "ADJUSTMENT",
   ]),
   referenceType: z.string().nullable().optional(),
   referenceId: z.string().nullable().optional(),
   amount: z.number().finite(),
   currency: z.string().default("BRL"),
-  status: z.enum(["PENDING","COMPLETED","FAILED","CANCELLED"]).default("COMPLETED"),
+  status: z.enum(["PENDING", "COMPLETED", "FAILED", "CANCELLED"]).default("COMPLETED"),
   description: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.any()).default({}),
 });
@@ -189,12 +199,14 @@ export const getOrderLedger = createServerFn({ method: "POST" })
 export const getRestaurantStatement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      restaurantId: z.string().uuid(),
-      from: z.string().datetime().optional(),
-      to: z.string().datetime().optional(),
-      limit: z.number().int().min(1).max(500).default(200),
-    }).parse(d),
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        from: z.string().datetime().optional(),
+        to: z.string().datetime().optional(),
+        limit: z.number().int().min(1).max(500).default(200),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     let q = context.supabase

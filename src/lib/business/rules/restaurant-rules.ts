@@ -11,7 +11,12 @@ export const RULE_RESTAURANT_CAPACITY: BusinessRule = {
     const max = ctx.restaurant?.max_concurrent_orders;
     const cur = ctx.restaurant?.current_open_orders ?? 0;
     if (max != null && cur >= max) {
-      return { allowed: false, rule_code: "RESTAURANT_CAPACITY", severity: "warning", reason: "Restaurante em capacidade máxima." };
+      return {
+        allowed: false,
+        rule_code: "RESTAURANT_CAPACITY",
+        severity: "warning",
+        reason: "Restaurante em capacidade máxima.",
+      };
     }
     return { allowed: true, rule_code: "RESTAURANT_CAPACITY", severity: "info" };
   },

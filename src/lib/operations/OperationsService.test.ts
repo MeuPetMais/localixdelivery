@@ -15,22 +15,43 @@ const NOW = new Date("2026-07-03T12:00:00Z").getTime();
 
 function card(overrides: Partial<OperationsOrderCard> = {}): OperationsOrderCard {
   return {
-    id: overrides.id ?? "o1", number: "#001", customerName: "Ana",
-    customerPhone: "11999", itemsSummary: "1x Pizza", itemsCount: 1,
-    total: 50, paymentMethod: "PIX", paymentApproved: true,
+    id: overrides.id ?? "o1",
+    number: "#001",
+    customerName: "Ana",
+    customerPhone: "11999",
+    itemsSummary: "1x Pizza",
+    itemsCount: 1,
+    total: 50,
+    paymentMethod: "PIX",
+    paymentApproved: true,
     createdAt: new Date(NOW - 10 * 60000).toISOString(),
-    status: "novo", deliveryMode: "DELIVERY", priority: "NORMAL",
+    status: "novo",
+    deliveryMode: "DELIVERY",
+    priority: "NORMAL",
     ...overrides,
   };
 }
 
 describe("Operations Center", () => {
-  beforeEach(() => { OrderEventBus._reset(); KitchenSounds.disable(); });
+  beforeEach(() => {
+    OrderEventBus._reset();
+    KitchenSounds.disable();
+  });
 
   it("classifies priority by age/eta", () => {
-    expect(classifyPriority({ createdAt: new Date(NOW - 2 * 60000).toISOString(), now: NOW })).toBe("LOW");
-    expect(classifyPriority({ createdAt: new Date(NOW - 45 * 60000).toISOString(), now: NOW })).toBe("URGENT");
-    expect(classifyPriority({ createdAt: new Date(NOW - 15 * 60000).toISOString(), etaMinutes: 30, now: NOW })).toBe("NORMAL");
+    expect(classifyPriority({ createdAt: new Date(NOW - 2 * 60000).toISOString(), now: NOW })).toBe(
+      "LOW",
+    );
+    expect(
+      classifyPriority({ createdAt: new Date(NOW - 45 * 60000).toISOString(), now: NOW }),
+    ).toBe("URGENT");
+    expect(
+      classifyPriority({
+        createdAt: new Date(NOW - 15 * 60000).toISOString(),
+        etaMinutes: 30,
+        now: NOW,
+      }),
+    ).toBe("NORMAL");
   });
 
   it("applies priority to cards", () => {
@@ -39,10 +60,22 @@ describe("Operations Center", () => {
   });
 
   it("builds alerts for late/payment/closed", () => {
-    const alerts = buildAlerts([
-      card({ id: "a", status: "aguardando_pagamento", paymentApproved: false, createdAt: new Date(NOW - 15 * 60000).toISOString() }),
-      card({ id: "b", status: "em_preparo", createdAt: new Date(NOW - 40 * 60000).toISOString() }),
-    ], { now: NOW, restaurantOpen: false });
+    const alerts = buildAlerts(
+      [
+        card({
+          id: "a",
+          status: "aguardando_pagamento",
+          paymentApproved: false,
+          createdAt: new Date(NOW - 15 * 60000).toISOString(),
+        }),
+        card({
+          id: "b",
+          status: "em_preparo",
+          createdAt: new Date(NOW - 40 * 60000).toISOString(),
+        }),
+      ],
+      { now: NOW, restaurantOpen: false },
+    );
     expect(alerts.find((a) => a.type === "RESTAURANT_CLOSED")).toBeTruthy();
     expect(alerts.find((a) => a.type === "PAYMENT_PENDING")).toBeTruthy();
     expect(alerts.find((a) => a.type === "LATE_ORDER")).toBeTruthy();
@@ -55,16 +88,21 @@ describe("Operations Center", () => {
       card({ id: "3", status: "entregue", createdAt: new Date(NOW - 10 * 60000).toISOString() }),
     ];
     const c = computeCounters(cards, NOW);
-    expect(c.new).toBe(1); expect(c.preparing).toBe(1); expect(c.completedToday).toBe(1);
+    expect(c.new).toBe(1);
+    expect(c.preparing).toBe(1);
+    expect(c.completedToday).toBe(1);
     const m = computeMetrics(cards, [], NOW);
     expect(m.cancellations).toBe(0);
   });
 
   it("filters by search/customer/priority", () => {
-    const cards = withPriority([
-      card({ id: "1", customerName: "Ana", createdAt: new Date(NOW - 40 * 60000).toISOString() }),
-      card({ id: "2", customerName: "Bruno" }),
-    ], NOW);
+    const cards = withPriority(
+      [
+        card({ id: "1", customerName: "Ana", createdAt: new Date(NOW - 40 * 60000).toISOString() }),
+        card({ id: "2", customerName: "Bruno" }),
+      ],
+      NOW,
+    );
     expect(applyFilters(cards, { search: "ana" }, NOW)).toHaveLength(1);
     expect(applyFilters(cards, { priority: "URGENT" }, NOW)).toHaveLength(1);
   });
@@ -82,21 +120,28 @@ describe("Operations Center", () => {
     const audit = vi.fn();
     const svc = createOperationsService({ orchestrator: { transition }, audit });
     await svc.perform({ action: "ACCEPT", orderId: "o1", role: "ATTENDANT", actorId: "u1" });
-    expect(transition).toHaveBeenCalledWith(expect.objectContaining({ orderId: "o1", to: "aceito" }));
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({ action: "ACCEPT", role: "ATTENDANT" }));
+    expect(transition).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: "o1", to: "aceito" }),
+    );
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "ACCEPT", role: "ATTENDANT" }),
+    );
   });
 
   it("perform rejects unauthorized actions", async () => {
     const svc = createOperationsService({ orchestrator: { transition: vi.fn() } });
-    await expect(svc.perform({ action: "CANCEL", orderId: "o1", role: "KITCHEN" })).rejects.toThrow();
+    await expect(
+      svc.perform({ action: "CANCEL", orderId: "o1", role: "KITCHEN" }),
+    ).rejects.toThrow();
   });
 
   it("buildBoard groups cards into columns", () => {
     const svc = createOperationsService({ orchestrator: { transition: vi.fn() } });
-    const board = svc.buildBoard([
-      card({ id: "1", status: "novo" }),
-      card({ id: "2", status: "em_preparo" }),
-    ], {}, NOW);
+    const board = svc.buildBoard(
+      [card({ id: "1", status: "novo" }), card({ id: "2", status: "em_preparo" })],
+      {},
+      NOW,
+    );
     expect(board.columns.find((c) => c.id === "NEW")?.cards).toHaveLength(1);
     expect(board.columns.find((c) => c.id === "PREPARING")?.cards).toHaveLength(1);
   });
@@ -115,8 +160,15 @@ describe("Operations Center", () => {
     const seen: unknown[] = [];
     const off = OperationsRealtime.subscribe((e) => seen.push(e));
     await OrderEventBus.publish("RestaurantAccepted", {
-      orderId: "o9", restaurantId: "r1", previousState: "novo", currentState: "aceito",
-      performedByType: "STAFF", performedBy: null, reason: null, metadata: {}, occurredAt: new Date().toISOString(),
+      orderId: "o9",
+      restaurantId: "r1",
+      previousState: "novo",
+      currentState: "aceito",
+      performedByType: "STAFF",
+      performedBy: null,
+      reason: null,
+      metadata: {},
+      occurredAt: new Date().toISOString(),
     } as never);
     off();
     expect(seen).toHaveLength(1);

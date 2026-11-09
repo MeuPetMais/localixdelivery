@@ -20,7 +20,9 @@ const TRANSITIONS: Record<ProductLifecycleStatus, ProductLifecycleStatus[]> = {
 
 export const ProductLifecycle = {
   /** Compute lifecycle status from the raw menu_items row flags. */
-  fromRecord(p: Pick<ProductRecord, "is_active" | "is_paused" | "promo_starts_at" | "promo_ends_at">): ProductLifecycleStatus {
+  fromRecord(
+    p: Pick<ProductRecord, "is_active" | "is_paused" | "promo_starts_at" | "promo_ends_at">,
+  ): ProductLifecycleStatus {
     if (!p.is_active) return "ARCHIVED";
     if (p.is_paused) return "PAUSED";
     const now = Date.now();

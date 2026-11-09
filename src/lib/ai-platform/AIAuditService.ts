@@ -15,8 +15,13 @@ function hash(input: string): string {
 export const AIAuditService = {
   hash,
   record(input: {
-    restaurant_id: string; actor_id?: string; skill: AISkillKey;
-    prompt_id?: string; prompt: string; response: string; metadata?: Record<string, unknown>;
+    restaurant_id: string;
+    actor_id?: string;
+    skill: AISkillKey;
+    prompt_id?: string;
+    prompt: string;
+    response: string;
+    metadata?: Record<string, unknown>;
   }): AIAuditEntry {
     const entry: AIAuditEntry = {
       id: `aia_${++seq}`,
@@ -35,5 +40,8 @@ export const AIAuditService = {
   list(restaurantId?: string): AIAuditEntry[] {
     return restaurantId ? log.filter((e) => e.restaurant_id === restaurantId) : [...log];
   },
-  clear() { log.length = 0; seq = 0; },
+  clear() {
+    log.length = 0;
+    seq = 0;
+  },
 } as const;

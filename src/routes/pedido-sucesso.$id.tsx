@@ -6,16 +6,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPublicOrderById, cancelOrderByCustomer } from "@/lib/public-orders.functions";
 import { getPaymentIntentStatus } from "@/lib/payments/PaymentIntentService";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getMyLoyaltyHistory, getMyLoyaltyForRestaurant } from "@/lib/loyalty.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/format";
 import {
-  CheckCircle2, Clock, CreditCard, Loader2, MapPin, Store, Gift,
-  MessageCircle, Share2, ChefHat, Bike, PackageCheck, Copy, Star, Sparkles,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  Loader2,
+  MapPin,
+  Store,
+  Gift,
+  MessageCircle,
+  Share2,
+  ChefHat,
+  Bike,
+  PackageCheck,
+  Copy,
+  Star,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
@@ -41,7 +60,22 @@ function statusIndex(status: string) {
   return i === -1 ? 0 : i;
 }
 
-type OrderItem = { id?: string; name: string; qty: number; price: number; notes?: string; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> };
+type OrderItem = {
+  id?: string;
+  name: string;
+  qty: number;
+  price: number;
+  notes?: string;
+  addons?: Array<{
+    groupId?: string;
+    groupName?: string;
+    optionId?: string;
+    name?: string;
+    quantity?: number;
+    unitPrice?: number;
+    total?: number;
+  }>;
+};
 
 function SuccessPage() {
   const { id } = Route.useParams();
@@ -62,7 +96,9 @@ function SuccessPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try { setWaUrl(window.sessionStorage.getItem(`wa-url:${id}`)); } catch {}
+    try {
+      setWaUrl(window.sessionStorage.getItem(`wa-url:${id}`));
+    } catch {}
     // Limpa marcadores de pedido pendente — usuário chegou ao tracking.
     try {
       for (let i = window.sessionStorage.length - 1; i >= 0; i--) {
@@ -117,19 +153,26 @@ function SuccessPage() {
     // Realtime status updates
     const channel = supabase
       .channel(`order-success-${id}`)
-      .on("postgres_changes",
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` },
-        (payload) => { if (mounted) setOrder((prev: any) => ({ ...prev, ...payload.new })); },
+        (payload) => {
+          if (mounted) setOrder((prev: any) => ({ ...prev, ...payload.new }));
+        },
       )
       .subscribe();
 
-    return () => { mounted = false; supabase.removeChannel(channel); };
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [id, fetchOrder, rememberRestaurantRoute]);
 
   useEffect(() => {
     const paymentMethod = String(order?.payment_method ?? "").toLowerCase();
     const waitingPayment = order?.status === "aguardando_pagamento";
-    const canSync = order?.id && waitingPayment && (paymentMethod === "pix" || paymentMethod === "credit_card");
+    const canSync =
+      order?.id && waitingPayment && (paymentMethod === "pix" || paymentMethod === "credit_card");
     if (!canSync) return;
 
     let cancelled = false;
@@ -145,7 +188,8 @@ function SuccessPage() {
           if (cancelled) return;
           if (refreshed?.order) setOrder(refreshed.order);
           if (refreshed?.pricing) setPricingSnapshot(refreshed.pricing);
-          if (payment?.status === "APPROVED" || refreshed?.order?.status !== "aguardando_pagamento") return;
+          if (payment?.status === "APPROVED" || refreshed?.order?.status !== "aguardando_pagamento")
+            return;
         } catch {
           // Webhook/realtime seguem como fonte principal; este polling é fallback de retorno.
         }
@@ -156,7 +200,9 @@ function SuccessPage() {
     }
 
     pollPaymentApproval();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [order?.id, order?.status, order?.payment_method, id, fetchOrder, syncPaymentStatus]);
 
   const { subtotal, delivery, serviceFee, items } = useMemo(() => {
@@ -178,7 +224,8 @@ function SuccessPage() {
   }, [order, pricingSnapshot]);
 
   const etaLabel = useMemo(() => {
-    const base = Number(order?.estimated_delivery_time ?? restaurant?.avg_delivery_minutes ?? 35) || 35;
+    const base =
+      Number(order?.estimated_delivery_time ?? restaurant?.avg_delivery_minutes ?? 35) || 35;
     const min = Math.max(10, base - 10);
     const max = base + 5;
     return `${min}–${max} min`;
@@ -202,20 +249,21 @@ function SuccessPage() {
     enabled: !!user && !!slug && isDelivered,
   });
   const creditedForOrder =
-    (loyaltyHistoryQ.data ?? []).find(
-      (tx) => tx.reference_id === order?.id && tx.type === "EARN",
-    )?.points ?? 0;
+    (loyaltyHistoryQ.data ?? []).find((tx) => tx.reference_id === order?.id && tx.type === "EARN")
+      ?.points ?? 0;
   const pointsPerReal = loyaltySummaryQ.data?.settings.points_per_real ?? 0;
   const earnOn = loyaltySummaryQ.data?.settings.earn_on ?? "delivered";
   const loyaltyActive = loyaltySummaryQ.data?.active ?? false;
   const estimatedEarn = Math.floor(subtotal * pointsPerReal);
 
-
   async function shareOrder() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const text = `Pedido #${order?.order_number} em ${restaurant?.name} — acompanhe: ${url}`;
     if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share({ title: `Pedido #${order?.order_number}`, text, url }); return; } catch {}
+      try {
+        await (navigator as any).share({ title: `Pedido #${order?.order_number}`, text, url });
+        return;
+      } catch {}
     }
     try {
       await navigator.clipboard.writeText(text);
@@ -225,7 +273,12 @@ function SuccessPage() {
     }
   }
 
-  if (!order) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!order)
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-success/5 via-background to-muted/30">
@@ -235,9 +288,12 @@ function SuccessPage() {
             <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
               <CheckCircle2 className="h-14 w-14" />
             </div>
-            <h2 className="font-display text-2xl font-extrabold">Pagamento confirmado com sucesso!</h2>
+            <h2 className="font-display text-2xl font-extrabold">
+              Pagamento confirmado com sucesso!
+            </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Recebemos seu pagamento. Seu pedido já foi enviado ao restaurante e está aguardando confirmação.
+              Recebemos seu pagamento. Seu pedido já foi enviado ao restaurante e está aguardando
+              confirmação.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               Caso o aplicativo não seja aberto automaticamente, toque no botão abaixo.
@@ -253,21 +309,28 @@ function SuccessPage() {
               Voltar para o Localix
             </Button>
             <p className="mt-3 text-xs text-muted-foreground">
-              Você será redirecionado automaticamente em {countdown} segundo{countdown === 1 ? "" : "s"}...
+              Você será redirecionado automaticamente em {countdown} segundo
+              {countdown === 1 ? "" : "s"}...
             </p>
           </Card>
         </div>
       )}
       <main
         className={`mx-auto max-w-md px-4 py-8 ${order?.status === "aguardando_pagamento" ? "pb-44" : "pb-24"}`}
-        style={order?.status === "aguardando_pagamento" ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" } : undefined}
+        style={
+          order?.status === "aguardando_pagamento"
+            ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" }
+            : undefined
+        }
       >
         <div className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success animate-in zoom-in">
             <CheckCircle2 className="h-10 w-10" />
           </div>
           <h1 className="font-display text-2xl font-extrabold">🎉 Pedido recebido</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{restaurant?.name ?? "Estabelecimento"}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {restaurant?.name ?? "Estabelecimento"}
+          </p>
         </div>
 
         {!user && (
@@ -277,14 +340,22 @@ function SuccessPage() {
                 <Gift className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="font-display text-base font-bold">🎁 Salve seus pedidos e ganhe benefícios!</p>
+                <p className="font-display text-base font-bold">
+                  🎁 Salve seus pedidos e ganhe benefícios!
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Crie sua conta gratuitamente para acompanhar seus pedidos, salvar endereços, receber cupons e participar do programa de fidelidade.
+                  Crie sua conta gratuitamente para acompanhar seus pedidos, salvar endereços,
+                  receber cupons e participar do programa de fidelidade.
                 </p>
                 <Button
                   size="sm"
                   className="mt-3 w-full sm:w-auto"
-                  onClick={() => navigate({ to: "/entrar", search: { redirect: prepareLoginRedirect(restaurant?.slug) } })}
+                  onClick={() =>
+                    navigate({
+                      to: "/entrar",
+                      search: { redirect: prepareLoginRedirect(restaurant?.slug) },
+                    })
+                  }
                 >
                   Criar conta grátis
                 </Button>
@@ -313,7 +384,9 @@ function SuccessPage() {
                   🎉 Parabéns! +{creditedForOrder} pontos foram creditados.
                 </p>
                 <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
-                  <Link to="/fidelidade" className="underline">Ver na Minha Carteira</Link>
+                  <Link to="/fidelidade" className="underline">
+                    Ver na Minha Carteira
+                  </Link>
                 </p>
               </div>
             </div>
@@ -337,23 +410,29 @@ function SuccessPage() {
           </Card>
         )}
 
-
-
         {/* Status tracker */}
         <Card className="mt-4 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Acompanhamento</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Acompanhamento
+          </p>
           <ol className="space-y-3">
             {STEPS.map((s, i) => {
               const done = i <= currentStep;
               const active = i === currentStep;
               return (
                 <li key={s.key} className="flex items-center gap-3">
-                  <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition ${
-                    done ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-muted text-muted-foreground"
-                  } ${active ? "ring-2 ring-primary/30" : ""}`}>
+                  <div
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition ${
+                      done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted bg-muted text-muted-foreground"
+                    } ${active ? "ring-2 ring-primary/30" : ""}`}
+                  >
                     <s.Icon className="h-4 w-4" />
                   </div>
-                  <span className={`text-sm ${active ? "font-bold text-primary" : done ? "font-semibold" : "text-muted-foreground"}`}>
+                  <span
+                    className={`text-sm ${active ? "font-bold text-primary" : done ? "font-semibold" : "text-muted-foreground"}`}
+                  >
                     {s.label}
                   </span>
                 </li>
@@ -364,12 +443,16 @@ function SuccessPage() {
 
         {/* Order summary */}
         <Card className="mt-4 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumo do pedido</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Resumo do pedido
+          </p>
           <ul className="space-y-2 text-sm">
             {items.map((it, idx) => (
               <li key={idx} className="flex justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium">{it.qty}x {it.name}</p>
+                  <p className="font-medium">
+                    {it.qty}x {it.name}
+                  </p>
                   {groupOrderItemAddons(it).map(({ groupName, addons }) => (
                     <div key={groupName} className="mt-1 pl-3 text-xs text-muted-foreground">
                       <p className="font-semibold text-foreground/80">{groupName}</p>
@@ -382,18 +465,31 @@ function SuccessPage() {
                       </ul>
                     </div>
                   ))}
-                  {it.notes && <p className="mt-0.5 text-xs italic text-muted-foreground">Obs: {it.notes}</p>}
+                  {it.notes && (
+                    <p className="mt-0.5 text-xs italic text-muted-foreground">Obs: {it.notes}</p>
+                  )}
                 </div>
-                <span className="shrink-0 font-semibold">{brl(Number(it.price) * Number(it.qty))}</span>
+                <span className="shrink-0 font-semibold">
+                  {brl(Number(it.price) * Number(it.qty))}
+                </span>
               </li>
             ))}
           </ul>
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{brl(subtotal)}</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{brl(subtotal)}</span>
+            </div>
             {Number(order.discount) > 0 && (
-              <div className="flex justify-between text-success"><span>Desconto</span><span>-{brl(Number(order.discount))}</span></div>
+              <div className="flex justify-between text-success">
+                <span>Desconto</span>
+                <span>-{brl(Number(order.discount))}</span>
+              </div>
             )}
-            <div className="flex justify-between"><span className="text-muted-foreground">Entrega</span><span>{brl(delivery)}</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Entrega</span>
+              <span>{brl(delivery)}</span>
+            </div>
             {serviceFee > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Taxa de serviço Localix</span>
@@ -401,19 +497,28 @@ function SuccessPage() {
               </div>
             )}
             <div className="mt-1 flex justify-between border-t pt-2 font-display text-base font-bold">
-              <span>Total</span><span className="text-primary">{brl(Number(order.total))}</span>
+              <span>Total</span>
+              <span className="text-primary">{brl(Number(order.total))}</span>
             </div>
           </div>
           <div className="mt-3 grid gap-1 text-xs text-muted-foreground">
-            <p className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3 w-3" /> {order.address}</p>
-            <p className="flex items-center gap-1.5"><CreditCard className="h-3 w-3" /> {paymentMethodLabel(order.payment_method)}</p>
+            <p className="flex items-start gap-1.5">
+              <MapPin className="mt-0.5 h-3 w-3" /> {order.address}
+            </p>
+            <p className="flex items-center gap-1.5">
+              <CreditCard className="h-3 w-3" /> {paymentMethodLabel(order.payment_method)}
+            </p>
           </div>
         </Card>
 
         {/* Actions */}
         <div className="mt-4 grid gap-2">
           {waUrl && (
-            <Button size="lg" className="w-full bg-[#25D366] hover:bg-[#1ebe5d]" onClick={() => window.open(waUrl, "_blank")}>
+            <Button
+              size="lg"
+              className="w-full bg-[#25D366] hover:bg-[#1ebe5d]"
+              onClick={() => window.open(waUrl, "_blank")}
+            >
               <MessageCircle className="mr-1.5 h-4 w-4" /> Enviar pedido pelo WhatsApp
             </Button>
           )}
@@ -422,7 +527,10 @@ function SuccessPage() {
               Acompanhar pedido
             </Button>
             {restaurant?.slug && (
-              <Button variant="outline" onClick={() => navigate({ to: "/$slug", params: { slug: restaurant.slug } })}>
+              <Button
+                variant="outline"
+                onClick={() => navigate({ to: "/$slug", params: { slug: restaurant.slug } })}
+              >
                 <Store className="mr-1.5 h-4 w-4" /> Novo pedido
               </Button>
             )}
@@ -437,7 +545,8 @@ function SuccessPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será necessário realizar um novo pedido caso queira comprar novamente.
+                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será
+                necessário realizar um novo pedido caso queira comprar novamente.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -460,7 +569,7 @@ function SuccessPage() {
                         window.sessionStorage.removeItem(`wa-url:${id}`);
                       }
                     } catch {}
-                    setOrder((prev: any) => prev ? { ...prev, status: "cancelado" } : prev);
+                    setOrder((prev: any) => (prev ? { ...prev, status: "cancelado" } : prev));
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
@@ -478,7 +587,6 @@ function SuccessPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-
         {/* Post-delivery review */}
         {isDelivered && restaurant && (
           <div className="mt-4">
@@ -488,10 +596,11 @@ function SuccessPage() {
 
         {user && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            <Link to="/meus-pedidos" className="hover:underline">Ver meus pedidos</Link>
+            <Link to="/meus-pedidos" className="hover:underline">
+              Ver meus pedidos
+            </Link>
           </p>
         )}
-
       </main>
 
       {order?.status === "aguardando_pagamento" && (

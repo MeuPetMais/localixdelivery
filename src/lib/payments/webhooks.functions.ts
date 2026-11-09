@@ -42,7 +42,9 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { data: rows, error } = await context.supabase
       .from("payment_webhook_events")
-      .select("id, provider, event_id, event_type, action, resource_id, external_reference, processed, processed_at, processing_attempts, error_message, created_at")
+      .select(
+        "id, provider, event_id, event_type, action, resource_id, external_reference, processed, processed_at, processing_attempts, error_message, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (error) throw new Error(error.message);
@@ -55,14 +57,33 @@ export const getWebhookStats = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const sb = context.supabase;
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const [{ count: total }, { count: processed }, { count: pending }, { count: errored }, { count: last24h }] =
-      await Promise.all([
-        sb.from("payment_webhook_events").select("*", { count: "exact", head: true }),
-        sb.from("payment_webhook_events").select("*", { count: "exact", head: true }).eq("processed", true),
-        sb.from("payment_webhook_events").select("*", { count: "exact", head: true }).eq("processed", false).is("error_message", null),
-        sb.from("payment_webhook_events").select("*", { count: "exact", head: true }).eq("processed", false).not("error_message", "is", null),
-        sb.from("payment_webhook_events").select("*", { count: "exact", head: true }).gte("created_at", since),
-      ]);
+    const [
+      { count: total },
+      { count: processed },
+      { count: pending },
+      { count: errored },
+      { count: last24h },
+    ] = await Promise.all([
+      sb.from("payment_webhook_events").select("*", { count: "exact", head: true }),
+      sb
+        .from("payment_webhook_events")
+        .select("*", { count: "exact", head: true })
+        .eq("processed", true),
+      sb
+        .from("payment_webhook_events")
+        .select("*", { count: "exact", head: true })
+        .eq("processed", false)
+        .is("error_message", null),
+      sb
+        .from("payment_webhook_events")
+        .select("*", { count: "exact", head: true })
+        .eq("processed", false)
+        .not("error_message", "is", null),
+      sb
+        .from("payment_webhook_events")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since),
+    ]);
     return {
       total: total ?? 0,
       processed: processed ?? 0,

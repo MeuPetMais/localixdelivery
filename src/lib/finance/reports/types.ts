@@ -4,14 +4,34 @@ import type { Json } from "@/integrations/supabase/types";
 
 export type ReportType =
   // Financial
-  | "cashflow" | "dre" | "profitability" | "receivables" | "payables"
-  | "split" | "ledger" | "reconciliation"
+  | "cashflow"
+  | "dre"
+  | "profitability"
+  | "receivables"
+  | "payables"
+  | "split"
+  | "ledger"
+  | "reconciliation"
   // Operational
-  | "orders" | "products" | "customers" | "delivery" | "inventory" | "production" | "purchasing"
+  | "orders"
+  | "products"
+  | "customers"
+  | "delivery"
+  | "inventory"
+  | "production"
+  | "purchasing"
   // Managerial
-  | "top_products" | "top_categories" | "top_customers" | "peak_hours" | "top_gateway"
+  | "top_products"
+  | "top_categories"
+  | "top_customers"
+  | "peak_hours"
+  | "top_gateway"
   // Executive dashboards
-  | "executive_ceo" | "executive_finance" | "executive_operations" | "executive_production" | "executive_purchasing";
+  | "executive_ceo"
+  | "executive_finance"
+  | "executive_operations"
+  | "executive_production"
+  | "executive_purchasing";
 
 export type ExportFormat = "pdf" | "xlsx" | "csv" | "json";
 
@@ -19,7 +39,9 @@ export type ReportStatus = "PENDING" | "GENERATING" | "READY" | "FAILED" | "EXPI
 
 export type ScheduleFrequency = "daily" | "weekly" | "monthly" | "custom";
 
-export interface ReportRow { [k: string]: string | number | null }
+export interface ReportRow {
+  [k: string]: string | number | null;
+}
 
 export interface ReportDefinition {
   type: ReportType;

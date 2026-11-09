@@ -60,21 +60,28 @@ export function ProductDetailsDialog({
     setGallery(item?.image_url ? [item.image_url] : []);
     if (!open || !item?.id) return;
     void (async () => {
-      const { data, error } = await supabase.from("menu_item_images")
-        .select("url, is_primary, position").eq("menu_item_id", item.id)
+      const { data, error } = await supabase
+        .from("menu_item_images")
+        .select("url, is_primary, position")
+        .eq("menu_item_id", item.id)
         .order("position", { ascending: true });
       if (cancelled) return;
-      if (error) { console.error("[product-gallery]", error); return; }
-      const ordered = [...(data ?? [])].sort((a, b) =>
-        Number(b.is_primary) - Number(a.is_primary) || a.position - b.position);
+      if (error) {
+        console.error("[product-gallery]", error);
+        return;
+      }
+      const ordered = [...(data ?? [])].sort(
+        (a, b) => Number(b.is_primary) - Number(a.is_primary) || a.position - b.position,
+      );
       const urls = Array.from(new Set(ordered.map((image) => image.url).filter(Boolean)));
       setGallery(urls.length ? urls : item.image_url ? [item.image_url] : []);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open, item?.id, item?.image_url]);
   const previousImage = () => setImageIndex((i) => (i - 1 + gallery.length) % gallery.length);
   const nextImage = () => setImageIndex((i) => (i + 1) % gallery.length);
-
 
   useEffect(() => {
     if (open) {
@@ -190,7 +197,8 @@ export function ProductDetailsDialog({
           className="relative overflow-hidden rounded-t-2xl bg-muted"
           onTouchStart={(event) => {
             const touch = event.touches[0];
-            if (gallery.length > 1 && touch) swipeStart.current = { x: touch.clientX, y: touch.clientY };
+            if (gallery.length > 1 && touch)
+              swipeStart.current = { x: touch.clientX, y: touch.clientY };
           }}
           onTouchEnd={(event) => {
             const start = swipeStart.current;
@@ -200,22 +208,53 @@ export function ProductDetailsDialog({
             const dx = touch.clientX - start.x;
             const dy = touch.clientY - start.y;
             if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
-            if (dx < 0) nextImage(); else previousImage();
+            if (dx < 0) nextImage();
+            else previousImage();
           }}
-          onTouchCancel={() => { swipeStart.current = null; }}
+          onTouchCancel={() => {
+            swipeStart.current = null;
+          }}
         >
           {gallery.length ? (
             <>
-              <img src={gallery[imageIndex] ?? gallery[0]} alt={item.name} className="h-56 w-full object-cover" />
+              <img
+                src={gallery[imageIndex] ?? gallery[0]}
+                alt={item.name}
+                className="h-56 w-full object-cover"
+              />
               {gallery.length > 1 && (
                 <>
-                  <Button type="button" variant="secondary" size="icon" aria-label="Foto anterior" onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full"><ChevronLeft className="h-5 w-5" /></Button>
-                  <Button type="button" variant="secondary" size="icon" aria-label="Próxima foto" onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"><ChevronRight className="h-5 w-5" /></Button>
-                  <span className="absolute bottom-2 right-3 rounded-full bg-black/60 px-2 py-1 text-xs text-white">{imageIndex + 1} / {gallery.length}</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    aria-label="Foto anterior"
+                    onClick={previousImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    aria-label="Próxima foto"
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <span className="absolute bottom-2 right-3 rounded-full bg-black/60 px-2 py-1 text-xs text-white">
+                    {imageIndex + 1} / {gallery.length}
+                  </span>
                 </>
               )}
             </>
-          ) : <div className="grid h-40 place-items-center text-sm text-muted-foreground">Sem imagem</div>}
+          ) : (
+            <div className="grid h-40 place-items-center text-sm text-muted-foreground">
+              Sem imagem
+            </div>
+          )}
         </div>
 
         <div className="space-y-5 px-5 pb-5">
@@ -230,7 +269,9 @@ export function ProductDetailsDialog({
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">A partir de</span>
-            <span className="font-display text-xl font-extrabold text-primary">{brl(item.price)}</span>
+            <span className="font-display text-xl font-extrabold text-primary">
+              {brl(item.price)}
+            </span>
           </div>
 
           {loading && (
@@ -239,109 +280,114 @@ export function ProductDetailsDialog({
             </p>
           )}
 
-          {!loading && visibleGroups.map((group) => {
-            const groupOptions = productOptions.filter((option) => option.group_id === group.id);
-            const totalSelected = groupQuantity(group.id);
-            const isSingle = group.type === "SINGLE" || group.type === "BOOLEAN";
+          {!loading &&
+            visibleGroups.map((group) => {
+              const groupOptions = productOptions.filter((option) => option.group_id === group.id);
+              const totalSelected = groupQuantity(group.id);
+              const isSingle = group.type === "SINGLE" || group.type === "BOOLEAN";
 
-            return (
-              <section key={group.id} className="space-y-2 border-t pt-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">{group.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {group.description?.trim() ||
-                        (isSingle
-                          ? "Escolha 1 opção"
-                          : group.max_selection > 0
-                            ? `Escolha até ${group.max_selection} opções`
-                            : "Escolha as opções desejadas")}
-                    </p>
+              return (
+                <section key={group.id} className="space-y-2 border-t pt-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">{group.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {group.description?.trim() ||
+                          (isSingle
+                            ? "Escolha 1 opção"
+                            : group.max_selection > 0
+                              ? `Escolha até ${group.max_selection} opções`
+                              : "Escolha as opções desejadas")}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-bold uppercase">
+                      {group.required ? "Obrigatório" : "Opcional"}
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-bold uppercase">
-                    {group.required ? "Obrigatório" : "Opcional"}
-                  </span>
-                </div>
 
-                <div className="space-y-2">
-                  {groupOptions.map((option) => {
-                    const qty = selectedQuantity(group.id, option.id);
-                    const selected = qty > 0;
-                    const groupAtMax =
-                      group.max_selection > 0 && totalSelected >= group.max_selection;
-                    const optionAtMax = qty >= option.max_quantity;
+                  <div className="space-y-2">
+                    {groupOptions.map((option) => {
+                      const qty = selectedQuantity(group.id, option.id);
+                      const selected = qty > 0;
+                      const groupAtMax =
+                        group.max_selection > 0 && totalSelected >= group.max_selection;
+                      const optionAtMax = qty >= option.max_quantity;
 
-                    return (
-                      <div
-                        key={option.id}
-                        className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${
-                          selected ? "border-primary bg-primary/5" : "bg-background"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() =>
-                            isSingle
-                              ? selectSingle(group, option)
-                              : changeQuantity(group, option, selected ? -qty : 1)
-                          }
+                      return (
+                        <div
+                          key={option.id}
+                          className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${
+                            selected ? "border-primary bg-primary/5" : "bg-background"
+                          }`}
                         >
-                          <p className="text-sm font-medium">{option.name}</p>
-                          {option.description && (
-                            <p className="text-xs text-muted-foreground">{option.description}</p>
-                          )}
-                          {option.price_adjustment > 0 && (
-                            <p className="mt-1 text-xs font-semibold text-primary">
-                              + {brl(option.price_adjustment)}
-                            </p>
-                          )}
-                        </button>
-
-                        {isSingle ? (
                           <button
                             type="button"
-                            aria-label={`Selecionar ${option.name}`}
-                            onClick={() => selectSingle(group, option)}
-                            className={`h-5 w-5 rounded-full border-2 ${
-                              selected ? "border-primary bg-primary shadow-[inset_0_0_0_4px_white]" : ""
-                            }`}
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            {qty > 0 && (
-                              <>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-8 w-8 rounded-full"
-                                  onClick={() => changeQuantity(group, option, -1)}
-                                >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </Button>
-                                <span className="w-5 text-center text-sm font-semibold">{qty}</span>
-                              </>
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() =>
+                              isSingle
+                                ? selectSingle(group, option)
+                                : changeQuantity(group, option, selected ? -qty : 1)
+                            }
+                          >
+                            <p className="text-sm font-medium">{option.name}</p>
+                            {option.description && (
+                              <p className="text-xs text-muted-foreground">{option.description}</p>
                             )}
-                            <Button
+                            {option.price_adjustment > 0 && (
+                              <p className="mt-1 text-xs font-semibold text-primary">
+                                + {brl(option.price_adjustment)}
+                              </p>
+                            )}
+                          </button>
+
+                          {isSingle ? (
+                            <button
                               type="button"
-                              size="icon"
-                              variant={qty > 0 ? "outline" : "default"}
-                              className="h-8 w-8 rounded-full"
-                              disabled={optionAtMax || (groupAtMax && qty === 0)}
-                              onClick={() => changeQuantity(group, option, 1)}
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                              aria-label={`Selecionar ${option.name}`}
+                              onClick={() => selectSingle(group, option)}
+                              className={`h-5 w-5 rounded-full border-2 ${
+                                selected
+                                  ? "border-primary bg-primary shadow-[inset_0_0_0_4px_white]"
+                                  : ""
+                              }`}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {qty > 0 && (
+                                <>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-8 w-8 rounded-full"
+                                    onClick={() => changeQuantity(group, option, -1)}
+                                  >
+                                    <Minus className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <span className="w-5 text-center text-sm font-semibold">
+                                    {qty}
+                                  </span>
+                                </>
+                              )}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant={qty > 0 ? "outline" : "default"}
+                                className="h-8 w-8 rounded-full"
+                                disabled={optionAtMax || (groupAtMax && qty === 0)}
+                                onClick={() => changeQuantity(group, option, 1)}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
 
           <div className="space-y-2 border-t pt-4">
             <div>

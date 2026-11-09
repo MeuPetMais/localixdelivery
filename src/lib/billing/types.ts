@@ -15,8 +15,8 @@ export type RestaurantLifecycleState =
 export type BillingPlan = "standard"; // único plano oficial (BD-002)
 
 export interface EligibilityCriteria {
-  minMonthlyOrders: number;   // 600 (BD-008)
-  minTicket: number;          // 20 (BD-009)
+  minMonthlyOrders: number; // 600 (BD-008)
+  minTicket: number; // 20 (BD-009)
 }
 
 export interface EligibilityResult {
@@ -37,7 +37,7 @@ export interface RestaurantBillingSnapshot {
 }
 
 export interface ServiceFeeQuote {
-  perOrderFee: number;   // 0.99 (BD-003)
+  perOrderFee: number; // 0.99 (BD-003)
   currency: "BRL";
   appliesTo: "confirmed_order";
 }

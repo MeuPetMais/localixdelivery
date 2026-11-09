@@ -18,8 +18,12 @@ export const MetricsCenter = {
     prune();
     return p;
   },
-  incr(name: string, tags?: Record<string, string>) { return this.record(name, 1, tags); },
-  timing(name: string, ms: number, tags?: Record<string, string>) { return this.record(name, ms, tags); },
+  incr(name: string, tags?: Record<string, string>) {
+    return this.record(name, 1, tags);
+  },
+  timing(name: string, ms: number, tags?: Record<string, string>) {
+    return this.record(name, ms, tags);
+  },
   filter(name?: string): MetricPoint[] {
     prune();
     return name ? points.filter((p) => p.name === name) : [...points];
@@ -31,7 +35,9 @@ export const MetricsCenter = {
     const responseTimes = points.filter((p) => p.name === "response_ms").map((p) => p.value);
     const edgeTimes = points.filter((p) => p.name === "edge_function_ms").map((p) => p.value);
     const jobs = points.filter((p) => p.name === "job_executed").length;
-    const queued = points.filter((p) => p.name === "queue_pending").reduce((a, p) => a + p.value, 0);
+    const queued = points
+      .filter((p) => p.name === "queue_pending")
+      .reduce((a, p) => a + p.value, 0);
     const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
     const total = requests + errors;
     return {
@@ -46,5 +52,7 @@ export const MetricsCenter = {
       at: new Date().toISOString(),
     };
   },
-  _reset() { points.length = 0; },
+  _reset() {
+    points.length = 0;
+  },
 } as const;

@@ -13,30 +13,44 @@ import type { ExecutiveKPIs, FinanceFilters, FinanceStatus } from "./types";
 import { normalizeFilters } from "./FinanceFilters";
 
 export interface LedgerPort {
-  getStatement(input: { restaurantId: string; from?: string; to?: string }):
-    Promise<Array<{ transaction_type: string; amount: number; status: string; currency?: string; created_at: string }>>;
-  getBalance(input: { restaurantId: string }):
-    Promise<{ balance: number; currency: string; pendingIn?: number; pendingOut?: number }>;
+  getStatement(input: {
+    restaurantId: string;
+    from?: string;
+    to?: string;
+  }): Promise<
+    Array<{
+      transaction_type: string;
+      amount: number;
+      status: string;
+      currency?: string;
+      created_at: string;
+    }>
+  >;
+  getBalance(input: {
+    restaurantId: string;
+  }): Promise<{ balance: number; currency: string; pendingIn?: number; pendingOut?: number }>;
 }
 
 export interface CostPort {
-  getPeriodProfitability(input: { restaurantId: string; from: string; to: string }):
-    Promise<{ cmv: number; grossProfit: number; netProfit: number; marginPct: number }>;
+  getPeriodProfitability(input: {
+    restaurantId: string;
+    from: string;
+    to: string;
+  }): Promise<{ cmv: number; grossProfit: number; netProfit: number; marginPct: number }>;
 }
 
 export interface ReconciliationPort {
-  getLastReconciliation(input: { restaurantId: string }):
-    Promise<{ at?: string; status?: string } | null>;
+  getLastReconciliation(input: {
+    restaurantId: string;
+  }): Promise<{ at?: string; status?: string } | null>;
 }
 
 export interface SplitPort {
-  getLastSplit(input: { restaurantId: string }):
-    Promise<{ at?: string; status?: string } | null>;
+  getLastSplit(input: { restaurantId: string }): Promise<{ at?: string; status?: string } | null>;
 }
 
 export interface PaymentPort {
-  getActiveGateway(input: { restaurantId: string }):
-    Promise<{ provider?: string } | null>;
+  getActiveGateway(input: { restaurantId: string }): Promise<{ provider?: string } | null>;
 }
 
 export interface FinancialDashboardPorts {
@@ -54,7 +68,10 @@ const FEE_TYPES = new Set(["PLATFORM_FEE", "GATEWAY_FEE"]);
 export class FinancialDashboardService {
   constructor(private readonly ports: FinancialDashboardPorts) {}
 
-  async getExecutiveKPIs(input: { restaurantId: string; filters?: Partial<FinanceFilters> }): Promise<ExecutiveKPIs> {
+  async getExecutiveKPIs(input: {
+    restaurantId: string;
+    filters?: Partial<FinanceFilters>;
+  }): Promise<ExecutiveKPIs> {
     const filters = normalizeFilters(input.filters ?? {});
     const rows = await this.ports.ledger.getStatement({
       restaurantId: input.restaurantId,
@@ -82,21 +99,25 @@ export class FinancialDashboardService {
       }
       if (r.status === "PENDING") {
         if (REVENUE_TYPES.has(r.transaction_type)) pendingReceivables += amt;
-        else if (r.transaction_type === "PAYOUT" || FEE_TYPES.has(r.transaction_type)) pendingPayables += Math.abs(amt);
+        else if (r.transaction_type === "PAYOUT" || FEE_TYPES.has(r.transaction_type))
+          pendingPayables += Math.abs(amt);
       }
     }
 
     const netRevenue = grossRevenue - fees;
     const currency = balance.currency ?? "BRL";
     const cost = this.ports.cost
-      ? await this.ports.cost.getPeriodProfitability({
-          restaurantId: input.restaurantId,
-          from: filters.from!, to: filters.to!,
-        }).catch(() => null)
+      ? await this.ports.cost
+          .getPeriodProfitability({
+            restaurantId: input.restaurantId,
+            from: filters.from!,
+            to: filters.to!,
+          })
+          .catch(() => null)
       : null;
 
     const cmv = cost?.cmv ?? 0;
-    const grossProfit = cost?.grossProfit ?? (netRevenue - cmv);
+    const grossProfit = cost?.grossProfit ?? netRevenue - cmv;
     const netProfit = cost?.netProfit ?? grossProfit;
     const marginPct = cost?.marginPct ?? (grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0);
 
@@ -119,7 +140,8 @@ export class FinancialDashboardService {
   async getStatus(input: { restaurantId: string }): Promise<FinanceStatus> {
     const [balance, recon, split, gw] = await Promise.all([
       this.ports.ledger.getBalance({ restaurantId: input.restaurantId }),
-      this.ports.reconciliation?.getLastReconciliation({ restaurantId: input.restaurantId }) ?? null,
+      this.ports.reconciliation?.getLastReconciliation({ restaurantId: input.restaurantId }) ??
+        null,
       this.ports.split?.getLastSplit({ restaurantId: input.restaurantId }) ?? null,
       this.ports.payment?.getActiveGateway({ restaurantId: input.restaurantId }) ?? null,
     ]);

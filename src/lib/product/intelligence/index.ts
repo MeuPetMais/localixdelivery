@@ -6,4 +6,8 @@ export { UpsellService } from "./UpsellService";
 export { ProductHealthScoreEngine } from "./ProductHealthScoreEngine";
 export { RecommendationEngine, type RecommendationInput } from "./RecommendationEngine";
 export { ProductIntelligenceService } from "./ProductIntelligenceService";
-export { IntelligenceEventBus, type IntelligenceEvent, type IntelligenceEventName } from "./IntelligenceEventBus";
+export {
+  IntelligenceEventBus,
+  type IntelligenceEvent,
+  type IntelligenceEventName,
+} from "./IntelligenceEventBus";

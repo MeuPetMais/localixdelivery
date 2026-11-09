@@ -1,7 +1,11 @@
 import type { RecipeItem, RecipeItemInput } from "./types";
 
 /** Effective quantity accounting for loss: q / (1 - loss%) */
-export function effectiveQuantity(item: Pick<RecipeItem | RecipeItemInput, "quantity" | "loss_percentage" | "optional"> & { optional?: boolean }): number {
+export function effectiveQuantity(
+  item: Pick<RecipeItem | RecipeItemInput, "quantity" | "loss_percentage" | "optional"> & {
+    optional?: boolean;
+  },
+): number {
   if (item.optional) return 0;
   const loss = Number(item.loss_percentage ?? 0) / 100;
   const q = Number(item.quantity);

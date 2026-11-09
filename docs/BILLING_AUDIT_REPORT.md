@@ -7,6 +7,7 @@ Mercado Pago, restaurante ativo/homologado e taxa de serviço.
 ## Achados
 
 ### Gateway / Pagamento (Payment Domain — **mantido intacto**)
+
 - `src/lib/payments/*` — PaymentService, providers (Mercado Pago),
   PricingEngine, ReconciliationService, SplitService, WebhookService,
   orderPayment.server, repositories.
@@ -16,20 +17,24 @@ Mercado Pago, restaurante ativo/homologado e taxa de serviço.
 - `src/components/finance/PaymentGatewayCard.tsx` — card no financeiro.
 
 ### Onboarding do parceiro
+
 - `src/components/OwnerOnboarding.tsx` — onboarding visual atual.
 - `src/routes/auth.tsx` — cadastro/login do dono.
 
 ### Restaurante ativo / status
+
 - `src/contexts/RestaurantContext.tsx` — carrega restaurante ativo.
 - `src/hooks/use-restaurant-status.ts` — status operacional (aberto/fechado).
 - `src/lib/restaurant-status.ts` — regras de horário.
 
 ### Taxa de serviço / plataforma
+
 - `src/lib/payments/PricingEngine.ts` — cobra fee via `platform_fees`.
 - `src/lib/platform-settings.functions.ts` — configuração admin (commission,
   fixed_fee, min_order etc.).
 
 ### Configuração comercial (documentação)
+
 - `LOCALIX_BUSINESS_MODEL_V1.md`, `BUSINESS_DECISIONS.md` — decisões oficiais.
 
 ## Conclusão

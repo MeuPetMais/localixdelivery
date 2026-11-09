@@ -5,7 +5,10 @@ import type { ProductRecord, ProductValidationIssue, ProductValidationResult } f
  * Ensures a product satisfies minimum publishable rules.
  */
 export const ProductValidator = {
-  validate(input: Partial<ProductRecord>, opts?: { requirePublishable?: boolean }): ProductValidationResult {
+  validate(
+    input: Partial<ProductRecord>,
+    opts?: { requirePublishable?: boolean },
+  ): ProductValidationResult {
     const issues: ProductValidationIssue[] = [];
     const requirePublishable = opts?.requirePublishable ?? false;
 
@@ -21,7 +24,10 @@ export const ProductValidator = {
       if (Number(input.promo_price) < 0) {
         issues.push({ field: "promo_price", message: "Preço promocional não pode ser negativo." });
       } else if (input.price !== undefined && Number(input.promo_price) >= Number(input.price)) {
-        issues.push({ field: "promo_price", message: "Preço promocional deve ser menor que o preço regular." });
+        issues.push({
+          field: "promo_price",
+          message: "Preço promocional deve ser menor que o preço regular.",
+        });
       }
     }
     if (input.promo_starts_at && input.promo_ends_at) {

@@ -21,7 +21,11 @@ export const PlatformFeatureFlagService = {
     if (state && key in state.flags) return state.flags[key];
     return DEFAULT_PLATFORM_FLAGS[key] ?? false;
   },
-  setFlag(state: PlatformFeatureFlagState | undefined, key: string, enabled: boolean): PlatformFeatureFlagState {
+  setFlag(
+    state: PlatformFeatureFlagState | undefined,
+    key: string,
+    enabled: boolean,
+  ): PlatformFeatureFlagState {
     return { flags: { ...(state?.flags ?? {}), [key]: enabled } };
   },
   list(state: PlatformFeatureFlagState | undefined): Record<string, boolean> {

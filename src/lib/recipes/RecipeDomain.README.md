@@ -59,7 +59,7 @@ Every `create` and `update` writes a full snapshot to
 - **Add-ons** — separate Recipes for optional add-ons (Bacon, Catupiry…);
   they consume their own ingredients.
 - **Combos** — the combo Product resolves to N child Recipes (Pizza + Soda
-  + Dessert). Each is consumed via `consumeForOrder` at completion.
+  - Dessert). Each is consumed via `consumeForOrder` at completion.
 
 ## Integration with InventoryService
 

@@ -15,14 +15,14 @@ not_created ──create──▶ onboarding_pending ──details_submitted + c
 
 ## Transições
 
-| De | Para | Gatilho |
-|---|---|---|
-| `not_created` | `onboarding_pending` | `stripe-connect-create` cria account |
-| `onboarding_pending` | `active` | Stripe reporta `charges_enabled && payouts_enabled && details_submitted` |
-| `onboarding_pending` | `restricted` | `requirements.disabled_reason` presente |
-| `active` | `restricted` | Requirements ficam pendentes |
-| `restricted` | `active` | Owner completa requirements |
-| qualquer | `not_created` | `disconnectAccount` (limpa colunas locais) |
+| De                   | Para                 | Gatilho                                                                  |
+| -------------------- | -------------------- | ------------------------------------------------------------------------ |
+| `not_created`        | `onboarding_pending` | `stripe-connect-create` cria account                                     |
+| `onboarding_pending` | `active`             | Stripe reporta `charges_enabled && payouts_enabled && details_submitted` |
+| `onboarding_pending` | `restricted`         | `requirements.disabled_reason` presente                                  |
+| `active`             | `restricted`         | Requirements ficam pendentes                                             |
+| `restricted`         | `active`             | Owner completa requirements                                              |
+| qualquer             | `not_created`        | `disconnectAccount` (limpa colunas locais)                               |
 
 ## Fonte de verdade
 

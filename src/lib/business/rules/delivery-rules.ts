@@ -9,7 +9,12 @@ export const RULE_DELIVERY_AVAILABLE: BusinessRule = {
   category: "DELIVERY",
   evaluate(ctx) {
     if (ctx.delivery?.available === false) {
-      return { allowed: false, rule_code: "DELIVERY_UNAVAILABLE", severity: "error", reason: "Entrega indisponível no momento." };
+      return {
+        allowed: false,
+        rule_code: "DELIVERY_UNAVAILABLE",
+        severity: "error",
+        reason: "Entrega indisponível no momento.",
+      };
     }
     return { allowed: true, rule_code: "DELIVERY_AVAILABLE", severity: "info" };
   },
@@ -24,7 +29,12 @@ export const RULE_DELIVERY_AREA: BusinessRule = {
   category: "DELIVERY",
   evaluate(ctx) {
     if (ctx.delivery?.inside_service_area === false) {
-      return { allowed: false, rule_code: "DELIVERY_OUT_OF_AREA", severity: "error", reason: "Endereço fora da área de atendimento." };
+      return {
+        allowed: false,
+        rule_code: "DELIVERY_OUT_OF_AREA",
+        severity: "error",
+        reason: "Endereço fora da área de atendimento.",
+      };
     }
     return { allowed: true, rule_code: "DELIVERY_AREA", severity: "info" };
   },
@@ -41,7 +51,12 @@ export const RULE_DELIVERY_DISTANCE: BusinessRule = {
     const max = ctx.restaurant?.delivery_radius_km;
     const dist = ctx.delivery?.distance_km;
     if (max != null && dist != null && dist > max) {
-      return { allowed: false, rule_code: "DELIVERY_TOO_FAR", severity: "error", reason: `Distância ${dist.toFixed(1)} km acima do limite ${max} km.` };
+      return {
+        allowed: false,
+        rule_code: "DELIVERY_TOO_FAR",
+        severity: "error",
+        reason: `Distância ${dist.toFixed(1)} km acima do limite ${max} km.`,
+      };
     }
     return { allowed: true, rule_code: "DELIVERY_DISTANCE", severity: "info" };
   },

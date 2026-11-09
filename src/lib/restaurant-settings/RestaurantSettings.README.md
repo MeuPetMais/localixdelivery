@@ -46,15 +46,15 @@ Nenhuma tabela nova. RLS existente permanece: dono acessa seu restaurante,
 
 ## Papéis e permissões
 
-| Papel        | Escopo |
-|--------------|--------|
-| admin        | Tudo (inclui features + auditoria) |
-| manager      | Configurações operacionais, sem finanças de escrita |
-| finance      | Financeiro + auditoria |
-| operations   | Pedidos, cozinha, delivery |
-| marketing    | Cupons, campanhas, promoções |
-| attendant    | Atendimento (pedidos, cardápio leitura) |
-| viewer       | Somente leitura |
+| Papel      | Escopo                                              |
+| ---------- | --------------------------------------------------- |
+| admin      | Tudo (inclui features + auditoria)                  |
+| manager    | Configurações operacionais, sem finanças de escrita |
+| finance    | Financeiro + auditoria                              |
+| operations | Pedidos, cozinha, delivery                          |
+| marketing  | Cupons, campanhas, promoções                        |
+| attendant  | Atendimento (pedidos, cardápio leitura)             |
+| viewer     | Somente leitura                                     |
 
 ## Eventos
 

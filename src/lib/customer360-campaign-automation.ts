@@ -46,22 +46,31 @@ export const GROWTH_CAMPAIGN_AUTOMATION_DEFAULTS = {
 
 function triggerForLifecycle(lifecycle: Customer360Lifecycle): GrowthCampaignTrigger | null {
   switch (lifecycle) {
-    case "AWAITING_SECOND_PURCHASE": return "SECOND_PURCHASE";
-    case "AT_RISK": return "AT_RISK";
-    case "INACTIVE": return "INACTIVE";
-    case "REACTIVATED": return "REACTIVATED";
-    case "RECURRING": return "RECURRENCE";
-    default: return null;
+    case "AWAITING_SECOND_PURCHASE":
+      return "SECOND_PURCHASE";
+    case "AT_RISK":
+      return "AT_RISK";
+    case "INACTIVE":
+      return "INACTIVE";
+    case "REACTIVATED":
+      return "REACTIVATED";
+    case "RECURRING":
+      return "RECURRENCE";
+    default:
+      return null;
   }
 }
 
 function actionForTrigger(trigger: GrowthCampaignTrigger): string {
   switch (trigger) {
-    case "SECOND_PURCHASE": return "ENCOURAGE_SECOND_PURCHASE";
+    case "SECOND_PURCHASE":
+      return "ENCOURAGE_SECOND_PURCHASE";
     case "AT_RISK":
-    case "INACTIVE": return "REACTIVATE_CUSTOMER";
+    case "INACTIVE":
+      return "REACTIVATE_CUSTOMER";
     case "REACTIVATED":
-    case "RECURRENCE": return "MAINTAIN_RECURRENCE";
+    case "RECURRENCE":
+      return "MAINTAIN_RECURRENCE";
   }
 }
 

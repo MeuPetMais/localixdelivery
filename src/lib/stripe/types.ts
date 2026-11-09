@@ -13,7 +13,7 @@ export type StripeAccountStatus =
   | "disabled";
 
 export interface StripeAccount {
-  id: string;                       // acct_...
+  id: string; // acct_...
   restaurantId: string;
   status: StripeAccountStatus;
   country: string;
@@ -32,7 +32,7 @@ export interface StripeCapabilities {
 }
 
 export interface StripeBalance {
-  available: number;   // menor unidade (centavos)
+  available: number; // menor unidade (centavos)
   pending: number;
   reserved: number;
   currency: string;

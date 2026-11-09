@@ -25,12 +25,18 @@ export const CustomerPreferencesService = {
     return (data ?? DEFAULTS(customerId)) as CustomerPreferences;
   },
 
-  async upsert(customerId: string, patch: Partial<CustomerPreferences>): Promise<CustomerPreferences> {
+  async upsert(
+    customerId: string,
+    patch: Partial<CustomerPreferences>,
+  ): Promise<CustomerPreferences> {
     const validation = CustomerValidator.validatePreferences(patch);
     if (!validation.ok) throw new Error(validation.issues.map((i) => i.message).join("; "));
     const current = await CustomerPreferencesService.get(customerId);
     const next = { ...current, ...patch, customer_id: customerId };
-    const { data, error } = await T().upsert(next, { onConflict: "customer_id" }).select().maybeSingle();
+    const { data, error } = await T()
+      .upsert(next, { onConflict: "customer_id" })
+      .select()
+      .maybeSingle();
     if (error) throw error;
     await CustomerEventBus.publish({
       type: "PreferenceChanged",

@@ -43,9 +43,7 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
 
 const FiltersSchema = z.object({
   limit: z.number().int().min(1).max(500).default(100),
-  status: z
-    .enum(["PENDING", "MATCHED", "DIVERGENT", "FAILED", "MANUAL_REVIEW"])
-    .optional(),
+  status: z.enum(["PENDING", "MATCHED", "DIVERGENT", "FAILED", "MANUAL_REVIEW"]).optional(),
   provider: z.string().optional(),
   restaurant_id: z.string().uuid().optional(),
   from: z.string().optional(),
@@ -88,13 +86,7 @@ export const getReconciliationReport = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<ReconciliationReport> => {
     await assertAdmin(context);
     const sb = context.supabase;
-    const statuses = [
-      "MATCHED",
-      "DIVERGENT",
-      "PENDING",
-      "MANUAL_REVIEW",
-      "FAILED",
-    ] as const;
+    const statuses = ["MATCHED", "DIVERGENT", "PENDING", "MANUAL_REVIEW", "FAILED"] as const;
     const results = await Promise.all(
       statuses.map((s) =>
         sb
@@ -116,19 +108,14 @@ export const getReconciliationReport = createServerFn({ method: "POST" })
       .neq("difference_amount", 0);
     const total_difference =
       Math.round(
-        ((diffRows ?? []).reduce(
+        (diffRows ?? []).reduce(
           (a: number, r: { difference_amount: number | null }) =>
             a + Number(r.difference_amount ?? 0),
           0,
-        )) * 100,
+        ) * 100,
       ) / 100;
     return {
-      total:
-        (matched ?? 0) +
-        (divergent ?? 0) +
-        (pending ?? 0) +
-        (manual ?? 0) +
-        (failed ?? 0),
+      total: (matched ?? 0) + (divergent ?? 0) + (pending ?? 0) + (manual ?? 0) + (failed ?? 0),
       matched: matched ?? 0,
       divergent: divergent ?? 0,
       pending: pending ?? 0,
@@ -146,14 +133,10 @@ export const getReconciliationReport = createServerFn({ method: "POST" })
  */
 export const runOrderReconciliation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ order_id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ order_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<ReconciliationResult> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [snapRes, payRes] = await Promise.all([
       supabaseAdmin
@@ -189,9 +172,7 @@ export const runOrderReconciliation = createServerFn({ method: "POST" })
       gateway = {
         id: pay.payment_id,
         external_reference: pay.external_reference ?? intent.external_reference ?? data.order_id,
-        transaction_amount: Number(
-          intent.transaction_amount ?? pay.transaction_amount ?? 0,
-        ),
+        transaction_amount: Number(intent.transaction_amount ?? pay.transaction_amount ?? 0),
         currency_id: intent.currency_id ?? "BRL",
         fee_details: intent.fee_details ?? null,
         net_received_amount: intent.net_received_amount ?? null,

@@ -5,7 +5,8 @@ export const ABTestingEngine = {
   /** Deterministic variant assignment per customer using hash-based buckets. */
   assign(config: ABTestConfig, customerId: string): { key: string; template_id?: string } {
     const variants = config.variants.filter((v) => v.weight > 0);
-    if (variants.length === 0) throw new Error("A/B test requires at least one variant with weight > 0");
+    if (variants.length === 0)
+      throw new Error("A/B test requires at least one variant with weight > 0");
     const total = variants.reduce((s, v) => s + v.weight, 0);
     const bucket = bucketOf(`${customerId}`) / 100;
     let acc = 0;

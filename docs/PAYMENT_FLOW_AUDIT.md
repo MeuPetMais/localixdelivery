@@ -33,6 +33,7 @@ Stripe chegou).
 ## 2. Divergências entre código e Manifest
 
 ### 2.1 Provider Pattern quebrado — Mercado Pago é código morto
+
 - `docs/DOMAIN_MANIFEST_PAYMENT.md` exige que **nenhum consumidor fora do
   Payment Domain** referencie um gateway.
 - `src/routes/$slug.index.tsx:1132` chama `stripe-checkout` diretamente.
@@ -64,6 +65,7 @@ remover MP das listas de providers e das Edge Functions.
 ## 3. Bugs de runtime identificados
 
 ### 3.1 `stripe-webhook` não transiciona pedido em falhas
+
 `supabase/functions/stripe-webhook/index.ts` — `transitionOrder` só é
 chamado quando `mapped.paid === true` (linha ~148). Eventos
 `payment_intent.payment_failed`, `payment_intent.canceled` e
@@ -72,18 +74,23 @@ pedido para `falha_pagamento` / `cancelado` / `reembolsado`. Pedido
 fica preso em `aguardando_pagamento` indefinidamente.
 
 **Correção:** mapear no `stripe-webhook`:
+
 ```
 rejected → falha_pagamento
 cancelled → falha_pagamento
 refunded → reembolsado
 ```
+
 (mesmo padrão que `mp-webhook` já faz via `domainTarget`).
 
 ### 3.2 `mp-webhook` — assinatura opcional (falha de segurança)
+
 `supabase/functions/mp-webhook/index.ts:44`
+
 ```
 if (!opts.secret) return true; // sem secret configurado: aceita e loga
 ```
+
 Se `MP_WEBHOOK_SECRET` estiver ausente/renomeado, **qualquer POST é aceito
 como legítimo**. `MP_WEBHOOK_SECRET` existe em secrets hoje, mas o
 comportamento "fail-open" precisa virar "fail-closed".
@@ -93,10 +100,13 @@ condicionar a `Deno.env.get("MP_WEBHOOK_ALLOW_UNSIGNED") === "true"`
 apenas em sandbox.
 
 ### 3.3 `mp-payment-intent` — email fictício quebra criação de PIX
+
 `supabase/functions/mp-payment-intent/index.ts:150`
+
 ```
 payerEmail: payload?.payer_email || "cliente@localix.app"
 ```
+
 Emails inválidos são rejeitados pelo MP e o pagamento nunca é criado
 (erro 400 vira `last_error` em `order_payment`). Como PaymentIntentService
 não repassa `payerEmail` na maioria dos consumidores, todo PIX MP falha
@@ -106,6 +116,7 @@ silenciosamente.
 buscar o e-mail via `customer_profiles`/`orders.customer_email`.
 
 ### 3.4 `stripe-checkout` PIX sem `customer_email`
+
 `supabase/functions/stripe-checkout/index.ts:149` só envia
 `customer_email` quando existe. Stripe exige e-mail para PIX; sem
 ele a API retorna erro 400 e a sessão nunca é criada — o cliente vê
@@ -116,6 +127,7 @@ ele a API retorna erro 400 e a sessão nunca é criada — o cliente vê
 antes de invocar a função. Cartão pode manter opcional.
 
 ### 3.5 `PaymentIntentService.edgeInvoke` usa `supabaseAdmin`
+
 `src/lib/payments/PaymentIntentService.ts:70` invoca a Edge Function com
 o cliente admin (service role). Não é necessário — `supabase.functions.
 invoke` funciona com o cliente publishable. Uso desnecessário do service
@@ -123,6 +135,7 @@ role aumenta a superfície de risco. Correção: usar o cliente
 autenticado do request via middleware, não `supabaseAdmin`.
 
 ### 3.6 Pedido órfão em `aguardando_pagamento`
+
 Sem cron/job de expiração, um `orders` que chega em
 `aguardando_pagamento` mas o cliente abandona o Checkout hospedado fica
 preso (exemplo real: `#1007` de 2026-07-06). Não há transição
@@ -133,6 +146,7 @@ lista `orders` em `aguardando_pagamento` com `created_at < now() - 60min`
 e chama `transitionOrder → falha_pagamento`.
 
 ### 3.7 Split + PIX Stripe Connect Express
+
 `stripe-checkout` envia `application_fee_amount` + `transfer_data.
 destination` mesmo para `method=pix`. Stripe Connect Express BR
 suporta PIX destination charges com restrições. Quando o restaurante
@@ -141,6 +155,7 @@ aumenta — verificar em sandbox e, se necessário, desativar split
 para PIX (`splitEligible && method !== "pix"`).
 
 ### 3.8 `mp-webhook` — comparação de assinatura sensível a formato
+
 `supabase/functions/mp-webhook/index.ts:63` compara `hex.length !==
 v1.length`. Como `v1` chega em hex minúsculo (mesma serialização), isso
 funciona hoje, mas se o MP mudar para base64 ou hex maiúsculo o webhook
@@ -151,13 +166,13 @@ começa a rejeitar tudo silenciosamente. Sugestão: normalizar
 
 ## 4. Onde o pagamento realmente para
 
-| Cenário | Ponto de parada | Sintoma no banco |
-|---|---|---|
-| Cliente abandona Checkout Stripe | Nenhum webhook chega | `payments.status=pending`, `orders.status=aguardando_pagamento`, sem timeout (3.6) |
-| PIX Stripe sem email | 400 do Stripe em `stripe-checkout` | Toast de erro; nenhum `payments` criado (3.4) |
-| PIX MP (rota morta) | `mp-payment-intent` recusado por email inválido | `order_payment.last_error` populado (3.3) |
-| Pagamento recusado/estornado | `stripe-webhook` atualiza `payments` mas não move `orders` | `payments.status=rejected|refunded`, `orders.status=aguardando_pagamento` (3.1) |
-| Webhook MP sem secret configurado | Aceita qualquer POST | risco de estado forjado (3.2) |
+| Cenário                           | Ponto de parada                                            | Sintoma no banco                                                                   |
+| --------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Cliente abandona Checkout Stripe  | Nenhum webhook chega                                       | `payments.status=pending`, `orders.status=aguardando_pagamento`, sem timeout (3.6) |
+| PIX Stripe sem email              | 400 do Stripe em `stripe-checkout`                         | Toast de erro; nenhum `payments` criado (3.4)                                      |
+| PIX MP (rota morta)               | `mp-payment-intent` recusado por email inválido            | `order_payment.last_error` populado (3.3)                                          |
+| Pagamento recusado/estornado      | `stripe-webhook` atualiza `payments` mas não move `orders` | `payments.status=rejected                                                          | refunded`, `orders.status=aguardando_pagamento` (3.1) |
+| Webhook MP sem secret configurado | Aceita qualquer POST                                       | risco de estado forjado (3.2)                                                      |
 
 ---
 

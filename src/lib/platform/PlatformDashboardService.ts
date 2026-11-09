@@ -39,7 +39,12 @@ export interface PlatformDashboardSnapshot {
 export interface DashboardInput {
   tenants: RawTenantRow[];
   orders: (RawOrderRow & { status?: string | null })[];
-  subscriptions?: Array<{ plan: PlanTier; overdue?: boolean; canceling?: boolean; monthly_price?: number }>;
+  subscriptions?: Array<{
+    plan: PlanTier;
+    overdue?: boolean;
+    canceling?: boolean;
+    monthly_price?: number;
+  }>;
   criticalErrors?: number;
   avgProcessingSeconds?: number | null;
 }
@@ -49,7 +54,8 @@ const DAY = 24 * 60 * 60 * 1000;
 export const PlatformDashboardService = {
   build(input: DashboardInput): PlatformDashboardSnapshot {
     const now = Date.now();
-    const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
     const startMonth = new Date(startToday.getFullYear(), startToday.getMonth(), 1);
 
     const tenants = input.tenants;
@@ -57,13 +63,19 @@ export const PlatformDashboardService = {
 
     const totalT = tenants.length;
     const activeT = tenants.filter((t) => t.active !== false).length;
-    const suspendedT = tenants.filter((t) => t.active === false || t.status === "suspended" || t.status === "blocked").length;
+    const suspendedT = tenants.filter(
+      (t) => t.active === false || t.status === "suspended" || t.status === "blocked",
+    ).length;
     const trialT = tenants.filter((t) => t.status === "trial").length;
     const newT = tenants.filter((t) => now - new Date(t.created_at).getTime() <= 30 * DAY).length;
 
     const gmv = orders.reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const ordersToday = orders.filter((o) => new Date(o.created_at).getTime() >= startToday.getTime()).length;
-    const ordersMonth = orders.filter((o) => new Date(o.created_at).getTime() >= startMonth.getTime()).length;
+    const ordersToday = orders.filter(
+      (o) => new Date(o.created_at).getTime() >= startToday.getTime(),
+    ).length;
+    const ordersMonth = orders.filter(
+      (o) => new Date(o.created_at).getTime() >= startMonth.getTime(),
+    ).length;
     const avgTicket = orders.length ? gmv / orders.length : 0;
 
     let platformRevenue = 0;

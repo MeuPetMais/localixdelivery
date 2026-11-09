@@ -49,12 +49,24 @@ function ResetPasswordPage() {
       return;
     }
     setLoading(true);
-    if (import.meta.env.DEV) console.info("[auth-debug] updateUser:before", { screen: "/redefinir-senha", reason: "password reset", fields: ["password"], passwordLength: password.length });
+    if (import.meta.env.DEV)
+      console.info("[auth-debug] updateUser:before", {
+        screen: "/redefinir-senha",
+        reason: "password reset",
+        fields: ["password"],
+        passwordLength: password.length,
+      });
     try {
       const { data, error } = await supabase.auth.updateUser({ password });
       if (import.meta.env.DEV) {
         const er = error as { code?: string; status?: number; message?: string } | null;
-        console.info("[auth-debug] updateUser:after", { ok: !error, userId: data?.user?.id, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        console.info("[auth-debug] updateUser:after", {
+          ok: !error,
+          userId: data?.user?.id,
+          errorCode: er?.code,
+          errorStatus: er?.status,
+          errorMessage: er?.message,
+        });
       }
       if (error) throw error;
       setSuccess(true);
@@ -90,9 +102,13 @@ function ResetPasswordPage() {
               </div>
               <div>
                 <h1 className="font-display text-2xl font-extrabold">Senha atualizada</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Sua senha foi alterada com sucesso.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sua senha foi alterada com sucesso.
+                </p>
               </div>
-              <Button className="h-11 w-full" onClick={goToPanel}>Entrar no painel</Button>
+              <Button className="h-11 w-full" onClick={goToPanel}>
+                Entrar no painel
+              </Button>
             </div>
           ) : tokenError ? (
             <div className="space-y-5 text-center">
@@ -100,7 +116,12 @@ function ResetPasswordPage() {
                 <h1 className="font-display text-2xl font-extrabold">Link indisponível</h1>
                 <p className="mt-2 text-sm text-muted-foreground">{tokenError}</p>
               </div>
-              <Button className="h-11 w-full" onClick={() => navigate({ to: "/auth", replace: true, search: { mode: undefined } })}>
+              <Button
+                className="h-11 w-full"
+                onClick={() =>
+                  navigate({ to: "/auth", replace: true, search: { mode: undefined } })
+                }
+              >
                 Voltar para login
               </Button>
             </div>
@@ -111,16 +132,34 @@ function ResetPasswordPage() {
                   <KeyRound className="h-6 w-6" />
                 </div>
                 <h1 className="font-display text-2xl font-extrabold">Criar nova senha</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Defina sua nova senha de acesso.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Defina sua nova senha de acesso.
+                </p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="pwd">Nova senha</Label>
-                  <PasswordInput id="pwd" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+                  <PasswordInput
+                    id="pwd"
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoComplete="new-password"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="pwd2">Confirmar nova senha</Label>
-                  <PasswordInput id="pwd2" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repita a nova senha" autoComplete="new-password" />
+                  <PasswordInput
+                    id="pwd2"
+                    required
+                    minLength={8}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Repita a nova senha"
+                    autoComplete="new-password"
+                  />
                 </div>
                 <Button type="submit" className="h-11 w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

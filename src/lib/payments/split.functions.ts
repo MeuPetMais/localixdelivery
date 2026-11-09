@@ -23,11 +23,7 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
   if (!data) throw new Error("Forbidden");
 }
 
-async function persistAndPublish(
-  admin: any,
-  plan: SplitPlan,
-  splitReference?: string,
-) {
+async function persistAndPublish(admin: any, plan: SplitPlan, splitReference?: string) {
   const row = {
     order_id: plan.order_id,
     payment_id: plan.payment_id,
@@ -40,26 +36,18 @@ async function persistAndPublish(
     split_reference: splitReference ?? null,
     error_message: plan.reason ?? null,
     processed_at:
-      plan.status === "COMPLETED" || plan.status === "FAILED"
-        ? new Date().toISOString()
-        : null,
+      plan.status === "COMPLETED" || plan.status === "FAILED" ? new Date().toISOString() : null,
     metadata: plan.reason ? { reason: plan.reason } : {},
   };
-  await admin
-    .from("payment_split")
-    .upsert(row, { onConflict: "order_id" });
+  await admin.from("payment_split").upsert(row, { onConflict: "order_id" });
 }
 
 export const runOrderSplit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ order_id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ order_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<SplitPlan> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [orderRes, snapRes, payRes, recRes] = await Promise.all([
       supabaseAdmin
@@ -69,9 +57,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabaseAdmin
         .from("order_pricing_snapshot")
-        .select(
-          "order_id, restaurant_net, platform_revenue, gateway_fee, currency",
-        )
+        .select("order_id, restaurant_net, platform_revenue, gateway_fee, currency")
         .eq("order_id", data.order_id)
         .maybeSingle(),
       supabaseAdmin
@@ -116,8 +102,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         .maybeSingle();
       if (acc) {
         const a = acc as any;
-        const notExpired =
-          !a.expires_at || new Date(a.expires_at).getTime() > Date.now();
+        const notExpired = !a.expires_at || new Date(a.expires_at).getTime() > Date.now();
         account = {
           connected: Boolean(a.connected),
           active: Boolean(a.connected),
@@ -127,9 +112,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
       }
     }
 
-    const reconciliation: ReconciliationState | null = recRow
-      ? { status: recRow.status }
-      : null;
+    const reconciliation: ReconciliationState | null = recRow ? { status: recRow.status } : null;
 
     const payment: PaymentState | null = payRow
       ? {
@@ -185,9 +168,7 @@ export const completeOrderSplit = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: current } = await supabaseAdmin
       .from("payment_split")
       .select("*")
@@ -252,9 +233,7 @@ export interface SplitRow {
 
 const FiltersSchema = z.object({
   limit: z.number().int().min(1).max(500).default(100),
-  status: z
-    .enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED", "MANUAL_REVIEW"])
-    .optional(),
+  status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED", "MANUAL_REVIEW"]).optional(),
   restaurant_id: z.string().uuid().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
@@ -298,19 +277,10 @@ export const getSplitReport = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<SplitReport> => {
     await assertAdmin(context);
     const sb = context.supabase;
-    const statuses = [
-      "COMPLETED",
-      "PROCESSING",
-      "PENDING",
-      "FAILED",
-      "MANUAL_REVIEW",
-    ] as const;
+    const statuses = ["COMPLETED", "PROCESSING", "PENDING", "FAILED", "MANUAL_REVIEW"] as const;
     const counts = await Promise.all(
       statuses.map((s) =>
-        sb
-          .from("payment_split")
-          .select("*", { count: "exact", head: true })
-          .eq("status", s),
+        sb.from("payment_split").select("*", { count: "exact", head: true }).eq("status", s),
       ),
     );
     const { data: sums } = await sb
@@ -318,17 +288,11 @@ export const getSplitReport = createServerFn({ method: "POST" })
       .select("restaurant_amount, platform_amount");
     const platform_total =
       Math.round(
-        ((sums ?? []).reduce(
-          (a: number, r: any) => a + Number(r.platform_amount ?? 0),
-          0,
-        )) * 100,
+        (sums ?? []).reduce((a: number, r: any) => a + Number(r.platform_amount ?? 0), 0) * 100,
       ) / 100;
     const restaurant_total =
       Math.round(
-        ((sums ?? []).reduce(
-          (a: number, r: any) => a + Number(r.restaurant_amount ?? 0),
-          0,
-        )) * 100,
+        (sums ?? []).reduce((a: number, r: any) => a + Number(r.restaurant_amount ?? 0), 0) * 100,
       ) / 100;
     return {
       total: counts.reduce((a, c) => a + (c.count ?? 0), 0),

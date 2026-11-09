@@ -188,28 +188,38 @@ describe("Driver location access rules", () => {
   };
 
   it("restaurante ve somente seus motoboys", () => {
-    expect(canReadDriverOperationalLocation(
-      { type: "restaurant", userId: "owner", restaurantIds: ["rest_1"] },
-      subject,
-    )).toBe(true);
-    expect(canReadDriverOperationalLocation(
-      { type: "restaurant", userId: "other", restaurantIds: ["rest_2"] },
-      subject,
-    )).toBe(false);
+    expect(
+      canReadDriverOperationalLocation(
+        { type: "restaurant", userId: "owner", restaurantIds: ["rest_1"] },
+        subject,
+      ),
+    ).toBe(true);
+    expect(
+      canReadDriverOperationalLocation(
+        { type: "restaurant", userId: "other", restaurantIds: ["rest_2"] },
+        subject,
+      ),
+    ).toBe(false);
   });
 
   it("cliente ve somente motoboy do proprio pedido ativo", () => {
-    expect(canReadCustomerDeliveryLocation(
-      { type: "customer", userId: "customer", orderIds: ["order_1"] },
-      subject,
-    )).toBe(true);
-    expect(canReadCustomerDeliveryLocation(
-      { type: "customer", userId: "customer", orderIds: ["other"] },
-      subject,
-    )).toBe(false);
-    expect(canReadCustomerDeliveryLocation(
-      { type: "customer", userId: "customer", orderIds: ["order_1"] },
-      { ...subject, trackingStatus: "ENTREGUE" },
-    )).toBe(false);
+    expect(
+      canReadCustomerDeliveryLocation(
+        { type: "customer", userId: "customer", orderIds: ["order_1"] },
+        subject,
+      ),
+    ).toBe(true);
+    expect(
+      canReadCustomerDeliveryLocation(
+        { type: "customer", userId: "customer", orderIds: ["other"] },
+        subject,
+      ),
+    ).toBe(false);
+    expect(
+      canReadCustomerDeliveryLocation(
+        { type: "customer", userId: "customer", orderIds: ["order_1"] },
+        { ...subject, trackingStatus: "ENTREGUE" },
+      ),
+    ).toBe(false);
   });
 });

@@ -39,52 +39,85 @@ export function AddressAutocomplete({
   const [recent, setRecent] = useState<AddressDetails[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setRecent(service.getRecent()); }, [service]);
-  useEffect(() => { if (autoFocus) inputRef.current?.focus(); }, [autoFocus]);
+  useEffect(() => {
+    setRecent(service.getRecent());
+  }, [service]);
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
 
   // debounce search
   useEffect(() => {
     if (value) return; // já selecionado
     const q = query.trim();
-    if (q.length < 3) { setItems([]); return; }
+    if (q.length < 3) {
+      setItems([]);
+      return;
+    }
     const ctrl = new AbortController();
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     const t = setTimeout(() => {
-      service.search(q, { signal: ctrl.signal })
-        .then((r) => { setItems(r); setActive(0); })
-        .catch((e) => { if (e?.name !== "AbortError") setError(e?.message ?? "Falha na busca"); })
+      service
+        .search(q, { signal: ctrl.signal })
+        .then((r) => {
+          setItems(r);
+          setActive(0);
+        })
+        .catch((e) => {
+          if (e?.name !== "AbortError") setError(e?.message ?? "Falha na busca");
+        })
         .finally(() => setLoading(false));
     }, DEBOUNCE_MS);
-    return () => { clearTimeout(t); ctrl.abort(); };
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
   }, [query, service, value]);
 
-  const select = useCallback(async (s: AddressSuggestion | AddressDetails) => {
-    try {
-      const details = "street" in s ? s : await service.details(s);
-      const area = await service.validateDeliveryArea(details, { restaurantSlug });
-      if (!area.ok) {
-        setAreaError(area.reason ?? "Este endereço está fora da área de entrega.");
-        onChange(null);
-        return;
+  const select = useCallback(
+    async (s: AddressSuggestion | AddressDetails) => {
+      try {
+        const details = "street" in s ? s : await service.details(s);
+        const area = await service.validateDeliveryArea(details, { restaurantSlug });
+        if (!area.ok) {
+          setAreaError(area.reason ?? "Este endereço está fora da área de entrega.");
+          onChange(null);
+          return;
+        }
+        setAreaError(null);
+        setOpen(false);
+        setQuery("");
+        onChange({ ...details });
+        setRecent(service.getRecent());
+      } catch (e: any) {
+        setError(e?.message ?? "Não foi possível carregar o endereço");
       }
-      setAreaError(null);
-      setOpen(false);
-      setQuery("");
-      onChange({ ...details });
-      setRecent(service.getRecent());
-    } catch (e: any) {
-      setError(e?.message ?? "Não foi possível carregar o endereço");
-    }
-  }, [onChange, restaurantSlug, service]);
+    },
+    [onChange, restaurantSlug, service],
+  );
 
-  const clear = useCallback(() => { onChange(null); setAreaError(null); setQuery(""); setTimeout(() => inputRef.current?.focus(), 0); }, [onChange]);
+  const clear = useCallback(() => {
+    onChange(null);
+    setAreaError(null);
+    setQuery("");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [onChange]);
 
   const list = items;
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, list.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter" && list[active]) { e.preventDefault(); void select(list[active]); }
-    else if (e.key === "Escape") { setOpen(false); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => Math.min(i + 1, list.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && list[active]) {
+      e.preventDefault();
+      void select(list[active]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
   }
 
   if (value) {
@@ -100,7 +133,12 @@ export function AddressAutocomplete({
                 {value.cep && <p className="text-xs text-muted-foreground">CEP {value.cep}</p>}
               </div>
             </div>
-            <button type="button" onClick={clear} className="text-xs text-muted-foreground hover:text-foreground" aria-label="Trocar endereço">
+            <button
+              type="button"
+              onClick={clear}
+              className="text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Trocar endereço"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -150,7 +188,10 @@ export function AddressAutocomplete({
           ref={inputRef}
           className="pl-9"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder="Digite sua rua, avenida ou CEP"
@@ -165,7 +206,9 @@ export function AddressAutocomplete({
         <div className="overflow-hidden rounded-lg border bg-popover shadow-sm">
           {saved.length > 0 && query.trim().length < 3 && (
             <div className="border-b p-2">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground">Salvos</p>
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground">
+                Salvos
+              </p>
               {saved.map((s) => (
                 <button
                   key={s.id}
@@ -182,11 +225,16 @@ export function AddressAutocomplete({
           )}
           {recent.length > 0 && query.trim().length < 3 && (
             <div className="border-b p-2">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground">Recentes</p>
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground">
+                Recentes
+              </p>
               {recent.map((r) => (
-                <button key={r.id} type="button"
+                <button
+                  key={r.id}
+                  type="button"
                   className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
-                  onClick={() => void select(r)}>
+                  onClick={() => void select(r)}
+                >
                   <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0">
                     <p className="truncate">{r.label}</p>
@@ -245,7 +293,15 @@ function MapPreview({ lat, lng }: { lat: number; lng: number }) {
 export function formatFullAddress(a: SelectedAddress): string {
   const num = a.number ?? a.numberOverride ?? "";
   const line1 = [a.street, num].filter(Boolean).join(", ");
-  const line2 = [a.neighborhood, [a.city, a.state].filter(Boolean).join("/")].filter(Boolean).join(" - ");
-  const extra = [a.complement && `Compl.: ${a.complement}`, a.reference && `Ref.: ${a.reference}`, a.cep && `CEP ${a.cep}`].filter(Boolean).join(" · ");
+  const line2 = [a.neighborhood, [a.city, a.state].filter(Boolean).join("/")]
+    .filter(Boolean)
+    .join(" - ");
+  const extra = [
+    a.complement && `Compl.: ${a.complement}`,
+    a.reference && `Ref.: ${a.reference}`,
+    a.cep && `CEP ${a.cep}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return [line1, line2, extra].filter(Boolean).join(" — ");
 }

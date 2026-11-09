@@ -61,7 +61,8 @@ const adminDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
 
 function datePartsInAdminTimeZone(date: Date) {
   const parts = Object.fromEntries(
-    adminDateTimeFormatter.formatToParts(date)
+    adminDateTimeFormatter
+      .formatToParts(date)
       .filter((part) => part.type !== "literal")
       .map((part) => [part.type, part.value]),
   );
@@ -105,7 +106,8 @@ function adminLocalDateTimeToUTC(
 
 function dateOnlyInAdminTimeZone(date: Date) {
   const parts = Object.fromEntries(
-    adminDateFormatter.formatToParts(date)
+    adminDateFormatter
+      .formatToParts(date)
       .filter((part) => part.type !== "literal")
       .map((part) => [part.type, part.value]),
   );
@@ -129,7 +131,9 @@ function parseDateOnlyInAdminTimeZone(value: string, endOfDay: boolean) {
 
 export function resolveAdminDateRangeUTC(from?: string, to?: string, now = new Date()) {
   const toDate = to ? parseDateOnlyInAdminTimeZone(to, true) : now;
-  const fromDate = from ? parseDateOnlyInAdminTimeZone(from, false) : new Date(now.getTime() - 30 * DAY_MS);
+  const fromDate = from
+    ? parseDateOnlyInAdminTimeZone(from, false)
+    : new Date(now.getTime() - 30 * DAY_MS);
   return { fromDate, toDate };
 }
 

@@ -27,15 +27,15 @@ export function readStripeEnv(env: Record<string, string | undefined> = {}): Str
   const mode: StripeEnvironment = requestedMode === "live" && allowLive ? "live" : "sandbox";
 
   const secretKey =
-    mode === "live" ? env.STRIPE_SECRET_KEY_LIVE ?? null : env.STRIPE_SECRET_KEY_TEST ?? null;
+    mode === "live" ? (env.STRIPE_SECRET_KEY_LIVE ?? null) : (env.STRIPE_SECRET_KEY_TEST ?? null);
   const publishableKey =
     mode === "live"
-      ? env.STRIPE_PUBLISHABLE_KEY_LIVE ?? null
-      : env.STRIPE_PUBLISHABLE_KEY_TEST ?? null;
+      ? (env.STRIPE_PUBLISHABLE_KEY_LIVE ?? null)
+      : (env.STRIPE_PUBLISHABLE_KEY_TEST ?? null);
   const webhookSecret =
     mode === "live"
-      ? env.STRIPE_WEBHOOK_SECRET_LIVE ?? null
-      : env.STRIPE_WEBHOOK_SECRET_TEST ?? null;
+      ? (env.STRIPE_WEBHOOK_SECRET_LIVE ?? null)
+      : (env.STRIPE_WEBHOOK_SECRET_TEST ?? null);
 
   return { mode, publishableKey, secretKey, webhookSecret, allowLive };
 }

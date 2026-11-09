@@ -3,17 +3,17 @@
 Todos os eventos são in-process e emitidos por `BillingEvents.emit()`.
 Assinatura: `BillingEvents.on(handler): unsubscribe`.
 
-| Evento | Origem | Payload principal |
-|---|---|---|
-| `RestaurantCreated` | consumidor externo | `restaurantId` |
-| `RestaurantStateChanged` | `RestaurantLifecycleService.transition` | `from`, `to` |
-| `RestaurantApproved` | transição para `Production` | `restaurantId` |
-| `RestaurantSuspended` | transição para `Suspended` | `restaurantId` |
-| `RestaurantClosed` | transição para `Closed` | `restaurantId` |
-| `EligibilityEvaluated` | `EligibilityService` (opcional) | `eligible` |
-| `OnboardingStepCompleted` | `OnboardingService.completeStep` | `stepId` |
-| `OnboardingCompleted` | consumidor externo | `restaurantId` |
-| `ServiceFeeQuoted` | `ServiceFeeService.quote` | `perOrderFee` |
+| Evento                    | Origem                                  | Payload principal |
+| ------------------------- | --------------------------------------- | ----------------- |
+| `RestaurantCreated`       | consumidor externo                      | `restaurantId`    |
+| `RestaurantStateChanged`  | `RestaurantLifecycleService.transition` | `from`, `to`      |
+| `RestaurantApproved`      | transição para `Production`             | `restaurantId`    |
+| `RestaurantSuspended`     | transição para `Suspended`              | `restaurantId`    |
+| `RestaurantClosed`        | transição para `Closed`                 | `restaurantId`    |
+| `EligibilityEvaluated`    | `EligibilityService` (opcional)         | `eligible`        |
+| `OnboardingStepCompleted` | `OnboardingService.completeStep`        | `stepId`          |
+| `OnboardingCompleted`     | consumidor externo                      | `restaurantId`    |
+| `ServiceFeeQuoted`        | `ServiceFeeService.quote`               | `perOrderFee`     |
 
 ## Contrato
 

@@ -44,7 +44,8 @@ export const resolveUniversalDriverEmail = createServerFn({ method: "POST" })
 
     if (!ownerId) return { found: false as const };
 
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(ownerId);
+    const { data: authUser, error: authError } =
+      await supabaseAdmin.auth.admin.getUserById(ownerId);
     if (authError || !authUser?.user?.email) return { found: false as const };
 
     return { found: true as const, email: authUser.user.email };

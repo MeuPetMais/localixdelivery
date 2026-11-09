@@ -22,11 +22,17 @@ export interface ProductSearchQuery {
 }
 
 function normalize(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 export const ProductSearchService = {
-  index(products: ProductRecord[], tagsByProduct: Record<string, string[]> = {}): ProductSearchDoc[] {
+  index(
+    products: ProductRecord[],
+    tagsByProduct: Record<string, string[]> = {},
+  ): ProductSearchDoc[] {
     return products.map((p) => {
       const tags = tagsByProduct[p.id] ?? [];
       const haystack = normalize([p.name, p.description ?? "", ...tags].join(" "));

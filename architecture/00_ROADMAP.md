@@ -162,6 +162,6 @@ A RC2 será considerada concluída quando:
 
 # Histórico
 
-| Data | Evento |
-|-------|--------|
-|23/07/2026|Início da RC2|
+| Data       | Evento        |
+| ---------- | ------------- |
+| 23/07/2026 | Início da RC2 |

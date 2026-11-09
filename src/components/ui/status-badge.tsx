@@ -17,19 +17,19 @@ export type StatusTone =
   | "neutral";
 
 const TONE_CLASSES: Record<StatusTone, string> = {
-  online:     "bg-success/15 text-success ring-1 ring-inset ring-success/30",
-  success:    "bg-success/15 text-success ring-1 ring-inset ring-success/30",
-  paid:       "bg-success/15 text-success ring-1 ring-inset ring-success/30",
-  offline:    "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
-  neutral:    "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
-  cancelled:  "bg-destructive/12 text-destructive ring-1 ring-inset ring-destructive/30",
-  danger:     "bg-destructive/12 text-destructive ring-1 ring-inset ring-destructive/30",
-  queue:      "bg-queue/20 text-[color:var(--queue-foreground)] ring-1 ring-inset ring-queue/40",
-  pending:    "bg-warning/15 text-[color:var(--warning-foreground)] ring-1 ring-inset ring-warning/40",
-  warning:    "bg-warning/15 text-[color:var(--warning-foreground)] ring-1 ring-inset ring-warning/40",
-  delivery:   "bg-delivery/15 text-delivery ring-1 ring-inset ring-delivery/30",
-  info:       "bg-info/15 text-info ring-1 ring-inset ring-info/30",
-  returning:  "bg-returning/15 text-returning ring-1 ring-inset ring-returning/30",
+  online: "bg-success/15 text-success ring-1 ring-inset ring-success/30",
+  success: "bg-success/15 text-success ring-1 ring-inset ring-success/30",
+  paid: "bg-success/15 text-success ring-1 ring-inset ring-success/30",
+  offline: "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
+  neutral: "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
+  cancelled: "bg-destructive/12 text-destructive ring-1 ring-inset ring-destructive/30",
+  danger: "bg-destructive/12 text-destructive ring-1 ring-inset ring-destructive/30",
+  queue: "bg-queue/20 text-[color:var(--queue-foreground)] ring-1 ring-inset ring-queue/40",
+  pending: "bg-warning/15 text-[color:var(--warning-foreground)] ring-1 ring-inset ring-warning/40",
+  warning: "bg-warning/15 text-[color:var(--warning-foreground)] ring-1 ring-inset ring-warning/40",
+  delivery: "bg-delivery/15 text-delivery ring-1 ring-inset ring-delivery/30",
+  info: "bg-info/15 text-info ring-1 ring-inset ring-info/30",
+  returning: "bg-returning/15 text-returning ring-1 ring-inset ring-returning/30",
 };
 
 export interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

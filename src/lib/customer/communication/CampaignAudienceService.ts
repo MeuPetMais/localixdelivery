@@ -22,13 +22,15 @@ export const CampaignAudienceService = {
       .eq("restaurant_id", input.restaurant_id);
     if (error) throw error;
     const rows = (data ?? []) as Array<{ customer_id: string; segment: string | null }>;
-    const filtered = input.segment
-      ? rows.filter((r) => r.segment === input.segment)
-      : rows;
+    const filtered = input.segment ? rows.filter((r) => r.segment === input.segment) : rows;
     return filtered.map((r) => r.customer_id);
   },
 
-  async filterByConsent(customerIds: string[], channel: CommunicationChannel, requireMarketing = true) {
+  async filterByConsent(
+    customerIds: string[],
+    channel: CommunicationChannel,
+    requireMarketing = true,
+  ) {
     if (customerIds.length === 0) return { eligible: [] as string[], filtered_out: 0 };
     const { data, error } = await (supabase as any)
       .from("customer_communication_preferences")
@@ -39,14 +41,18 @@ export const CampaignAudienceService = {
     const eligible: string[] = [];
     for (const id of customerIds) {
       const prefs = map.get(id) ?? CommunicationPreferenceService.defaults(id);
-      if (CommunicationPreferenceService.isAllowed(prefs, channel, { marketing: requireMarketing })) {
+      if (
+        CommunicationPreferenceService.isAllowed(prefs, channel, { marketing: requireMarketing })
+      ) {
         eligible.push(id);
       }
     }
     return { eligible, filtered_out: customerIds.length - eligible.length };
   },
 
-  async build(input: CampaignAudienceInput & { campaign_id?: string }): Promise<CampaignAudienceResult> {
+  async build(
+    input: CampaignAudienceInput & { campaign_id?: string },
+  ): Promise<CampaignAudienceResult> {
     const candidates = await CampaignAudienceService.candidateIds(input);
     const { eligible, filtered_out } = await CampaignAudienceService.filterByConsent(
       candidates,
@@ -79,7 +85,9 @@ export const CampaignPreview = {
     const eligible_by_channel = {} as Record<CommunicationChannel, number>;
     for (const c of channels) {
       const { eligible } = await CampaignAudienceService.filterByConsent(
-        candidates, c, input.require_marketing_consent ?? true,
+        candidates,
+        c,
+        input.require_marketing_consent ?? true,
       );
       eligible_by_channel[c] = eligible.length;
     }

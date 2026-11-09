@@ -8,16 +8,16 @@ Function futura antes de executar operações reais.
 
 ## Variáveis de ambiente esperadas (backend)
 
-| Nome                              | Descrição                                          |
-|-----------------------------------|----------------------------------------------------|
-| `STRIPE_MODE`                     | `sandbox` (default) \| `live`                      |
-| `STRIPE_ALLOW_LIVE`               | `true` para destravar `live` (não usar ainda)      |
-| `STRIPE_SECRET_KEY_TEST`          | `sk_test_...` (obrigatório em sandbox)             |
-| `STRIPE_PUBLISHABLE_KEY_TEST`     | `pk_test_...`                                      |
-| `STRIPE_WEBHOOK_SECRET_TEST`      | `whsec_...`                                        |
-| `STRIPE_SECRET_KEY_LIVE`          | `sk_live_...` (futuro)                             |
-| `STRIPE_PUBLISHABLE_KEY_LIVE`     | `pk_live_...` (futuro)                             |
-| `STRIPE_WEBHOOK_SECRET_LIVE`      | `whsec_...` (futuro)                               |
+| Nome                          | Descrição                                     |
+| ----------------------------- | --------------------------------------------- |
+| `STRIPE_MODE`                 | `sandbox` (default) \| `live`                 |
+| `STRIPE_ALLOW_LIVE`           | `true` para destravar `live` (não usar ainda) |
+| `STRIPE_SECRET_KEY_TEST`      | `sk_test_...` (obrigatório em sandbox)        |
+| `STRIPE_PUBLISHABLE_KEY_TEST` | `pk_test_...`                                 |
+| `STRIPE_WEBHOOK_SECRET_TEST`  | `whsec_...`                                   |
+| `STRIPE_SECRET_KEY_LIVE`      | `sk_live_...` (futuro)                        |
+| `STRIPE_PUBLISHABLE_KEY_LIVE` | `pk_live_...` (futuro)                        |
+| `STRIPE_WEBHOOK_SECRET_LIVE`  | `whsec_...` (futuro)                          |
 
 ## Regras
 

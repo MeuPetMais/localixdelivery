@@ -38,9 +38,16 @@ async function nextVersionNumber(supabase: any, productId: string): Promise<numb
   return (data?.[0]?.version ?? 0) + 1;
 }
 
-async function writeAudit(supabase: any, params: {
-  productId: string; restaurantId: string; actorId: string; action: string; payload?: Record<string, unknown>;
-}) {
+async function writeAudit(
+  supabase: any,
+  params: {
+    productId: string;
+    restaurantId: string;
+    actorId: string;
+    action: string;
+    payload?: Record<string, unknown>;
+  },
+) {
   await supabase.from("product_audit").insert({
     product_id: params.productId,
     restaurant_id: params.restaurantId,
@@ -50,9 +57,16 @@ async function writeAudit(supabase: any, params: {
   });
 }
 
-async function writeVersion(supabase: any, params: {
-  productId: string; restaurantId: string; status: ProductLifecycleStatus; actorId: string; changes: Record<string, unknown>;
-}) {
+async function writeVersion(
+  supabase: any,
+  params: {
+    productId: string;
+    restaurantId: string;
+    status: ProductLifecycleStatus;
+    actorId: string;
+    changes: Record<string, unknown>;
+  },
+) {
   const version = await nextVersionNumber(supabase, params.productId);
   await supabase.from("product_versions").insert({
     product_id: params.productId,
@@ -68,14 +82,16 @@ async function writeVersion(supabase: any, params: {
 // ---------- Create ----------
 export const createProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    restaurantId: string;
-    name: string;
-    price: number;
-    categoryId?: string | null;
-    description?: string | null;
-    imageUrl?: string | null;
-  }) => input)
+  .inputValidator(
+    (input: {
+      restaurantId: string;
+      name: string;
+      price: number;
+      categoryId?: string | null;
+      description?: string | null;
+      imageUrl?: string | null;
+    }) => input,
+  )
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     const validation = ProductValidator.validate({ name: data.name, price: data.price });
@@ -100,14 +116,23 @@ export const createProduct = createServerFn({ method: "POST" })
 
     const status: ProductLifecycleStatus = "DRAFT";
     await writeVersion(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, status, actorId: context.userId,
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      status,
+      actorId: context.userId,
       changes: { created: true, snapshot: row },
     });
     await writeAudit(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, actorId: context.userId, action: "product.created",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      actorId: context.userId,
+      action: "product.created",
     });
     await ProductEventBus.publish({
-      type: "ProductCreated", productId: row.id, restaurantId: data.restaurantId, at: new Date().toISOString(),
+      type: "ProductCreated",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      at: new Date().toISOString(),
     });
     return row as ProductRecord;
   });
@@ -115,7 +140,9 @@ export const createProduct = createServerFn({ method: "POST" })
 // ---------- Update ----------
 export const updateProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; restaurantId: string; patch: Partial<ProductRecord> }) => input)
+  .inputValidator(
+    (input: { id: string; restaurantId: string; patch: Partial<ProductRecord> }) => input,
+  )
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     const validation = ProductValidator.validate(data.patch);
@@ -132,14 +159,25 @@ export const updateProduct = createServerFn({ method: "POST" })
 
     const status = ProductLifecycle.fromRecord(row);
     await writeVersion(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, status, actorId: context.userId, changes: data.patch as Record<string, unknown>,
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      status,
+      actorId: context.userId,
+      changes: data.patch as Record<string, unknown>,
     });
     await writeAudit(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, actorId: context.userId, action: "product.updated",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      actorId: context.userId,
+      action: "product.updated",
       payload: { fields: Object.keys(data.patch) },
     });
     await ProductEventBus.publish({
-      type: "ProductUpdated", productId: row.id, restaurantId: data.restaurantId, changes: data.patch as Record<string, unknown>, at: new Date().toISOString(),
+      type: "ProductUpdated",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      changes: data.patch as Record<string, unknown>,
+      at: new Date().toISOString(),
     });
     return row as ProductRecord;
   });
@@ -147,37 +185,75 @@ export const updateProduct = createServerFn({ method: "POST" })
 // ---------- Transition (publish / pause / archive / discontinue) ----------
 export const transitionProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; restaurantId: string; to: ProductLifecycleStatus }) => input)
+  .inputValidator(
+    (input: { id: string; restaurantId: string; to: ProductLifecycleStatus }) => input,
+  )
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
 
     const { data: current, error: e1 } = await context.supabase
-      .from("menu_items").select("*").eq("id", data.id).eq("restaurant_id", data.restaurantId).single();
+      .from("menu_items")
+      .select("*")
+      .eq("id", data.id)
+      .eq("restaurant_id", data.restaurantId)
+      .single();
     if (e1) throw e1;
     const from = ProductLifecycle.fromRecord(current);
     ProductLifecycle.assertTransition(from, data.to);
 
     const flags = ProductLifecycle.toFlags(data.to);
     const { data: row, error } = await context.supabase
-      .from("menu_items").update({ ...flags, updated_at: new Date().toISOString() })
-      .eq("id", data.id).eq("restaurant_id", data.restaurantId).select("*").single();
+      .from("menu_items")
+      .update({ ...flags, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("restaurant_id", data.restaurantId)
+      .select("*")
+      .single();
     if (error) throw error;
 
     await writeVersion(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, status: data.to, actorId: context.userId,
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      status: data.to,
+      actorId: context.userId,
       changes: { transition: { from, to: data.to } },
     });
     await writeAudit(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, actorId: context.userId,
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      actorId: context.userId,
       action: `product.transition.${data.to.toLowerCase()}`,
       payload: { from, to: data.to },
     });
     await ProductEventBus.publish({
-      type: "LifecycleChanged", productId: row.id, restaurantId: data.restaurantId, from, to: data.to, at: new Date().toISOString(),
+      type: "LifecycleChanged",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      from,
+      to: data.to,
+      at: new Date().toISOString(),
     });
-    if (data.to === "PUBLISHED") await ProductEventBus.publish({ type: "ProductPublished", productId: row.id, restaurantId: data.restaurantId, at: new Date().toISOString() });
-    if (data.to === "ARCHIVED") await ProductEventBus.publish({ type: "ProductArchived", productId: row.id, restaurantId: data.restaurantId, at: new Date().toISOString() });
-    if (data.to === "DISCONTINUED") await ProductEventBus.publish({ type: "ProductDiscontinued", productId: row.id, restaurantId: data.restaurantId, at: new Date().toISOString() });
+    if (data.to === "PUBLISHED")
+      await ProductEventBus.publish({
+        type: "ProductPublished",
+        productId: row.id,
+        restaurantId: data.restaurantId,
+        at: new Date().toISOString(),
+      });
+    if (data.to === "ARCHIVED")
+      await ProductEventBus.publish({
+        type: "ProductArchived",
+        productId: row.id,
+        restaurantId: data.restaurantId,
+        at: new Date().toISOString(),
+      });
+    if (data.to === "DISCONTINUED")
+      await ProductEventBus.publish({
+        type: "ProductDiscontinued",
+        productId: row.id,
+        restaurantId: data.restaurantId,
+        at: new Date().toISOString(),
+      });
     return row as ProductRecord;
   });
 
@@ -188,25 +264,39 @@ export const duplicateProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     const { data: src, error: e1 } = await context.supabase
-      .from("menu_items").select("*").eq("id", data.id).eq("restaurant_id", data.restaurantId).single();
+      .from("menu_items")
+      .select("*")
+      .eq("id", data.id)
+      .eq("restaurant_id", data.restaurantId)
+      .single();
     if (e1) throw e1;
     const { id: _drop, created_at: _c, updated_at: _u, ...rest } = src;
     const { data: row, error } = await context.supabase
       .from("menu_items")
       .insert({ ...rest, name: `${src.name} (cópia)`, is_paused: true })
-      .select("*").single();
+      .select("*")
+      .single();
     if (error) throw error;
 
     await writeVersion(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, status: "DRAFT", actorId: context.userId,
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      status: "DRAFT",
+      actorId: context.userId,
       changes: { duplicatedFrom: src.id, snapshot: row },
     });
     await writeAudit(context.supabase, {
-      productId: row.id, restaurantId: data.restaurantId, actorId: context.userId, action: "product.duplicated",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      actorId: context.userId,
+      action: "product.duplicated",
       payload: { source: src.id },
     });
     await ProductEventBus.publish({
-      type: "ProductCreated", productId: row.id, restaurantId: data.restaurantId, at: new Date().toISOString(),
+      type: "ProductCreated",
+      productId: row.id,
+      restaurantId: data.restaurantId,
+      at: new Date().toISOString(),
     });
     return row as ProductRecord;
   });
@@ -214,7 +304,10 @@ export const duplicateProduct = createServerFn({ method: "POST" })
 // ---------- Registry / read side ----------
 export const listProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { restaurantId: string; status?: ProductLifecycleStatus; categoryId?: string }) => input)
+  .inputValidator(
+    (input: { restaurantId: string; status?: ProductLifecycleStatus; categoryId?: string }) =>
+      input,
+  )
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     let q = context.supabase.from("menu_items").select("*").eq("restaurant_id", data.restaurantId);
@@ -232,7 +325,8 @@ export const listProductVersions = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     const { data: rows, error } = await context.supabase
-      .from("product_versions").select("*")
+      .from("product_versions")
+      .select("*")
       .eq("product_id", data.productId)
       .order("version", { ascending: false });
     if (error) throw error;
@@ -245,7 +339,8 @@ export const listProductAudit = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context, data.restaurantId);
     const { data: rows, error } = await context.supabase
-      .from("product_audit").select("*")
+      .from("product_audit")
+      .select("*")
       .eq("product_id", data.productId)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -263,7 +358,12 @@ export const getProductHealth = createServerFn({ method: "POST" })
       .select("id,name,is_active,is_paused,is_available,image_url,category_id")
       .eq("restaurant_id", data.restaurantId);
     if (error) throw error;
-    const list = (rows ?? []) as Array<Pick<ProductRecord, "id" | "name" | "is_active" | "is_paused" | "is_available" | "image_url" | "category_id">>;
+    const list = (rows ?? []) as Array<
+      Pick<
+        ProductRecord,
+        "id" | "name" | "is_active" | "is_paused" | "is_available" | "image_url" | "category_id"
+      >
+    >;
     return {
       total: list.length,
       published: list.filter((p) => p.is_active && !p.is_paused).length,

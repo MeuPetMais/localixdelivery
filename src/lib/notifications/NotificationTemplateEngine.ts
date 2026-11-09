@@ -2,7 +2,11 @@
 import type { NotificationChannel, NotificationRenderResult, NotificationTemplate } from "./types";
 
 export interface TemplateRepo {
-  find(code: string, channel: NotificationChannel, language: string): Promise<NotificationTemplate | null>;
+  find(
+    code: string,
+    channel: NotificationChannel,
+    language: string,
+  ): Promise<NotificationTemplate | null>;
 }
 
 const VAR_RE = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;

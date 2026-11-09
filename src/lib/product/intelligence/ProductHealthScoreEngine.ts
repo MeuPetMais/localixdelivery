@@ -16,7 +16,8 @@ export const ProductHealthScoreEngine = {
     const marginPct = stat.revenue > 0 ? (profit / stat.revenue) * 100 : 0;
     const marginScore = Math.max(0, Math.min(100, marginPct * 2)); // 50% margin -> 100
     const availabilityScore = extras.is_available !== false && extras.in_stock !== false ? 100 : 0;
-    const reviewsScore = extras.avg_rating != null ? Math.max(0, Math.min(100, (extras.avg_rating / 5) * 100)) : 60;
+    const reviewsScore =
+      extras.avg_rating != null ? Math.max(0, Math.min(100, (extras.avg_rating / 5) * 100)) : 60;
 
     const score = Math.round(
       salesScore * 0.4 + marginScore * 0.3 + availabilityScore * 0.2 + reviewsScore * 0.1,

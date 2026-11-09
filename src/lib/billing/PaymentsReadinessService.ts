@@ -42,10 +42,7 @@ export const PaymentsReadinessService = {
     if (!data.stripe_account_id) reasons.push("no_account");
     if (data.stripe_account_id && !data.stripe_details_submitted)
       reasons.push("onboarding_incomplete");
-    if (
-      data.stripe_account_id &&
-      (!data.stripe_charges_enabled || !data.stripe_payouts_enabled)
-    )
+    if (data.stripe_account_id && (!data.stripe_charges_enabled || !data.stripe_payouts_enabled))
       reasons.push("capabilities_inactive");
     if (data.stripe_account_status === "restricted") reasons.push("account_under_review");
 

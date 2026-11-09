@@ -18,7 +18,7 @@ Fluxo real e ativo da primeira venda Localix em Sandbox.
 
 1. Cliente clica em "Pagar com cartão (Stripe)" no checkout do restaurante.
 2. Front-end chama `stripe-checkout` com `{ orderId, successUrl, cancelUrl,
-   customerEmail? }`.
+customerEmail? }`.
 3. `stripe-checkout` valida sandbox (`sk_test_`), lê `orders` pelo `orderId`,
    cria uma **Checkout Session** (`mode=payment`, moeda BRL, `unit_amount` em
    centavos), passa `metadata.order_id` e `metadata.restaurant_id` também no
@@ -51,8 +51,8 @@ Fluxo real e ativo da primeira venda Localix em Sandbox.
 
 ## Variáveis de ambiente (backend)
 
-| Nome                          | Uso                                    |
-|-------------------------------|----------------------------------------|
-| `STRIPE_SECRET_KEY_TEST`      | `stripe-checkout` (criar Session)      |
-| `STRIPE_WEBHOOK_SECRET_TEST`  | `stripe-webhook` (verificar assinatura)|
-| `VITE_STRIPE_PUBLISHABLE_KEY_TEST` | Front-end (Elements — próximo passo) |
+| Nome                               | Uso                                     |
+| ---------------------------------- | --------------------------------------- |
+| `STRIPE_SECRET_KEY_TEST`           | `stripe-checkout` (criar Session)       |
+| `STRIPE_WEBHOOK_SECRET_TEST`       | `stripe-webhook` (verificar assinatura) |
+| `VITE_STRIPE_PUBLISHABLE_KEY_TEST` | Front-end (Elements — próximo passo)    |

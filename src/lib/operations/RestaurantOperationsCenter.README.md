@@ -27,17 +27,17 @@ Restaurant Dashboard
 
 ## Serviços (`src/lib/operations`)
 
-| Arquivo | Responsabilidade |
-| --- | --- |
-| `OperationsService` | Fachada. `perform()` valida permissão, chama `OrderOrchestrator.transition()` e emite audit + sons. |
-| `OperationsPermissions` | Matriz `role × action` e mapa `action → OrderState`. |
-| `columns` | Colunas do Kanban e `columnForState()`. |
-| `PriorityEngine` | Classifica URGENT/NORMAL/LOW por idade, ETA e VIP. |
-| `AlertsEngine` | Alertas: atrasado, pagamento pendente, entregador atrasado, restaurante fechado. |
-| `OperationsMetrics` | Counters (novos, preparo, entrega, hoje) e métricas (tempos, cancel, pedidos/h). |
-| `OperationsFilters` | Filtros por hoje/pendentes/entrega/pagamento/prioridade/cliente/busca. |
-| `OperationsRealtime` | Bridge `OrderEventBus.subscribe(...)` → listener local. |
-| `KitchenSounds` | Infra de sons (`NEW_ORDER`, `ORDER_READY`, `ORDER_CANCELLED`). Sem áudio real. |
+| Arquivo                 | Responsabilidade                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `OperationsService`     | Fachada. `perform()` valida permissão, chama `OrderOrchestrator.transition()` e emite audit + sons. |
+| `OperationsPermissions` | Matriz `role × action` e mapa `action → OrderState`.                                                |
+| `columns`               | Colunas do Kanban e `columnForState()`.                                                             |
+| `PriorityEngine`        | Classifica URGENT/NORMAL/LOW por idade, ETA e VIP.                                                  |
+| `AlertsEngine`          | Alertas: atrasado, pagamento pendente, entregador atrasado, restaurante fechado.                    |
+| `OperationsMetrics`     | Counters (novos, preparo, entrega, hoje) e métricas (tempos, cancel, pedidos/h).                    |
+| `OperationsFilters`     | Filtros por hoje/pendentes/entrega/pagamento/prioridade/cliente/busca.                              |
+| `OperationsRealtime`    | Bridge `OrderEventBus.subscribe(...)` → listener local.                                             |
+| `KitchenSounds`         | Infra de sons (`NEW_ORDER`, `ORDER_READY`, `ORDER_CANCELLED`). Sem áudio real.                      |
 
 ## Integração `OrderOrchestrator`
 
@@ -45,8 +45,15 @@ Restaurant Dashboard
 import { createOperationsService } from "@/lib/operations";
 import { createOrchestrator } from "@/lib/orders/OrderOrchestrator";
 
-const orchestrator = createOrchestrator({ /* deps de I/O */ });
-const ops = createOperationsService({ orchestrator, audit: async (r) => { /* persist */ } });
+const orchestrator = createOrchestrator({
+  /* deps de I/O */
+});
+const ops = createOperationsService({
+  orchestrator,
+  audit: async (r) => {
+    /* persist */
+  },
+});
 
 await ops.perform({ action: "ACCEPT", orderId, role: "ATTENDANT", actorId: userId });
 ```
@@ -58,12 +65,12 @@ Mapa de ações → estados:
 
 ## Permissões
 
-| Ação | ADMIN | MANAGER | ATTENDANT | CASHIER | KITCHEN |
-| --- | :-: | :-: | :-: | :-: | :-: |
-| Accept/Reject | ✓ | ✓ | ✓ | | |
-| Start/Finish Prep | ✓ | ✓ | | | ✓ |
-| Dispatch/Delivered | ✓ | ✓ | ✓ | | |
-| Cancel | ✓ | ✓ | | | |
+| Ação               | ADMIN | MANAGER | ATTENDANT | CASHIER | KITCHEN |
+| ------------------ | :---: | :-----: | :-------: | :-----: | :-----: |
+| Accept/Reject      |   ✓   |    ✓    |     ✓     |         |         |
+| Start/Finish Prep  |   ✓   |    ✓    |           |         |    ✓    |
+| Dispatch/Delivered |   ✓   |    ✓    |     ✓     |         |         |
+| Cancel             |   ✓   |    ✓    |           |         |         |
 
 ## Realtime
 

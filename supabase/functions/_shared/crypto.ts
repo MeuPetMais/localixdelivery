@@ -8,10 +8,7 @@ async function getKey(): Promise<CryptoKey> {
   const raw = Deno.env.get("MP_TOKEN_ENC_KEY");
   if (!raw) throw new Error("MP_TOKEN_ENC_KEY não configurada");
   const hash = await crypto.subtle.digest("SHA-256", enc.encode(raw));
-  return crypto.subtle.importKey("raw", hash, "AES-GCM", false, [
-    "encrypt",
-    "decrypt",
-  ]);
+  return crypto.subtle.importKey("raw", hash, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
 
 function b64(buf: ArrayBuffer | Uint8Array): string {
@@ -32,11 +29,7 @@ export async function encryptToken(plain: string): Promise<string> {
   if (!plain) return "";
   const key = await getKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    enc.encode(plain),
-  );
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plain));
   return `v1:${b64(iv)}:${b64(ct)}`;
 }
 
@@ -45,11 +38,7 @@ export async function decryptToken(payload: string | null): Promise<string | nul
   if (!payload.startsWith("v1:")) return payload; // legado / plaintext
   const [, ivB, ctB] = payload.split(":");
   const key = await getKey();
-  const pt = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: b64d(ivB) },
-    key,
-    b64d(ctB),
-  );
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64d(ivB) }, key, b64d(ctB));
   return dec.decode(pt);
 }
 

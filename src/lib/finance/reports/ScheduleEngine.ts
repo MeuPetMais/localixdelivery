@@ -6,10 +6,18 @@ export class ScheduleEngine {
   static nextExecution(freq: ScheduleFrequency, from: Date = new Date()): Date {
     const d = new Date(from);
     switch (freq) {
-      case "daily":   d.setDate(d.getDate() + 1); break;
-      case "weekly":  d.setDate(d.getDate() + 7); break;
-      case "monthly": d.setMonth(d.getMonth() + 1); break;
-      case "custom":  d.setDate(d.getDate() + 1); break;
+      case "daily":
+        d.setDate(d.getDate() + 1);
+        break;
+      case "weekly":
+        d.setDate(d.getDate() + 7);
+        break;
+      case "monthly":
+        d.setMonth(d.getMonth() + 1);
+        break;
+      case "custom":
+        d.setDate(d.getDate() + 1);
+        break;
     }
     d.setHours(6, 0, 0, 0);
     return d;

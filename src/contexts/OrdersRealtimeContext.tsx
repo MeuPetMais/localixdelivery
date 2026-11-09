@@ -18,11 +18,7 @@ import { brl } from "@/lib/format";
 import { playOrderSound, vibratePattern, type OrderSoundKey } from "@/lib/order-sounds";
 import { printAutoCopies, isAutoPrintEnabled, type PrintableOrder } from "@/lib/print-service";
 import { transitionOrderStatus } from "@/lib/orders/orders.functions";
-import {
-  announceNewOrder,
-  announcePendingCount,
-  announceLongWaiting,
-} from "@/lib/voice-announcer";
+import { announceNewOrder, announcePendingCount, announceLongWaiting } from "@/lib/voice-announcer";
 
 /**
  * OrdersRealtimeProvider
@@ -77,7 +73,6 @@ function playCancelChime() {
   playOrderSound("canceled");
 }
 
-
 export function OrdersRealtimeProvider({
   restaurantId,
   children,
@@ -95,10 +90,7 @@ export function OrdersRealtimeProvider({
   const baseTitleRef = useRef<string>("");
 
   const markViewed = useCallback(() => setUnseen([]), []);
-  const dismissLatest = useCallback(
-    () => setUnseen((prev) => prev.slice(0, -1)),
-    [],
-  );
+  const dismissLatest = useCallback(() => setUnseen((prev) => prev.slice(0, -1)), []);
 
   const acceptLatest = useCallback(async () => {
     const latest = unseen[unseen.length - 1];
@@ -172,7 +164,9 @@ export function OrdersRealtimeProvider({
               return [{ ...row, total: Number(row.total) }, ...list];
             }
             if (evt === "UPDATE") {
-              return list.map((o) => (o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o));
+              return list.map((o) =>
+                o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o,
+              );
             }
             if (evt === "DELETE") {
               return list.filter((o) => o.id !== row.id);
@@ -195,7 +189,9 @@ export function OrdersRealtimeProvider({
             if (isAutoPrintEnabled()) {
               supabase
                 .from("orders")
-                .select("order_number, customer_name, customer_phone, address, items, payment_method, total, created_at, restaurants(name)")
+                .select(
+                  "order_number, customer_name, customer_phone, address, items, payment_method, total, created_at, restaurants(name)",
+                )
                 .eq("id", row.id)
                 .maybeSingle()
                 .then(({ data }) => {
@@ -215,19 +211,16 @@ export function OrdersRealtimeProvider({
                 });
             }
 
-            toast(
-              `🔔 Novo pedido #${row.order_number ?? ""}`,
-              {
-                description: `${row.customer_name} · ${brl(Number(row.total))}${row.payment_method ? ` · ${paymentMethodLabel(row.payment_method)}` : ""}`,
-                duration: 8000,
-                action: {
-                  label: "Ver pedido",
-                  onClick: () => {
-                    window.location.assign("/orders");
-                  },
+            toast(`🔔 Novo pedido #${row.order_number ?? ""}`, {
+              description: `${row.customer_name} · ${brl(Number(row.total))}${row.payment_method ? ` · ${paymentMethodLabel(row.payment_method)}` : ""}`,
+              duration: 8000,
+              action: {
+                label: "Ver pedido",
+                onClick: () => {
+                  window.location.assign("/orders");
                 },
               },
-            );
+            });
           } else if (evt === "UPDATE") {
             const prevRow = payload.old as PendingOrder | undefined;
             const statusChanged = prevRow?.status !== row.status;
@@ -235,10 +228,7 @@ export function OrdersRealtimeProvider({
               const key = STATUS_TO_SOUND[row.status];
               if (key) playOrderSound(key);
             }
-            if (
-              row.status === "cancelado" &&
-              prevRow?.status !== "cancelado"
-            ) {
+            if (row.status === "cancelado" && prevRow?.status !== "cancelado") {
               vibratePattern([300, 100, 300]);
               toast(`❌ Pedido #${row.order_number ?? ""} cancelado`, {
                 description: row.customer_name,
@@ -246,11 +236,12 @@ export function OrdersRealtimeProvider({
             }
             setUnseen((prev) =>
               PENDING_STATUSES.has(row.status)
-                ? prev.map((o) => (o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o))
+                ? prev.map((o) =>
+                    o.id === row.id ? { ...o, ...row, total: Number(row.total) } : o,
+                  )
                 : prev.filter((o) => o.id !== row.id),
             );
           } else if (evt === "DELETE") {
-
             setUnseen((prev) => prev.filter((o) => o.id !== row.id));
           }
         },
@@ -319,9 +310,7 @@ export function OrdersRealtimeProvider({
     [unseen, acceptLatest, dismissLatest, markViewed, soundEnabled],
   );
 
-  return (
-    <OrdersRealtimeContext.Provider value={value}>{children}</OrdersRealtimeContext.Provider>
-  );
+  return <OrdersRealtimeContext.Provider value={value}>{children}</OrdersRealtimeContext.Provider>;
 }
 
 export function useOrdersRealtime(): Ctx {

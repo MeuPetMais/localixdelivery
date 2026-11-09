@@ -43,7 +43,10 @@ export const Route = createFileRoute("/$slug/sobre")({
   component: SobrePage,
 });
 
-type Hours = Record<string, { open: string; close: string; enabled: boolean; open2?: string | null; close2?: string | null }>;
+type Hours = Record<
+  string,
+  { open: string; close: string; enabled: boolean; open2?: string | null; close2?: string | null }
+>;
 const DAYS = [
   { id: "sun", label: "Domingo", jsDay: 0 },
   { id: "mon", label: "Segunda", jsDay: 1 },
@@ -109,8 +112,6 @@ function timeAgo(iso: string) {
   return `há ${m} ${m === 1 ? "mês" : "meses"}`;
 }
 
-
-
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -145,7 +146,10 @@ function SobrePage() {
         .select("id, name, slug")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) { console.error("[sobre] public-restaurant-base ERROR:", error); throw error; }
+      if (error) {
+        console.error("[sobre] public-restaurant-base ERROR:", error);
+        throw error;
+      }
       return rest as RestaurantBase | null;
     },
   });
@@ -156,14 +160,25 @@ function SobrePage() {
     if (!restaurantId) return;
     const channel = supabase
       .channel(`public-about:${restaurantId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["public-restaurant-base", slug] });
-        qc.invalidateQueries({ queryKey: ["public-restaurant-hours", slug] });
-        qc.invalidateQueries({ queryKey: ["public-restaurant-info", slug] });
-        qc.invalidateQueries({ queryKey: ["public-restaurant-payments", slug] });
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "restaurants",
+          filter: `id=eq.${restaurantId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ["public-restaurant-base", slug] });
+          qc.invalidateQueries({ queryKey: ["public-restaurant-hours", slug] });
+          qc.invalidateQueries({ queryKey: ["public-restaurant-info", slug] });
+          qc.invalidateQueries({ queryKey: ["public-restaurant-payments", slug] });
+        },
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [restaurantId, qc, slug]);
 
   const { data: reviews = [], isLoading: isReviewsLoading } = useQuery({
@@ -176,7 +191,10 @@ function SobrePage() {
         .eq("restaurant_id", restaurantId!)
         .order("created_at", { ascending: false })
         .limit(100);
-      if (error) { console.error("[sobre] public-reviews ERROR:", error); throw error; }
+      if (error) {
+        console.error("[sobre] public-reviews ERROR:", error);
+        throw error;
+      }
       return (rows ?? []) as Review[];
     },
   });
@@ -191,7 +209,10 @@ function SobrePage() {
         .select("id, name, slug, opening_hours, is_open")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) { console.error("[sobre] public-restaurant-hours ERROR:", error); throw error; }
+      if (error) {
+        console.error("[sobre] public-restaurant-hours ERROR:", error);
+        throw error;
+      }
       return rest as HoursData | null;
     },
   });
@@ -205,10 +226,15 @@ function SobrePage() {
     queryFn: async () => {
       const { data: rest, error } = await (supabase as any)
         .from("restaurants_public")
-        .select("id, name, slug, description, address, address_number, complement, neighborhood, city, state, zip_code, landline_phone, instagram, facebook, website, email, latitude, longitude, google_maps_url")
+        .select(
+          "id, name, slug, description, address, address_number, complement, neighborhood, city, state, zip_code, landline_phone, instagram, facebook, website, email, latitude, longitude, google_maps_url",
+        )
         .eq("slug", slug)
         .maybeSingle();
-      if (error) { console.error("[sobre] public-restaurant-info ERROR:", error); throw error; }
+      if (error) {
+        console.error("[sobre] public-restaurant-info ERROR:", error);
+        throw error;
+      }
       return rest as InfoData | null;
     },
   });
@@ -231,14 +257,17 @@ function SobrePage() {
         .select("id, name, slug, payment_methods")
         .eq("slug", slug)
         .maybeSingle();
-      if (error) { console.error("[sobre] public-restaurant-payments ERROR:", error); throw error; }
+      if (error) {
+        console.error("[sobre] public-restaurant-payments ERROR:", error);
+        throw error;
+      }
       const methods = rest?.payment_methods ?? {};
-      const active = Object.entries(methods).filter(([, v]) => !!v).map(([k]) => k);
+      const active = Object.entries(methods)
+        .filter(([, v]) => !!v)
+        .map(([k]) => k);
       return rest as PaymentsData | null;
     },
   });
-
-
 
   const stats = useMemo(() => {
     const total = reviews.length;
@@ -256,7 +285,6 @@ function SobrePage() {
       (search === "" || (r.comment ?? "").toLowerCase().includes(search.toLowerCase())),
   );
 
-
   if (isRestaurantLoading) {
     return (
       <div className="min-h-screen bg-muted/30 p-4">
@@ -270,7 +298,9 @@ function SobrePage() {
   }
 
   if (!restaurant) {
-    try { sessionStorage.removeItem("localix:last-restaurant-slug"); } catch {}
+    try {
+      sessionStorage.removeItem("localix:last-restaurant-slug");
+    } catch {}
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
@@ -293,26 +323,78 @@ function SobrePage() {
       computedStatus: status.reason,
     });
   }
-  const addrLine1 = infoData ? [infoData.address, infoData.address_number].filter(isFilled).join(", ") : "";
-  const addrLine2 = infoData ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")].filter((v) => isFilled(v) && v !== "").join(" · ") : "";
-  const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code].filter((v) => isFilled(v) && v !== "").join(" · ");
-  const hasAddress = !!infoData && (isFilled(infoData.address) || isFilled(infoData.city) || isFilled(infoData.state) || isFilled(infoData.neighborhood) || isFilled(infoData.zip_code));
-  const hasMap = !!infoData && (isFilled(infoData.google_maps_url) || (isFilled(infoData.latitude) && isFilled(infoData.longitude)) || hasAddress);
-  const mapsQuery = infoData?.latitude && infoData?.longitude
-    ? `${infoData.latitude},${infoData.longitude}`
-    : encodeURIComponent(fullAddress || infoData?.name || restaurant.name);
+  const addrLine1 = infoData
+    ? [infoData.address, infoData.address_number].filter(isFilled).join(", ")
+    : "";
+  const addrLine2 = infoData
+    ? [infoData.neighborhood, [infoData.city, infoData.state].filter(isFilled).join(" - ")]
+        .filter((v) => isFilled(v) && v !== "")
+        .join(" · ")
+    : "";
+  const fullAddress = [addrLine1, infoData?.complement, addrLine2, infoData?.zip_code]
+    .filter((v) => isFilled(v) && v !== "")
+    .join(" · ");
+  const hasAddress =
+    !!infoData &&
+    (isFilled(infoData.address) ||
+      isFilled(infoData.city) ||
+      isFilled(infoData.state) ||
+      isFilled(infoData.neighborhood) ||
+      isFilled(infoData.zip_code));
+  const hasMap =
+    !!infoData &&
+    (isFilled(infoData.google_maps_url) ||
+      (isFilled(infoData.latitude) && isFilled(infoData.longitude)) ||
+      hasAddress);
+  const mapsQuery =
+    infoData?.latitude && infoData?.longitude
+      ? `${infoData.latitude},${infoData.longitude}`
+      : encodeURIComponent(fullAddress || infoData?.name || restaurant.name);
   const mapsEmbed = `https://www.google.com/maps?q=${mapsQuery}&output=embed`;
-  const mapsOpen = infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-  const contactRows = infoData ? [
-    { icon: Phone, label: "Telefone", value: infoData.landline_phone, href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}` },
-    { icon: MessageCircle, label: "WhatsApp", value: whatsappData?.maskedPhone, href: `/${slug}` },
-    { icon: Instagram, label: "Instagram", value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null, href: infoData.instagram ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}` : "" },
-    { icon: Facebook, label: "Facebook", value: infoData.facebook, href: infoData.facebook?.startsWith("http") ? infoData.facebook : `https://facebook.com/${infoData.facebook}` },
-    { icon: Globe, label: "Site", value: infoData.website, href: infoData.website?.startsWith("http") ? infoData.website : `https://${infoData.website}` },
-    { icon: Mail, label: "E-mail", value: infoData.email, href: `mailto:${infoData.email}` },
-  ].filter((row) => isFilled(row.value)) : [];
+  const mapsOpen =
+    infoData?.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+  const contactRows = infoData
+    ? [
+        {
+          icon: Phone,
+          label: "Telefone",
+          value: infoData.landline_phone,
+          href: `tel:${String(infoData.landline_phone ?? "").replace(/\D/g, "")}`,
+        },
+        {
+          icon: MessageCircle,
+          label: "WhatsApp",
+          value: whatsappData?.maskedPhone,
+          href: `/${slug}`,
+        },
+        {
+          icon: Instagram,
+          label: "Instagram",
+          value: infoData.instagram ? `@${infoData.instagram.replace(/^@/, "")}` : null,
+          href: infoData.instagram
+            ? `https://instagram.com/${infoData.instagram.replace(/^@/, "")}`
+            : "",
+        },
+        {
+          icon: Facebook,
+          label: "Facebook",
+          value: infoData.facebook,
+          href: infoData.facebook?.startsWith("http")
+            ? infoData.facebook
+            : `https://facebook.com/${infoData.facebook}`,
+        },
+        {
+          icon: Globe,
+          label: "Site",
+          value: infoData.website,
+          href: infoData.website?.startsWith("http")
+            ? infoData.website
+            : `https://${infoData.website}`,
+        },
+        { icon: Mail, label: "E-mail", value: infoData.email, href: `mailto:${infoData.email}` },
+      ].filter((row) => isFilled(row.value))
+    : [];
   const hasAnyInfo = hasAddress || contactRows.length > 0 || isFilled(infoData?.description);
-
 
   const pm = paymentsData?.payment_methods ?? {};
   const paymentMethods = [
@@ -328,13 +410,17 @@ function SobrePage() {
     { keys: ["vr"], label: "VR", icon: Utensils },
     { keys: ["ben"], label: "Ben", icon: Utensils },
     { keys: ["online_pix"], label: "Pix Online", icon: Smartphone },
-    { keys: ["online_card", "online_credit", "online_debit"], label: "Cartão Online", icon: Wallet },
+    {
+      keys: ["online_card", "online_credit", "online_debit"],
+      label: "Cartão Online",
+      icon: Wallet,
+    },
   ];
-  const activePaymentMethods = paymentMethods.filter((method) => method.keys.some((key) => !!pm[key]));
-
+  const activePaymentMethods = paymentMethods.filter((method) =>
+    method.keys.some((key) => !!pm[key]),
+  );
 
   return (
-
     <div className="min-h-screen bg-muted/30 pb-12 animate-in fade-in duration-300">
       {/* header */}
       <div className="sticky top-0 z-30 border-b bg-background px-4 py-3">
@@ -352,7 +438,13 @@ function SobrePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-4 pt-4">
-        <Tabs value={tab} onValueChange={(v) => navigate({ to: "/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })} className="w-full">
+        <Tabs
+          value={tab}
+          onValueChange={(v) =>
+            navigate({ to: "/$slug/sobre", params: { slug }, search: { tab: v as ProfileTab } })
+          }
+          className="w-full"
+        >
           <TabsList className="grid h-12 w-full grid-cols-4 rounded-2xl bg-card p-1 shadow-elegant">
             <TabsTrigger value="avaliacoes" className="rounded-xl text-xs sm:text-sm">
               <Star className="mr-1 h-3.5 w-3.5" /> Avaliações
@@ -369,7 +461,10 @@ function SobrePage() {
           </TabsList>
 
           {/* AVALIAÇÕES */}
-          <TabsContent value="avaliacoes" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
+          <TabsContent
+            value="avaliacoes"
+            className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2"
+          >
             {isReviewsLoading ? (
               <TabSkeleton />
             ) : (
@@ -377,10 +472,15 @@ function SobrePage() {
                 <Card className="rounded-2xl p-6 shadow-elegant">
                   <div className="flex items-center gap-6">
                     <div className="text-center">
-                      <p className="font-display text-5xl font-extrabold text-primary">{stats.avg.toFixed(1)}</p>
+                      <p className="font-display text-5xl font-extrabold text-primary">
+                        {stats.avg.toFixed(1)}
+                      </p>
                       <div className="mt-1 flex justify-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className={`h-4 w-4 ${i <= Math.round(stats.avg) ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i <= Math.round(stats.avg) ? "fill-warning text-warning" : "text-muted-foreground/40"}`}
+                          />
                         ))}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">{stats.total} avaliações</p>
@@ -431,12 +531,20 @@ function SobrePage() {
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold">{displayName}</p>
-                              <p className="text-xs text-muted-foreground">{formatDate(r.created_at)} · {timeAgo(r.created_at)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(r.created_at)} · {timeAgo(r.created_at)}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex shrink-0 gap-0.5" aria-label={`Nota ${r.rating} de 5`}>
+                          <div
+                            className="flex shrink-0 gap-0.5"
+                            aria-label={`Nota ${r.rating} de 5`}
+                          >
                             {[1, 2, 3, 4, 5].map((i) => (
-                              <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                              <Star
+                                key={i}
+                                className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/30"}`}
+                              />
                             ))}
                           </div>
                         </div>
@@ -450,7 +558,9 @@ function SobrePage() {
                     </p>
                   )}
                   {reviews.length > 0 && filteredReviews.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma avaliação encontrada</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Nenhuma avaliação encontrada
+                    </p>
                   )}
                 </div>
               </>
@@ -458,7 +568,10 @@ function SobrePage() {
           </TabsContent>
 
           {/* HORÁRIOS */}
-          <TabsContent value="horarios" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
+          <TabsContent
+            value="horarios"
+            className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2"
+          >
             {isHoursLoading ? (
               <TabSkeleton />
             ) : (
@@ -466,13 +579,22 @@ function SobrePage() {
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="font-display text-lg font-bold">Horário de Funcionamento</h2>
                   {hasHours && (
-                    <Badge variant={openNow ? "default" : "secondary"} className={openNow ? "bg-success text-success-foreground" : "bg-destructive/15 text-destructive"}>
+                    <Badge
+                      variant={openNow ? "default" : "secondary"}
+                      className={
+                        openNow
+                          ? "bg-success text-success-foreground"
+                          : "bg-destructive/15 text-destructive"
+                      }
+                    >
                       {openNow ? "🟢 Aberto agora" : "🔴 Fechado agora"}
                     </Badge>
                   )}
                 </div>
                 {!hasHours ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">Horários ainda não configurados.</p>
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Horários ainda não configurados.
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {DAYS.map((d) => {
@@ -488,9 +610,13 @@ function SobrePage() {
                           </span>
                           {h?.enabled && h.open && h.close ? (
                             <div className="text-right text-sm font-mono">
-                              <div>{h.open} — {h.close}</div>
+                              <div>
+                                {h.open} — {h.close}
+                              </div>
                               {h.open2 && h.close2 && (
-                                <div>{h.open2} — {h.close2}</div>
+                                <div>
+                                  {h.open2} — {h.close2}
+                                </div>
                               )}
                             </div>
                           ) : (
@@ -506,12 +632,17 @@ function SobrePage() {
           </TabsContent>
 
           {/* INFORMAÇÕES */}
-          <TabsContent value="info" className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2">
+          <TabsContent
+            value="info"
+            className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2"
+          >
             {isInfoLoading ? (
               <TabSkeleton />
             ) : !hasAnyInfo ? (
               <Card className="rounded-2xl p-8 text-center shadow-elegant">
-                <p className="text-sm text-muted-foreground">Nenhuma informação pública cadastrada ainda.</p>
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma informação pública cadastrada ainda.
+                </p>
               </Card>
             ) : (
               <>
@@ -541,7 +672,9 @@ function SobrePage() {
                           {isFilled(addrLine1) && <p>{addrLine1}</p>}
                           {isFilled(infoData?.complement) && <p>{infoData!.complement}</p>}
                           {isFilled(infoData?.neighborhood) && <p>{infoData!.neighborhood}</p>}
-                          {isFilled(addrLine2) && addrLine2 !== "" && !addrLine2.startsWith(" · ") && <p>{addrLine2}</p>}
+                          {isFilled(addrLine2) &&
+                            addrLine2 !== "" &&
+                            !addrLine2.startsWith(" · ") && <p>{addrLine2}</p>}
                           {isFilled(infoData?.zip_code) && <p>CEP {infoData!.zip_code}</p>}
                         </div>
                         <Button asChild className="mt-3" variant="outline" size="sm">
@@ -559,7 +692,13 @@ function SobrePage() {
                     <h3 className="mb-3 font-display text-base font-bold">Contato & Redes</h3>
                     <div className="space-y-2">
                       {contactRows.map((row) => (
-                        <InfoRow key={row.label} icon={row.icon} label={row.label} value={String(row.value)} href={row.href} />
+                        <InfoRow
+                          key={row.label}
+                          icon={row.icon}
+                          label={row.label}
+                          value={String(row.value)}
+                          href={row.href}
+                        />
                       ))}
                     </div>
                   </Card>
@@ -575,9 +714,6 @@ function SobrePage() {
             )}
           </TabsContent>
 
-
-
-
           {/* PAGAMENTOS */}
           <TabsContent value="pagamentos" className="space-y-4 pt-4">
             {isPaymentsLoading ? (
@@ -589,7 +725,9 @@ function SobrePage() {
                   <h3 className="font-display text-base font-bold">Formas de Pagamento</h3>
                 </div>
                 {activePaymentMethods.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma forma de pagamento cadastrada.</p>
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Nenhuma forma de pagamento cadastrada.
+                  </p>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activePaymentMethods.map((method) => (
@@ -606,9 +744,24 @@ function SobrePage() {
   );
 }
 
-function InfoRow({ icon: Icon, label, value, href }: { icon: any; label: string; value: string; href: string }) {
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  href: string;
+}) {
   const isExternal = href.startsWith("http");
-  const isActionable = href.length > 0 && !href.endsWith("undefined") && !href.endsWith("null") && href !== "mailto:null" && href !== "tel:";
+  const isActionable =
+    href.length > 0 &&
+    !href.endsWith("undefined") &&
+    !href.endsWith("null") &&
+    href !== "mailto:null" &&
+    href !== "tel:";
   if (!isActionable) {
     return (
       <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
@@ -624,7 +777,12 @@ function InfoRow({ icon: Icon, label, value, href }: { icon: any; label: string;
   }
 
   return (
-    <a href={href} target={isExternal ? "_blank" : undefined} rel="noreferrer" className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40 hover:bg-muted/40">
+    <a
+      href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel="noreferrer"
+      className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40 hover:bg-muted/40"
+    >
       <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
         <Icon className="h-4 w-4" />
       </div>

@@ -7,18 +7,37 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { brl } from "@/lib/format";
-import { Loader2, Clock, MapPin, CreditCard, User, Phone, RotateCw, Store, CheckCircle2, Circle, ChefHat, Bike, PackageCheck, XCircle } from "lucide-react";
+import {
+  Loader2,
+  Clock,
+  MapPin,
+  CreditCard,
+  User,
+  Phone,
+  RotateCw,
+  Store,
+  CheckCircle2,
+  Circle,
+  ChefHat,
+  Bike,
+  PackageCheck,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { useCustomerNavigation } from "@/contexts/CustomerNavigationContext";
 import { paymentMethodLabel, orderReceivedNotification } from "@/lib/checkout/paymentMethodLabel";
 import { groupOrderItemAddons, formatOrderItemAddonLabel } from "@/lib/orders/order-item-options";
-
-
 
 export const Route = createFileRoute("/pedido/$id")({
   head: () => ({ meta: [{ title: "Acompanhar Pedido — Localix" }] }),
@@ -69,7 +88,6 @@ function TrackOrder() {
   const [cancelling, setCancelling] = useState(false);
   const lastStatusRef = useRef<string | null>(null);
 
-
   useEffect(() => {
     let mounted = true;
     async function load(initial = false) {
@@ -77,7 +95,10 @@ function TrackOrder() {
         const res = await fetchOrder({ data: { id } });
         if (!mounted) return;
         const next = (res?.order ?? null) as Order | null;
-        if (!next) { if (initial) setLoading(false); return; }
+        if (!next) {
+          if (initial) setLoading(false);
+          return;
+        }
         if (lastStatusRef.current && lastStatusRef.current !== next.status) {
           if (next.status === "pago") {
             const { title, description } = orderReceivedNotification(next.payment_method);
@@ -106,26 +127,64 @@ function TrackOrder() {
     const poll = setInterval(() => load(false), 20000);
     const onFocus = () => load(false);
     window.addEventListener("focus", onFocus);
-    return () => { mounted = false; clearInterval(poll); window.removeEventListener("focus", onFocus); };
+    return () => {
+      mounted = false;
+      clearInterval(poll);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [id, fetchOrder]);
 
-  if (loading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!order) return (
-    <div className="grid min-h-screen place-items-center px-4 text-center">
-      <div>
-        <p className="text-lg font-bold">Pedido não encontrado</p>
-        {restaurantPath ? (
-          <Link to={restaurantPath as any} className="text-sm text-primary hover:underline">Voltar ao cardápio</Link>
-        ) : (
-          <Link to="/cliente" className="text-sm text-primary hover:underline">Voltar à minha conta</Link>
-        )}
+  if (loading)
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
-    </div>
-  );
+    );
+  if (!order)
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div>
+          <p className="text-lg font-bold">Pedido não encontrado</p>
+          {restaurantPath ? (
+            <Link to={restaurantPath as any} className="text-sm text-primary hover:underline">
+              Voltar ao cardápio
+            </Link>
+          ) : (
+            <Link to="/cliente" className="text-sm text-primary hover:underline">
+              Voltar à minha conta
+            </Link>
+          )}
+        </div>
+      </div>
+    );
 
   const cancelled = order.status === "cancelado";
   const currentIdx = statusIndex(order.status);
-  const items: Array<{ id?: string; name: string; price: number; qty: number; kind?: "product" | "builder"; builderId?: string; selections?: Array<{ group_id?: string; groupId?: string; option_id?: string; optionId?: string; quantity?: number; qty?: number }>; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> }> = Array.isArray(order.items) ? order.items : [];
+  const items: Array<{
+    id?: string;
+    name: string;
+    price: number;
+    qty: number;
+    kind?: "product" | "builder";
+    builderId?: string;
+    selections?: Array<{
+      group_id?: string;
+      groupId?: string;
+      option_id?: string;
+      optionId?: string;
+      quantity?: number;
+      qty?: number;
+    }>;
+    addons?: Array<{
+      groupId?: string;
+      groupName?: string;
+      optionId?: string;
+      name?: string;
+      quantity?: number;
+      unitPrice?: number;
+      total?: number;
+    }>;
+  }> = Array.isArray(order.items) ? order.items : [];
   const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
   const fee = Math.max(0, Number(order.total) - subtotal + Number(order.discount ?? 0));
 
@@ -158,13 +217,19 @@ function TrackOrder() {
             <p className="text-xs text-muted-foreground">{restaurant?.name}</p>
             <h1 className="font-display text-xl font-extrabold">Pedido #{order.order_number}</h1>
           </div>
-          <Badge variant={cancelled ? "destructive" : "secondary"} className="capitalize">{labelOf(order.status)}</Badge>
+          <Badge variant={cancelled ? "destructive" : "secondary"} className="capitalize">
+            {labelOf(order.status)}
+          </Badge>
         </div>
       </header>
 
       <main
         className={`mx-auto max-w-2xl space-y-4 px-4 py-5 ${order.status === "aguardando_pagamento" ? "pb-44" : "pb-24"}`}
-        style={order.status === "aguardando_pagamento" ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" } : undefined}
+        style={
+          order.status === "aguardando_pagamento"
+            ? { paddingBottom: "calc(11rem + env(safe-area-inset-bottom))" }
+            : undefined
+        }
       >
         {/* Timeline */}
         <Card className="p-5">
@@ -189,12 +254,32 @@ function TrackOrder() {
                 const Icon = s.Icon;
                 return (
                   <li key={s.key} className="flex items-start gap-3">
-                    <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${done ? "border-success bg-success/15 text-success" : active ? "border-primary bg-primary/15 text-primary animate-pulse" : "border-muted bg-muted/30 text-muted-foreground"}`}>
-                      {done ? <CheckCircle2 className="h-4 w-4" /> : active ? <Icon className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                    <div
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${done ? "border-success bg-success/15 text-success" : active ? "border-primary bg-primary/15 text-primary animate-pulse" : "border-muted bg-muted/30 text-muted-foreground"}`}
+                    >
+                      {done ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : active ? (
+                        <Icon className="h-4 w-4" />
+                      ) : (
+                        <Circle className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="flex-1 pt-1">
-                      <p className={`font-medium ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</p>
-                      {active && <p className="text-xs text-muted-foreground">Atualizado em {new Date(order.updated_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>}
+                      <p
+                        className={`font-medium ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {s.label}
+                      </p>
+                      {active && (
+                        <p className="text-xs text-muted-foreground">
+                          Atualizado em{" "}
+                          {new Date(order.updated_at).toLocaleTimeString("pt-BR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      )}
                     </div>
                   </li>
                 );
@@ -210,7 +295,9 @@ function TrackOrder() {
             {items.map((it: any, i: number) => (
               <li key={i} className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="font-medium">{it.qty}x {it.name}</span>
+                  <span className="font-medium">
+                    {it.qty}x {it.name}
+                  </span>
                   {groupOrderItemAddons(it).map(({ groupName, addons }) => (
                     <div key={groupName} className="mt-1 text-xs text-muted-foreground">
                       <p className="font-semibold text-foreground/80">{groupName}</p>
@@ -230,10 +317,13 @@ function TrackOrder() {
           </ul>
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <Row label="Subtotal" value={brl(subtotal)} />
-            {Number(order.discount ?? 0) > 0 && <Row label="Desconto" value={`- ${brl(Number(order.discount))}`} />}
+            {Number(order.discount ?? 0) > 0 && (
+              <Row label="Desconto" value={`- ${brl(Number(order.discount))}`} />
+            )}
             <Row label="Entrega" value={brl(fee)} />
             <div className="flex justify-between pt-1 font-display text-base font-extrabold">
-              <span>Total</span><span className="text-primary">{brl(Number(order.total))}</span>
+              <span>Total</span>
+              <span className="text-primary">{brl(Number(order.total))}</span>
             </div>
           </div>
         </Card>
@@ -244,8 +334,16 @@ function TrackOrder() {
           <InfoRow Icon={User} label="Cliente" value={order.customer_name} />
           <InfoRow Icon={Phone} label="Telefone" value={order.customer_phone} />
           <InfoRow Icon={MapPin} label="Endereço" value={order.address} />
-          <InfoRow Icon={CreditCard} label="Pagamento" value={paymentMethodLabel(order.payment_method)} />
-          <InfoRow Icon={Clock} label="Pedido em" value={new Date(order.created_at).toLocaleString("pt-BR")} />
+          <InfoRow
+            Icon={CreditCard}
+            label="Pagamento"
+            value={paymentMethodLabel(order.payment_method)}
+          />
+          <InfoRow
+            Icon={Clock}
+            label="Pedido em"
+            value={new Date(order.created_at).toLocaleString("pt-BR")}
+          />
         </Card>
 
         {order.status === "entregue" && (
@@ -256,7 +354,6 @@ function TrackOrder() {
             customerPhone={order.customer_phone}
           />
         )}
-
 
         <div className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" onClick={handleRepeat} disabled={!restaurant?.slug}>
@@ -272,7 +369,8 @@ function TrackOrder() {
             <AlertDialogHeader>
               <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será necessário realizar um novo pedido caso queira comprar novamente.
+                Tem certeza que deseja cancelar este pedido? O QR Code será invalidado e será
+                necessário realizar um novo pedido caso queira comprar novamente.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -294,7 +392,7 @@ function TrackOrder() {
                       }
                       window.sessionStorage.removeItem(`wa-url:${id}`);
                     } catch {}
-                    setOrder((prev) => prev ? { ...prev, status: "cancelado" } : prev);
+                    setOrder((prev) => (prev ? { ...prev, status: "cancelado" } : prev));
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
@@ -336,29 +434,39 @@ function TrackOrder() {
   );
 }
 
-
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span>{value}</span></div>;
+  return (
+    <div className="flex justify-between text-muted-foreground">
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
 }
 function InfoRow({ Icon, label, value }: { Icon: any; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
-      <div><p className="text-xs text-muted-foreground">{label}</p><p className="font-medium">{value}</p></div>
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-medium">{value}</p>
+      </div>
     </div>
   );
 }
 function labelOf(s: string) {
-  return ({
-    aguardando_pagamento: "Aguardando pagamento",
-    pago: "Aguardando aceite",
-    aceito: "Aceito",
-    novo: "Recebido",
-    em_preparo: "Em preparo",
-    pronto: "Pronto",
-    saiu_para_entrega: "Saiu para entrega",
-    entregue: "Entregue",
-    cancelado: "Cancelado",
-  } as any)[s] ?? s;
+  return (
+    (
+      {
+        aguardando_pagamento: "Aguardando pagamento",
+        pago: "Aguardando aceite",
+        aceito: "Aceito",
+        novo: "Recebido",
+        em_preparo: "Em preparo",
+        pronto: "Pronto",
+        saiu_para_entrega: "Saiu para entrega",
+        entregue: "Entregue",
+        cancelado: "Cancelado",
+      } as any
+    )[s] ?? s
+  );
 }
-

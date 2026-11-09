@@ -14,12 +14,27 @@ interface StepInput {
 export const OnboardingService = {
   buildChecklist(restaurantId: string, input: StepInput): OnboardingChecklist {
     const items = [
-      { id: "verification", title: "Verificação de identidade", done: input.verified, blocking: true },
-      { id: "gateway",      title: "Conectar gateway de pagamento", done: input.gatewayConnected, blocking: true },
-      { id: "setup",        title: "Configurar cardápio e entrega", done: input.setupComplete, blocking: true },
-      { id: "approval",     title: "Aprovação final da Localix", done: input.approved, blocking: true },
+      {
+        id: "verification",
+        title: "Verificação de identidade",
+        done: input.verified,
+        blocking: true,
+      },
+      {
+        id: "gateway",
+        title: "Conectar gateway de pagamento",
+        done: input.gatewayConnected,
+        blocking: true,
+      },
+      {
+        id: "setup",
+        title: "Configurar cardápio e entrega",
+        done: input.setupComplete,
+        blocking: true,
+      },
+      { id: "approval", title: "Aprovação final da Localix", done: input.approved, blocking: true },
     ];
-    const done = items.filter(i => i.done).length;
+    const done = items.filter((i) => i.done).length;
     return {
       restaurantId,
       items,
@@ -36,8 +51,12 @@ export const OnboardingService = {
   },
   nextExpectedState(current: RestaurantLifecycleState): RestaurantLifecycleState | null {
     const order: RestaurantLifecycleState[] = [
-      "Draft", "PendingVerification", "PendingStripe",
-      "PendingSetup", "PendingApproval", "Production",
+      "Draft",
+      "PendingVerification",
+      "PendingStripe",
+      "PendingSetup",
+      "PendingApproval",
+      "Production",
     ];
     const idx = order.indexOf(current);
     return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : null;

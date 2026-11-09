@@ -15,10 +15,7 @@ export const Route = createFileRoute("/api/public/mp/callback")({
         if (!supabaseUrl) {
           return new Response("Backend indisponível", { status: 500 });
         }
-        const target = new URL(
-          "/functions/v1/mp-oauth-callback",
-          supabaseUrl,
-        );
+        const target = new URL("/functions/v1/mp-oauth-callback", supabaseUrl);
         for (const [k, v] of url.searchParams) target.searchParams.set(k, v);
 
         const res = await fetch(target.toString(), {

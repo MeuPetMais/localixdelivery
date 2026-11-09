@@ -11,11 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  markInstallDismissed,
-  useDriverPwaInstall,
-  wasInstallDismissed,
-} from "@/lib/pwa-driver";
+import { markInstallDismissed, useDriverPwaInstall, wasInstallDismissed } from "@/lib/pwa-driver";
 
 type Props = {
   auto?: boolean;
@@ -59,8 +55,7 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
             Instalar Localix Entregador
           </DialogTitle>
           <DialogDescription>
-            Instale o aplicativo para acessar suas entregas rapidamente
-            diretamente da tela inicial.
+            Instale o aplicativo para acessar suas entregas rapidamente diretamente da tela inicial.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,8 +86,7 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
           <div className="flex items-start gap-2 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Abra o menu ⋮ do Chrome e toque em Adicionar à tela inicial ou
-              Instalar aplicativo.
+              Abra o menu ⋮ do Chrome e toque em Adicionar à tela inicial ou Instalar aplicativo.
             </span>
           </div>
         )}
@@ -101,8 +95,8 @@ export function PwaInstallModal({ auto = false, open, onOpenChange }: Props) {
           <div className="flex items-start gap-2 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              A instalação não está disponível neste navegador. Tente pelo
-              Chrome, Edge ou Samsung Internet.
+              A instalação não está disponível neste navegador. Tente pelo Chrome, Edge ou Samsung
+              Internet.
             </span>
           </div>
         )}
@@ -137,11 +131,7 @@ export function PwaInstallButton() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="w-full rounded-2xl"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="outline" className="w-full rounded-2xl" onClick={() => setOpen(true)}>
         <Download className="mr-2 h-4 w-4" /> Instalar aplicativo
       </Button>
       <PwaInstallModal open={open} onOpenChange={setOpen} />

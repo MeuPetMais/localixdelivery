@@ -45,7 +45,10 @@ export function PartnerWhatsAppFloatingButton() {
 
       setIsHiddenOnMobileScroll(true);
       clearScrollIdleTimer();
-      scrollIdleTimerRef.current = window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS);
+      scrollIdleTimerRef.current = window.setTimeout(
+        showButton,
+        PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS,
+      );
     };
     const handleMobileQueryChange = () => {
       if (!mobileQuery.matches) showButton();

@@ -1,13 +1,26 @@
 export type AnalyticsScope =
-  | "platform" | "restaurant" | "operations" | "financial"
-  | "marketing" | "executive" | "customer" | "product"
-  | "delivery" | "inventory";
+  | "platform"
+  | "restaurant"
+  | "operations"
+  | "financial"
+  | "marketing"
+  | "executive"
+  | "customer"
+  | "product"
+  | "delivery"
+  | "inventory";
 
 export type ComparisonPreset =
-  | "today_vs_yesterday" | "week_vs_week" | "month_vs_month"
-  | "year_vs_year" | "custom";
+  | "today_vs_yesterday"
+  | "week_vs_week"
+  | "month_vs_month"
+  | "year_vs_year"
+  | "custom";
 
-export interface DateRange { from: string; to: string }
+export interface DateRange {
+  from: string;
+  to: string;
+}
 
 export interface AnalyticsFilter {
   restaurantId?: string;
@@ -47,8 +60,13 @@ export interface DashboardSnapshot {
 
 export type InsightSeverity = "info" | "warning" | "critical" | "success";
 export type InsightSource =
-  | "customer" | "product" | "finance" | "delivery"
-  | "inventory" | "orders" | "platform";
+  | "customer"
+  | "product"
+  | "finance"
+  | "delivery"
+  | "inventory"
+  | "orders"
+  | "platform";
 
 export interface AnalyticsInsight {
   id: string;

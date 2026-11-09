@@ -12,12 +12,17 @@ export const StripeOAuthService = {
    * milestone de pagamentos. Nenhum consumidor externo deve chamar
    * diretamente: usar `StripeService.startOnboarding()`.
    */
-  async createAccountLink(_restaurantId: string, _returnUrl?: string): Promise<StripeOnboardingLink> {
+  async createAccountLink(
+    _restaurantId: string,
+    _returnUrl?: string,
+  ): Promise<StripeOnboardingLink> {
     throw new Error("StripeOAuthService.createAccountLink não implementado (milestone futuro).");
   },
 
   async connectExistingAccount(_restaurantId: string, _stripeAccountId: string): Promise<void> {
-    throw new Error("StripeOAuthService.connectExistingAccount não implementado (milestone futuro).");
+    throw new Error(
+      "StripeOAuthService.connectExistingAccount não implementado (milestone futuro).",
+    );
   },
 
   async disconnect(_restaurantId: string): Promise<void> {

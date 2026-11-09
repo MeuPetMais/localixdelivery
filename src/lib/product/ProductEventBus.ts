@@ -2,12 +2,31 @@ import type { ProductLifecycleStatus } from "./types";
 
 export type ProductDomainEvent =
   | { type: "ProductCreated"; productId: string; restaurantId: string; at: string }
-  | { type: "ProductUpdated"; productId: string; restaurantId: string; changes: Record<string, unknown>; at: string }
+  | {
+      type: "ProductUpdated";
+      productId: string;
+      restaurantId: string;
+      changes: Record<string, unknown>;
+      at: string;
+    }
   | { type: "ProductPublished"; productId: string; restaurantId: string; at: string }
   | { type: "ProductArchived"; productId: string; restaurantId: string; at: string }
   | { type: "ProductDiscontinued"; productId: string; restaurantId: string; at: string }
-  | { type: "AvailabilityChanged"; productId: string; restaurantId: string; available: boolean; at: string }
-  | { type: "LifecycleChanged"; productId: string; restaurantId: string; from: ProductLifecycleStatus; to: ProductLifecycleStatus; at: string };
+  | {
+      type: "AvailabilityChanged";
+      productId: string;
+      restaurantId: string;
+      available: boolean;
+      at: string;
+    }
+  | {
+      type: "LifecycleChanged";
+      productId: string;
+      restaurantId: string;
+      from: ProductLifecycleStatus;
+      to: ProductLifecycleStatus;
+      at: string;
+    };
 
 export type ProductEventListener = (event: ProductDomainEvent) => void | Promise<void>;
 
@@ -24,14 +43,16 @@ class Bus {
   }
 
   async publish(event: ProductDomainEvent): Promise<void> {
-    await Promise.all(Array.from(this.listeners).map((l) => {
-      try {
-        return Promise.resolve(l(event));
-      } catch (err) {
-        console.error("[ProductEventBus] listener failed", err);
-        return Promise.resolve();
-      }
-    }));
+    await Promise.all(
+      Array.from(this.listeners).map((l) => {
+        try {
+          return Promise.resolve(l(event));
+        } catch (err) {
+          console.error("[ProductEventBus] listener failed", err);
+          return Promise.resolve();
+        }
+      }),
+    );
   }
 
   clear(): void {

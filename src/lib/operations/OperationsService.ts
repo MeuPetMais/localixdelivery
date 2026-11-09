@@ -7,9 +7,7 @@
 import type { TransitionInput, TransitionResult } from "@/lib/orders/OrderOrchestrator";
 import { canPerform, ACTION_TO_STATE, type OperationsAction } from "./OperationsPermissions";
 import { KitchenSounds } from "./KitchenSounds";
-import type {
-  OperationsFilters, OperationsOrderCard, OperationsRole,
-} from "./types";
+import type { OperationsFilters, OperationsOrderCard, OperationsRole } from "./types";
 import { applyFilters } from "./OperationsFilters";
 import { withPriority } from "./PriorityEngine";
 import { buildAlerts } from "./AlertsEngine";
@@ -56,11 +54,17 @@ export function createOperationsService(deps: OperationsDeps) {
         actor: { type: "STAFF", id: input.actorId },
       } as unknown as TransitionInput);
       await deps.audit?.({
-        action: input.action, orderId: input.orderId, actorId: input.actorId,
-        role: input.role, at: new Date().toISOString(), origin: "OPERATIONS_CENTER",
+        action: input.action,
+        orderId: input.orderId,
+        actorId: input.actorId,
+        role: input.role,
+        at: new Date().toISOString(),
+        origin: "OPERATIONS_CENTER",
       });
-      if (input.action === "FINISH_PREP") KitchenSounds.play("ORDER_READY", { orderId: input.orderId });
-      if (input.action === "CANCEL" || input.action === "REJECT") KitchenSounds.play("ORDER_CANCELLED", { orderId: input.orderId });
+      if (input.action === "FINISH_PREP")
+        KitchenSounds.play("ORDER_READY", { orderId: input.orderId });
+      if (input.action === "CANCEL" || input.action === "REJECT")
+        KitchenSounds.play("ORDER_CANCELLED", { orderId: input.orderId });
       return result;
     },
 

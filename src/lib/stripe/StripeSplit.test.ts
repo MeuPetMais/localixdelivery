@@ -93,14 +93,20 @@ describe("StripeSplitService.buildTransferData", () => {
 describe("StripeSplitService.validateSplit", () => {
   it("valida split correto", () => {
     const r = StripeSplitService.validateSplit({
-      gross: 50, platformFee: 1.49, restaurantAmount: 48.51, destination: "acct_1",
+      gross: 50,
+      platformFee: 1.49,
+      restaurantAmount: 48.51,
+      destination: "acct_1",
     });
     expect(r.valid).toBe(true);
   });
 
   it("rejeita fee maior que total", () => {
     const r = StripeSplitService.validateSplit({
-      gross: 1, platformFee: 5, restaurantAmount: -4, destination: "acct_1",
+      gross: 1,
+      platformFee: 5,
+      restaurantAmount: -4,
+      destination: "acct_1",
     });
     expect(r.valid).toBe(false);
     expect(r.reason).toBe("fee_exceeds_total");
@@ -108,7 +114,10 @@ describe("StripeSplitService.validateSplit", () => {
 
   it("rejeita soma inconsistente", () => {
     const r = StripeSplitService.validateSplit({
-      gross: 50, platformFee: 1.49, restaurantAmount: 40, destination: "acct_1",
+      gross: 50,
+      platformFee: 1.49,
+      restaurantAmount: 40,
+      destination: "acct_1",
     });
     expect(r.valid).toBe(false);
     expect(r.reason).toBe("sum_mismatch");
@@ -116,7 +125,10 @@ describe("StripeSplitService.validateSplit", () => {
 
   it("rejeita destination inválido", () => {
     const r = StripeSplitService.validateSplit({
-      gross: 50, platformFee: 1.49, restaurantAmount: 48.51, destination: "cus_1",
+      gross: 50,
+      platformFee: 1.49,
+      restaurantAmount: 48.51,
+      destination: "cus_1",
     });
     expect(r.valid).toBe(false);
     expect(r.reason).toBe("invalid_destination");

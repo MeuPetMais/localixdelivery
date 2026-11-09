@@ -33,7 +33,6 @@ describe("ProductConfigurationService option metadata", () => {
   });
 });
 
-
 describe("ProductConfigurationService clone helpers", () => {
   it("normalizes group names for duplicate protection", () => {
     expect(normalizeGroupName("  Qual Ponto da Carne? ")).toBe("qual ponto da carne?");

@@ -99,13 +99,21 @@ async function buildContext(restaurantId: string, ownerId: string) {
     .sort((a, b) => b.qty - a.qty);
 
   const cutoff30 = new Date(now - 30 * DAY);
-  const activeCustomers = (customers ?? []).filter((c: any) => c.last_order_at && new Date(c.last_order_at) >= cutoff30).length;
+  const activeCustomers = (customers ?? []).filter(
+    (c: any) => c.last_order_at && new Date(c.last_order_at) >= cutoff30,
+  ).length;
   const inactiveCustomers = (customers ?? []).length - activeCustomers;
 
-  const lowStock = (ingredients ?? []).filter((i: any) => Number(i.current_stock) <= Number(i.min_stock));
+  const lowStock = (ingredients ?? []).filter(
+    (i: any) => Number(i.current_stock) <= Number(i.min_stock),
+  );
 
-  const revenueFin = (finance ?? []).filter((m: any) => m.type === "revenue").reduce((s: number, m: any) => s + Number(m.amount), 0);
-  const expenses = (finance ?? []).filter((m: any) => m.type === "expense").reduce((s: number, m: any) => s + Number(m.amount), 0);
+  const revenueFin = (finance ?? [])
+    .filter((m: any) => m.type === "revenue")
+    .reduce((s: number, m: any) => s + Number(m.amount), 0);
+  const expenses = (finance ?? [])
+    .filter((m: any) => m.type === "expense")
+    .reduce((s: number, m: any) => s + Number(m.amount), 0);
 
   return {
     name: rest.name,
@@ -163,12 +171,15 @@ REGRAS:
       }),
     });
     if (!res.ok) {
-      if (res.status === 429) throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
-      if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
+      if (res.status === 429)
+        throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
+      if (res.status === 402)
+        throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
       throw new Error(`Falha na IA (${res.status})`);
     }
     const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const reply = json.choices?.[0]?.message?.content?.trim() ?? "Não consegui gerar resposta agora.";
+    const reply =
+      json.choices?.[0]?.message?.content?.trim() ?? "Não consegui gerar resposta agora.";
     return { reply };
   });
 

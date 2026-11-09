@@ -1,4 +1,10 @@
-import type { DeliveryContext, DeliveryOrder, DeliveryState, DispatchStrategy, Driver } from "./types";
+import type {
+  DeliveryContext,
+  DeliveryOrder,
+  DeliveryState,
+  DispatchStrategy,
+  Driver,
+} from "./types";
 import { canTransition, isTerminal } from "./DeliveryStateMachine";
 import { deliveryEventBus, type DeliveryEventType } from "./DeliveryEventBus";
 import { dispatchEngine } from "./DispatchEngine";
@@ -8,10 +14,16 @@ export interface DeliveryRepository {
   create(input: Omit<DeliveryOrder, "id">): Promise<DeliveryOrder>;
   update(id: string, patch: Partial<DeliveryOrder>): Promise<DeliveryOrder>;
   get(id: string): Promise<DeliveryOrder | null>;
-  appendTimeline(id: string, entry: {
-    event: string; from_status?: string | null; to_status?: string | null;
-    actor?: string | null; metadata?: Record<string, unknown>;
-  }): Promise<void>;
+  appendTimeline(
+    id: string,
+    entry: {
+      event: string;
+      from_status?: string | null;
+      to_status?: string | null;
+      actor?: string | null;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<void>;
 }
 
 export interface CreateDeliveryInput {
@@ -54,7 +66,11 @@ export class DeliveryEngine {
       estimated_delivery: new Date(Date.now() + eta * 60_000).toISOString(),
       started_at: null,
       finished_at: null,
-      metadata: { ...(input.metadata ?? {}), dispatch: decision.reason, external_id: created.external_id },
+      metadata: {
+        ...(input.metadata ?? {}),
+        dispatch: decision.reason,
+        external_id: created.external_id,
+      },
     });
 
     if (decision.driver) {
@@ -76,7 +92,11 @@ export class DeliveryEngine {
     return order;
   }
 
-  async assignDriver(deliveryId: string, driverId: string, actor = "system"): Promise<DeliveryOrder> {
+  async assignDriver(
+    deliveryId: string,
+    driverId: string,
+    actor = "system",
+  ): Promise<DeliveryOrder> {
     return this.transition(deliveryId, "ASSIGNED", {
       actor,
       event: "DriverChanged",
@@ -104,7 +124,10 @@ export class DeliveryEngine {
 
     const patch: Partial<DeliveryOrder> = { status: to, ...(opts.patch ?? {}) };
     if (to === "PICKED_UP" && !current.started_at) patch.started_at = new Date().toISOString();
-    if ((to === "DELIVERED" || to === "CANCELLED" || to === "FAILED" || to === "RETURNED") && !current.finished_at) {
+    if (
+      (to === "DELIVERED" || to === "CANCELLED" || to === "FAILED" || to === "RETURNED") &&
+      !current.finished_at
+    ) {
       patch.finished_at = new Date().toISOString();
     }
     const updated = await this.repo.update(deliveryId, patch);
@@ -161,8 +184,16 @@ function mapStateToEvent(s: DeliveryState): DeliveryEventType | string {
 }
 
 const KNOWN_EVENTS = new Set<DeliveryEventType>([
-  "DriverAssigned", "DriverChanged", "DriverArrived", "PickupStarted", "OrderPickedUp",
-  "DeliveryStarted", "DriverNearCustomer", "OrderDelivered", "DeliveryCancelled", "DeliveryFailed",
+  "DriverAssigned",
+  "DriverChanged",
+  "DriverArrived",
+  "PickupStarted",
+  "OrderPickedUp",
+  "DeliveryStarted",
+  "DriverNearCustomer",
+  "OrderDelivered",
+  "DeliveryCancelled",
+  "DeliveryFailed",
 ]);
 function isDeliveryEventType(v: string): v is DeliveryEventType {
   return KNOWN_EVENTS.has(v as DeliveryEventType);

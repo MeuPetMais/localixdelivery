@@ -7,17 +7,27 @@ export function createStockMovementService(repo: InventoryRepository) {
   return {
     record(type: MovementType, input: MovementInput): Promise<StockMovement> {
       switch (type) {
-        case "ENTRY": return inv.increaseStock(input, "ENTRY");
-        case "SALE": return inv.decreaseStock(input, "SALE");
-        case "EXIT": return inv.decreaseStock(input, "EXIT");
-        case "LOSS": return inv.decreaseStock(input, "LOSS");
-        case "PRODUCTION": return inv.decreaseStock(input, "PRODUCTION");
-        case "RESERVE": return inv.reserveStock(input);
-        case "RELEASE": return inv.releaseStock(input);
+        case "ENTRY":
+          return inv.increaseStock(input, "ENTRY");
+        case "SALE":
+          return inv.decreaseStock(input, "SALE");
+        case "EXIT":
+          return inv.decreaseStock(input, "EXIT");
+        case "LOSS":
+          return inv.decreaseStock(input, "LOSS");
+        case "PRODUCTION":
+          return inv.decreaseStock(input, "PRODUCTION");
+        case "RESERVE":
+          return inv.reserveStock(input);
+        case "RELEASE":
+          return inv.releaseStock(input);
         case "ADJUSTMENT":
           return inv.adjustStock({ ...input, targetStock: input.quantity });
         case "TRANSFER":
-          return inv.transferStock({ ...input, toLocationId: (input.metadata?.toLocationId as string) ?? "" });
+          return inv.transferStock({
+            ...input,
+            toLocationId: (input.metadata?.toLocationId as string) ?? "",
+          });
       }
     },
     _inventory: inv as unknown as { listIngredients: (r: string) => Promise<Ingredient[]> },

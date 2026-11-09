@@ -24,7 +24,9 @@ export const listPromotions = createServerFn({ method: "GET" })
 
 export const createPromotion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: Partial<Promotion> & { restaurant_id: string; name: string; discount_type: string }) => d)
+  .inputValidator(
+    (d: Partial<Promotion> & { restaurant_id: string; name: string; discount_type: string }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("promotions" as any)
@@ -83,14 +85,25 @@ export const deletePromotion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("promotions" as any).delete().eq("id", data.id);
+    const { error } = await context.supabase
+      .from("promotions" as any)
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const upsertPromotionRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; promotion_id: string; rule_type: string; operator?: string; value: Record<string, any> }) => d)
+  .inputValidator(
+    (d: {
+      id?: string;
+      promotion_id: string;
+      rule_type: string;
+      operator?: string;
+      value: Record<string, any>;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     const payload = {
       promotion_id: data.promotion_id,
@@ -99,7 +112,10 @@ export const upsertPromotionRule = createServerFn({ method: "POST" })
       value: data.value,
     };
     const q = data.id
-      ? context.supabase.from("promotion_rules" as any).update(payload).eq("id", data.id)
+      ? context.supabase
+          .from("promotion_rules" as any)
+          .update(payload)
+          .eq("id", data.id)
       : context.supabase.from("promotion_rules" as any).insert(payload);
     const { data: row, error } = await q.select("*").single();
     if (error) throw new Error(error.message);
@@ -108,7 +124,9 @@ export const upsertPromotionRule = createServerFn({ method: "POST" })
 
 export const upsertPromotionTarget = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; promotion_id: string; target_type: string; target_id?: string | null }) => d)
+  .inputValidator(
+    (d: { id?: string; promotion_id: string; target_type: string; target_id?: string | null }) => d,
+  )
   .handler(async ({ data, context }) => {
     const payload = {
       promotion_id: data.promotion_id,
@@ -116,7 +134,10 @@ export const upsertPromotionTarget = createServerFn({ method: "POST" })
       target_id: data.target_id ?? null,
     };
     const q = data.id
-      ? context.supabase.from("promotion_targets" as any).update(payload).eq("id", data.id)
+      ? context.supabase
+          .from("promotion_targets" as any)
+          .update(payload)
+          .eq("id", data.id)
       : context.supabase.from("promotion_targets" as any).insert(payload);
     const { data: row, error } = await q.select("*").single();
     if (error) throw new Error(error.message);
@@ -125,7 +146,15 @@ export const upsertPromotionTarget = createServerFn({ method: "POST" })
 
 export const recordPromotionUsage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { promotion_id: string; restaurant_id: string; discount_amount: number; customer_id?: string | null; order_id?: string | null }) => d)
+  .inputValidator(
+    (d: {
+      promotion_id: string;
+      restaurant_id: string;
+      discount_amount: number;
+      customer_id?: string | null;
+      order_id?: string | null;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("promotion_usage" as any)

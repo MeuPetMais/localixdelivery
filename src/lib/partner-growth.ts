@@ -8,11 +8,7 @@ import {
   type PartnerGrowthRestaurant,
 } from "@/lib/partner-growth-access";
 
-export type {
-  PartnerGrowthAccessState,
-  PartnerGrowthAssignment,
-  PartnerGrowthRestaurant,
-};
+export type { PartnerGrowthAccessState, PartnerGrowthAssignment, PartnerGrowthRestaurant };
 
 type AssignmentRow = {
   id: string;
@@ -70,11 +66,7 @@ export type PartnerGrowthPriorityAlertPriority = "ALTA" | "MEDIA" | "BAIXA";
 
 export type PartnerGrowthTaskPriority = "ALTA" | "MEDIA" | "BAIXA";
 
-export type PartnerGrowthTaskStatus =
-  | "PENDENTE"
-  | "EM_ANDAMENTO"
-  | "CONCLUIDA"
-  | "DESCARTADA";
+export type PartnerGrowthTaskStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "DESCARTADA";
 
 export type PartnerGrowthTaskSourceSignal =
   | "SEM_VENDA_7D"
@@ -202,7 +194,9 @@ export function calculatePartnerGrowthVariation(
 ): number | null {
   if (previousPeriodOrders === 0 && currentPeriodOrders === 0) return 0;
   if (previousPeriodOrders === 0) return null;
-  return Math.round(((currentPeriodOrders - previousPeriodOrders) / previousPeriodOrders) * 10000) / 100;
+  return (
+    Math.round(((currentPeriodOrders - previousPeriodOrders) / previousPeriodOrders) * 10000) / 100
+  );
 }
 
 export function countsAsPartnerGrowthRealizedSale(status: unknown): boolean {
@@ -326,12 +320,13 @@ export async function loadPartnerGrowthPriorityAlerts(): Promise<PartnerGrowthPr
 }
 
 export async function loadPartnerGrowthTasks(): Promise<PartnerGrowthTask[]> {
-  const { data, error } = await (supabase.from("partner_growth_tasks" as any) as any)
-    .select(
-      "id, restaurant_id, assigned_to, created_by, source_signal, title, notes, priority, status, due_at, created_at, updated_at, restaurants(id, name)",
-    );
+  const { data, error } = await (supabase.from("partner_growth_tasks" as any) as any).select(
+    "id, restaurant_id, assigned_to, created_by, source_signal, title, notes, priority, status, due_at, created_at, updated_at, restaurants(id, name)",
+  );
   if (error) throw error;
-  return sortPartnerGrowthTasks(((data ?? []) as PartnerGrowthTaskRow[]).map(normalizePartnerGrowthTask));
+  return sortPartnerGrowthTasks(
+    ((data ?? []) as PartnerGrowthTaskRow[]).map(normalizePartnerGrowthTask),
+  );
 }
 
 export async function createPartnerGrowthTask(

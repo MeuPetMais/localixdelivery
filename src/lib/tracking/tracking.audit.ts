@@ -2,11 +2,7 @@
 // Registro observacional para depuração/rastreio. Nunca falha o fluxo principal.
 
 export interface TrackingAuditRecord {
-  action:
-    | "snapshot_created"
-    | "snapshot_updated"
-    | "timeline_appended"
-    | "status_changed";
+  action: "snapshot_created" | "snapshot_updated" | "timeline_appended" | "status_changed";
   correlation_id: string;
   assignment_id: string;
   restaurant_id: string;
@@ -23,8 +19,14 @@ let sink: Sink = (r) => {
   console.info("[tracking-audit]", JSON.stringify(r));
 };
 
-export function setTrackingAuditSink(fn: Sink) { sink = fn; }
+export function setTrackingAuditSink(fn: Sink) {
+  sink = fn;
+}
 
 export async function recordTrackingAudit(r: TrackingAuditRecord) {
-  try { await sink(r); } catch (err) { console.error("[tracking-audit] sink error", err); }
+  try {
+    await sink(r);
+  } catch (err) {
+    console.error("[tracking-audit] sink error", err);
+  }
 }

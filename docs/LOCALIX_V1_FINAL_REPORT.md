@@ -53,23 +53,23 @@ formaliza o encerramento do desenvolvimento da v1.0.
 
 ## 4. Métricas finais
 
-| Métrica | Valor |
-| --- | ---: |
-| Domínios ativos | 17 |
-| Services públicos | ~110 |
-| Edge functions | 5 (`mp-oauth`, `mp-oauth-callback`, `mp-payment-intent`, `mp-webhook`, shared) |
-| Rotas públicas (`/api/public/*`) | 2 (callback + webhook MP) |
-| Tabelas `public` com RLS | 115 |
-| Eventos de domínio | ~60 |
-| Arquivos de teste | 39 |
-| Testes | 444 (100% verdes) |
-| Duração da suíte | ~4,2s |
-| Cobertura de Services críticos | ≥ 95% |
-| **Nota arquitetural** | **A** |
-| **Nota de segurança** | **A** |
-| **Nota de performance** | **A-** |
-| **Nota de observabilidade** | **A-** |
-| **Nota geral** | **95 / 100** |
+| Métrica                          |                                                                          Valor |
+| -------------------------------- | -----------------------------------------------------------------------------: |
+| Domínios ativos                  |                                                                             17 |
+| Services públicos                |                                                                           ~110 |
+| Edge functions                   | 5 (`mp-oauth`, `mp-oauth-callback`, `mp-payment-intent`, `mp-webhook`, shared) |
+| Rotas públicas (`/api/public/*`) |                                                      2 (callback + webhook MP) |
+| Tabelas `public` com RLS         |                                                                            115 |
+| Eventos de domínio               |                                                                            ~60 |
+| Arquivos de teste                |                                                                             39 |
+| Testes                           |                                                              444 (100% verdes) |
+| Duração da suíte                 |                                                                          ~4,2s |
+| Cobertura de Services críticos   |                                                                          ≥ 95% |
+| **Nota arquitetural**            |                                                                          **A** |
+| **Nota de segurança**            |                                                                          **A** |
+| **Nota de performance**          |                                                                         **A-** |
+| **Nota de observabilidade**      |                                                                         **A-** |
+| **Nota geral**                   |                                                                   **95 / 100** |
 
 ## 5. Pendências não críticas (para v1.1)
 

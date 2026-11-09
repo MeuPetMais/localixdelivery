@@ -6,7 +6,11 @@ export interface CostAlert {
 }
 
 export const CostAlerts = {
-  evaluateProduct(p: { product_id: string; net_margin: number; estimated_profit: number }): CostAlert[] {
+  evaluateProduct(p: {
+    product_id: string;
+    net_margin: number;
+    estimated_profit: number;
+  }): CostAlert[] {
     const alerts: CostAlert[] = [];
     if (p.estimated_profit < 0) {
       alerts.push({
@@ -29,21 +33,25 @@ export const CostAlerts = {
     if (prevCost <= 0) return [];
     const delta = (newCost - prevCost) / prevCost;
     if (delta >= threshold) {
-      return [{
-        code: "EXPENSIVE_INGREDIENT",
-        severity: "warn",
-        message: `Ingrediente subiu ${(delta * 100).toFixed(1)}%`,
-      }];
+      return [
+        {
+          code: "EXPENSIVE_INGREDIENT",
+          severity: "warn",
+          message: `Ingrediente subiu ${(delta * 100).toFixed(1)}%`,
+        },
+      ];
     }
     return [];
   },
   evaluateCMV(cmvPercent: number, target = 35): CostAlert[] {
     if (cmvPercent > target) {
-      return [{
-        code: "HIGH_CMV",
-        severity: cmvPercent > target + 10 ? "critical" : "warn",
-        message: `CMV em ${cmvPercent.toFixed(1)}% (meta ${target}%)`,
-      }];
+      return [
+        {
+          code: "HIGH_CMV",
+          severity: cmvPercent > target + 10 ? "critical" : "warn",
+          message: `CMV em ${cmvPercent.toFixed(1)}% (meta ${target}%)`,
+        },
+      ];
     }
     return [];
   },

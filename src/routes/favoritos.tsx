@@ -1,6 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Heart, LogIn, ShoppingBag, Trash2, AlertTriangle, ChevronRight, Sparkles } from "lucide-react";
+import {
+  Heart,
+  LogIn,
+  ShoppingBag,
+  Trash2,
+  AlertTriangle,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,9 +82,17 @@ function AuthedFavorites() {
   if (!favorites || favorites.length === 0) return <EmptyState />;
 
   // group by restaurant
-  const groups = new Map<string, { name: string; slug: string; logo: string | null; items: EnrichedFavorite[] }>();
+  const groups = new Map<
+    string,
+    { name: string; slug: string; logo: string | null; items: EnrichedFavorite[] }
+  >();
   for (const f of favorites) {
-    const g = groups.get(f.restaurantId) ?? { name: f.restaurantName, slug: f.restaurantSlug, logo: f.restaurantLogo, items: [] };
+    const g = groups.get(f.restaurantId) ?? {
+      name: f.restaurantName,
+      slug: f.restaurantSlug,
+      logo: f.restaurantLogo,
+      items: [],
+    };
     g.items.push(f);
     groups.set(f.restaurantId, g);
   }
@@ -90,7 +106,9 @@ function AuthedFavorites() {
           </p>
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Pratos favoritos</h1>
         </div>
-        <span className="text-sm text-muted-foreground">{favorites.length} {favorites.length === 1 ? "item" : "itens"}</span>
+        <span className="text-sm text-muted-foreground">
+          {favorites.length} {favorites.length === 1 ? "item" : "itens"}
+        </span>
       </header>
 
       {[...groups.values()].map((g) => (
@@ -98,7 +116,11 @@ function AuthedFavorites() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               {g.logo ? (
-                <img src={g.logo} alt="" className="h-9 w-9 rounded-xl object-cover ring-1 ring-border" />
+                <img
+                  src={g.logo}
+                  alt=""
+                  className="h-9 w-9 rounded-xl object-cover ring-1 ring-border"
+                />
               ) : (
                 <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-warm text-sm font-extrabold text-primary-foreground">
                   {g.name[0]}
@@ -130,9 +152,17 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
   function reorder() {
     if (!fav.available) return;
     if (fav.kind === "builder") {
-      navigate({ to: "/$slug/montar", params: { slug: fav.restaurantSlug }, search: { builder: fav.itemId } as any });
+      navigate({
+        to: "/$slug/montar",
+        params: { slug: fav.restaurantSlug },
+        search: { builder: fav.itemId } as any,
+      });
     } else {
-      navigate({ to: "/$slug", params: { slug: fav.restaurantSlug }, search: { add: fav.itemId } as any });
+      navigate({
+        to: "/$slug",
+        params: { slug: fav.restaurantSlug },
+        search: { add: fav.itemId } as any,
+      });
     }
   }
 
@@ -143,9 +173,16 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
       <div className="flex gap-3 p-3">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-28 sm:w-28">
           {fav.imageUrl ? (
-            <img src={fav.imageUrl} alt={fav.name ?? ""} className="h-full w-full object-cover" loading="lazy" />
+            <img
+              src={fav.imageUrl}
+              alt={fav.name ?? ""}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
           ) : (
-            <div className="grid h-full w-full place-items-center text-2xl">{fav.kind === "builder" ? "✨" : "🍽️"}</div>
+            <div className="grid h-full w-full place-items-center text-2xl">
+              {fav.kind === "builder" ? "✨" : "🍽️"}
+            </div>
           )}
           {!fav.available && (
             <div className="absolute inset-0 grid place-items-center bg-background/85 text-center">
@@ -159,7 +196,9 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="line-clamp-1 font-bold leading-snug">{fav.name ?? "Produto removido"}</h3>
+              <h3 className="line-clamp-1 font-bold leading-snug">
+                {fav.name ?? "Produto removido"}
+              </h3>
               <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 {fav.categoryName && (
                   <Badge
@@ -187,11 +226,17 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 {fav.promoPrice != null && fav.price != null ? (
                   <>
-                    <span className="font-display text-base font-extrabold text-primary">{brl(fav.promoPrice)}</span>
-                    <span className="text-xs text-muted-foreground line-through">{brl(fav.price)}</span>
+                    <span className="font-display text-base font-extrabold text-primary">
+                      {brl(fav.promoPrice)}
+                    </span>
+                    <span className="text-xs text-muted-foreground line-through">
+                      {brl(fav.price)}
+                    </span>
                   </>
                 ) : price != null ? (
-                  <span className="font-display text-base font-extrabold text-primary">{brl(price)}</span>
+                  <span className="font-display text-base font-extrabold text-primary">
+                    {brl(price)}
+                  </span>
                 ) : null}
               </div>
             ) : (
@@ -238,18 +283,25 @@ function EmptyState() {
           <Heart className="h-10 w-10 text-rose-500" strokeWidth={1.8} />
         </div>
       </div>
-      <h1 className="font-display text-2xl font-extrabold tracking-tight">Seus pratos favoritos aparecerão aqui</h1>
+      <h1 className="font-display text-2xl font-extrabold tracking-tight">
+        Seus pratos favoritos aparecerão aqui
+      </h1>
       <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
-        Favoritando pizzas, hambúrgueres, combos e outros produtos, você poderá encontrá-los rapidamente e pedir novamente com apenas um toque.
+        Favoritando pizzas, hambúrgueres, combos e outros produtos, você poderá encontrá-los
+        rapidamente e pedir novamente com apenas um toque.
       </p>
 
       {lastSlug ? (
         <Button asChild size="lg" className="mt-6 rounded-full">
-          <Link to="/$slug" params={{ slug: lastSlug }}>Explorar cardápio</Link>
+          <Link to="/$slug" params={{ slug: lastSlug }}>
+            Explorar cardápio
+          </Link>
         </Button>
       ) : (
         <div className="mx-auto mt-6 flex max-w-sm flex-col gap-2">
-          <p className="text-xs text-muted-foreground">Informe o link do restaurante para começar:</p>
+          <p className="text-xs text-muted-foreground">
+            Informe o link do restaurante para começar:
+          </p>
           <div className="flex gap-2">
             <Input
               value={slugInput}
@@ -257,7 +309,9 @@ function EmptyState() {
               placeholder="ex.: pizzaria-sanliver"
               className="rounded-full"
             />
-            <Button onClick={explore} className="rounded-full">Abrir</Button>
+            <Button onClick={explore} className="rounded-full">
+              Abrir
+            </Button>
           </div>
         </div>
       )}

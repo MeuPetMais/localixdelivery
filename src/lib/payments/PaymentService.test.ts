@@ -36,9 +36,9 @@ describe("PaymentService.createPayment", () => {
   });
 
   it("exige customerEmail válido", async () => {
-    await expect(
-      PaymentService.createPayment({ ...baseInput, customerEmail: "" }),
-    ).rejects.toThrow(/customerEmail/i);
+    await expect(PaymentService.createPayment({ ...baseInput, customerEmail: "" })).rejects.toThrow(
+      /customerEmail/i,
+    );
     await expect(
       PaymentService.createPayment({ ...baseInput, customerEmail: "invalido" }),
     ).rejects.toThrow(/customerEmail/i);
@@ -48,12 +48,12 @@ describe("PaymentService.createPayment", () => {
     await expect(
       PaymentService.createPayment({ ...baseInput, orderId: "" as any }),
     ).rejects.toThrow(/orderId/);
-    await expect(
-      PaymentService.createPayment({ ...baseInput, amount: 0 }),
-    ).rejects.toThrow(/amount/);
-    await expect(
-      PaymentService.createPayment({ ...baseInput, successUrl: "" }),
-    ).rejects.toThrow(/successUrl|cancelUrl/);
+    await expect(PaymentService.createPayment({ ...baseInput, amount: 0 })).rejects.toThrow(
+      /amount/,
+    );
+    await expect(PaymentService.createPayment({ ...baseInput, successUrl: "" })).rejects.toThrow(
+      /successUrl|cancelUrl/,
+    );
   });
 
   it("roteia para Stripe (default) via edge stripe-checkout", async () => {
@@ -62,13 +62,16 @@ describe("PaymentService.createPayment", () => {
       error: null,
     });
     const r = await PaymentService.createPayment(baseInput);
-    expect(invoke).toHaveBeenCalledWith("stripe-checkout", expect.objectContaining({
-      body: expect.objectContaining({
-        orderId: "o1",
-        method: "card",
-        customerEmail: "cliente@exemplo.com",
+    expect(invoke).toHaveBeenCalledWith(
+      "stripe-checkout",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          orderId: "o1",
+          method: "card",
+          customerEmail: "cliente@exemplo.com",
+        }),
       }),
-    }));
+    );
     expect(r.provider).toBe("stripe");
     expect(r.redirectUrl).toBe("https://stripe/checkout/cs_1");
     expect(r.externalId).toBe("cs_1");
@@ -91,14 +94,17 @@ describe("PaymentService.createPayment", () => {
       providerId: "mercado_pago",
       method: "pix",
     });
-    expect(invoke).toHaveBeenCalledWith("mp-payment-intent", expect.objectContaining({
-      body: expect.objectContaining({
-        action: "create",
-        order_id: "o1",
-        payment_method: "pix",
-        payer_email: "cliente@exemplo.com",
+    expect(invoke).toHaveBeenCalledWith(
+      "mp-payment-intent",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          action: "create",
+          order_id: "o1",
+          payment_method: "pix",
+          payer_email: "cliente@exemplo.com",
+        }),
       }),
-    }));
+    );
     expect(r.provider).toBe("mercado_pago");
     expect(r.pix?.qrCode).toBe("qr");
   });
@@ -148,14 +154,17 @@ describe("PaymentService.createPayment", () => {
       },
     });
 
-    expect(invoke).toHaveBeenCalledWith("mp-payment-intent", expect.objectContaining({
-      body: expect.objectContaining({
-        action: "create",
-        order_id: "o1",
-        payment_method: "credit_card",
-        transparent_card_phase: "backend_payment_enabled",
+    expect(invoke).toHaveBeenCalledWith(
+      "mp-payment-intent",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          action: "create",
+          order_id: "o1",
+          payment_method: "credit_card",
+          transparent_card_phase: "backend_payment_enabled",
+        }),
       }),
-    }));
+    );
     expect(r).toMatchObject({
       provider: "mercado_pago",
       redirectUrl: null,

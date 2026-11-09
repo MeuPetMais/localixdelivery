@@ -10,13 +10,21 @@ describe("CommunicationPreferenceService.isAllowed", () => {
     expect(CommunicationPreferenceService.isAllowed(prefs, "EMAIL")).toBe(true);
   });
   it("blocks disabled channel", () => {
-    expect(CommunicationPreferenceService.isAllowed({ ...prefs, email_enabled: false }, "EMAIL")).toBe(false);
+    expect(
+      CommunicationPreferenceService.isAllowed({ ...prefs, email_enabled: false }, "EMAIL"),
+    ).toBe(false);
   });
   it("blocks marketing when opt-out", () => {
-    expect(CommunicationPreferenceService.isAllowed(prefs, "EMAIL", { marketing: true })).toBe(false);
+    expect(CommunicationPreferenceService.isAllowed(prefs, "EMAIL", { marketing: true })).toBe(
+      false,
+    );
   });
   it("allows marketing when opted in", () => {
-    expect(CommunicationPreferenceService.isAllowed({ ...prefs, marketing_enabled: true }, "PUSH", { marketing: true })).toBe(true);
+    expect(
+      CommunicationPreferenceService.isAllowed({ ...prefs, marketing_enabled: true }, "PUSH", {
+        marketing: true,
+      }),
+    ).toBe(true);
   });
   it("maps every channel to a field", () => {
     for (const c of ["EMAIL", "PUSH", "SMS", "WHATSAPP", "IN_APP"] as const) {
@@ -28,10 +36,15 @@ describe("CommunicationPreferenceService.isAllowed", () => {
 describe("CommunicationEventBus", () => {
   it("dispatches events to subscribers", async () => {
     const received: CommunicationEvent[] = [];
-    const off = CommunicationEventBus.subscribe((e) => { received.push(e); });
+    const off = CommunicationEventBus.subscribe((e) => {
+      received.push(e);
+    });
     await CommunicationEventBus.publish({
-      type: "CommunicationLogged", customerId: "c1", channel: "EMAIL",
-      event_type: "test", at: new Date().toISOString(),
+      type: "CommunicationLogged",
+      customerId: "c1",
+      channel: "EMAIL",
+      event_type: "test",
+      at: new Date().toISOString(),
     });
     off();
     expect(received).toHaveLength(1);

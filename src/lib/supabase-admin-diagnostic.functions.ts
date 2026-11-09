@@ -38,7 +38,10 @@ function sanitizeError(error: any): SanitizedError {
   };
 }
 
-function diagnosticError(message: string, status: number | null = null): NonNullable<SanitizedError> {
+function diagnosticError(
+  message: string,
+  status: number | null = null,
+): NonNullable<SanitizedError> {
   return {
     name: null,
     message,
@@ -98,7 +101,11 @@ async function runRawRest(SUPABASE_URL?: string, SUPABASE_SERVICE_ROLE_KEY?: str
   };
 }
 
-async function runRawRpc(SUPABASE_URL: string | undefined, SUPABASE_SERVICE_ROLE_KEY: string | undefined, userId: string) {
+async function runRawRpc(
+  SUPABASE_URL: string | undefined,
+  SUPABASE_SERVICE_ROLE_KEY: string | undefined,
+  userId: string,
+) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return {
       ok: false,
@@ -134,7 +141,11 @@ async function runRawRpc(SUPABASE_URL: string | undefined, SUPABASE_SERVICE_ROLE
   };
 }
 
-async function runStandardClient(SUPABASE_URL: string | undefined, SUPABASE_SERVICE_ROLE_KEY: string | undefined, userId: string) {
+async function runStandardClient(
+  SUPABASE_URL: string | undefined,
+  SUPABASE_SERVICE_ROLE_KEY: string | undefined,
+  userId: string,
+) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return {
       ok: false,
@@ -217,7 +228,9 @@ export const diagnoseSupabaseAdmin = createServerFn({ method: "GET" })
       ? await runTest(() => runRawRpc(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, context.userId))
       : skippedTest("Diagnóstico não executado: usuário autenticado não possui role admin");
     const standardClient = isAuthorized
-      ? await runTest(() => runStandardClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, context.userId))
+      ? await runTest(() =>
+          runStandardClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, context.userId),
+        )
       : skippedTest("Diagnóstico não executado: usuário autenticado não possui role admin");
     const currentAdminClient = isAuthorized
       ? await runTest(() => runCurrentAdminClient(context.userId))

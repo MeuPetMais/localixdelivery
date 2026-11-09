@@ -35,13 +35,13 @@ UI mostra: acct_..., capabilities (Cartão / PIX / Payouts), status
 
 ## Estados observados
 
-| Situação | `stripe_account_status` | UI |
-|---|---|---|
-| Ainda não conectou | `not_created` | Botão **Conectar Stripe** |
-| Onboarding iniciado, doc pendente | `onboarding_pending` | **Continuar cadastro** + **Sincronizar** |
-| Conta ativa (charges + payouts + details) | `active` | Selo verde, **Sincronizar**, **Desconectar** |
-| Requirements bloqueadas | `restricted` | Aviso "em análise" + **Continuar cadastro** |
-| Rejeitada / desativada | `rejected`/`disabled` | Badge vermelho |
+| Situação                                  | `stripe_account_status` | UI                                           |
+| ----------------------------------------- | ----------------------- | -------------------------------------------- |
+| Ainda não conectou                        | `not_created`           | Botão **Conectar Stripe**                    |
+| Onboarding iniciado, doc pendente         | `onboarding_pending`    | **Continuar cadastro** + **Sincronizar**     |
+| Conta ativa (charges + payouts + details) | `active`                | Selo verde, **Sincronizar**, **Desconectar** |
+| Requirements bloqueadas                   | `restricted`            | Aviso "em análise" + **Continuar cadastro**  |
+| Rejeitada / desativada                    | `rejected`/`disabled`   | Badge vermelho                               |
 
 ## Sincronização
 

@@ -65,9 +65,12 @@ export function installAudioUnlock() {
     const ctx = getCtx();
     if (!ctx) return;
     if (ctx.state === "suspended") {
-      ctx.resume().then(() => {
-        console.log("[notify] AudioContext desbloqueado");
-      }).catch((e) => console.warn("[notify] resume falhou", e));
+      ctx
+        .resume()
+        .then(() => {
+          console.log("[notify] AudioContext desbloqueado");
+        })
+        .catch((e) => console.warn("[notify] resume falhou", e));
     }
     unlocked = true;
     window.removeEventListener("pointerdown", unlock);

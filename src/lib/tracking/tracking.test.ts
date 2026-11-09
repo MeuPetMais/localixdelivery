@@ -27,14 +27,27 @@ describe("TrackingService", () => {
 
   it("patch atualiza campos e mantém identidade", () => {
     svc.createSnapshot(baseInput);
-    const patched = svc.updateSnapshot(baseInput.assignment_id, { eta_seconds: 600, confidence: "HIGH" });
+    const patched = svc.updateSnapshot(baseInput.assignment_id, {
+      eta_seconds: 600,
+      confidence: "HIGH",
+    });
     expect(patched?.eta_seconds).toBe(600);
     expect(patched?.confidence).toBe("HIGH");
   });
 
   it("timeline é append-only", () => {
-    svc.appendTimeline({ ...baseInput, driver_id: baseInput.driver_id, event: "snapshot_created", correlation_id: "c" });
-    svc.appendTimeline({ ...baseInput, driver_id: baseInput.driver_id, event: "status_changed", correlation_id: "c" });
+    svc.appendTimeline({
+      ...baseInput,
+      driver_id: baseInput.driver_id,
+      event: "snapshot_created",
+      correlation_id: "c",
+    });
+    svc.appendTimeline({
+      ...baseInput,
+      driver_id: baseInput.driver_id,
+      event: "status_changed",
+      correlation_id: "c",
+    });
     const { timeline } = svc.currentTracking(baseInput.assignment_id);
     expect(timeline.length).toBe(2);
   });
@@ -69,7 +82,10 @@ describe("Snapshot integrity (RC5.3.x.1)", () => {
 
   it("assignments distintos não colidem", () => {
     const a = svc.createSnapshot(baseInput);
-    const other = svc.createSnapshot({ ...baseInput, assignment_id: "55555555-5555-5555-5555-555555555555" });
+    const other = svc.createSnapshot({
+      ...baseInput,
+      assignment_id: "55555555-5555-5555-5555-555555555555",
+    });
     expect(a.id).not.toBe(other.id);
     expect(svc.currentTracking(a.assignment_id).snapshot?.id).toBe(a.id);
     expect(svc.currentTracking(other.assignment_id).snapshot?.id).toBe(other.id);

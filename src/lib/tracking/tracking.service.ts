@@ -3,10 +3,17 @@
 // A persistência remota é feita pelas server functions em tracking.functions.ts.
 
 import type {
-  TrackingSnapshot, TrackingSnapshotInput, TrackingSnapshotPatch, TrackingTimelineEntry,
+  TrackingSnapshot,
+  TrackingSnapshotInput,
+  TrackingSnapshotPatch,
+  TrackingTimelineEntry,
 } from "./tracking.types";
 import { createInMemorySnapshotStore, type SnapshotStore } from "./tracking.snapshot";
-import { createInMemoryTimelineStore, type TimelineStore, type TimelineAppendInput } from "./tracking.timeline";
+import {
+  createInMemoryTimelineStore,
+  type TimelineStore,
+  type TimelineAppendInput,
+} from "./tracking.timeline";
 
 export interface TrackingServiceDeps {
   snapshots?: SnapshotStore;
@@ -39,7 +46,10 @@ export function createTrackingService(deps: TrackingServiceDeps = {}) {
         timeline: timeline.list(assignmentId),
       };
     },
-    _reset() { snapshots.clear(); timeline.clear(); },
+    _reset() {
+      snapshots.clear();
+      timeline.clear();
+    },
   };
 }
 

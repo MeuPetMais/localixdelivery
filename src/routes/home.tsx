@@ -44,15 +44,12 @@ function CustomerHome() {
     },
   });
 
-
-
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return restaurants;
     return restaurants.filter(
       (r) =>
-        r.name?.toLowerCase().includes(term) ||
-        (r.category ?? "").toLowerCase().includes(term),
+        r.name?.toLowerCase().includes(term) || (r.category ?? "").toLowerCase().includes(term),
     );
   }, [restaurants, q]);
 
@@ -87,12 +84,19 @@ function CustomerHome() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Promoções</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Promoções
+            </h2>
           </div>
           <Card className="overflow-hidden bg-gradient-warm p-5 text-primary-foreground">
             <p className="text-xs font-semibold uppercase tracking-widest opacity-80">Hoje</p>
-            <p className="mt-1 text-lg font-extrabold">Cupons e ofertas dos restaurantes próximos</p>
-            <Link to="/beneficios" className="mt-3 inline-flex rounded-full bg-background/20 px-3 py-1 text-xs font-semibold backdrop-blur">
+            <p className="mt-1 text-lg font-extrabold">
+              Cupons e ofertas dos restaurantes próximos
+            </p>
+            <Link
+              to="/beneficios"
+              className="mt-3 inline-flex rounded-full bg-background/20 px-3 py-1 text-xs font-semibold backdrop-blur"
+            >
               Ver benefícios →
             </Link>
           </Card>
@@ -102,7 +106,9 @@ function CustomerHome() {
           <section>
             <div className="mb-2 flex items-center gap-2">
               <Tag className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Categorias</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Categorias
+              </h2>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {categories.map(([c, n]) => (
@@ -121,7 +127,9 @@ function CustomerHome() {
         <section>
           <div className="mb-2 flex items-center gap-2">
             <Store className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Estabelecimentos</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Estabelecimentos
+            </h2>
           </div>
           {isLoading ? (
             <div className="grid gap-3">
@@ -140,7 +148,6 @@ function CustomerHome() {
                   <Link
                     to="/$slug"
                     params={{ slug: r.slug }}
-
                     className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-3 transition hover:border-primary/40 hover:shadow-md"
                   >
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -166,11 +173,17 @@ function CustomerHome() {
         </section>
 
         <section className="grid grid-cols-2 gap-3">
-          <Link to="/favoritos" className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-4 hover:border-primary/40">
+          <Link
+            to="/favoritos"
+            className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-4 hover:border-primary/40"
+          >
             <Heart className="h-5 w-5 text-primary" />
             <span className="text-sm font-semibold">Favoritos</span>
           </Link>
-          <Link to="/meus-pedidos" className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-4 hover:border-primary/40">
+          <Link
+            to="/meus-pedidos"
+            className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-4 hover:border-primary/40"
+          >
             <Receipt className="h-5 w-5 text-primary" />
             <span className="text-sm font-semibold">Pedidos</span>
           </Link>

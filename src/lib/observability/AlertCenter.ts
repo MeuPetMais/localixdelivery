@@ -27,7 +27,13 @@ export const AlertCenter = {
       ...input,
     };
     alerts.push(a);
-    for (const l of listeners) { try { l(a); } catch { /* noop */ } }
+    for (const l of listeners) {
+      try {
+        l(a);
+      } catch {
+        /* noop */
+      }
+    }
     return a;
   },
   ack(id: string, by?: string): Alert | null {
@@ -46,12 +52,24 @@ export const AlertCenter = {
     if (opts?.limit) out = out.slice(0, opts.limit);
     return out;
   },
-  subscribe(l: Listener) { listeners.add(l); return () => listeners.delete(l); },
-  _reset() { alerts.length = 0; aSeq = 0; listeners.clear(); },
+  subscribe(l: Listener) {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+  _reset() {
+    alerts.length = 0;
+    aSeq = 0;
+    listeners.clear();
+  },
 } as const;
 
 export const IncidentCenter = {
-  open(input: { severity: AlertSeverity; title: string; summary?: string; related_alert_ids?: string[] }): Incident {
+  open(input: {
+    severity: AlertSeverity;
+    title: string;
+    summary?: string;
+    related_alert_ids?: string[];
+  }): Incident {
     const i: Incident = {
       id: `inc_${++iSeq}`,
       opened_at: new Date().toISOString(),
@@ -72,7 +90,10 @@ export const IncidentCenter = {
   },
   close(id: string): Incident | null {
     const i = incidents.find((x) => x.id === id);
-    if (i) { i.status = "closed"; i.closed_at = new Date().toISOString(); }
+    if (i) {
+      i.status = "closed";
+      i.closed_at = new Date().toISOString();
+    }
     return i ?? null;
   },
   list(opts?: { limit?: number; open?: boolean }): Incident[] {
@@ -82,5 +103,8 @@ export const IncidentCenter = {
     if (opts?.limit) out = out.slice(0, opts.limit);
     return out;
   },
-  _reset() { incidents.length = 0; iSeq = 0; },
+  _reset() {
+    incidents.length = 0;
+    iSeq = 0;
+  },
 } as const;

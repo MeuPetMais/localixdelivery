@@ -10,8 +10,19 @@ type Handler = (e: PurchaseEvent) => void;
 
 class Bus {
   private handlers = new Set<Handler>();
-  on(h: Handler) { this.handlers.add(h); return () => this.handlers.delete(h); }
-  emit(e: PurchaseEvent) { this.handlers.forEach(h => { try { h(e); } catch { /* ignore */ } }); }
+  on(h: Handler) {
+    this.handlers.add(h);
+    return () => this.handlers.delete(h);
+  }
+  emit(e: PurchaseEvent) {
+    this.handlers.forEach((h) => {
+      try {
+        h(e);
+      } catch {
+        /* ignore */
+      }
+    });
+  }
 }
 
 export const PurchaseEventBus = new Bus();

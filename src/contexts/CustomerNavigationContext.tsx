@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 const NAV_STATE_KEY = "localix:customer-navigation";
@@ -6,11 +14,38 @@ const LEGACY_LAST_SLUG_KEY = "localix:last-restaurant-slug";
 const POST_LOGIN_REDIRECT_KEY = "postLoginRedirect";
 
 const RESERVED_TOP = new Set([
-  "", "home", "inicio", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
-  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
-  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
-  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
-  "reviews", "suppliers", "units", "builders", "r", "api",
+  "",
+  "home",
+  "inicio",
+  "beneficios",
+  "favoritos",
+  "meus-pedidos",
+  "cliente",
+  "pedido",
+  "pedido-sucesso",
+  "auth",
+  "entrar",
+  "esqueci-senha",
+  "redefinir-senha",
+  "admin",
+  "dashboard",
+  "menu",
+  "orders",
+  "settings",
+  "ai",
+  "consultor",
+  "customers",
+  "finance",
+  "finance-ai",
+  "inventory",
+  "loyalty",
+  "promotions",
+  "reviews",
+  "suppliers",
+  "units",
+  "builders",
+  "r",
+  "api",
 ]);
 
 export type PendingCart = {
@@ -76,10 +111,18 @@ function readStoredState(): NavigationSnapshot {
   try {
     const raw = sessionStorage.getItem(NAV_STATE_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<NavigationSnapshot>) : {};
-    const legacySlug = sessionStorage.getItem(LEGACY_LAST_SLUG_KEY) || localStorage.getItem(LEGACY_LAST_SLUG_KEY);
-    const postLoginSlug = restaurantSlugFromPath(sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY) ?? "");
+    const legacySlug =
+      sessionStorage.getItem(LEGACY_LAST_SLUG_KEY) || localStorage.getItem(LEGACY_LAST_SLUG_KEY);
+    const postLoginSlug = restaurantSlugFromPath(
+      sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY) ?? "",
+    );
     return {
-      lastRestaurantSlug: postLoginSlug ?? parsed.lastRestaurantSlug ?? parsed.currentRestaurantSlug ?? legacySlug ?? null,
+      lastRestaurantSlug:
+        postLoginSlug ??
+        parsed.lastRestaurantSlug ??
+        parsed.currentRestaurantSlug ??
+        legacySlug ??
+        null,
       currentRestaurantSlug: postLoginSlug ?? parsed.currentRestaurantSlug ?? legacySlug ?? null,
       lastVisitedRoute: parsed.lastVisitedRoute ?? null,
       pendingCart: parsed.pendingCart ?? null,
@@ -121,22 +164,35 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
     });
   }, []);
 
-  const rememberRestaurantRoute = useCallback((slug: string, options: RememberOptions = {}) => {
-    const route = options.route ?? currentRoute() ?? `/${slug}`;
-    const explicitScroll = options.scrollY !== undefined;
-    commit((prev) => ({
-      ...prev,
-      currentRestaurantSlug: slug,
-      lastRestaurantSlug: slug,
-      lastVisitedRoute: route,
-      pendingCart: options.pendingCart !== undefined ? options.pendingCart : prev.pendingCart,
-      scrollY: (() => {
-        const nextScroll = explicitScroll ? Number(options.scrollY) || 0 : (isBrowser() ? window.scrollY : prev.scrollY);
-        if (!explicitScroll && prev.currentRestaurantSlug === slug && nextScroll <= 0 && prev.scrollY > 0) return prev.scrollY;
-        return nextScroll;
-      })(),
-    }));
-  }, [commit]);
+  const rememberRestaurantRoute = useCallback(
+    (slug: string, options: RememberOptions = {}) => {
+      const route = options.route ?? currentRoute() ?? `/${slug}`;
+      const explicitScroll = options.scrollY !== undefined;
+      commit((prev) => ({
+        ...prev,
+        currentRestaurantSlug: slug,
+        lastRestaurantSlug: slug,
+        lastVisitedRoute: route,
+        pendingCart: options.pendingCart !== undefined ? options.pendingCart : prev.pendingCart,
+        scrollY: (() => {
+          const nextScroll = explicitScroll
+            ? Number(options.scrollY) || 0
+            : isBrowser()
+              ? window.scrollY
+              : prev.scrollY;
+          if (
+            !explicitScroll &&
+            prev.currentRestaurantSlug === slug &&
+            nextScroll <= 0 &&
+            prev.scrollY > 0
+          )
+            return prev.scrollY;
+          return nextScroll;
+        })(),
+      }));
+    },
+    [commit],
+  );
 
   useEffect(() => {
     const slug = restaurantSlugFromPath(location.pathname);
@@ -149,33 +205,48 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
   // A validação de restaurante removido/renomeado é feita pelo
   // RestaurantSessionContext (revalidação por restaurant_id no banco).
 
-  const setCurrentRestaurantSlug = useCallback((slug: string | null) => {
-    commit((prev) => ({
-      ...prev,
-      currentRestaurantSlug: slug,
-      lastRestaurantSlug: slug ?? prev.lastRestaurantSlug,
-      lastVisitedRoute: slug ? prev.lastVisitedRoute ?? `/${slug}` : prev.lastVisitedRoute,
-    }));
-  }, [commit]);
+  const setCurrentRestaurantSlug = useCallback(
+    (slug: string | null) => {
+      commit((prev) => ({
+        ...prev,
+        currentRestaurantSlug: slug,
+        lastRestaurantSlug: slug ?? prev.lastRestaurantSlug,
+        lastVisitedRoute: slug ? (prev.lastVisitedRoute ?? `/${slug}`) : prev.lastVisitedRoute,
+      }));
+    },
+    [commit],
+  );
 
-  const setPendingCart = useCallback((cart: PendingCart) => {
-    commit((prev) => ({ ...prev, pendingCart: cart }));
-  }, [commit]);
+  const setPendingCart = useCallback(
+    (cart: PendingCart) => {
+      commit((prev) => ({ ...prev, pendingCart: cart }));
+    },
+    [commit],
+  );
 
-  const prepareLoginRedirect = useCallback((fallbackSlug?: string | null) => {
-    const slug = fallbackSlug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
-    const target = safeRestaurantPath(slug);
-    if (slug) rememberRestaurantRoute(slug, { route: target, scrollY: isBrowser() ? window.scrollY : 0 });
-    if (slug && isBrowser()) {
-      try { sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, target); } catch {}
-    }
-    return target;
-  }, [rememberRestaurantRoute, state.currentRestaurantSlug, state.lastRestaurantSlug]);
+  const prepareLoginRedirect = useCallback(
+    (fallbackSlug?: string | null) => {
+      const slug = fallbackSlug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
+      const target = safeRestaurantPath(slug);
+      if (slug)
+        rememberRestaurantRoute(slug, { route: target, scrollY: isBrowser() ? window.scrollY : 0 });
+      if (slug && isBrowser()) {
+        try {
+          sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, target);
+        } catch {}
+      }
+      return target;
+    },
+    [rememberRestaurantRoute, state.currentRestaurantSlug, state.lastRestaurantSlug],
+  );
 
-  const navigateToRestaurant = useCallback((slug?: string | null) => {
-    const targetSlug = slug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
-    if (targetSlug) navigate({ to: "/$slug", params: { slug: targetSlug }, replace: true });
-  }, [navigate, state.currentRestaurantSlug, state.lastRestaurantSlug]);
+  const navigateToRestaurant = useCallback(
+    (slug?: string | null) => {
+      const targetSlug = slug ?? state.currentRestaurantSlug ?? state.lastRestaurantSlug;
+      if (targetSlug) navigate({ to: "/$slug", params: { slug: targetSlug }, replace: true });
+    },
+    [navigate, state.currentRestaurantSlug, state.lastRestaurantSlug],
+  );
 
   const restoreRestaurantScroll = useCallback((slug: string) => {
     if (!isBrowser()) return;
@@ -185,26 +256,35 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
     window.requestAnimationFrame(() => window.scrollTo({ top: latest.scrollY, behavior: "auto" }));
   }, []);
 
-  const value = useMemo<CustomerNavigationContextValue>(() => ({
-    ...state,
-    restaurantPath: restaurantPathFromSlug(state.currentRestaurantSlug ?? state.lastRestaurantSlug),
-    setCurrentRestaurantSlug,
-    rememberRestaurantRoute,
-    setPendingCart,
-    prepareLoginRedirect,
-    navigateToRestaurant,
-    restoreRestaurantScroll,
-  }), [
-    state,
-    setCurrentRestaurantSlug,
-    rememberRestaurantRoute,
-    setPendingCart,
-    prepareLoginRedirect,
-    navigateToRestaurant,
-    restoreRestaurantScroll,
-  ]);
+  const value = useMemo<CustomerNavigationContextValue>(
+    () => ({
+      ...state,
+      restaurantPath: restaurantPathFromSlug(
+        state.currentRestaurantSlug ?? state.lastRestaurantSlug,
+      ),
+      setCurrentRestaurantSlug,
+      rememberRestaurantRoute,
+      setPendingCart,
+      prepareLoginRedirect,
+      navigateToRestaurant,
+      restoreRestaurantScroll,
+    }),
+    [
+      state,
+      setCurrentRestaurantSlug,
+      rememberRestaurantRoute,
+      setPendingCart,
+      prepareLoginRedirect,
+      navigateToRestaurant,
+      restoreRestaurantScroll,
+    ],
+  );
 
-  return <CustomerNavigationContext.Provider value={value}>{children}</CustomerNavigationContext.Provider>;
+  return (
+    <CustomerNavigationContext.Provider value={value}>
+      {children}
+    </CustomerNavigationContext.Provider>
+  );
 }
 
 export function useCustomerNavigation() {

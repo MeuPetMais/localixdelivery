@@ -24,22 +24,34 @@ type Mapping = {
 };
 
 type BuilderOption = { id: string; name: string; position: number };
-type BuilderGroup = { id: string; name: string; position: number; builder_options: BuilderOption[] };
+type BuilderGroup = {
+  id: string;
+  name: string;
+  position: number;
+  builder_options: BuilderOption[];
+};
 type Builder = { id: string; name: string; emoji: string | null; builder_groups: BuilderGroup[] };
 
 function BuilderStockPage() {
   const restaurant = useRestaurant();
   const qc = useQueryClient();
-  const [drafts, setDrafts] = useState<Record<string, { ingredientId: string; quantity: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { ingredientId: string; quantity: string }>>(
+    {},
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["builder-stock-mapping", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
-      const [{ data: builders, error: buildersError }, { data: ingredients, error: ingredientsError }] = await Promise.all([
+      const [
+        { data: builders, error: buildersError },
+        { data: ingredients, error: ingredientsError },
+      ] = await Promise.all([
         supabase
           .from("builders")
-          .select("id,name,emoji,builder_groups(id,name,position,builder_options(id,name,position))")
+          .select(
+            "id,name,emoji,builder_groups(id,name,position,builder_options(id,name,position))",
+          )
           .eq("restaurant_id", restaurant!.id)
           .order("position"),
         supabase
@@ -86,7 +98,11 @@ function BuilderStockPage() {
   }, [data?.mappings]);
 
   if (!restaurant || isLoading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   const ingredients = data?.ingredients ?? [];
@@ -97,7 +113,8 @@ function BuilderStockPage() {
     const ingredient = ingredientById.get(draft?.ingredientId ?? "");
     const quantity = Number(String(draft?.quantity ?? "").replace(",", "."));
     if (!ingredient) return toast.error("Selecione um ingrediente.");
-    if (!Number.isFinite(quantity) || quantity <= 0) return toast.error("Informe uma quantidade válida.");
+    if (!Number.isFinite(quantity) || quantity <= 0)
+      return toast.error("Informe uma quantidade válida.");
 
     const { error } = await supabase.from("builder_option_ingredients").insert({
       builder_option_id: optionId,
@@ -105,7 +122,8 @@ function BuilderStockPage() {
       quantity,
     });
     if (error) {
-      if (error.code === "23505") return toast.error("Este ingrediente já está vinculado a esta opção.");
+      if (error.code === "23505")
+        return toast.error("Este ingrediente já está vinculado a esta opção.");
       return toast.error(error.message);
     }
     setDrafts((current) => ({ ...current, [optionId]: { ingredientId: "", quantity: "" } }));
@@ -123,85 +141,129 @@ function BuilderStockPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">📦 Estoque do Monte do Seu Jeito</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">
+          📦 Estoque do Monte do Seu Jeito
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Vincule cada opção consumível a um ingrediente físico. Opções sem consumo, como ponto da carne, podem ficar sem vínculo.
+          Vincule cada opção consumível a um ingrediente físico. Opções sem consumo, como ponto da
+          carne, podem ficar sem vínculo.
         </p>
       </div>
 
       <Card className="rounded-2xl border bg-amber-500/5 p-4 text-sm">
-        <strong>Importante:</strong> a baixa usa o ingrediente e a quantidade configurados aqui. O sistema não tenta adivinhar pelo nome da opção.
+        <strong>Importante:</strong> a baixa usa o ingrediente e a quantidade configurados aqui. O
+        sistema não tenta adivinhar pelo nome da opção.
       </Card>
 
       {(data?.builders ?? []).map((builder) => (
         <Card key={builder.id} className="rounded-2xl p-5">
-          <h2 className="mb-4 font-display text-xl font-bold">{builder.emoji ?? "✨"} {builder.name}</h2>
+          <h2 className="mb-4 font-display text-xl font-bold">
+            {builder.emoji ?? "✨"} {builder.name}
+          </h2>
           <div className="space-y-5">
-            {(builder.builder_groups ?? []).sort((a, b) => a.position - b.position).map((group) => (
-              <div key={group.id} className="space-y-2">
-                <h3 className="text-sm font-bold text-muted-foreground">{group.name}</h3>
-                {(group.builder_options ?? []).sort((a, b) => a.position - b.position).map((option) => {
-                  const mappings = mappingsByOption.get(option.id) ?? [];
-                  const draft = drafts[option.id] ?? { ingredientId: "", quantity: "" };
-                  return (
-                    <Card key={option.id} className="rounded-xl p-3">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-bold">{option.name}</p>
-                        <span className="text-xs text-muted-foreground">{mappings.length ? `${mappings.length} vínculo(s)` : "Sem consumo configurado"}</span>
-                      </div>
+            {(builder.builder_groups ?? [])
+              .sort((a, b) => a.position - b.position)
+              .map((group) => (
+                <div key={group.id} className="space-y-2">
+                  <h3 className="text-sm font-bold text-muted-foreground">{group.name}</h3>
+                  {(group.builder_options ?? [])
+                    .sort((a, b) => a.position - b.position)
+                    .map((option) => {
+                      const mappings = mappingsByOption.get(option.id) ?? [];
+                      const draft = drafts[option.id] ?? { ingredientId: "", quantity: "" };
+                      return (
+                        <Card key={option.id} className="rounded-xl p-3">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-bold">{option.name}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {mappings.length
+                                ? `${mappings.length} vínculo(s)`
+                                : "Sem consumo configurado"}
+                            </span>
+                          </div>
 
-                      {mappings.length > 0 && (
-                        <div className="mb-3 space-y-2">
-                          {mappings.map((mapping) => {
-                            const ingredient = ingredientById.get(mapping.ingredient_id);
-                            return (
-                              <div key={mapping.id} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
-                                <span>{ingredient?.name ?? "Ingrediente"} — <strong>{Number(mapping.quantity)} {ingredient?.unit ?? ""}</strong></span>
-                                <Button size="sm" variant="ghost" onClick={() => removeMapping(mapping.id)} aria-label="Remover vínculo">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                          {mappings.length > 0 && (
+                            <div className="mb-3 space-y-2">
+                              {mappings.map((mapping) => {
+                                const ingredient = ingredientById.get(mapping.ingredient_id);
+                                return (
+                                  <div
+                                    key={mapping.id}
+                                    className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm"
+                                  >
+                                    <span>
+                                      {ingredient?.name ?? "Ingrediente"} —{" "}
+                                      <strong>
+                                        {Number(mapping.quantity)} {ingredient?.unit ?? ""}
+                                      </strong>
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => removeMapping(mapping.id)}
+                                      aria-label="Remover vínculo"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
 
-                      <div className="grid gap-2 sm:grid-cols-[1fr_150px_auto] sm:items-end">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Ingrediente</Label>
-                          <select
-                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                            value={draft.ingredientId}
-                            onChange={(e) => setDrafts((current) => ({ ...current, [option.id]: { ...draft, ingredientId: e.target.value } }))}
-                          >
-                            <option value="">Selecione</option>
-                            {ingredients.map((ingredient) => (
-                              <option key={ingredient.id} value={ingredient.id}>{ingredient.name} ({ingredient.unit})</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Quantidade consumida</Label>
-                          <Input
-                            inputMode="decimal"
-                            value={draft.quantity}
-                            onChange={(e) => setDrafts((current) => ({ ...current, [option.id]: { ...draft, quantity: e.target.value } }))}
-                            placeholder="Ex: 30"
-                          />
-                        </div>
-                        <Button onClick={() => addMapping(option.id)}><Plus className="mr-1 h-4 w-4" />Vincular</Button>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            ))}
+                          <div className="grid gap-2 sm:grid-cols-[1fr_150px_auto] sm:items-end">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Ingrediente</Label>
+                              <select
+                                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                value={draft.ingredientId}
+                                onChange={(e) =>
+                                  setDrafts((current) => ({
+                                    ...current,
+                                    [option.id]: { ...draft, ingredientId: e.target.value },
+                                  }))
+                                }
+                              >
+                                <option value="">Selecione</option>
+                                {ingredients.map((ingredient) => (
+                                  <option key={ingredient.id} value={ingredient.id}>
+                                    {ingredient.name} ({ingredient.unit})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Quantidade consumida</Label>
+                              <Input
+                                inputMode="decimal"
+                                value={draft.quantity}
+                                onChange={(e) =>
+                                  setDrafts((current) => ({
+                                    ...current,
+                                    [option.id]: { ...draft, quantity: e.target.value },
+                                  }))
+                                }
+                                placeholder="Ex: 30"
+                              />
+                            </div>
+                            <Button onClick={() => addMapping(option.id)}>
+                              <Plus className="mr-1 h-4 w-4" />
+                              Vincular
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                </div>
+              ))}
           </div>
         </Card>
       ))}
 
       {(data?.builders ?? []).length === 0 && (
-        <Card className="rounded-2xl p-10 text-center text-muted-foreground">Nenhum Builder cadastrado.</Card>
+        <Card className="rounded-2xl p-10 text-center text-muted-foreground">
+          Nenhum Builder cadastrado.
+        </Card>
       )}
     </div>
   );

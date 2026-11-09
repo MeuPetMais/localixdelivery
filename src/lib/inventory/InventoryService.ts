@@ -57,9 +57,13 @@ async function apply(
 
   InventoryEventBus.emit({
     name:
-      type === "RESERVE" ? "StockReserved" :
-      type === "RELEASE" ? "StockReleased" :
-      type === "TRANSFER" ? "StockTransferred" : "StockAdjusted",
+      type === "RESERVE"
+        ? "StockReserved"
+        : type === "RELEASE"
+          ? "StockReleased"
+          : type === "TRANSFER"
+            ? "StockTransferred"
+            : "StockAdjusted",
     ingredientId: ing.id,
     quantity: input.quantity,
     movementType: type,
@@ -67,9 +71,17 @@ async function apply(
   });
 
   if (newStock <= 0) {
-    InventoryEventBus.emit({ name: "StockOut", ingredientId: ing.id, at: new Date().toISOString() });
+    InventoryEventBus.emit({
+      name: "StockOut",
+      ingredientId: ing.id,
+      at: new Date().toISOString(),
+    });
   } else if (newStock <= Number(ing.min_stock ?? 0)) {
-    InventoryEventBus.emit({ name: "StockLow", ingredientId: ing.id, at: new Date().toISOString() });
+    InventoryEventBus.emit({
+      name: "StockLow",
+      ingredientId: ing.id,
+      at: new Date().toISOString(),
+    });
   }
 
   cache.delete(ing.restaurant_id);
@@ -85,7 +97,9 @@ export function createInventoryService(repo: InventoryRepository) {
       cache.set(restaurantId, { at: Date.now(), data });
       return data;
     },
-    alerts(ingredients: Ingredient[]) { return evaluateAlerts(ingredients); },
+    alerts(ingredients: Ingredient[]) {
+      return evaluateAlerts(ingredients);
+    },
 
     reserveStock(input: MovementInput) {
       return apply(repo, input, "RESERVE", (i) => ({
@@ -102,7 +116,10 @@ export function createInventoryService(repo: InventoryRepository) {
     decreaseStock(input: MovementInput, type: MovementType = "EXIT") {
       return apply(repo, input, type, (i) => ({
         stock: Number(i.stock) - input.quantity,
-        reserved: Math.max(0, Number(i.reserved_stock ?? 0) - Math.min(input.quantity, Number(i.reserved_stock ?? 0))),
+        reserved: Math.max(
+          0,
+          Number(i.reserved_stock ?? 0) - Math.min(input.quantity, Number(i.reserved_stock ?? 0)),
+        ),
       }));
     },
     increaseStock(input: MovementInput, type: MovementType = "ENTRY") {

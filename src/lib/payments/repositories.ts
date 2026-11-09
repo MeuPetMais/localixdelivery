@@ -2,12 +2,7 @@
 // Camada fina sobre o client Supabase — sem regra de negócio.
 
 import { supabase } from "@/integrations/supabase/client";
-import type {
-  MercadoPagoAccount,
-  Payment,
-  PaymentLog,
-  PlatformFees,
-} from "./types";
+import type { MercadoPagoAccount, Payment, PaymentLog, PlatformFees } from "./types";
 
 // ------- Mercado Pago accounts -------
 export const mpAccountRepo = {
@@ -45,7 +40,9 @@ export const mpAccountRepo = {
 
 // ------- Payments -------
 export const paymentsRepo = {
-  async create(payload: Partial<Payment> & { restaurant_id: string; method: string; amount: number }) {
+  async create(
+    payload: Partial<Payment> & { restaurant_id: string; method: string; amount: number },
+  ) {
     const { data, error } = await supabase
       .from("payments" as any)
       .insert(payload)

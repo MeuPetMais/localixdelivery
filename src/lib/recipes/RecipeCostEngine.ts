@@ -14,7 +14,10 @@ export interface RecipeCostBreakdown {
 export const RecipeCostEngine = {
   totalCost(items: (RecipeItem | RecipeItemInput)[], ingredients: Ingredient[]): number {
     const map = new Map(ingredients.map((i) => [i.id, Number(i.unit_cost ?? 0)]));
-    return items.reduce((sum, it) => sum + effectiveQuantity(it) * (map.get(it.ingredient_id) ?? 0), 0);
+    return items.reduce(
+      (sum, it) => sum + effectiveQuantity(it) * (map.get(it.ingredient_id) ?? 0),
+      0,
+    );
   },
   compute(
     recipe: Pick<Recipe, "yield_quantity">,

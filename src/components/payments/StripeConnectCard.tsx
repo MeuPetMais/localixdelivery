@@ -94,7 +94,6 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
   const status = s?.status ?? "not_created";
   const connected = !!s?.accountId && status !== "not_created";
 
-
   return (
     <Card className="p-6">
       <div className="flex items-start justify-between gap-4">
@@ -108,7 +107,8 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
               <StatusBadge loading={statusQuery.isLoading} status={status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Gateway oficial de pagamentos da Localix. Recebimentos diretamente no CNPJ do parceiro.
+              Gateway oficial de pagamentos da Localix. Recebimentos diretamente no CNPJ do
+              parceiro.
             </p>
           </div>
         </div>
@@ -158,7 +158,6 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       </div>
 
       {connected && s && (
-
         <>
           <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
             <Info label="Conta" value={s.accountId ?? "—"} />
@@ -234,7 +233,11 @@ function CapabilityBadge({
       : state === "pending"
         ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
         : "bg-muted text-muted-foreground";
-  return <Badge variant="outline" className={cls}>{label}: {state}</Badge>;
+  return (
+    <Badge variant="outline" className={cls}>
+      {label}: {state}
+    </Badge>
+  );
 }
 
 function fmt(iso: string | null) {

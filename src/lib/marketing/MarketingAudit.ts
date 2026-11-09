@@ -25,5 +25,8 @@ export const MarketingAudit = {
   list(restaurantId?: string): MarketingAuditEntry[] {
     return restaurantId ? log.filter((r) => r.restaurant_id === restaurantId) : [...log];
   },
-  clear(): void { log.length = 0; seq = 0; },
+  clear(): void {
+    log.length = 0;
+    seq = 0;
+  },
 } as const;

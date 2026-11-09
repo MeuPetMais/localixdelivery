@@ -13,26 +13,31 @@ Guia rápido para operar a plataforma Localix usando `src/lib/observability`.
 ## Playbooks
 
 ### Serviço indisponível
+
 - Alerta: `service_down`.
 - Ação: abrir `IncidentCenter.open`, comunicar via NotificationCenter,
   investigar logs por `service`.
 
 ### Alto tempo de resposta
+
 - Alerta: `high_latency`.
 - Ação: checar `MetricsCenter.filter("response_ms")` e cache
   (`platformCache`), avaliar degradação de dependências.
 
 ### Falha de Edge Function
+
 - Alerta: `edge_function_failure`.
 - Ação: consultar `supabase--edge_function_logs` do função afetada,
   verificar assinatura/HMAC, reprocessar via retry idempotente.
 
 ### Job parado
+
 - Alerta: `stuck_job`.
 - Ação: `HealthCenter.report({ key: "worker:X", status: "degraded" })`,
   reiniciar worker, validar fila.
 
 ### Erros repetitivos
+
 - Alerta: `repeated_errors`.
 - Ação: agrupar por `service`, abrir incidente se afetar tenants distintos.
 

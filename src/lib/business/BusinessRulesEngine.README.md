@@ -14,6 +14,7 @@ BusinessRulesEngine (facade)
 ```
 
 Tabelas:
+
 - `business_rules` — parametrização (código, categoria, prioridade, `enabled`, `configuration_json`).
 - `business_rule_execution_log` — append-only (código, resultado, motivo, tempo, contexto).
 

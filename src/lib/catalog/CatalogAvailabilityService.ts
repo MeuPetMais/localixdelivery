@@ -13,7 +13,8 @@ export const CatalogAvailabilityService = {
     if (menu.status === "draft") reasons.push("menu:draft");
     if (menu.status === "scheduled") reasons.push("menu:scheduled");
 
-    if (ctx.channel && menu.channel !== ctx.channel) reasons.push(`channel:${menu.channel}!=${ctx.channel}`);
+    if (ctx.channel && menu.channel !== ctx.channel)
+      reasons.push(`channel:${menu.channel}!=${ctx.channel}`);
     if (ctx.stockAvailable === false) reasons.push("stock:out");
 
     if (menu.available_days && menu.available_days.length > 0) {

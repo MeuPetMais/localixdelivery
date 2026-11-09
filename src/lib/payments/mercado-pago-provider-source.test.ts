@@ -9,7 +9,9 @@ const providerSource = readFileSync(
 
 const cardBranch = providerSource.slice(
   providerSource.indexOf('if (input.method === "card")'),
-  providerSource.indexOf('const { data, error } = await supabase.functions.invoke("mp-payment-intent"'),
+  providerSource.indexOf(
+    'const { data, error } = await supabase.functions.invoke("mp-payment-intent"',
+  ),
 );
 
 describe("MercadoPagoProvider transparent card feature flag", () => {
@@ -29,7 +31,9 @@ describe("MercadoPagoProvider transparent card feature flag", () => {
   it("cartao habilitado delega para mp-payment-intent com contrato transparente", () => {
     expect(providerSource).toContain('supabase.functions.invoke("mp-payment-intent"');
     expect(providerSource).toContain("body: buildMercadoPagoPaymentIntentBody(input)");
-    expect(providerSource).toContain('payment_method: input.method === "card" ? "credit_card" : "pix"');
+    expect(providerSource).toContain(
+      'payment_method: input.method === "card" ? "credit_card" : "pix"',
+    );
     expect(providerSource).toContain('transparent_card_phase: "backend_payment_enabled"');
   });
 });

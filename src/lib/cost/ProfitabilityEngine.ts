@@ -1,9 +1,17 @@
-export interface RankableItem { id: string; label?: string; revenue: number; cost: number }
-export interface RankedItem extends RankableItem { profit: number; margin: number }
+export interface RankableItem {
+  id: string;
+  label?: string;
+  revenue: number;
+  cost: number;
+}
+export interface RankedItem extends RankableItem {
+  profit: number;
+  margin: number;
+}
 
 function rank(items: RankableItem[]): RankedItem[] {
   return items
-    .map(i => {
+    .map((i) => {
       const profit = i.revenue - i.cost;
       const margin = i.revenue > 0 ? (profit / i.revenue) * 100 : 0;
       return { ...i, profit, margin };

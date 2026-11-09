@@ -44,11 +44,13 @@ function DriverLogin() {
         return;
       }
       const { error } = await supabase.auth.signInWithPassword({
-        email: res.email, password,
+        email: res.email,
+        password,
       });
       if (error) throw error;
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente novamente.");
+      if (userError || !userData.user)
+        throw new Error("Não foi possível confirmar a sessão. Tente novamente.");
       nav({ to: "/motoboy-estabelecimentos", replace: true });
     } catch (e) {
       toast.error((e as Error).message);
@@ -60,7 +62,10 @@ function DriverLogin() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <div className="mx-auto max-w-md px-4 pt-10 pb-16">
-        <Link to="/entregador" className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <Link
+          to="/entregador"
+          className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground"
+        >
           <ArrowLeft className="h-3 w-3" /> Voltar
         </Link>
         <div className="mb-6 flex items-center gap-3">
@@ -68,8 +73,12 @@ function DriverLogin() {
             <Bike className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Localix Entregador</p>
-            <p className="font-display text-lg font-extrabold leading-tight">Entrar como Entregador</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Localix Entregador
+            </p>
+            <p className="font-display text-lg font-extrabold leading-tight">
+              Entrar como Entregador
+            </p>
           </div>
         </div>
 
@@ -101,7 +110,10 @@ function DriverLogin() {
             {loading ? "Entrando..." : "Entrar"}
           </Button>
           <div className="mt-4 flex items-center justify-between text-xs">
-            <Link to="/entregador/esqueci-senha" className="text-muted-foreground underline underline-offset-4">
+            <Link
+              to="/entregador/esqueci-senha"
+              className="text-muted-foreground underline underline-offset-4"
+            >
               Esqueci minha senha
             </Link>
             <Link to="/entregador/ativar" className="text-primary font-medium">

@@ -82,8 +82,15 @@ export function announceLongWaiting(orderNumber: number | null) {
 
 function numberToPtBr(n: number): string {
   const words: Record<number, string> = {
-    2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis",
-    7: "sete", 8: "oito", 9: "nove", 10: "dez",
+    2: "dois",
+    3: "três",
+    4: "quatro",
+    5: "cinco",
+    6: "seis",
+    7: "sete",
+    8: "oito",
+    9: "nove",
+    10: "dez",
   };
   return words[n] ?? String(n);
 }

@@ -2,17 +2,29 @@
 // Composes real ports bound to LedgerService server functions and the
 // cashflow.functions accessors (RLS-scoped).
 
-import { FinancialDashboardService, type FinancialDashboardPorts, type LedgerPort } from "./FinancialDashboardService";
 import {
-  CashFlowService, ReceivablesService, PayablesService, FinancialProjectionService,
-  type CashFlowPorts, type ReceivablesPort, type PayablesPort, type LedgerStatementPort,
+  FinancialDashboardService,
+  type FinancialDashboardPorts,
+  type LedgerPort,
+} from "./FinancialDashboardService";
+import {
+  CashFlowService,
+  ReceivablesService,
+  PayablesService,
+  FinancialProjectionService,
+  type CashFlowPorts,
+  type ReceivablesPort,
+  type PayablesPort,
+  type LedgerStatementPort,
 } from "./CashFlowService";
 import { getRestaurantStatement, getRestaurantBalance } from "@/lib/ledger/LedgerService";
 import { listReceivables, listPayables } from "./cashflow.functions";
 
 const ledgerPort: LedgerPort & LedgerStatementPort = {
   async getStatement({ restaurantId, from, to }) {
-    const rows = await getRestaurantStatement({ data: { restaurantId, from, to, limit: 500 } } as any);
+    const rows = await getRestaurantStatement({
+      data: { restaurantId, from, to, limit: 500 },
+    } as any);
     return (rows ?? []) as any;
   },
   async getBalance({ restaurantId }) {

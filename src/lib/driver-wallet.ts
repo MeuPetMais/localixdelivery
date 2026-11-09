@@ -1,8 +1,7 @@
 // RC5.2.e — Driver Wallet helpers (client-side)
 // Formato bancário, metas locais, e cálculos de comparação.
 
-export const BRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+export const BRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export type DriverGoals = {
   daily: number;

@@ -7,7 +7,9 @@ Melhorar a organização visual e operacional do cardápio sem alterar o modelo 
 ## Experiência do parceiro
 
 ### Categoria principal
+
 Campos:
+
 - Nome — obrigatório;
 - Descrição breve — opcional, recomendação de até 160 caracteres;
 - Foto — opcional;
@@ -15,23 +17,28 @@ Campos:
 - Subcategorias — opcionais.
 
 Ações:
+
 - criar;
 - editar;
 - excluir somente quando regra de filhos/produtos permitir;
 - gerenciar subcategorias.
 
 ### Subcategoria
+
 Campos:
+
 - Nome — obrigatório;
 - Categoria principal — obrigatório;
 - Ordem.
 
 Ações:
+
 - criar;
 - editar;
 - excluir mediante tratamento explícito dos produtos vinculados.
 
 ### Produto
+
 O seletor de categoria deve apresentar:
 
 ```text
@@ -50,15 +57,18 @@ Categorias sem subcategoria continuam selecionáveis diretamente.
 ## Experiência do consumidor
 
 Categoria principal:
+
 - imagem de capa;
 - nome;
 - descrição breve.
 
 Se houver subcategorias:
+
 - exibir os nomes das subcategorias;
 - agrupar produtos sob cada subcategoria.
 
 Se não houver:
+
 - exibir produtos diretamente como hoje.
 
 ## Regras de exclusão recomendadas

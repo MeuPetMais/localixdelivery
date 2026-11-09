@@ -32,8 +32,14 @@ export const InventoryEventBus = {
   },
   emit(event: InventoryEvent) {
     handlers.get(event.name)?.forEach((h) => {
-      try { h(event); } catch { /* swallow */ }
+      try {
+        h(event);
+      } catch {
+        /* swallow */
+      }
     });
   },
-  clear() { handlers.clear(); },
+  clear() {
+    handlers.clear();
+  },
 };

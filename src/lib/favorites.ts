@@ -98,7 +98,9 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
     menuIds.length
       ? supabase
           .from("menu_items")
-          .select("id, name, description, image_url, price, promo_price, is_available, is_active, category_id")
+          .select(
+            "id, name, description, image_url, price, promo_price, is_available, is_active, category_id",
+          )
           .in("id", menuIds)
       : Promise.resolve({ data: [] as any[] }),
     builderIds.length
@@ -118,7 +120,9 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
 
   const restMap = new Map<string, any>(((restRes as any).data ?? []).map((r: any) => [r.id, r]));
   const itemMap = new Map<string, any>(((itemRes as any).data ?? []).map((r: any) => [r.id, r]));
-  const builderMap = new Map<string, any>(((builderRes as any).data ?? []).map((r: any) => [r.id, r]));
+  const builderMap = new Map<string, any>(
+    ((builderRes as any).data ?? []).map((r: any) => [r.id, r]),
+  );
   const catMap = new Map<string, any>(((catRes as any).data ?? []).map((r: any) => [r.id, r]));
 
   return favs
@@ -139,7 +143,7 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
           imageUrl: it?.image_url ?? null,
           price: it ? Number(it.price) : null,
           promoPrice: it?.promo_price != null ? Number(it.promo_price) : null,
-          categoryName: it?.category_id ? catMap.get(it.category_id)?.name ?? null : null,
+          categoryName: it?.category_id ? (catMap.get(it.category_id)?.name ?? null) : null,
           restaurantId: rest.id,
           restaurantName: rest.name,
           restaurantSlug: rest.slug,

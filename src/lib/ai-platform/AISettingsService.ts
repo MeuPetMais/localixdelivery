@@ -10,8 +10,12 @@ function defaults(restaurantId: string): AISettings {
     default_provider: "mock",
     language: "pt-BR",
     enabled_skills: [
-      "restaurant_assistant", "financial_assistant", "product_assistant",
-      "inventory_assistant", "marketing_assistant", "operational_assistant",
+      "restaurant_assistant",
+      "financial_assistant",
+      "product_assistant",
+      "inventory_assistant",
+      "marketing_assistant",
+      "operational_assistant",
     ],
     monthly_request_limit: 5_000,
     monthly_token_limit: 2_000_000,
@@ -31,5 +35,7 @@ export const AISettingsService = {
     const s = AISettingsService.get(restaurantId);
     return s.enabled && s.enabled_skills.includes(skill);
   },
-  clear() { store.clear(); },
+  clear() {
+    store.clear();
+  },
 } as const;

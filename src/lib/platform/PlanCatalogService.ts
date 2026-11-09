@@ -31,7 +31,13 @@ export const PLAN_CATALOG: Record<PlanTier, PlanDefinition> = {
       max_employees: 5,
       max_locations: 1,
     },
-    features: ["orders.basic", "menu.basic", "notifications.email", "notifications.push", "loyalty.basic"],
+    features: [
+      "orders.basic",
+      "menu.basic",
+      "notifications.email",
+      "notifications.push",
+      "loyalty.basic",
+    ],
     restrictions: ["no_ai", "no_multi_location"],
   },
   pro: {

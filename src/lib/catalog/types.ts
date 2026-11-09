@@ -61,12 +61,7 @@ export interface CatalogAvailabilityResult {
   reasons: string[];
 }
 
-export type OrderingStrategy =
-  | "manual"
-  | "best_sellers"
-  | "most_profitable"
-  | "recent"
-  | "ai";
+export type OrderingStrategy = "manual" | "best_sellers" | "most_profitable" | "recent" | "ai";
 
 export interface CatalogSearchDoc {
   productId: string;

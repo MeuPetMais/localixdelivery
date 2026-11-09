@@ -11,7 +11,10 @@ export function scheduleAt(date: Date, priority: NotificationPriority = "NORMAL"
   return { scheduled_at: date.toISOString(), priority };
 }
 
-export function scheduleReminder(minutesAhead: number, priority: NotificationPriority = "NORMAL"): ScheduledPlan {
+export function scheduleReminder(
+  minutesAhead: number,
+  priority: NotificationPriority = "NORMAL",
+): ScheduledPlan {
   return scheduleAt(new Date(Date.now() + minutesAhead * 60_000), priority);
 }
 

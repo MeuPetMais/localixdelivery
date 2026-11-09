@@ -66,7 +66,10 @@ export const StripeSplitService = {
    * Traduz o cálculo em um payload pronto para Stripe PaymentIntent
    * (parâmetros application_fee_amount + transfer_data.destination).
    */
-  buildTransferData(split: SplitCalculation, input: Omit<SplitInput, "amount">): StripeTransferPayload {
+  buildTransferData(
+    split: SplitCalculation,
+    input: Omit<SplitInput, "amount">,
+  ): StripeTransferPayload {
     return {
       amount: toCents(split.gross),
       currency: "brl",
@@ -91,7 +94,8 @@ export const StripeSplitService = {
     if (split.platformFee > split.gross) return { valid: false, reason: "fee_exceeds_total" };
     const sum = +(split.platformFee + split.restaurantAmount).toFixed(2);
     if (Math.abs(sum - split.gross) > 0.01) return { valid: false, reason: "sum_mismatch" };
-    if (!split.destination.startsWith("acct_")) return { valid: false, reason: "invalid_destination" };
+    if (!split.destination.startsWith("acct_"))
+      return { valid: false, reason: "invalid_destination" };
     return { valid: true };
   },
 

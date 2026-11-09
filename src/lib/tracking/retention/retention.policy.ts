@@ -10,8 +10,8 @@ export type RetentionTier = "ONLINE" | "ARCHIVE" | "PURGE";
 
 export interface RetentionPolicy {
   table: string;
-  onlineDays: number;   // < onlineDays  → ONLINE
-  archiveDays: number;  // < archiveDays → ARCHIVE, senão PURGE
+  onlineDays: number; // < onlineDays  → ONLINE
+  archiveDays: number; // < archiveDays → ARCHIVE, senão PURGE
 }
 
 export const TRACKING_RETENTION_POLICIES: Record<string, RetentionPolicy> = {
@@ -33,7 +33,11 @@ export function classifyAge(ageDays: number, policy: RetentionPolicy): Retention
   return "PURGE";
 }
 
-export function classifyDate(createdAt: string | Date, policy: RetentionPolicy, now: Date = new Date()): RetentionTier {
+export function classifyDate(
+  createdAt: string | Date,
+  policy: RetentionPolicy,
+  now: Date = new Date(),
+): RetentionTier {
   const created = createdAt instanceof Date ? createdAt : new Date(createdAt);
   const ageDays = Math.floor((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
   return classifyAge(ageDays, policy);

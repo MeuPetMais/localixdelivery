@@ -5,13 +5,28 @@ import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { QrCode, Copy, ExternalLink, Download, Zap, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import {
+  QrCode,
+  Copy,
+  ExternalLink,
+  Download,
+  Zap,
+  Loader2,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import { createDemoOrder, resetDemoEnvironment } from "@/lib/demo.functions";
-
 
 // Free QR code endpoint (server-side rendering, no extra deps)
 function qrUrl(data: string, size = 240) {
@@ -25,23 +40,31 @@ function playChime() {
     const ctx = new Ctx();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type = "sine"; o.frequency.value = 880;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "sine";
+    o.frequency.value = 880;
     g.gain.setValueAtTime(0.0001, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
-    o.start(); o.stop(ctx.currentTime + 0.5);
+    o.start();
+    o.stop(ctx.currentTime + 0.5);
     setTimeout(() => ctx.close(), 600);
   } catch {}
 }
 
-export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: string; restaurantId: string }) {
+export function DemoDashboardCards({
+  publicUrl,
+  restaurantId,
+}: {
+  publicUrl: string;
+  restaurantId: string;
+}) {
   const qc = useQueryClient();
   const runCreate = useServerFn(createDemoOrder);
   const runReset = useServerFn(resetDemoEnvironment);
   const [creating, setCreating] = useState(false);
   const [resetting, setResetting] = useState(false);
-
 
   async function downloadPng() {
     try {
@@ -51,7 +74,9 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
       const a = document.createElement("a");
       a.href = url;
       a.download = "cardapio-qrcode.png";
-      document.body.appendChild(a); a.click(); a.remove();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Não foi possível baixar o QR Code.");
@@ -85,8 +110,6 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
       setResetting(false);
     }
   }
-
-
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -143,25 +166,34 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
             <div className="min-w-0 flex-1">
               <h3 className="font-display text-base font-bold">Simulador de Pedidos</h3>
               <p className="text-sm text-muted-foreground">
-                Gere um pedido fictício completo para ver o fluxo em tempo real no Painel e na lista de Pedidos.
+                Gere um pedido fictício completo para ver o fluxo em tempo real no Painel e na lista
+                de Pedidos.
               </p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button onClick={generateOrder} disabled={creating}>
               {creating ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…
+                </>
               ) : (
-                <><Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo</>
+                <>
+                  <Zap className="mr-2 h-4 w-4" /> Gerar Pedido Demonstrativo
+                </>
               )}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" disabled={resetting}>
                   {resetting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Restaurando…</>
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Restaurando…
+                    </>
                   ) : (
-                    <><RotateCcw className="mr-2 h-4 w-4" /> Restaurar Conta Demo</>
+                    <>
+                      <RotateCcw className="mr-2 h-4 w-4" /> Restaurar Conta Demo
+                    </>
                   )}
                 </Button>
               </AlertDialogTrigger>
@@ -169,8 +201,9 @@ export function DemoDashboardCards({ publicUrl, restaurantId }: { publicUrl: str
                 <AlertDialogHeader>
                   <AlertDialogTitle>Restaurar Ambiente Demo?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Todos os dados de categorias, produtos, promoções, cupons, clientes, pedidos, avaliações e builders
-                    serão restaurados ao estado inicial de demonstração. Esta operação é idempotente.
+                    Todos os dados de categorias, produtos, promoções, cupons, clientes, pedidos,
+                    avaliações e builders serão restaurados ao estado inicial de demonstração. Esta
+                    operação é idempotente.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -226,7 +259,6 @@ export function DemoAiCard() {
     </Card>
   );
 }
-
 
 const DEMO_KPIS = {
   ordersToday: 32,

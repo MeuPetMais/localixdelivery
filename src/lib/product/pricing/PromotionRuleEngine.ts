@@ -7,7 +7,12 @@ function toMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
-function evalRule(rule: PromotionRule, ctx: PricingContext, subtotal: number, quantity: number): boolean {
+function evalRule(
+  rule: PromotionRule,
+  ctx: PricingContext,
+  subtotal: number,
+  quantity: number,
+): boolean {
   const v = rule.value ?? {};
   const now = ctx.now ?? new Date();
   switch (rule.rule_type) {
@@ -34,7 +39,9 @@ function evalRule(rule: PromotionRule, ctx: PricingContext, subtotal: number, qu
     }
     case "category": {
       const ids = (v.ids as string[]) ?? [];
-      return ids.length === 0 || ctx.lines.some((l) => l.category_id && ids.includes(l.category_id));
+      return (
+        ids.length === 0 || ctx.lines.some((l) => l.category_id && ids.includes(l.category_id))
+      );
     }
     case "product": {
       const ids = (v.ids as string[]) ?? [];
@@ -56,17 +63,20 @@ function evalRule(rule: PromotionRule, ctx: PricingContext, subtotal: number, qu
 }
 
 export const PromotionRuleEngine = {
-  isEligible(
-    promotion: Promotion,
-    ctx: PricingContext,
-  ): { eligible: boolean; reason?: string } {
+  isEligible(promotion: Promotion, ctx: PricingContext): { eligible: boolean; reason?: string } {
     const now = ctx.now ?? new Date();
-    if (promotion.status !== "ACTIVE") return { eligible: false, reason: `status:${promotion.status}` };
+    if (promotion.status !== "ACTIVE")
+      return { eligible: false, reason: `status:${promotion.status}` };
     if (promotion.start_date && now < new Date(promotion.start_date))
       return { eligible: false, reason: "not_started" };
     if (promotion.end_date && now > new Date(promotion.end_date))
       return { eligible: false, reason: "expired" };
-    if (promotion.channel && promotion.channel !== "all" && ctx.channel && promotion.channel !== ctx.channel)
+    if (
+      promotion.channel &&
+      promotion.channel !== "all" &&
+      ctx.channel &&
+      promotion.channel !== ctx.channel
+    )
       return { eligible: false, reason: "channel_mismatch" };
 
     if (promotion.code) {

@@ -34,14 +34,15 @@ function ReviewsPage() {
   const [filter, setFilter] = useState<number | null>(null);
   const restaurant = useRestaurant();
 
-
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["owner-reviews", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("reviews")
-        .select("id, customer_name, rating, comment, owner_reply, owner_reply_at, created_at, order_id")
+        .select(
+          "id, customer_name, rating, comment, owner_reply, owner_reply_at, created_at, order_id",
+        )
         .eq("restaurant_id", restaurant!.id)
         .order("created_at", { ascending: false });
       return (data ?? []) as Review[];
@@ -76,7 +77,9 @@ function ReviewsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold">Avaliações</h1>
-        <p className="text-sm text-muted-foreground">Responda seus clientes e construa reputação.</p>
+        <p className="text-sm text-muted-foreground">
+          Responda seus clientes e construa reputação.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -98,11 +101,20 @@ function ReviewsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant={filter === null ? "default" : "outline"} onClick={() => setFilter(null)}>
+        <Button
+          size="sm"
+          variant={filter === null ? "default" : "outline"}
+          onClick={() => setFilter(null)}
+        >
           Todas
         </Button>
         {[5, 4, 3, 2, 1].map((n) => (
-          <Button key={n} size="sm" variant={filter === n ? "default" : "outline"} onClick={() => setFilter(n)}>
+          <Button
+            key={n}
+            size="sm"
+            variant={filter === n ? "default" : "outline"}
+            onClick={() => setFilter(n)}
+          >
             {n} <Star className="ml-1 h-3 w-3 fill-current" />
           </Button>
         ))}

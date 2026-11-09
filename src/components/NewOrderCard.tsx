@@ -33,7 +33,9 @@ export function NewOrderCard() {
           <Bell className="h-5 w-5 animate-bounce" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">🛎️ Novo pedido</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            🛎️ Novo pedido
+          </p>
           <p className="font-display text-lg font-bold">
             Pedido #{latestNew.order_number ?? "—"} · {latestNew.customer_name}
           </p>

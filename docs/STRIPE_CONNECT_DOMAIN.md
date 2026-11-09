@@ -17,12 +17,12 @@ await StripeService.connect.disconnectAccount(restaurantId);
 
 ## Serviços
 
-| Método | Responsabilidade |
-|---|---|
-| `createExpressAccount` | Cria account Express na Stripe + Account Link inicial |
-| `createAccountLink` | Novo Account Link para conta existente |
-| `refreshAccount` / `retrieveAccount` / `syncCapabilities` | Consulta Stripe + persiste snapshot local |
-| `disconnectAccount` | Limpa colunas `stripe_*` do restaurante (não deleta na Stripe) |
+| Método                                                    | Responsabilidade                                               |
+| --------------------------------------------------------- | -------------------------------------------------------------- |
+| `createExpressAccount`                                    | Cria account Express na Stripe + Account Link inicial          |
+| `createAccountLink`                                       | Novo Account Link para conta existente                         |
+| `refreshAccount` / `retrieveAccount` / `syncCapabilities` | Consulta Stripe + persiste snapshot local                      |
+| `disconnectAccount`                                       | Limpa colunas `stripe_*` do restaurante (não deleta na Stripe) |
 
 ## Edge Functions
 

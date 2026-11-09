@@ -82,7 +82,16 @@ type Movement = {
 
 type Period = "daily" | "weekly" | "monthly" | "yearly";
 
-const COLORS = ["#f97316", "#ef4444", "#8b5cf6", "#0ea5e9", "#10b981", "#eab308", "#ec4899", "#64748b"];
+const COLORS = [
+  "#f97316",
+  "#ef4444",
+  "#8b5cf6",
+  "#0ea5e9",
+  "#10b981",
+  "#eab308",
+  "#ec4899",
+  "#64748b",
+];
 
 function startOfPeriod(p: Period): Date {
   const d = new Date();
@@ -103,7 +112,6 @@ function startOfPeriod(p: Period): Date {
 
 function FinancePage() {
   const restaurant = useRestaurant();
-
 
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,10 +141,18 @@ function FinancePage() {
   }, [movements, period]);
 
   const totals = useMemo(() => {
-    const receita = filtered.filter((m) => m.type === "receita").reduce((s, m) => s + Number(m.amount), 0);
-    const despesa = filtered.filter((m) => m.type === "despesa").reduce((s, m) => s + Number(m.amount), 0);
-    const allReceita = movements.filter((m) => m.type === "receita").reduce((s, m) => s + Number(m.amount), 0);
-    const allDespesa = movements.filter((m) => m.type === "despesa").reduce((s, m) => s + Number(m.amount), 0);
+    const receita = filtered
+      .filter((m) => m.type === "receita")
+      .reduce((s, m) => s + Number(m.amount), 0);
+    const despesa = filtered
+      .filter((m) => m.type === "despesa")
+      .reduce((s, m) => s + Number(m.amount), 0);
+    const allReceita = movements
+      .filter((m) => m.type === "receita")
+      .reduce((s, m) => s + Number(m.amount), 0);
+    const allDespesa = movements
+      .filter((m) => m.type === "despesa")
+      .reduce((s, m) => s + Number(m.amount), 0);
     return {
       receita,
       despesa,
@@ -182,7 +198,13 @@ function FinancePage() {
     let saldo = 0;
     return sorted.map((m) => {
       saldo += m.type === "receita" ? Number(m.amount) : -Number(m.amount);
-      return { date: new Date(m.movement_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }), saldo };
+      return {
+        date: new Date(m.movement_date).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        saldo,
+      };
     });
   }, [filtered]);
 
@@ -199,7 +221,9 @@ function FinancePage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-extrabold">Financeiro</h1>
-          <p className="text-sm text-muted-foreground">Controle entradas, saídas e lucro do seu negócio.</p>
+          <p className="text-sm text-muted-foreground">
+            Controle entradas, saídas e lucro do seu negócio.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
@@ -210,24 +234,56 @@ function FinancePage() {
               <TabsTrigger value="yearly">Anual</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(o) => {
+              setDialogOpen(o);
+              if (!o) setEditing(null);
+            }}
+          >
             <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" /> Nova movimentação</Button>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Nova movimentação
+              </Button>
             </DialogTrigger>
             <MovementDialog
               restaurantId={restaurant?.id}
               editing={editing}
-              onSaved={() => { setDialogOpen(false); setEditing(null); if (restaurant?.id) refresh(restaurant.id); }}
+              onSaved={() => {
+                setDialogOpen(false);
+                setEditing(null);
+                if (restaurant?.id) refresh(restaurant.id);
+              }}
             />
           </Dialog>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Receita do período" value={brl(totals.receita)} icon={<ArrowUpCircle className="h-5 w-5 text-emerald-500" />} accent="emerald" />
-        <MetricCard label="Despesas do período" value={brl(totals.despesa)} icon={<ArrowDownCircle className="h-5 w-5 text-red-500" />} accent="red" />
-        <MetricCard label="Lucro estimado" value={brl(totals.lucro)} icon={<TrendingUp className="h-5 w-5 text-primary" />} accent="primary" />
-        <MetricCard label="Saldo atual" value={brl(totals.saldo)} icon={<Wallet className="h-5 w-5 text-violet-500" />} accent="violet" />
+        <MetricCard
+          label="Receita do período"
+          value={brl(totals.receita)}
+          icon={<ArrowUpCircle className="h-5 w-5 text-emerald-500" />}
+          accent="emerald"
+        />
+        <MetricCard
+          label="Despesas do período"
+          value={brl(totals.despesa)}
+          icon={<ArrowDownCircle className="h-5 w-5 text-red-500" />}
+          accent="red"
+        />
+        <MetricCard
+          label="Lucro estimado"
+          value={brl(totals.lucro)}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
+          accent="primary"
+        />
+        <MetricCard
+          label="Saldo atual"
+          value={brl(totals.saldo)}
+          icon={<Wallet className="h-5 w-5 text-violet-500" />}
+          accent="violet"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -239,7 +295,13 @@ function FinancePage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
+                <Tooltip
+                  formatter={(v: number) => brl(v)}
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                  }}
+                />
                 <Legend />
                 <Bar dataKey="receita" name="Receita" fill="#10b981" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="despesa" name="Despesa" fill="#ef4444" radius={[6, 6, 0, 0]} />
@@ -252,12 +314,22 @@ function FinancePage() {
           <h2 className="mb-4 font-display text-lg font-bold">Despesas por categoria</h2>
           <div className="h-64">
             {byCategory.length === 0 ? (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">Sem despesas no período.</div>
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Sem despesas no período.
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byCategory} dataKey="value" nameKey="name" outerRadius={90} label={(e) => e.name}>
-                    {byCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie
+                    data={byCategory}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={90}
+                    label={(e) => e.name}
+                  >
+                    {byCategory.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
                   </Pie>
                   <Tooltip formatter={(v: number) => brl(v)} />
                 </PieChart>
@@ -270,15 +342,29 @@ function FinancePage() {
           <h2 className="mb-4 font-display text-lg font-bold">Fluxo de caixa</h2>
           <div className="h-64">
             {cashFlow.length === 0 ? (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">Sem movimentações no período.</div>
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Sem movimentações no período.
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={cashFlow}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }} />
-                  <Line type="monotone" dataKey="saldo" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="saldo"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -292,9 +378,13 @@ function FinancePage() {
           <span className="text-xs text-muted-foreground">{filtered.length} no período</span>
         </div>
         {loading ? (
-          <div className="grid place-items-center p-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          <div className="grid place-items-center p-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">Nenhuma movimentação no período.</div>
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            Nenhuma movimentação no período.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -311,7 +401,9 @@ function FinancePage() {
               <tbody>
                 {filtered.map((m) => (
                   <tr key={m.id} className="border-t">
-                    <td className="px-4 py-3">{new Date(m.movement_date).toLocaleDateString("pt-BR")}</td>
+                    <td className="px-4 py-3">
+                      {new Date(m.movement_date).toLocaleDateString("pt-BR")}
+                    </td>
                     <td className="px-4 py-3">
                       <Badge variant={m.type === "receita" ? "default" : "destructive"}>
                         {m.type === "receita" ? "Receita" : "Despesa"}
@@ -319,11 +411,20 @@ function FinancePage() {
                     </td>
                     <td className="px-4 py-3">{m.category}</td>
                     <td className="px-4 py-3 text-muted-foreground">{m.description || "—"}</td>
-                    <td className={`px-4 py-3 text-right font-semibold ${m.type === "receita" ? "text-emerald-600" : "text-red-600"}`}>
+                    <td
+                      className={`px-4 py-3 text-right font-semibold ${m.type === "receita" ? "text-emerald-600" : "text-red-600"}`}
+                    >
                       {m.type === "receita" ? "+" : "-"} {brl(m.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(m); setDialogOpen(true); }}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditing(m);
+                          setDialogOpen(true);
+                        }}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)}>
@@ -341,7 +442,17 @@ function FinancePage() {
   );
 }
 
-function MetricCard({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent: string }) {
+function MetricCard({
+  label,
+  value,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  accent: string;
+}) {
   const ring: Record<string, string> = {
     emerald: "bg-emerald-500/10",
     red: "bg-red-500/10",
@@ -429,7 +540,9 @@ function MovementDialog({
           <div>
             <Label>Tipo</Label>
             <Select value={type} onValueChange={(v) => setType(v as "receita" | "despesa")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="receita">Receita</SelectItem>
                 <SelectItem value="despesa">Despesa</SelectItem>
@@ -439,9 +552,15 @@ function MovementDialog({
           <div>
             <Label>Categoria</Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -449,7 +568,14 @@ function MovementDialog({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Valor (R$)</Label>
-            <Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" />
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0,00"
+            />
           </div>
           <div>
             <Label>Data</Label>
@@ -458,7 +584,11 @@ function MovementDialog({
         </div>
         <div>
           <Label>Descrição (opcional)</Label>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Pagamento fornecedor X" />
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ex: Pagamento fornecedor X"
+          />
         </div>
       </div>
       <DialogFooter>

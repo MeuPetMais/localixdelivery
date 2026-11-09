@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { ADMIN_AUTH_VALIDATION_ERROR, validateAdminLogin, type AdminLoginSupabase } from "@/lib/admin-login";
+import {
+  ADMIN_AUTH_VALIDATION_ERROR,
+  validateAdminLogin,
+  type AdminLoginSupabase,
+} from "@/lib/admin-login";
 
 export const Route = createFileRoute("/admin_/login")({
   ssr: false,
@@ -42,7 +46,8 @@ function AdminLogin() {
       // The adapter preserves the same live user_roles query and admin role check.
       const loginClient: AdminLoginSupabase = {
         auth: supabase.auth,
-        from: () => supabase.from("user_roles") as unknown as ReturnType<AdminLoginSupabase["from"]>,
+        from: () =>
+          supabase.from("user_roles") as unknown as ReturnType<AdminLoginSupabase["from"]>,
       };
       const result = await validateAdminLogin(loginClient, email, password);
       if (!result.ok && result.reason === "invalid_credentials") {
@@ -81,7 +86,9 @@ function AdminLogin() {
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-300">E-mail</Label>
+            <Label htmlFor="email" className="text-slate-300">
+              E-mail
+            </Label>
             <Input
               id="email"
               type="email"
@@ -93,7 +100,9 @@ function AdminLogin() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-slate-300">Senha</Label>
+            <Label htmlFor="password" className="text-slate-300">
+              Senha
+            </Label>
             <Input
               id="password"
               type="password"

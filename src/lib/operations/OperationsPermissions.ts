@@ -2,7 +2,13 @@ import type { OperationsRole } from "./types";
 import type { OrderState } from "@/lib/orders/OrderStateMachine";
 
 export type OperationsAction =
-  | "ACCEPT" | "REJECT" | "START_PREP" | "FINISH_PREP" | "DISPATCH" | "CANCEL" | "MARK_DELIVERED";
+  | "ACCEPT"
+  | "REJECT"
+  | "START_PREP"
+  | "FINISH_PREP"
+  | "DISPATCH"
+  | "CANCEL"
+  | "MARK_DELIVERED";
 
 const MATRIX: Record<OperationsAction, OperationsRole[]> = {
   ACCEPT: ["ADMIN", "MANAGER", "ATTENDANT"],

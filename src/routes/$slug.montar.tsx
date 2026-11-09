@@ -264,7 +264,10 @@ function BuildYourOwnPage() {
         basePrice: Number(activeBuilder.base_price ?? 0) || 0,
         groups: groups.map((group) => ({
           ...group,
-          builder_options: group.builder_options.map((option) => ({ ...option, group_id: group.id })),
+          builder_options: group.builder_options.map((option) => ({
+            ...option,
+            group_id: group.id,
+          })),
         })),
         selections: normalizedSelections,
       });
@@ -416,9 +419,12 @@ function BuildYourOwnPage() {
 
   const status = getRestaurantStatus({
     is_open: data.restaurant.is_open,
-    opening_hours: data.restaurant.opening_hours && typeof data.restaurant.opening_hours === "object" && !Array.isArray(data.restaurant.opening_hours)
-      ? (data.restaurant.opening_hours as import("@/lib/restaurant-status").OpeningHours)
-      : null,
+    opening_hours:
+      data.restaurant.opening_hours &&
+      typeof data.restaurant.opening_hours === "object" &&
+      !Array.isArray(data.restaurant.opening_hours)
+        ? (data.restaurant.opening_hours as import("@/lib/restaurant-status").OpeningHours)
+        : null,
   });
 
   if (!status.isOpen) {

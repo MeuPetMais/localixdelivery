@@ -22,16 +22,16 @@ await StripeService.startOnboarding(restaurantId, "/pagamentos");
 
 ## Serviços
 
-| Serviço | Responsabilidade |
-|---|---|
-| `StripeOAuthService` | Account Links / conectar conta existente / disconnect |
-| `StripeAccountService` | Estado da conta conectada, onboarding pendente |
-| `StripeCapabilitiesService` | card_payments, transfers, pix, boleto |
-| `StripeBalanceService` | Saldo disponível / pendente / reservado |
-| `StripeTransferService` | Payouts e transfers |
-| `StripeWebhookService` | Parse + dispatch de eventos Stripe |
-| `StripeMapper` | Converte payload cru → tipos do domínio |
-| `StripeEventBus` | Pub/sub interno do domínio |
+| Serviço                     | Responsabilidade                                      |
+| --------------------------- | ----------------------------------------------------- |
+| `StripeOAuthService`        | Account Links / conectar conta existente / disconnect |
+| `StripeAccountService`      | Estado da conta conectada, onboarding pendente        |
+| `StripeCapabilitiesService` | card_payments, transfers, pix, boleto                 |
+| `StripeBalanceService`      | Saldo disponível / pendente / reservado               |
+| `StripeTransferService`     | Payouts e transfers                                   |
+| `StripeWebhookService`      | Parse + dispatch de eventos Stripe                    |
+| `StripeMapper`              | Converte payload cru → tipos do domínio               |
+| `StripeEventBus`            | Pub/sub interno do domínio                            |
 
 ## Regras arquiteturais
 

@@ -119,6 +119,7 @@ Verificações previstas (`docs/GO_LIVE_CHECKLIST.md` §9):
 - [ ] Painel admin lista o novo restaurante.
 
 Adicionalmente:
+
 - Confirmar `charges_enabled` / `payouts_enabled` em restaurantes
   ativos.
 - Conferir métricas p95 (`response_ms`, `edge_function_ms`) contra os
@@ -253,6 +254,7 @@ na v1.0**.
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/LOCALIX_ONBOARDING_PLAYBOOK.md`
 - `docs/LOCALIX_INCIDENT_RUNBOOK.md`
@@ -274,6 +276,7 @@ Consistência conferida contra:
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - Pipeline de deploy com aprovações externas / blue-green / canary.
 - PITR exposto ao operador.
 - Restauração parcial por tenant.

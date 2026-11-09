@@ -30,10 +30,7 @@ export function NotificationsBell() {
   }
 
   return (
-    <div
-      className="fixed right-3 z-50"
-      style={{ top: "calc(12px + env(safe-area-inset-top))" }}
-    >
+    <div className="fixed right-3 z-50" style={{ top: "calc(12px + env(safe-area-inset-top))" }}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
@@ -53,7 +50,9 @@ export function NotificationsBell() {
             <div>
               <h3 className="text-sm font-semibold">Notificações</h3>
               <p className="text-xs text-muted-foreground">
-                {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}` : "Tudo em dia"}
+                {unreadCount > 0
+                  ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}`
+                  : "Tudo em dia"}
               </p>
             </div>
             {unreadCount > 0 && (

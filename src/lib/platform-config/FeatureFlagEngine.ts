@@ -44,12 +44,16 @@ export const FeatureFlagEngine = {
     let matched = false;
 
     if (t.tenants?.length) {
-      if (ctx.tenantId && t.tenants.includes(ctx.tenantId)) { matched = true; matched_scope = "tenant"; }
-      else return { key: flag.key, enabled: false, reason: "tenant_mismatch" };
+      if (ctx.tenantId && t.tenants.includes(ctx.tenantId)) {
+        matched = true;
+        matched_scope = "tenant";
+      } else return { key: flag.key, enabled: false, reason: "tenant_mismatch" };
     }
     if (!matched && t.plans?.length) {
-      if (ctx.plan && t.plans.includes(ctx.plan)) { matched = true; matched_scope = "plan"; }
-      else return { key: flag.key, enabled: false, reason: "plan_mismatch" };
+      if (ctx.plan && t.plans.includes(ctx.plan)) {
+        matched = true;
+        matched_scope = "plan";
+      } else return { key: flag.key, enabled: false, reason: "plan_mismatch" };
     }
     if (!matched && t.environments?.length) matched_scope = "environment";
     if (!matched) matched_scope = matched_scope ?? "global";
@@ -61,7 +65,8 @@ export const FeatureFlagEngine = {
       }
     }
 
-    if (matched) return { key: flag.key, enabled: true, reason: "matched_targeting", matched_scope };
+    if (matched)
+      return { key: flag.key, enabled: true, reason: "matched_targeting", matched_scope };
     return { key: flag.key, enabled: flag.default_value, reason: "matched_default", matched_scope };
   },
 

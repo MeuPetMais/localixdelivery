@@ -1,11 +1,7 @@
 // NotificationCenter — fachada única para criar/consultar notificações.
 // Este prompt: recebe solicitações, consulta preferências, escolhe canal, coloca na fila.
 // Não envia ainda (dispatch será acionado por worker em prompt futuro).
-import type {
-  NotificationChannel,
-  NotificationRecord,
-  NotificationRequest,
-} from "./types";
+import type { NotificationChannel, NotificationRecord, NotificationRequest } from "./types";
 import { NotificationPreferenceService } from "./NotificationPreferenceService";
 import { normalizeRequest } from "./NotificationScheduler";
 

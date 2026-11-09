@@ -5,16 +5,16 @@ customers earn points/cashback from orders and redeem rewards.
 
 ## Files
 
-| File | Responsibility |
-|---|---|
-| `types.ts` | `CustomerLoyalty`, `LoyaltyTransaction`, `LoyaltyLevel`, `LoyaltyRule`, `Reward`, `LoyaltyContext`. |
-| `LoyaltyService.ts` | Facade: accrue, redeem points/cashback/rewards, expire, adjust. |
-| `LoyaltyRuleEngine.ts` | **Pure**. Evaluates configurable rules against an order context. |
-| `LevelResolver.ts` | **Pure**. Resolves current level from lifetime points. |
-| `RewardService.ts` | **Pure**. Validates whether a reward can be redeemed. |
-| `LoyaltyEventBus.ts` | `PointsEarned`, `PointsRedeemed`, `PointsExpired`, `CashbackEarned`, `CashbackRedeemed`, `LevelChanged`, `RewardUnlocked`. |
-| `index.ts` | Barrel. |
-| `LoyaltyEngine.test.ts` | 22 tests covering rules, levels, rewards, events. |
+| File                    | Responsibility                                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`              | `CustomerLoyalty`, `LoyaltyTransaction`, `LoyaltyLevel`, `LoyaltyRule`, `Reward`, `LoyaltyContext`.                        |
+| `LoyaltyService.ts`     | Facade: accrue, redeem points/cashback/rewards, expire, adjust.                                                            |
+| `LoyaltyRuleEngine.ts`  | **Pure**. Evaluates configurable rules against an order context.                                                           |
+| `LevelResolver.ts`      | **Pure**. Resolves current level from lifetime points.                                                                     |
+| `RewardService.ts`      | **Pure**. Validates whether a reward can be redeemed.                                                                      |
+| `LoyaltyEventBus.ts`    | `PointsEarned`, `PointsRedeemed`, `PointsExpired`, `CashbackEarned`, `CashbackRedeemed`, `LevelChanged`, `RewardUnlocked`. |
+| `index.ts`              | Barrel.                                                                                                                    |
+| `LoyaltyEngine.test.ts` | 22 tests covering rules, levels, rewards, events.                                                                          |
 
 ## Tables (new)
 

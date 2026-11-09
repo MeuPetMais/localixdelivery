@@ -14,7 +14,7 @@ const LABELS: Record<string, string> = {
   cash: "💵 Dinheiro",
   dinheiro: "💵 Dinheiro",
   especie: "💵 Dinheiro",
-  "espécie": "💵 Dinheiro",
+  espécie: "💵 Dinheiro",
   meal_voucher: "🍽️ Vale Alimentação / Refeição",
   food_voucher: "🍽️ Vale Alimentação / Refeição",
   vr: "🍽️ Vale Alimentação / Refeição",
@@ -92,10 +92,11 @@ export function isOfflinePaymentMethod(method?: string | null): boolean {
   return OFFLINE_KEYS.has(normalizeOrderPaymentMethod(method));
 }
 
-export function initialOrderStatusForPaymentMethod(method?: string | null): "pago" | "aguardando_pagamento" {
+export function initialOrderStatusForPaymentMethod(
+  method?: string | null,
+): "pago" | "aguardando_pagamento" {
   return isOfflinePaymentMethod(method) ? "pago" : "aguardando_pagamento";
 }
-
 
 /**
  * Mensagem de notificação exibida ao cliente quando o pedido entra em
@@ -116,14 +117,12 @@ export function orderReceivedNotification(method?: string | null): {
     case "apple_pay":
       return {
         title: "💳 Pagamento aprovado",
-        description:
-          "Recebemos seu pagamento. Aguardando confirmação do restaurante.",
+        description: "Recebemos seu pagamento. Aguardando confirmação do restaurante.",
       };
     case "cash":
       return {
         title: "🧾 Pedido recebido",
-        description:
-          "Seu pedido foi enviado ao restaurante e aguarda confirmação.",
+        description: "Seu pedido foi enviado ao restaurante e aguarda confirmação.",
       };
     case "card_on_delivery":
       return {
@@ -140,8 +139,7 @@ export function orderReceivedNotification(method?: string | null): {
     default:
       return {
         title: "Pedido recebido",
-        description:
-          "Seu pedido foi enviado ao restaurante e aguarda confirmação.",
+        description: "Seu pedido foi enviado ao restaurante e aguarda confirmação.",
       };
   }
 }

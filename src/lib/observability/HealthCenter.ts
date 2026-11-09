@@ -41,10 +41,14 @@ export const HealthCenter = {
     const existing = registry.get(input.key);
     if (!existing) {
       const created: HealthComponent = {
-        key: input.key, name: input.key, kind: "service",
-        status: input.status, latency_ms: input.latency_ms ?? null,
+        key: input.key,
+        name: input.key,
+        kind: "service",
+        status: input.status,
+        latency_ms: input.latency_ms ?? null,
         last_check_at: new Date().toISOString(),
-        message: input.message ?? null, metadata: input.metadata,
+        message: input.message ?? null,
+        metadata: input.metadata,
       };
       registry.set(input.key, created);
       return created;
@@ -56,11 +60,15 @@ export const HealthCenter = {
     existing.last_check_at = new Date().toISOString();
     return existing;
   },
-  get(key: string): HealthComponent | null { return registry.get(key) ?? null; },
+  get(key: string): HealthComponent | null {
+    return registry.get(key) ?? null;
+  },
   snapshot(): HealthSnapshot {
     const components = [...registry.values()];
     const overall = components.reduce<HealthStatus>((acc, c) => worst(acc, c.status), "healthy");
     return { overall, components, at: new Date().toISOString() };
   },
-  _reset() { registry.clear(); },
+  _reset() {
+    registry.clear();
+  },
 } as const;

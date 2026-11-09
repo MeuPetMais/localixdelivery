@@ -6,7 +6,13 @@ export interface QuickAction {
   onClick: () => void;
 }
 
-export function QuickActions({ actions, restaurantId }: { actions: QuickAction[]; restaurantId?: string }) {
+export function QuickActions({
+  actions,
+  restaurantId,
+}: {
+  actions: QuickAction[];
+  restaurantId?: string;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       {actions.map((a) => (
@@ -25,7 +31,9 @@ export function QuickActions({ actions, restaurantId }: { actions: QuickAction[]
   );
 }
 
-export const defaultQuickActions = (handlers: Partial<Record<string, () => void>>): QuickAction[] => [
+export const defaultQuickActions = (
+  handlers: Partial<Record<string, () => void>>,
+): QuickAction[] => [
   { id: "new-product", label: "Novo Produto", onClick: handlers["new-product"] ?? (() => {}) },
   { id: "new-coupon", label: "Novo Cupom", onClick: handlers["new-coupon"] ?? (() => {}) },
   { id: "toggle-open", label: "Abrir/Fechar", onClick: handlers["toggle-open"] ?? (() => {}) },
