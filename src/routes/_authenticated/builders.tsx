@@ -247,7 +247,8 @@ type EditorGroup = Omit<Group, "min_select" | "max_select" | "builder_options"> 
   max_select: number | string;
   builder_options: EditorOption[];
 };
-type EditorBuilder = Omit<Builder, "base_price" | "builder_groups"> & {
+type EditorBuilder = Omit<Builder, "base_price" | "builder_groups" | "restaurant_id"> & {
+  restaurant_id: string;
   base_price: number | string;
   is_active?: boolean | null;
   position?: number | null;
