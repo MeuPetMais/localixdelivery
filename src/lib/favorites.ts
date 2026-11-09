@@ -91,9 +91,7 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
   const builderIds = favs.filter((f) => f.item_kind === "builder").map((f) => f.item_id);
 
   const [restRes, itemRes, builderRes] = await Promise.all([
-    supabase
-      .from("restaurants_public")
-      .select("id, name, slug, logo_url")
+    supabase.from("restaurants_public").select("id, name, slug, logo_url")
       .in("id", restaurantIds),
     menuIds.length
       ? supabase
@@ -116,7 +114,9 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
   if (builderRes.error) throw builderRes.error;
 
   const categoryIds = [
-    ...new Set((itemRes.data ?? []).map((item) => item.category_id).filter((id): id is string => !!id)),
+    ...new Set(
+      (itemRes.data ?? []).map((item) => item.category_id).filter((id): id is string => !!id),
+    ),
   ];
   const catRes = categoryIds.length
     ? await supabase.from("menu_categories").select("id, name").in("id", categoryIds)
