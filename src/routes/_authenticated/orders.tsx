@@ -220,15 +220,20 @@ const COLUMNS: Array<{
 
 const OPERATIONAL_COLUMNS = COLUMNS.filter((column) => column.key !== "cancelled");
 
-const NEXT_BY_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string; icon: React.ComponentType<{ className?: string }> }>> =
-  {
-    pago: { to: "aceito", label: "Aceitar", icon: Check },
-    aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
-    em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
-    pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
-    saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
-    entregue: { to: "concluido", label: "Concluir", icon: Check },
-  };
+type NextStatusAction = {
+  to: OrderStatus;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const NEXT_BY_STATUS: Partial<Record<OrderStatus, NextStatusAction>> = {
+  pago: { to: "aceito", label: "Aceitar", icon: Check },
+  aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
+  em_preparo: { to: "pronto", label: "Marcar pronto", icon: PackageCheck },
+  pronto: { to: "saiu_para_entrega", label: "Saiu p/ entrega", icon: Bike },
+  saiu_para_entrega: { to: "entregue", label: "Finalizar", icon: PackageCheck },
+  entregue: { to: "concluido", label: "Concluir", icon: Check },
+};
 
 const TERMINAL_STATUSES: OrderStatus[] = [
   "concluido",
