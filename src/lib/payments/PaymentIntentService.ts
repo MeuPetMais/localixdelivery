@@ -53,7 +53,9 @@ export async function runIntent(
   action: "create" | "status" | "cancel",
   body: Record<string, unknown>,
 ): Promise<PaymentIntentResult> {
-  const r = await invoke({ action, ...body });
+  const r = (await invoke({ action, ...body })) as
+    | (Partial<PaymentIntentResult> & { error?: unknown })
+    | null;
   if (r?.error) throw new Error(String(r.error));
   const status: PaymentIntentStatus =
     (r?.status as PaymentIntentStatus) ?? (action === "cancel" ? "CANCELLED" : "PENDING");
