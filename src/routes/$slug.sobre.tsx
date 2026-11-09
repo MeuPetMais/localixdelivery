@@ -300,7 +300,9 @@ function SobrePage() {
   if (!restaurant) {
     try {
       sessionStorage.removeItem("localix:last-restaurant-slug");
-    } catch {}
+    } catch {
+      // Best-effort cleanup; the main flow must continue.
+    }
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
