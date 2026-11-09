@@ -141,7 +141,9 @@ function persistState(next: NavigationSnapshot) {
       sessionStorage.setItem(LEGACY_LAST_SLUG_KEY, next.lastRestaurantSlug);
       localStorage.setItem(LEGACY_LAST_SLUG_KEY, next.lastRestaurantSlug);
     }
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 }
 
 function currentRoute() {
@@ -233,7 +235,9 @@ export function CustomerNavigationProvider({ children }: { children: ReactNode }
       if (slug && isBrowser()) {
         try {
           sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, target);
-        } catch {}
+        } catch {
+          // Storage may be unavailable; continue without persistence.
+        }
       }
       return target;
     },
@@ -315,5 +319,7 @@ export function clearStoredRestaurantSlug() {
     sessionStorage.removeItem(LEGACY_LAST_SLUG_KEY);
     sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
     localStorage.removeItem(LEGACY_LAST_SLUG_KEY);
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 }
