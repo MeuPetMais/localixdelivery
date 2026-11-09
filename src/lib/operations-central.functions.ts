@@ -107,7 +107,7 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
 
     // Load related orders for customer/order_number
     const orderIds = Array.from(new Set(al.map((a) => a.order_id).filter(Boolean))) as string[];
-    let orders: Record<string, { order_number: number; customer_name: string | null }> = {};
+    const orders: Record<string, { order_number: number; customer_name: string | null }> = {};
     if (orderIds.length > 0) {
       const { data: os } = await sb
         .from("orders")
