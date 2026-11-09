@@ -10,7 +10,10 @@ import type { DeliveryOrder, Driver } from "./types";
 
 type TimelineEntry = Parameters<DeliveryRepository["appendTimeline"]>[1] & { id: string };
 
-function makeRepo(): DeliveryRepository & { store: Map<string, DeliveryOrder>; timeline: TimelineEntry[] } {
+function makeRepo(): DeliveryRepository & {
+  store: Map<string, DeliveryOrder>;
+  timeline: TimelineEntry[];
+} {
   const store = new Map<string, DeliveryOrder>();
   const timeline: TimelineEntry[] = [];
   return {
