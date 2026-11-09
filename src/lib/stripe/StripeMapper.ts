@@ -11,7 +11,7 @@ import type {
   StripeWebhookEvent,
 } from "./types";
 
-type Raw = Record<string, any>;
+type Raw = Record<string, unknown>;
 
 export const StripeMapper = {
   account(raw: Raw, restaurantId: string): StripeAccount {
