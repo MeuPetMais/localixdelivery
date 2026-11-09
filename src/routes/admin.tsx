@@ -85,7 +85,12 @@ function AdminLayout() {
     );
   }
 
-  const nav: Array<{ to: string; label: string; icon: React.ComponentType<{ className?: string }>; exact?: boolean }> = [
+  const nav: Array<{
+    to: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    exact?: boolean;
+  }> = [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/admin/financeiro", label: "Financeiro", icon: Wallet },
     { to: "/admin/parceiros", label: "Parceiros", icon: Store },
