@@ -107,6 +107,6 @@ export const listEtaHistory = createServerFn({ method: "GET" })
       .eq("assignment_id", data.assignment_id)
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 50);
-    if (error) return { ok: false, reason: error.message, rows: [] as any[] };
+    if (error) return { ok: false, reason: error.message, rows: [] as NonNullable<typeof rows> };
     return { ok: true, rows: rows ?? [] };
   });
