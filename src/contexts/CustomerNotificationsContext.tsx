@@ -27,7 +27,7 @@ export type CustomerNotification = {
   type: string;
   title: string;
   body: string | null;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   read_at: string | null;
   created_at: string;
 };
