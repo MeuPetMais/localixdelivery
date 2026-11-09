@@ -136,7 +136,8 @@ function SupportTicketDetailPage() {
   });
 
   const ticket = detail.data?.ticket;
-  const messages = detail.data?.messages ?? [];
+  type SupportConversationMessage = { id: string; internal_note: boolean; body: string | null; author_type: string; created_at: string; attachments: unknown[] };
+  const messages: SupportConversationMessage[] = detail.data?.messages ?? [];
   const articleQueryText = useMemo(
     () => [ticket?.subject, messages.filter((message) => !message.internal_note).at(-1)?.body].filter(Boolean).join(" "),
     [messages, ticket?.subject],
@@ -338,7 +339,7 @@ function SupportTicketDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nao atribuido</SelectItem>
-                    {(team.data ?? []).map((member) => (
+                    {(team.data ?? []).map((member: { user_id: string; label: string }) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.label}
                       </SelectItem>
