@@ -1693,6 +1693,7 @@ export type Database = {
           restaurant_id: string
           status: string
           updated_at: string
+          driver_distance_km: number | null
         }
         Insert: {
           assigned_at?: string | null
@@ -1711,6 +1712,7 @@ export type Database = {
           restaurant_id: string
           status?: string
           updated_at?: string
+          driver_distance_km?: number | null
         }
         Update: {
           assigned_at?: string | null
@@ -1729,6 +1731,7 @@ export type Database = {
           restaurant_id?: string
           status?: string
           updated_at?: string
+          driver_distance_km?: number | null
         }
         Relationships: [
           {
