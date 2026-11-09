@@ -35,7 +35,7 @@ function PartnersPage() {
       toast.success("Status atualizado");
       qc.invalidateQueries({ queryKey: ["admin-partners"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
   const mDelete = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
@@ -43,7 +43,7 @@ function PartnersPage() {
       toast.success("Excluído");
       qc.invalidateQueries({ queryKey: ["admin-partners"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Erro"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
   const rows = (data ?? []).filter(
