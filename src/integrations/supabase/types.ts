@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_earning_settings: {
+        Row: {
+          id: string
+          restaurant_id: string
+          base_fee: number
+          per_km_fee: number
+          minimum_fee: number
+          maximum_fee: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          base_fee?: number
+          per_km_fee?: number
+          minimum_fee?: number
+          maximum_fee?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          base_fee?: number
+          per_km_fee?: number
+          minimum_fee?: number
+          maximum_fee?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_restaurant_memberships: {
         Row: {
           id: string
