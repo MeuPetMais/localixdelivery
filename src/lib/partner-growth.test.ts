@@ -161,7 +161,7 @@ describe("PG-2A partner growth dashboard", () => {
 
   it("keeps the order metrics projection unambiguous", () => {
     const orderMetricsSql =
-      dashboardMigration.match(/order_metrics AS \([\s\S]*?\),\n  customer_metrics/)?.[0] ?? "";
+      dashboardMigration.match(/order_metrics AS \([\s\S]*?\),\n {2}customer_metrics/)?.[0] ?? "";
     expect(orderMetricsSql.match(/AS last_realized_sale_at/g) ?? []).toHaveLength(1);
   });
 
