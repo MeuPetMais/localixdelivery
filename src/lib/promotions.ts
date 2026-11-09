@@ -10,7 +10,7 @@ export type PromoLike = {
   is_available?: boolean | null;
   is_paused?: boolean | null;
   price: number | string;
-  promo_price: number | string | null;
+  promo_price?: number | string | null;
   promo_starts_at?: string | null;
   promo_ends_at?: string | null;
   recurrence_days?: number[] | null;
