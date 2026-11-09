@@ -36,7 +36,10 @@ function qrUrl(data: string, size = 240) {
 // Tiny built-in "new order" chime (base64 mp3-like beep via WebAudio)
 function playChime() {
   try {
-    const Ctx = (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
+    const Ctx = (
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    ) as typeof AudioContext;
     const ctx = new Ctx();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
