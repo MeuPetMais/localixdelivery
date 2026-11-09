@@ -24,7 +24,7 @@ export function isActiveDriverLoginCandidate(candidate: DriverLoginCandidate) {
   return candidate.status === "ativo" && !!candidate.owner_id && !!candidate.email;
 }
 
-export function matchesDriverIdentifier(candidate: DriverLoginCandidate, identifier: string) {
+export function matchesDriverIdentifier(candidate: Pick<DriverLoginCandidate, "email" | "cpf" | "phone">, identifier: string) {
   const normalized = identifier.trim().toLowerCase();
   const normalizedDigits = digits(identifier);
   const isDocumentOrPhone = normalizedDigits.length >= 8;
