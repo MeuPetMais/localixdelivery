@@ -78,7 +78,9 @@ function persistSnapshot(session: RestaurantSession | null) {
   try {
     if (session) window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     else window.localStorage.removeItem(SESSION_KEY);
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 }
 
 export function RestaurantSessionProvider({ children }: { children: ReactNode }) {
