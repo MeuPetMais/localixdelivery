@@ -156,7 +156,7 @@ function FeaturedPage() {
       qc.invalidateQueries({ queryKey: ["featured-diagnostics", restaurantSlug] });
       qc.invalidateQueries({ queryKey: ["featured-sections", restaurantSlug] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro ao salvar"),
   });
 
   const { data: items = [], isLoading: loadingItems } = useQuery({
@@ -187,7 +187,7 @@ function FeaturedPage() {
       qc.invalidateQueries({ queryKey: ["featured-diagnostics", restaurantSlug] });
       qc.invalidateQueries({ queryKey: ["featured-sections", restaurantSlug] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
   const weeklyCount = items.filter((i) => i.is_weekly_favorite).length;
