@@ -31,7 +31,9 @@ export function setNotifyPrefs(patch: Partial<CustomerNotifyPrefs>): CustomerNot
   const next = { ...getNotifyPrefs(), ...patch };
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(next));
-  } catch {}
+  } catch {
+    // Non-critical best-effort operation; continue safely.
+  }
   window.dispatchEvent(new CustomEvent("localix:notify-prefs", { detail: next }));
   return next;
 }
