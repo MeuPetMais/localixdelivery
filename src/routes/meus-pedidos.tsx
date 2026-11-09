@@ -119,7 +119,9 @@ function MyOrders() {
           })),
         ),
       );
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
     navigate({ to: "/$slug", params: { slug: r.slug } });
   }
 
