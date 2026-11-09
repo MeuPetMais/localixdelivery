@@ -288,7 +288,7 @@ describe("MarketingAudit", () => {
     const rows = MarketingAudit.list(R);
     expect(rows.length).toBeGreaterThan(0);
     expect(() => {
-      (rows[0] as any).action = "hacked";
+      (rows[0] as { action: string }).action = "hacked";
     }).toThrow();
   });
 });
