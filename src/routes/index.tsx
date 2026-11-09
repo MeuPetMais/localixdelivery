@@ -163,7 +163,7 @@ function Header() {
           <a href="#duvidas" className="hover:text-foreground">Dúvidas</a>
         </nav>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Link to="/auth" search={{ mode: undefined } as { mode: string | undefined }}>
+          <Link to="/auth" search={{ mode: undefined }}>
             <Button variant="ghost" size="sm" className="px-2 sm:px-3">Entrar</Button>
           </Link>
           <SignupButton size="sm" className="px-2 sm:px-3">Cadastrar</SignupButton>
