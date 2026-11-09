@@ -58,7 +58,9 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
   let impersonateId: string | null = null;
   try {
     impersonateId = localStorage.getItem("localix:impersonate_restaurant_id");
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 
   const query = impersonateId
     ? supabase.from("restaurants").select("*").eq("id", impersonateId).limit(1)
