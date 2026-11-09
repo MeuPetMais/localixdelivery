@@ -20,7 +20,7 @@ function makeCenter(
     dropped?: (r: NotificationRequest, reason: string) => Promise<void>;
   } = {},
 ) {
-  const inserts: any[] = [];
+  const inserts: Parameters<NotificationRepo["enqueue"]>[0][] = [];
   const repo: NotificationRepo = {
     enqueue: async (input) => {
       const rec: NotificationRecord = {
