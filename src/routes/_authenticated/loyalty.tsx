@@ -168,7 +168,8 @@ function SettingsTab({ restaurantId }: { restaurantId: string }) {
       toast.success("Configurações salvas");
       qc.invalidateQueries({ queryKey: ["loyalty-settings"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar"),
   });
 
   if (settingsQ.isLoading || !form) return <LoadingCard />;
@@ -303,7 +304,7 @@ type Benefit = {
 const BENEFIT_TYPES: Array<{
   key: BenefitType;
   label: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   hint: string;
   supported: boolean;
 }> = [
@@ -421,7 +422,8 @@ function BenefitsTab({ restaurantId }: { restaurantId: string }) {
       toast.success("Benefício excluído");
       qc.invalidateQueries({ queryKey: ["loyalty-benefits"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir"),
   });
   const toggle = useMutation({
     mutationFn: async (b: Benefit) => {
@@ -432,7 +434,8 @@ function BenefitsTab({ restaurantId }: { restaurantId: string }) {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["loyalty-benefits"] }),
-    onError: (e: any) => toast.error(e?.message ?? "Falha"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha"),
   });
   const duplicate = useMutation({
     mutationFn: async (b: Benefit) => {
@@ -452,7 +455,8 @@ function BenefitsTab({ restaurantId }: { restaurantId: string }) {
       toast.success("Duplicado");
       qc.invalidateQueries({ queryKey: ["loyalty-benefits"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao duplicar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao duplicar"),
   });
 
   const rows = listQ.data ?? [];
