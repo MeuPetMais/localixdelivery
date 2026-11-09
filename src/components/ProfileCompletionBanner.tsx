@@ -7,7 +7,7 @@ import { Store, CheckCircle2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { getProfileCompletion } from "@/lib/profile-completion";
 
-export function ProfileCompletionBanner({ restaurant }: { restaurant: any }) {
+export function ProfileCompletionBanner({ restaurant }: { restaurant: Record<string, unknown> & { id?: string } }) {
   const { pct, completed, total, checks, isComplete } = getProfileCompletion(restaurant);
   const missing = total - completed;
 
