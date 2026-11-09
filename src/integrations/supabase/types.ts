@@ -14,6 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
+      partner_growth_assignments: {
+        Row: {
+          id: string
+          user_id: string
+          restaurant_id: string
+          assigned_at: string
+          assigned_by: string | null
+          active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          restaurant_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          restaurant_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          active?: boolean
+        }
+        Relationships: []
+      }
+      customer_growth_marketing_consents: {
+        Row: {
+          id: string
+          restaurant_id: string
+          customer_id: string
+          channel: string
+          granted: boolean
+          source: string
+          evidence: Json
+          captured_at: string
+          revoked_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          customer_id: string
+          channel: string
+          granted: boolean
+          source: string
+          evidence?: Json
+          captured_at?: string
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          customer_id?: string
+          channel?: string
+          granted?: boolean
+          source?: string
+          evidence?: Json
+          captured_at?: string
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      growth_measurement_events: {
+        Row: {
+          id: string
+          restaurant_id: string
+          customer_id: string
+          event_type: string
+          source_type: string
+          source_ref: string | null
+          action_key: string | null
+          parent_event_id: string | null
+          order_id: string | null
+          attributed_order_total: number | null
+          occurred_at: string
+          metadata: Json
+          idempotency_key: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          customer_id: string
+          event_type: string
+          source_type: string
+          source_ref?: string | null
+          action_key?: string | null
+          parent_event_id?: string | null
+          order_id?: string | null
+          attributed_order_total?: number | null
+          occurred_at?: string
+          metadata?: Json
+          idempotency_key: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          customer_id?: string
+          event_type?: string
+          source_type?: string
+          source_ref?: string | null
+          action_key?: string | null
+          parent_event_id?: string | null
+          order_id?: string | null
+          attributed_order_total?: number | null
+          occurred_at?: string
+          metadata?: Json
+          idempotency_key?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      growth_campaign_automation_jobs: {
+        Row: {
+          id: string
+          restaurant_id: string
+          customer_id: string
+          trigger_type: string
+          channel: string
+          action_key: string
+          source_ref: string
+          status: string
+          reason: string | null
+          consent_id: string | null
+          measurement_event_id: string | null
+          idempotency_key: string
+          scheduled_for: string | null
+          sent_at: string | null
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          customer_id: string
+          trigger_type: string
+          channel: string
+          action_key: string
+          source_ref: string
+          status: string
+          reason?: string | null
+          consent_id?: string | null
+          measurement_event_id?: string | null
+          idempotency_key: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          customer_id?: string
+          trigger_type?: string
+          channel?: string
+          action_key?: string
+          source_ref?: string
+          status?: string
+          reason?: string | null
+          consent_id?: string | null
+          measurement_event_id?: string | null
+          idempotency_key?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       accounts_payable: {
         Row: {
           amount: number
@@ -6986,6 +7163,7 @@ export type Database = {
         | "marketing"
         | "analista"
         | "delivery_driver"
+        | "partner_growth"
       delivery_driver_status:
         | "ativo"
         | "inativo"
