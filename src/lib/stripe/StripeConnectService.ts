@@ -80,7 +80,9 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
           code = raw;
         }
       }
-    } catch {}
+    } catch {
+      // Best-effort cleanup; the main flow must continue.
+    }
     // eslint-disable-next-line no-console
     console.error(`[stripe:${fn}]`, { message: error.message, code, raw });
     const err = new Error(friendly(code || error.message || `edge_${fn}_failed`));
