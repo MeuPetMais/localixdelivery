@@ -6391,6 +6391,7 @@ export type Database = {
           title: string
           updated_at: string
           video_url: string | null
+          archived: boolean
         }
         Insert: {
           category: string
@@ -6402,6 +6403,7 @@ export type Database = {
           title: string
           updated_at?: string
           video_url?: string | null
+          archived?: boolean
         }
         Update: {
           category?: string
@@ -6413,6 +6415,7 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string | null
+          archived?: boolean
         }
         Relationships: []
       }
