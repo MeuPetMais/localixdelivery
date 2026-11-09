@@ -102,13 +102,13 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
             "id, name, description, image_url, price, promo_price, is_available, is_active, category_id",
           )
           .in("id", menuIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     builderIds.length
       ? supabase
           .from("builders")
           .select("id, name, description, image_url, base_price, is_active")
           .in("id", builderIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (restRes.error) throw restRes.error;
