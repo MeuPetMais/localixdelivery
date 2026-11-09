@@ -102,13 +102,15 @@ function AdminKnowledgePage() {
       setForm(null);
       refresh();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao salvar artigo"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao salvar artigo"),
   });
   const changeStatus = useMutation({
     mutationFn: (payload: { id: string; published?: boolean; archived?: boolean }) =>
       statusFn({ data: payload }),
     onSuccess: refresh,
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao atualizar artigo"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar artigo"),
   });
 
   const articles = (articlesQuery.data ?? []) as Article[];
