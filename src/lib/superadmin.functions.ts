@@ -283,7 +283,7 @@ export const listAdminTransactions = createServerFn({ method: "POST" })
       order_number: number | null;
       customer_name: string | null;
     }>;
-    const restIds = Array.from(new Set(orderRows.map((order) => order.restaurant_id).filter(Boolean)));
+    const restIds = Array.from(new Set(orderRows.map((order) => order.restaurant_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
     const [restsQ, snapshots] = await Promise.all([
       sb.from("restaurants").select("id, name").in("id", restIds.length ? restIds : [EMPTY_UUID]),
       loadSnapshotsForOrders(sb, orderRows.map((order) => order.id)),
