@@ -82,8 +82,8 @@ function AiCenterPage() {
         data: { restaurantId, type, customBrief: type === "custom" ? customBrief : undefined },
       });
       setCampaign(res);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao gerar campanha");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar campanha");
     } finally {
       setCampaignLoading(false);
     }
