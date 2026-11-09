@@ -156,7 +156,7 @@ describe("FinanceWidgetRegistry", () => {
 
 describe("FinanceAudit", () => {
   it("emits to sinks", () => {
-    const received: any[] = [];
+    const received: Parameters<typeof FinanceAudit.emit>[0][] = [];
     const off = FinanceAudit.subscribe((e) => received.push(e));
     FinanceAudit.emit({ type: "TAB_CHANGE", restaurantId: "r1", payload: { tab: "dre" } });
     off();
