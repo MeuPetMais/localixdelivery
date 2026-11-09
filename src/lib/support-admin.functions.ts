@@ -581,7 +581,7 @@ export const updateSupportTicketMeta = createServerFn({ method: "POST" })
     if (data.priority && !canSupport(role, "change_priority")) throw new Error("Forbidden");
     if (data.category && !canSupport(role, "change_category")) throw new Error("Forbidden");
 
-    const patch: Record<string, unknown> = {};
+    const patch: { published?: boolean; archived?: boolean } = {};
     if (data.priority) patch.priority = data.priority;
     if (data.category) patch.category = data.category;
     if (data.tags) patch.tags = data.tags;
