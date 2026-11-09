@@ -11,8 +11,8 @@ import {
 import type { VersionRow, VersioningRepository } from "./TenantConfigurationVersioning";
 import type { AuditEntry, AuditRepository } from "./TenantAudit";
 
-function makeRepo(): TenantConfigRepository & { data: Map<string, any>; version: number } {
-  const data = new Map<string, any>();
+function makeRepo(): TenantConfigRepository & { data: Map<string, Partial<import("./types").TenantConfiguration>>; version: number } {
+  const data = new Map<string, Partial<import("./types").TenantConfiguration>>();
   return {
     data,
     version: 1,
@@ -39,22 +39,22 @@ function makeVersioningRepo(): VersioningRepository & { rows: VersionRow[] } {
     async append(row) {
       const full = { ...row, created_at: new Date().toISOString() } as VersionRow;
       rows.push(full);
-      return full as any;
+      return full;
     },
     async latest(rid, group) {
       const filtered = rows.filter((r) => r.restaurant_id === rid && r.group_name === group);
-      return (filtered[filtered.length - 1] as any) ?? null;
+      return filtered[filtered.length - 1] ?? null;
     },
     async history(rid, group, limit = 20) {
       return rows
         .filter((r) => r.restaurant_id === rid && r.group_name === group)
-        .slice(-limit) as any;
+        .slice(-limit);
     },
     async at(rid, group, version) {
       return (
         (rows.find(
           (r) => r.restaurant_id === rid && r.group_name === group && r.version === version,
-        ) as any) ?? null
+        )) ?? null
       );
     },
   };
@@ -117,14 +117,14 @@ describe("TenantConfigurationValidator", () => {
 describe("TenantConfigurationCache", () => {
   it("caches within TTL and invalidates on demand", () => {
     const cache = new TenantConfigurationCache(50);
-    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG } as any);
+    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG });
     expect(cache.get(RID)).not.toBeNull();
     cache.invalidate(RID);
     expect(cache.get(RID)).toBeNull();
   });
   it("expires after TTL", async () => {
     const cache = new TenantConfigurationCache(5);
-    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG } as any);
+    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG });
     await new Promise((r) => setTimeout(r, 15));
     expect(cache.get(RID)).toBeNull();
   });
