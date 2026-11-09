@@ -282,7 +282,7 @@ describe("Notification Center", () => {
   });
 
   it("Bridge: eventos sem mapeamento retornam null", () => {
-    const req = orderEventToRequest("PaymentApproved" as any, {
+    const req = orderEventToRequest("PaymentApproved" as Parameters<typeof orderEventToRequest>[0], {
       orderId: "o1",
       restaurantId: "r1",
       previousStatus: null,
