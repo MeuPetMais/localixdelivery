@@ -661,7 +661,7 @@ function OrdersPage() {
         price: Number(it.price ?? 0),
         notes: it.notes ?? null,
         options: orderItemAddonPrintLines(it),
-        removed: Array.isArray(it.removed) ? it.removed : null,
+        removed: "removed" in it && Array.isArray(it.removed) ? it.removed : null,
       })),
       notes: o.notes ?? null,
       payment_method: o.payment_method,
