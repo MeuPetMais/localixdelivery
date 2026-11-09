@@ -94,7 +94,8 @@ export function InternalNotificationsBell() {
             <div className="p-4 text-sm text-slate-400">Nenhuma notificacao.</div>
           ) : (
             notifications.map((notification) => {
-              const ticketId = notification.payload_json?.ticket_id;
+              const rawTicketId = notification.payload_json?.ticket_id;
+              const ticketId = typeof rawTicketId === "string" ? rawTicketId : null;
               return (
                 <div
                   key={notification.id}
@@ -110,8 +111,8 @@ export function InternalNotificationsBell() {
                           notification.template_code}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-slate-400">
-                        #{notification.payload_json?.ticket_number ?? "-"}{" "}
-                        {notification.payload_json?.subject ?? ""}
+                        #{String(notification.payload_json?.ticket_number ?? "-")}{" "}
+                        {String(notification.payload_json?.subject ?? "")}
                       </div>
                       <div className="mt-2 flex items-center gap-2">
                         {ticketId && (
