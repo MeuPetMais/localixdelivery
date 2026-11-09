@@ -755,7 +755,12 @@ function BuilderEditor({
       })
       .select("*")
       .single();
-    if (data) setGroups((g) => [...g, { ...data, builder_options: [] }]);
+    if (data) setGroups((g) => [...g, {
+      ...data,
+      source_type: data.source_type === "MENU_ITEMS" ? "MENU_ITEMS" as const : "MANUAL" as const,
+      price_strategy: data.price_strategy === "MAX_MENU_ITEM" ? "MAX_MENU_ITEM" as const : "SUM" as const,
+      builder_options: [],
+    }]);
   }
 
   async function saveGroup(g: EditorGroup) {
