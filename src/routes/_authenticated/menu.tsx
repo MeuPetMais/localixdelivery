@@ -1099,7 +1099,10 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
       .select("id")
       .single();
     setSavingId(null);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setEditingOptionId((created as { id: string } | null)?.id ?? null);
     await refresh();
   }
@@ -1127,7 +1130,10 @@ export function ProductOptionsSection({ productId }: { productId: string }) {
     setSavingId(option.id);
     const { error } = await supabase.from("product_options").delete().eq("id", option.id);
     setSavingId(null);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setEditingOptionId(null);
     await refresh();
     toast.success("Opção excluída");
