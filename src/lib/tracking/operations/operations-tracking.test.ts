@@ -14,6 +14,7 @@ function mkActive(over: Partial<OperationsActiveDelivery> = {}): OperationsActiv
     customer_name: "Ana", neighborhood: "Centro",
     driver_id: "d1", driver_name: "João",
     status: "EM_ROTA", eta_seconds: 600, confidence: "MEDIUM",
+    last_lat: null, last_lng: null, last_accuracy: null,
     last_seen_at: new Date(now - 5_000).toISOString(),
     started_at: new Date(now - 5 * 60_000).toISOString(),
     minutes_since_start: 5, is_delayed: false, ...over,
