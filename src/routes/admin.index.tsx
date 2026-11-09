@@ -236,7 +236,7 @@ function Kpi({
 }: {
   label: string;
   value: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   loading?: boolean;
   tone?: "up" | "down";
 }) {
