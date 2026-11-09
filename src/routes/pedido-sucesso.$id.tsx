@@ -586,7 +586,9 @@ function SuccessPage() {
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
                   } catch (err: unknown) {
-                    toast.error(err instanceof Error ? err.message : "Não foi possível cancelar o pedido");
+                    toast.error(
+                      err instanceof Error ? err.message : "Não foi possível cancelar o pedido",
+                    );
                   } finally {
                     setCancelling(false);
                   }
