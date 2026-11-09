@@ -45,7 +45,7 @@ export function mapMpStatus(s: string | null | undefined): PaymentIntentStatus {
   }
 }
 
-export type InvokeFn = (body: Record<string, unknown>) => Promise<any>;
+export type InvokeFn = (body: Record<string, unknown>) => Promise<unknown>;
 
 // Orquestração pura: pode ser testada sem o runtime do TanStack Start.
 export async function runIntent(
