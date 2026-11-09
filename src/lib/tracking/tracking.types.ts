@@ -35,7 +35,7 @@ export interface TrackingSnapshot {
   last_seen_at: string | null;
   device_captured_at?: string | null;
   server_received_at?: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   correlation_id: string;
   created_at: string;
   updated_at: string;
@@ -51,7 +51,7 @@ export interface TrackingTimelineEntry {
   previous_status: TrackingStatus | null;
   current_status: TrackingStatus | null;
   actor: TrackingActor;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   correlation_id: string;
   created_at: string;
 }
