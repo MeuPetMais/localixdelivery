@@ -53,7 +53,7 @@ export interface EtaHistoryRecord {
   window_min_seconds: number | null;
   window_max_seconds: number | null;
   correlation_id: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
