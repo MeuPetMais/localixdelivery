@@ -172,7 +172,7 @@ function MyOrders() {
     );
   }
 
-  const meta = (user?.user_metadata ?? {}) as Record<string, any>;
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const displayName =
     (meta.full_name as string | undefined) ??
     (meta.name as string | undefined) ??
