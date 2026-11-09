@@ -26,7 +26,9 @@ export function DemoBanner() {
   function dismiss() {
     try {
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    } catch {}
+    } catch {
+      // Best-effort UI operation; failure is non-critical.
+    }
     setVisible(false);
   }
 
