@@ -6725,6 +6725,9 @@ export type Database = {
           restaurant_id: string
           status: string
           updated_at: string
+          last_accuracy: number | null
+          device_captured_at: string | null
+          server_received_at: string | null
         }
         Insert: {
           assignment_id: string
@@ -6744,6 +6747,9 @@ export type Database = {
           restaurant_id: string
           status: string
           updated_at?: string
+          last_accuracy?: number | null
+          device_captured_at?: string | null
+          server_received_at?: string | null
         }
         Update: {
           assignment_id?: string
@@ -6763,6 +6769,9 @@ export type Database = {
           restaurant_id?: string
           status?: string
           updated_at?: string
+          last_accuracy?: number | null
+          device_captured_at?: string | null
+          server_received_at?: string | null
         }
         Relationships: [
           {
