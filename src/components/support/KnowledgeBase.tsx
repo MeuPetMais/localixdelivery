@@ -442,13 +442,13 @@ export function KnowledgeBase() {
   const articlesQuery = useQuery({
     queryKey: ["support-knowledge-published"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("support_articles") as any)
+      const { data, error } = await supabase.from("support_articles")
         .select("id, category, title, content, video_url, position, published, archived")
         .eq("published", true)
         .eq("archived", false)
         .order("position", { ascending: true });
       if (error) throw error;
-      return (data ?? []).map((row: any): Article => ({
+      return (data ?? []).map((row): Article => ({
         id: row.id,
         category: normalizeCategory(row.category),
         title: row.title,
