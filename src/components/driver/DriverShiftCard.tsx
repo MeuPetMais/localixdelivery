@@ -35,7 +35,7 @@ export function DriverShiftCard() {
       toast.success("Turno iniciado");
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Erro ao iniciar turno"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro ao iniciar turno"),
   });
   const pause = useMutation({
     mutationFn: useServerFn(pauseShift),
