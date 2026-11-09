@@ -541,11 +541,11 @@ function CategoryDialog({
         setRemoveImage(false);
       }
       await onSaved();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (uploaded && !category) {
         deleteCategoryImage(restaurantId, targetCategoryId).catch(() => {});
       }
-      toast.error(error?.message ?? "Falha ao salvar categoria");
+      toast.error(error instanceof Error ? error.message : "Falha ao salvar categoria");
     } finally {
       setLoading(false);
     }
