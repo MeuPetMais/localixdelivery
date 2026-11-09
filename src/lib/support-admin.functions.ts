@@ -121,7 +121,7 @@ async function auditSupportTicket(input: {
   metadata?: Record<string, unknown>;
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin.from("support_ticket_audit").insert({
+  await (supabaseAdmin.from("support_ticket_audit") as any).insert({
     ticket_id: input.ticketId,
     actor_id: input.actorId,
     actor_role: input.actorRole,
@@ -142,7 +142,7 @@ async function auditSupportTeam(input: {
   metadata?: Record<string, unknown>;
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin.from("support_team_audit").insert({
+  await (supabaseAdmin.from("support_team_audit") as any).insert({
     actor_id: input.actorId,
     target_user_id: input.targetUserId ?? null,
     target_email: input.targetEmail ?? null,
@@ -218,7 +218,7 @@ async function loadAssigneeLabels(supabaseAdmin: any, userIds: string[]) {
   const unique = Array.from(new Set(userIds.filter(Boolean)));
   if (unique.length === 0) return new Map<string, string>();
 
-  const { data: members } = await supabaseAdmin.from("support_team_members")
+  const { data: members } = await (supabaseAdmin.from("support_team_members") as any)
     .select("user_id, name, email")
     .in("user_id", unique);
   const labels = new Map<string, string>();
@@ -259,7 +259,7 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     if (role === "support_agent" && allowedCategories.length === 0)
       return { tickets: [], metrics: buildSupportMetrics([]) };
 
-    let query = supabaseAdmin.from("support_tickets")
+    let query = (supabaseAdmin.from("support_tickets") as any)
       .select("*, restaurants(id, name, slug)")
       .order("last_message_at", { ascending: false })
       .limit(500);
@@ -278,7 +278,7 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const ids = (rows ?? []).map((row: any) => row.id);
-    const { data: messages } = await supabaseAdmin.from("support_messages")
+    const { data: messages } = await (supabaseAdmin.from("support_messages") as any)
       .select("ticket_id, body, created_at, internal_note")
       .in("ticket_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .eq("internal_note", false)
@@ -340,7 +340,7 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       .maybeSingle();
     const settings = normalizeSlaSettings(settingsRow);
 
-    let query = supabaseAdmin.from("support_tickets")
+    let query = (supabaseAdmin.from("support_tickets") as any)
       .select("*, restaurants(id, name, slug)")
       .order("created_at", { ascending: false })
       .limit(2000);
@@ -361,7 +361,7 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
     );
 
     const ids = (rows ?? []).map((row: any) => row.id);
-    const { data: audits } = await supabaseAdmin.from("support_ticket_audit")
+    const { data: audits } = await (supabaseAdmin.from("support_ticket_audit") as any)
       .select("ticket_id, before, after, created_at")
       .in("ticket_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: true });
@@ -427,7 +427,7 @@ export const getAdminSupportTicket = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role, allowedCategories } = await assertSupportRole(context.userId);
 
-    const { data: ticket, error } = await supabaseAdmin.from("support_tickets")
+    const { data: ticket, error } = await (supabaseAdmin.from("support_tickets") as any)
       .select("*, restaurants(id, name, slug, whatsapp_phone)")
       .eq("id", data.ticketId)
       .single();
@@ -471,7 +471,7 @@ export const listSupportTeam = createServerFn({ method: "GET" })
     if (!canSupport(role, "manage_team") && role !== "support_manager")
       throw new Error("Forbidden");
 
-    const { data, error } = await supabaseAdmin.from("support_team_members")
+    const { data, error } = await (supabaseAdmin.from("support_team_members") as any)
       .select("user_id, name, email, role, active, created_at")
       .eq("active", true)
       .in("role", managedSupportRoles);
@@ -836,7 +836,7 @@ export const listInternalNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { data, error } = await supabaseAdmin.from("notifications")
+    const { data, error } = await (supabaseAdmin.from("notifications") as any)
       .select("id, template_code, priority, payload_json, read_at, created_at")
       .eq("recipient_id", context.userId)
       .eq("recipient_type", "admin")
@@ -854,7 +854,7 @@ export const markInternalNotificationRead = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => notificationIdSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { error } = await supabaseAdmin.from("notifications")
+    const { error } = await (supabaseAdmin.from("notifications") as any)
       .update({ read_at: new Date().toISOString() })
       .eq("id", data.id)
       .eq("recipient_id", context.userId);
@@ -925,22 +925,22 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertAdmin(context.userId);
 
-    const { data: members, error } = await supabaseAdmin.from("support_team_members")
+    const { data: members, error } = await (supabaseAdmin.from("support_team_members") as any)
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
     const userIds = (members ?? []).map((member: any) => member.user_id);
     const [ticketsQ, messagesQ, invitesQ] = await Promise.all([
-      supabaseAdmin.from("support_tickets")
+      (supabaseAdmin.from("support_tickets") as any)
         .select("assigned_to, status, created_at, first_response_at, resolved_at, last_message_at")
         .in("assigned_to", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]),
-      supabaseAdmin.from("support_messages")
+      (supabaseAdmin.from("support_messages") as any)
         .select("author_id, created_at")
         .eq("author_type", "suporte")
         .in("author_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"])
         .order("created_at", { ascending: false }),
-      supabaseAdmin.from("support_team_invites")
+      (supabaseAdmin.from("support_team_invites") as any)
         .select("id, name, email, role, allowed_categories, status, expires_at, created_at")
         .eq("status", "pending")
         .order("created_at", { ascending: false }),
@@ -1013,7 +1013,7 @@ export const inviteSupportTeamMember = createServerFn({ method: "POST" })
     const expiresAt = new Date(Date.now() + 7 * 24 * 3_600_000).toISOString();
     const allowed = data.allowedCategories ?? [];
 
-    const { data: invite, error } = await supabaseAdmin.from("support_team_invites")
+    const { data: invite, error } = await (supabaseAdmin.from("support_team_invites") as any)
       .insert({
         name: data.name,
         email,
@@ -1064,7 +1064,7 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const tokenHash = sha256(data.token);
-    const { data: invite, error } = await supabaseAdmin.from("support_team_invites")
+    const { data: invite, error } = await (supabaseAdmin.from("support_team_invites") as any)
       .select("*")
       .eq("token_hash", tokenHash)
       .maybeSingle();
@@ -1074,7 +1074,7 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
     try {
       assertSupportInviteNotExpired(invite);
     } catch (inviteError) {
-      await supabaseAdmin.from("support_team_invites")
+      await (supabaseAdmin.from("support_team_invites") as any)
         .update({ status: "expired" })
         .eq("id", invite.id)
         .eq("status", "pending");
@@ -1102,7 +1102,7 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
       accepted_at: new Date().toISOString(),
     };
 
-    const { error: memberError } = await supabaseAdmin.from("support_team_members").upsert(
+    const { error: memberError } = await (supabaseAdmin.from("support_team_members") as any).upsert(
       memberRow,
       { onConflict: "user_id" },
     );
@@ -1119,7 +1119,7 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
     } as any);
     if (roleError) throw new Error(roleError.message);
 
-    const { error: inviteUpdateError } = await supabaseAdmin.from("support_team_invites")
+    const { error: inviteUpdateError } = await (supabaseAdmin.from("support_team_invites") as any)
       .update({
         status: "accepted",
         accepted_by: context.userId,
@@ -1170,7 +1170,7 @@ export const updateSupportTeamMemberRole = createServerFn({ method: "POST" })
 
     const patch: Record<string, unknown> = { role: data.role };
     if (data.allowedCategories) patch.allowed_categories = data.allowedCategories;
-    const { data: after, error } = await supabaseAdmin.from("support_team_members")
+    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
       .update(patch)
       .eq("user_id", data.userId)
       .select("*")
@@ -1223,7 +1223,7 @@ export const setSupportTeamMemberActive = createServerFn({ method: "POST" })
       .single();
     if (beforeError) throw new Error(beforeError.message);
 
-    const { data: after, error } = await supabaseAdmin.from("support_team_members")
+    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
       .update({ active: data.active })
       .eq("user_id", data.userId)
       .select("*")
@@ -1266,7 +1266,7 @@ export const removeSupportTeamAccess = createServerFn({ method: "POST" })
       .single();
     if (beforeError) throw new Error(beforeError.message);
 
-    const { data: after, error } = await supabaseAdmin.from("support_team_members")
+    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
       .update({ active: false })
       .eq("user_id", data.userId)
       .select("*")
