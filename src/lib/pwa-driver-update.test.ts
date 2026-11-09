@@ -6,7 +6,7 @@ const setNav = (v: unknown) => {
 };
 
 describe("checkForDriverAppUpdate", () => {
-  const original = (globalThis as any).navigator;
+  const original = globalThis.navigator;
   afterEach(() => setNav(original));
 
   it("returns 'unsupported' when serviceWorker is missing", async () => {
