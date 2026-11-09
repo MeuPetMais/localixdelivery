@@ -126,7 +126,8 @@ function SupportTicketDetailPage() {
       toast.success("Chamado assumido");
       invalidate();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao assumir"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao assumir"),
   });
   const assign = useMutation({
     mutationFn: (assigneeId: string | null) => assignFn({ data: { ticketId, assigneeId } }),
@@ -134,18 +135,21 @@ function SupportTicketDetailPage() {
       toast.success("Responsavel atualizado");
       invalidate();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao atribuir"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atribuir"),
   });
   const updateMeta = useMutation({
     mutationFn: (data: { priority?: SupportPriority; category?: SupportCategory }) =>
       metaFn({ data: { ticketId, ...data } }),
     onSuccess: invalidate,
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao atualizar"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar"),
   });
   const updateStatus = useMutation({
     mutationFn: (status: LegacySupportStatus) => statusFn({ data: { ticketId, status } }),
     onSuccess: invalidate,
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao mudar status"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao mudar status"),
   });
   const sendReply = useMutation({
     mutationFn: (body: string) => sendFn({ data: { ticketId, body } }),
@@ -154,7 +158,8 @@ function SupportTicketDetailPage() {
       toast.success("Resposta enviada");
       invalidate();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao enviar resposta"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao enviar resposta"),
   });
   const sendNote = useMutation({
     mutationFn: (body: string) => sendFn({ data: { ticketId, body, internalNote: true } }),
@@ -163,7 +168,8 @@ function SupportTicketDetailPage() {
       toast.success("Nota interna registrada");
       invalidate();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao registrar nota"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao registrar nota"),
   });
 
   const ticket = detail.data?.ticket;
