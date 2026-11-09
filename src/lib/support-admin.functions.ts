@@ -690,7 +690,8 @@ export const listSupportQuickReplies = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { data, error } = await supabaseAdmin.from("support_quick_replies")
+    const { data, error } = await supabaseAdmin
+      .from("support_quick_replies")
       .select("id, code, title, body, category, position")
       .eq("active", true)
       .order("position", { ascending: true });
@@ -711,7 +712,8 @@ export const suggestSupportArticles = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => articleSuggestionSchema.parse(d ?? { query: "" }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin.from("support_articles")
+    const { data: rows, error } = await supabaseAdmin
+      .from("support_articles")
       .select("id, title, content, category, position, published, video_url")
       .eq("published", true)
       .eq("archived", false)
@@ -744,7 +746,8 @@ export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
     const { supabaseAdmin, role } = await assertSupportRole(context.userId);
     if (role === "support_agent") throw new Error("Forbidden");
 
-    let query = supabaseAdmin.from("support_articles")
+    let query = supabaseAdmin
+      .from("support_articles")
       .select("*")
       .order("position", { ascending: true })
       .order("updated_at", { ascending: false });
@@ -806,11 +809,13 @@ export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST"
       patch.archived = data.archived;
       if (data.archived) patch.published = false;
     }
-    const { data: before } = await supabaseAdmin.from("support_articles")
+    const { data: before } = await supabaseAdmin
+      .from("support_articles")
       .select("*")
       .eq("id", data.id)
       .single();
-    const { data: after, error } = await supabaseAdmin.from("support_articles")
+    const { data: after, error } = await supabaseAdmin
+      .from("support_articles")
       .update(patch)
       .eq("id", data.id)
       .select("*")
