@@ -33,7 +33,9 @@ export function translateAuthError(err: unknown, context?: string): FriendlyAuth
   // Sempre registrar o erro técnico completo para diagnóstico.
   try {
     console.error(`[auth${context ? `:${context}` : ""}]`, err);
-  } catch {}
+  } catch {
+    // Non-critical best-effort operation; continue safely.
+  }
 
   const e = (err ?? {}) as RawAuthError;
   const code = (e.code ?? "").toLowerCase();
