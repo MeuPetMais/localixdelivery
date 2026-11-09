@@ -91,8 +91,7 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
   const builderIds = favs.filter((f) => f.item_kind === "builder").map((f) => f.item_id);
 
   const [restRes, itemRes, builderRes] = await Promise.all([
-    supabase.from("restaurants_public").select("id, name, slug, logo_url")
-      .in("id", restaurantIds),
+    supabase.from("restaurants_public").select("id, name, slug, logo_url").in("id", restaurantIds),
     menuIds.length
       ? supabase
           .from("menu_items")
