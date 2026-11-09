@@ -113,8 +113,10 @@ function SupportTeamPage() {
     onError: (error: any) => toast.error(error?.message ?? "Falha ao remover acesso"),
   });
 
-  const members = query.data?.members ?? [];
-  const invites = query.data?.invites ?? [];
+  type SupportTeamRow = { user_id: string; name: string; email: string; role: ManagedSupportRole; active: boolean; active_tickets: number; resolved_tickets: number; avg_first_response_minutes: number; last_activity_at?: string | null };
+  type PendingInvite = { id: string; name: string; email: string; role: ManagedSupportRole; expires_at: string };
+  const members: SupportTeamRow[] = query.data?.members ?? [];
+  const invites: PendingInvite[] = query.data?.invites ?? [];
   const totals = useMemo(
     () => ({
       active: members.filter((member) => member.active).length,
