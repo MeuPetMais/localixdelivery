@@ -14,6 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
+      builder_option_ingredients: {
+        Row: {
+          id: string
+          builder_option_id: string
+          ingredient_id: string
+          quantity: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          builder_option_id: string
+          ingredient_id: string
+          quantity: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          builder_option_id?: string
+          ingredient_id?: string
+          quantity?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partner_lead_activities: {
+        Row: {
+          id: string
+          lead_id: string
+          activity_type: string
+          note: string
+          occurred_at: string
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          activity_type: string
+          note: string
+          occurred_at?: string
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          activity_type?: string
+          note?: string
+          occurred_at?: string
+          created_at?: string
+          created_by?: string
+        }
+        Relationships: []
+      }
+      partner_leads: {
+        Row: {
+          id: string
+          business_name: string
+          contact_name: string
+          phone: string
+          email: string | null
+          segment: string | null
+          city: string | null
+          neighborhood: string | null
+          estimated_monthly_orders: number | null
+          current_channels: string[] | null
+          main_pain: string | null
+          is_decision_maker: boolean | null
+          fit_score: number | null
+          lead_class: string | null
+          status: string
+          assigned_to: string | null
+          next_action_at: string | null
+          loss_reason: string | null
+          source: string
+          medium: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_term: string | null
+          meta_campaign_id: string | null
+          meta_adset_id: string | null
+          meta_ad_id: string | null
+          creative_code: string | null
+          external_ref: string | null
+          restaurant_id: string | null
+          converted_at: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          has_own_customer_base: boolean | null
+          has_recurring_customers: boolean | null
+          interested_in_own_channel: boolean | null
+          has_structured_operation: boolean | null
+          has_active_marketing: boolean | null
+          committed_to_promotion: boolean | null
+        }
+        Insert: {
+          id?: string
+          business_name: string
+          contact_name: string
+          phone: string
+          email?: string | null
+          segment?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          estimated_monthly_orders?: number | null
+          current_channels?: string[] | null
+          main_pain?: string | null
+          is_decision_maker?: boolean | null
+          fit_score?: number | null
+          lead_class?: string | null
+          status?: string
+          assigned_to?: string | null
+          next_action_at?: string | null
+          loss_reason?: string | null
+          source?: string
+          medium?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
+          meta_campaign_id?: string | null
+          meta_adset_id?: string | null
+          meta_ad_id?: string | null
+          creative_code?: string | null
+          external_ref?: string | null
+          restaurant_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          has_own_customer_base?: boolean | null
+          has_recurring_customers?: boolean | null
+          interested_in_own_channel?: boolean | null
+          has_structured_operation?: boolean | null
+          has_active_marketing?: boolean | null
+          committed_to_promotion?: boolean | null
+        }
+        Update: {
+          id?: string
+          business_name?: string
+          contact_name?: string
+          phone?: string
+          email?: string | null
+          segment?: string | null
+          city?: string | null
+          neighborhood?: string | null
+          estimated_monthly_orders?: number | null
+          current_channels?: string[] | null
+          main_pain?: string | null
+          is_decision_maker?: boolean | null
+          fit_score?: number | null
+          lead_class?: string | null
+          status?: string
+          assigned_to?: string | null
+          next_action_at?: string | null
+          loss_reason?: string | null
+          source?: string
+          medium?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
+          meta_campaign_id?: string | null
+          meta_adset_id?: string | null
+          meta_ad_id?: string | null
+          creative_code?: string | null
+          external_ref?: string | null
+          restaurant_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          has_own_customer_base?: boolean | null
+          has_recurring_customers?: boolean | null
+          interested_in_own_channel?: boolean | null
+          has_structured_operation?: boolean | null
+          has_active_marketing?: boolean | null
+          committed_to_promotion?: boolean | null
+        }
+        Relationships: []
+      }
       support_quick_replies: {
         Row: {
           id: string
