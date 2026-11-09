@@ -17,31 +17,8 @@ import { APP_BASE_URL, DRIVER_PASSWORD_RESET_APP_URL } from "@/lib/driver-invite
 
 const VEHICLES = ["moto", "bicicleta", "carro", "a_pe"] as const;
 
-type SupabaseLike = {
-  rpc: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  from: (table: string) => {
-    select: (columns?: string) => unknown;
-  };
-};
-
-type RestaurantScopedClient = {
-  from: (table: string) => {
-    select: (columns?: string) => {
-      eq: (
-        column: string,
-        value: string,
-      ) => {
-        maybeSingle: () => Promise<{
-          data: { owner_id?: string | null } | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
+type SupabaseLike = import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>;
+type RestaurantScopedClient = SupabaseLike;
 
 type DriverLookupRow = {
   id: string;
@@ -283,7 +260,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
       .is("owner_id", null);
 
     const driver = (rows ?? []).find(
-      (r: DriverLookupRow) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
+      (r) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
     );
 
     if (!driver) {
