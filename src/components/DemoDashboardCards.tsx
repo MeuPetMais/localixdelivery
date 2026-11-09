@@ -50,7 +50,9 @@ function playChime() {
     o.start();
     o.stop(ctx.currentTime + 0.5);
     setTimeout(() => ctx.close(), 600);
-  } catch {}
+  } catch {
+    // Best-effort UI operation; failure is non-critical.
+  }
 }
 
 export function DemoDashboardCards({
