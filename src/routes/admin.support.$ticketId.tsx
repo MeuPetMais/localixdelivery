@@ -311,8 +311,8 @@ function SupportTicketDetailPage() {
             {(quickReplies.data ?? []).length > 0 && (
               <div className="mb-3 flex flex-wrap gap-2">
                 {(quickReplies.data ?? [])
-                  .filter((item: any) => !item.category || item.category === ticket.category)
-                  .map((item: any) => (
+                  .filter((item) => !item.category || item.category === ticket.category)
+                  .map((item) => (
                     <Button
                       key={item.id}
                       type="button"
@@ -408,7 +408,7 @@ function SupportTicketDetailPage() {
                   Sem sugestoes publicadas para este assunto.
                 </div>
               ) : (
-                (articleSuggestions.data ?? []).map((article: any) => (
+                (articleSuggestions.data ?? []).map((article) => (
                   <div
                     key={article.id}
                     className="rounded-md border border-slate-800 bg-slate-950 p-3"
