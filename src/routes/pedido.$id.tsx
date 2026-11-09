@@ -400,8 +400,8 @@ function TrackOrder() {
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
-                  } catch (err: any) {
-                    toast.error(err?.message ?? "Não foi possível cancelar o pedido");
+                  } catch (err: unknown) {
+                    toast.error(err instanceof Error ? err.message : "Não foi possível cancelar o pedido");
                   } finally {
                     setCancelling(false);
                   }
@@ -446,7 +446,7 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-function InfoRow({ Icon, label, value }: { Icon: any; label: string; value: string }) {
+function InfoRow({ Icon, label, value }: { Icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
