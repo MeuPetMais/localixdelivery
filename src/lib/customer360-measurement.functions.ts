@@ -136,7 +136,7 @@ export const recordGrowthMeasurementEvent = createServerFn({ method: "POST" })
       parent_event_id: data.parentEventId ?? null,
       order_id: orderId,
       attributed_order_total: attributedOrderTotal,
-      metadata: data.metadata ?? {},
+      metadata: JSON.parse(JSON.stringify(data.metadata ?? {})) as import("@/integrations/supabase/types").Json,
       idempotency_key: data.idempotencyKey,
     };
 
