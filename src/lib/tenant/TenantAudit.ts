@@ -17,7 +17,7 @@ export interface AuditRepository {
 export class TenantAudit {
   constructor(private repo: AuditRepository) {}
 
-  async diff<T extends Record<string, any>>(
+  async diff<T extends Record<string, unknown>>(
     restaurantId: string,
     group: ConfigGroup,
     before: T,
