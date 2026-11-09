@@ -69,7 +69,7 @@ export const Route = createFileRoute("/partner-growth")({
     if (error || !data.user) {
       throw redirect({
         to: "/auth",
-        search: { mode: undefined } as { mode: string | undefined },
+        search: { mode: undefined },
       });
     }
 
@@ -134,7 +134,7 @@ function PartnerGrowthPage() {
     navigate({
       to: "/auth",
       replace: true,
-      search: { mode: undefined } as { mode: string | undefined },
+      search: { mode: undefined },
     });
   }
 
