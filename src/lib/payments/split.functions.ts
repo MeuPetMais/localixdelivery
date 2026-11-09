@@ -121,7 +121,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         }
       : null;
 
-    let plan = planSplit({ snapshot, account, reconciliation, payment });
+    const plan = planSplit({ snapshot, account, reconciliation, payment });
 
     const evtPayload = (extra: Record<string, any> = {}) => ({
       provider: "mercadopago",
