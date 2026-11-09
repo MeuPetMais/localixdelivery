@@ -1087,7 +1087,9 @@ Deno.serve(async (req) => {
         });
         try {
           await cancelPayment(token, String(mp.id));
-        } catch (_) {}
+        } catch (_) {
+          // Best-effort cleanup; failure must not interrupt the main flow.
+        }
         await sb
           .from("order_payment")
           .update({
@@ -1372,7 +1374,9 @@ Deno.serve(async (req) => {
       }
       try {
         await cancelPayment(token, existing.payment_id);
-      } catch (_) {}
+      } catch (_) {
+        // Best-effort cleanup; failure must not interrupt the main flow.
+      }
       await sb
         .from("order_payment")
         .update({
