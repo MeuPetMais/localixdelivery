@@ -199,8 +199,8 @@ Responda APENAS com uma lista, um insight por linha, sem numeração nem título
         .map((l) => l.replace(/^[-•\d.\s]+/, "").trim())
         .filter((l) => l.length > 4)
         .slice(0, 6);
-    } catch (e: any) {
-      insights = [`⚠️ ${e?.message ?? "Falha ao gerar insights agora."}`];
+    } catch (e: unknown) {
+      insights = [`⚠️ ${e instanceof Error ? e.message : "Falha ao gerar insights agora."}`];
     }
 
     return { metrics, insights };
