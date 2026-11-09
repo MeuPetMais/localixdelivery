@@ -15,7 +15,7 @@ export const Route = createFileRoute("/escolher-ambiente")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth", search: { mode: undefined } as { mode: string | undefined } });
+    if (!data.user) throw redirect({ to: "/auth", search: { mode: undefined } });
     const admin = await isCurrentUserAdmin(data.user.id);
     if (!admin) throw redirect({ to: "/dashboard" });
     return { user: data.user };
