@@ -220,7 +220,7 @@ const COLUMNS: Array<{
 
 const OPERATIONAL_COLUMNS = COLUMNS.filter((column) => column.key !== "cancelled");
 
-const NEXT_BY_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string; icon: any }>> =
+const NEXT_BY_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string; icon: React.ComponentType<{ className?: string }> }>> =
   {
     pago: { to: "aceito", label: "Aceitar", icon: Check },
     aceito: { to: "em_preparo", label: "Iniciar preparo", icon: Flame },
@@ -395,7 +395,7 @@ function OrdersPage() {
         .order("assigned_at", { ascending: false });
       if (error) throw error;
       return (data ?? []).map(
-        (row: any): DeliveryAssignmentSummary => ({
+        (row): DeliveryAssignmentSummary => ({
           id: row.id,
           order_id: row.order_id,
           driver_id: row.driver_id,
@@ -948,7 +948,7 @@ function OrderCard({
   onDragStart: (e: React.DragEvent) => void;
   onAdvance?: () => void;
   advanceLabel?: string;
-  AdvanceIcon?: any;
+  AdvanceIcon?: React.ComponentType<{ className?: string }>;
   onCancel?: () => void;
   isCancelling?: boolean;
   onPrint: () => void;
