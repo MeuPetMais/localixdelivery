@@ -98,21 +98,27 @@ function SuccessPage() {
     if (typeof window === "undefined") return;
     try {
       setWaUrl(window.sessionStorage.getItem(`wa-url:${id}`));
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
     // Limpa marcadores de pedido pendente — usuário chegou ao tracking.
     try {
       for (let i = window.sessionStorage.length - 1; i >= 0; i--) {
         const k = window.sessionStorage.key(i);
         if (k && k.startsWith("pending-order:")) window.sessionStorage.removeItem(k);
       }
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
     // Detecta retorno do Mercado Pago (?paid=1) e mostra overlay de confirmação.
     // Apenas para pagamentos online — offline (dinheiro, cartão na entrega, vale)
     // nunca passam pelo gateway e não devem exibir "Pagamento confirmado".
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("paid") === "1") setShowPaidOverlay(true);
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
   }, [id]);
 
   // Countdown do overlay de retorno do pagamento.
@@ -124,7 +130,9 @@ function SuccessPage() {
         const url = new URL(window.location.href);
         url.searchParams.delete("paid");
         window.history.replaceState({}, "", url.toString());
-      } catch {}
+      } catch {
+        // Best-effort cleanup; failure must not interrupt the main flow.
+      }
       return;
     }
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -263,7 +271,9 @@ function SuccessPage() {
       try {
         await (navigator as any).share({ title: `Pedido #${order?.order_number}`, text, url });
         return;
-      } catch {}
+      } catch {
+        // Best-effort cleanup; failure must not interrupt the main flow.
+      }
     }
     try {
       await navigator.clipboard.writeText(text);
@@ -568,7 +578,9 @@ function SuccessPage() {
                         window.sessionStorage.removeItem(`repeat:${slug}`);
                         window.sessionStorage.removeItem(`wa-url:${id}`);
                       }
-                    } catch {}
+                    } catch {
+                      // Best-effort cleanup; failure must not interrupt the main flow.
+                    }
                     setOrder((prev: any) => (prev ? { ...prev, status: "cancelado" } : prev));
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
