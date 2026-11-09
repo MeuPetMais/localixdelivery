@@ -150,7 +150,9 @@ export async function disablePush(): Promise<boolean> {
   if (sub) {
     try {
       await removePushSubscription(sub.endpoint);
-    } catch {}
+    } catch {
+      // Best-effort cleanup; the main flow must continue.
+    }
     await sub.unsubscribe().catch(() => {});
   }
   return true;
