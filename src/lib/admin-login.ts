@@ -17,7 +17,7 @@ export type AdminLoginSupabase = {
     select: (columns: "role") => {
       eq: (column: string, value: string) => {
         eq: (column: string, value: "admin") => {
-          maybeSingle: () => Promise<{ data?: { role: string } | null; error?: unknown }>;
+          maybeSingle: () => PromiseLike<{ data?: { role: string } | null; error?: unknown }>;
         };
       };
     };
