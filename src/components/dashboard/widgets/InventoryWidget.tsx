@@ -109,7 +109,7 @@ function Stat({
   label: string;
   value: number;
   tone?: "critical";
-  icon?: any;
+  icon?: React.ComponentType<{ className?: string }>;
 }) {
   const color = tone === "critical" ? "text-destructive" : "text-foreground";
   return (
