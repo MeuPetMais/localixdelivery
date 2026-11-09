@@ -773,6 +773,8 @@ export type Database = {
           min_select: number
           name: string
           position: number
+          source_type: string
+          price_strategy: string
         }
         Insert: {
           builder_id: string
@@ -783,6 +785,8 @@ export type Database = {
           min_select?: number
           name: string
           position?: number
+          source_type?: string
+          price_strategy?: string
         }
         Update: {
           builder_id?: string
@@ -793,6 +797,8 @@ export type Database = {
           min_select?: number
           name?: string
           position?: number
+          source_type?: string
+          price_strategy?: string
         }
         Relationships: [
           {
@@ -813,6 +819,7 @@ export type Database = {
           name: string
           position: number
           price_delta: number
+          menu_item_id: string | null
         }
         Insert: {
           created_at?: string
@@ -822,6 +829,7 @@ export type Database = {
           name: string
           position?: number
           price_delta?: number
+          menu_item_id?: string | null
         }
         Update: {
           created_at?: string
@@ -831,6 +839,7 @@ export type Database = {
           name?: string
           position?: number
           price_delta?: number
+          menu_item_id?: string | null
         }
         Relationships: [
           {
