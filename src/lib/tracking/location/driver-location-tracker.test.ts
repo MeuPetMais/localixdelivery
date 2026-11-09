@@ -6,8 +6,8 @@ import {
 } from "./driver-location-access";
 
 function makeGeo() {
-  let success: ((position: any) => void) | null = null;
-  let error: ((error: any) => void) | undefined;
+  let success: Parameters<GeolocationLike["watchPosition"]>[0] | null = null;
+  let error: Parameters<GeolocationLike["watchPosition"]>[1] | undefined;
   const clearWatch = vi.fn();
   const geo: GeolocationLike = {
     watchPosition: vi.fn((ok, fail) => {
