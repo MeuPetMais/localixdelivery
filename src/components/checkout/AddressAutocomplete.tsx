@@ -90,8 +90,8 @@ export function AddressAutocomplete({
         setQuery("");
         onChange({ ...details });
         setRecent(service.getRecent());
-      } catch (e: any) {
-        setError(e?.message ?? "Não foi possível carregar o endereço");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Não foi possível carregar o endereço");
       }
     },
     [onChange, restaurantSlug, service],
