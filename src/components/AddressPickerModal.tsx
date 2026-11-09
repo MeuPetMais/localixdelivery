@@ -112,8 +112,8 @@ export function AddressPickerModal({
       toast.success(editing ? "Endereço atualizado" : "Endereço salvo");
       onSelect?.(saved);
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao salvar");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
       setSaving(false);
     }
@@ -124,8 +124,8 @@ export function AddressPickerModal({
       await setDefaultAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", userId] });
       toast.success("Definido como principal");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -135,8 +135,8 @@ export function AddressPickerModal({
       await deleteAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", userId] });
       toast.success("Endereço excluído");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
