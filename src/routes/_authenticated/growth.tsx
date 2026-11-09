@@ -442,7 +442,7 @@ function Results({ measurement }: { measurement: any }) {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between gap-3">
