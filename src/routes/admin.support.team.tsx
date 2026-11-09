@@ -83,7 +83,8 @@ function SupportTeamPage() {
       toast.success("Convite criado");
       refresh();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao convidar"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao convidar"),
   });
 
   const updateRole = useMutation({
@@ -92,7 +93,8 @@ function SupportTeamPage() {
       toast.success("Papel atualizado");
       refresh();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao alterar papel"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao alterar papel"),
   });
 
   const setActive = useMutation({
@@ -101,7 +103,8 @@ function SupportTeamPage() {
       toast.success("Status atualizado");
       refresh();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao atualizar status"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar status"),
   });
 
   const removeAccess = useMutation({
@@ -110,7 +113,8 @@ function SupportTeamPage() {
       toast.success("Acesso removido");
       refresh();
     },
-    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Falha ao remover acesso"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao remover acesso"),
   });
 
   type SupportTeamRow = {
