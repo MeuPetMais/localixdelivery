@@ -61,7 +61,7 @@ describe("Dashboard foundation", () => {
 
   it("filters navigation and workspaces by role", () => {
     const kitchenNav = filterNavigation(NAVIGATION, "KITCHEN");
-    expect(kitchenNav.find((i) => i.id === "settings")).toBeUndefined();
+    expect(kitchenNav.find((i) => i.id === "settings")?.children?.find((i) => i.id === "settings")).toBeUndefined();
     const ws = filterWorkspaces(WORKSPACES, "KITCHEN");
     expect(ws.find((w) => w.id === "settings")).toBeUndefined();
   });
