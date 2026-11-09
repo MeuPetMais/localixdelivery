@@ -22,7 +22,7 @@ const CancelInputSchema = z.object({
   orderId: z.string().uuid(),
 });
 
-function isApprovedMercadoPagoPayment(payment: any): boolean {
+function isApprovedMercadoPagoPayment(payment: { provider?: string | null; status?: string | null; payment_id?: string | number | null } | null | undefined): boolean {
   return (
     String(payment?.provider ?? "") === "mercado_pago" &&
     String(payment?.status ?? "").toUpperCase() === "APPROVED" &&
