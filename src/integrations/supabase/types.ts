@@ -14,6 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
+      support_quick_replies: {
+        Row: {
+          id: string
+          code: string
+          title: string
+          body: string
+          category: string | null
+          active: boolean
+          position: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          title: string
+          body: string
+          category?: string | null
+          active?: boolean
+          position?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          title?: string
+          body?: string
+          category?: string | null
+          active?: boolean
+          position?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_team_audit: {
+        Row: {
+          id: string
+          actor_id: string | null
+          target_user_id: string | null
+          target_email: string | null
+          action: string
+          before: Json | null
+          after: Json | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          target_user_id?: string | null
+          target_email?: string | null
+          action: string
+          before?: Json | null
+          after?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          target_user_id?: string | null
+          target_email?: string | null
+          action?: string
+          before?: Json | null
+          after?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      support_team_invites: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          role: string
+          allowed_categories: string[]
+          token_hash: string
+          status: string
+          invited_by: string
+          accepted_by: string | null
+          expires_at: string
+          accepted_at: string | null
+          revoked_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          role: string
+          allowed_categories?: string[]
+          token_hash: string
+          status?: string
+          invited_by: string
+          accepted_by?: string | null
+          expires_at: string
+          accepted_at?: string | null
+          revoked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          role?: string
+          allowed_categories?: string[]
+          token_hash?: string
+          status?: string
+          invited_by?: string
+          accepted_by?: string | null
+          expires_at?: string
+          accepted_at?: string | null
+          revoked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_team_members: {
+        Row: {
+          user_id: string
+          name: string
+          email: string
+          role: string
+          active: boolean
+          allowed_categories: string[]
+          invited_by: string | null
+          invited_at: string | null
+          accepted_at: string | null
+          last_activity_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          name: string
+          email: string
+          role: string
+          active?: boolean
+          allowed_categories?: string[]
+          invited_by?: string | null
+          invited_at?: string | null
+          accepted_at?: string | null
+          last_activity_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          name?: string
+          email?: string
+          role?: string
+          active?: boolean
+          allowed_categories?: string[]
+          invited_by?: string | null
+          invited_at?: string | null
+          accepted_at?: string | null
+          last_activity_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_ticket_audit: {
+        Row: {
+          id: string
+          ticket_id: string
+          actor_id: string | null
+          actor_role: string
+          action: string
+          before: Json | null
+          after: Json | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          actor_id?: string | null
+          actor_role: string
+          action: string
+          before?: Json | null
+          after?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          actor_id?: string | null
+          actor_role?: string
+          action?: string
+          before?: Json | null
+          after?: Json | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       partner_growth_assignments: {
         Row: {
           id: string
