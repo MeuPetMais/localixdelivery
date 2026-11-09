@@ -655,7 +655,7 @@ function OrdersPage() {
       customer_name: o.customer_name,
       customer_phone: o.customer_phone,
       address: o.address,
-      items: items.map((it: any) => ({
+      items: items.map((it) => ({
         name: String(it.name ?? ""),
         qty: Number(it.qty ?? 1),
         price: Number(it.price ?? 0),
