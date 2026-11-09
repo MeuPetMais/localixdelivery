@@ -32,7 +32,9 @@ function hasAnyEnabledHour(oh: unknown): boolean {
   );
 }
 
-export function getProfileCompletion(restaurant: (Record<string, unknown> & { id?: string }) | null | undefined): ProfileCompletion {
+export function getProfileCompletion(
+  restaurant: (Record<string, unknown> & { id?: string }) | null | undefined,
+): ProfileCompletion {
   const r = restaurant ?? {};
 
   const checks: ProfileCheck[] = [
