@@ -96,8 +96,8 @@ describe("PartnerWhatsAppFloatingButton", () => {
       'window.addEventListener("scroll", handleScroll, { passive: true })',
     );
     expect(componentSource).toContain("setIsHiddenOnMobileScroll(true)");
-    expect(componentSource).toContain(
-      "window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS)",
+    expect(componentSource).toMatch(
+      /window\.setTimeout\(\s*showButton,\s*PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS,?\s*\)/,
     );
     expect(componentSource).toContain("setIsHiddenOnMobileScroll(false)");
     expect(PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS).toBe(220);
