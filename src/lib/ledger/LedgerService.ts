@@ -36,7 +36,7 @@ export interface LedgerEntry {
   currency: string;
   status: LedgerStatus;
   description: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -53,7 +53,7 @@ export interface LedgerRecordInput {
   currency?: string;
   status?: LedgerStatus;
   description?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface BalanceSummary {
@@ -148,7 +148,7 @@ const recordSchema = z.object({
   currency: z.string().default("BRL"),
   status: z.enum(["PENDING", "COMPLETED", "FAILED", "CANCELLED"]).default("COMPLETED"),
   description: z.string().nullable().optional(),
-  metadata: z.record(z.string(), z.unknown()).default({}),
+  metadata: z.record(z.string(), z.any()).default({}),
 });
 
 /**
