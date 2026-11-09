@@ -541,7 +541,7 @@ function MetricCard({
   value,
   tone,
 }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number | string;
   tone?: "critical" | "low";
