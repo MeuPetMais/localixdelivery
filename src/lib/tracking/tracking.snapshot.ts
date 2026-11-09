@@ -32,6 +32,7 @@ export function createInMemorySnapshotStore(): SnapshotStore {
         last_lng: existing?.last_lng ?? null,
         last_speed: existing?.last_speed ?? null,
         last_heading: existing?.last_heading ?? null,
+        last_accuracy: existing?.last_accuracy ?? null,
         last_seen_at: existing?.last_seen_at ?? null,
         metadata: { ...(existing?.metadata ?? {}), ...(input.metadata ?? {}) },
         correlation_id: input.correlation_id ?? existing?.correlation_id ?? cryptoRandom(),
