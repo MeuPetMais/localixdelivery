@@ -95,5 +95,7 @@ export function vibratePattern(pattern: number | number[] = [120, 60, 120]) {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(pattern);
     }
-  } catch {}
+  } catch {
+    // Non-critical best-effort operation; continue safely.
+  }
 }
