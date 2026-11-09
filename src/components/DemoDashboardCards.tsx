@@ -36,7 +36,7 @@ function qrUrl(data: string, size = 240) {
 // Tiny built-in "new order" chime (base64 mp3-like beep via WebAudio)
 function playChime() {
   try {
-    const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+    const Ctx = (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
@@ -93,8 +93,8 @@ export function DemoDashboardCards({
       toast.success(`Novo pedido demo #${order.order_number ?? ""} — ${order.customer_name}`);
       qc.invalidateQueries({ queryKey: ["dashboard", restaurantId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao gerar pedido demonstrativo.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar pedido demonstrativo.");
     } finally {
       setCreating(false);
     }
@@ -106,8 +106,8 @@ export function DemoDashboardCards({
       await runReset();
       toast.success("Ambiente demo restaurado com sucesso!");
       await qc.invalidateQueries();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível restaurar.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível restaurar.");
     } finally {
       setResetting(false);
     }
@@ -273,7 +273,7 @@ const DEMO_KPIS = {
   activeDelta: 12,
 } as const;
 
-export function getDemoKpisOverride(real: any) {
+export function getDemoKpisOverride(real: Record<string, unknown> | null | undefined) {
   return { ...(real ?? {}), ...DEMO_KPIS };
 }
 
