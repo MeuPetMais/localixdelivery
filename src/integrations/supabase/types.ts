@@ -1694,6 +1694,10 @@ export type Database = {
           status: string
           updated_at: string
           driver_distance_km: number | null
+          driver_base_fee: number | null
+          driver_earning_amount: number | null
+          driver_earning_calculated_at: string | null
+          driver_per_km_fee: number | null
         }
         Insert: {
           assigned_at?: string | null
@@ -1713,6 +1717,10 @@ export type Database = {
           status?: string
           updated_at?: string
           driver_distance_km?: number | null
+          driver_base_fee?: number | null
+          driver_earning_amount?: number | null
+          driver_earning_calculated_at?: string | null
+          driver_per_km_fee?: number | null
         }
         Update: {
           assigned_at?: string | null
@@ -1732,6 +1740,10 @@ export type Database = {
           status?: string
           updated_at?: string
           driver_distance_km?: number | null
+          driver_base_fee?: number | null
+          driver_earning_amount?: number | null
+          driver_earning_calculated_at?: string | null
+          driver_per_km_fee?: number | null
         }
         Relationships: [
           {
