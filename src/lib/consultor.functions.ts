@@ -69,8 +69,8 @@ async function buildContext(restaurantId: string, ownerId: string) {
   ]);
 
   const ords = orders ?? [];
-  const validOrders = ords.filter((o: any) => o.status !== "cancelado");
-  const revenue = validOrders.reduce((s: number, o: any) => s + Number(o.total ?? 0), 0);
+  const validOrders = ords.filter((o) => o.status !== "cancelado");
+  const revenue = validOrders.reduce((s: number, o) => s + Number(o.total ?? 0), 0);
   const ticket = validOrders.length ? revenue / validOrders.length : 0;
 
   // hour buckets
@@ -100,19 +100,19 @@ async function buildContext(restaurantId: string, ownerId: string) {
 
   const cutoff30 = new Date(now - 30 * DAY);
   const activeCustomers = (customers ?? []).filter(
-    (c: any) => c.last_order_at && new Date(c.last_order_at) >= cutoff30,
+    (c) => c.last_order_at && new Date(c.last_order_at) >= cutoff30,
   ).length;
   const inactiveCustomers = (customers ?? []).length - activeCustomers;
 
   const lowStock = (ingredients ?? []).filter(
-    (i: any) => Number(i.current_stock) <= Number(i.min_stock),
+    (i) => Number(i.current_stock) <= Number(i.min_stock),
   );
 
   const revenueFin = (finance ?? [])
-    .filter((m: any) => m.type === "revenue")
+    .filter((m) => m.type === "revenue")
     .reduce((s: number, m: any) => s + Number(m.amount), 0);
   const expenses = (finance ?? [])
-    .filter((m: any) => m.type === "expense")
+    .filter((m) => m.type === "expense")
     .reduce((s: number, m: any) => s + Number(m.amount), 0);
 
   return {
@@ -129,9 +129,9 @@ async function buildContext(restaurantId: string, ownerId: string) {
     activeCustomers,
     inactiveCustomers,
     menuSize: (items ?? []).length,
-    unavailableItems: (items ?? []).filter((i: any) => !i.is_available).length,
+    unavailableItems: (items ?? []).filter((i) => !i.is_available).length,
     activeCoupons: (coupons ?? []).length,
-    lowStockItems: lowStock.map((i: any) => i.name).slice(0, 8),
+    lowStockItems: lowStock.map((i) => i.name).slice(0, 8),
     finance: { revenueRegistered: revenueFin, expenses, balance: revenueFin - expenses },
   };
 }
