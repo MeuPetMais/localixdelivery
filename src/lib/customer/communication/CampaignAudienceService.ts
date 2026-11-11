@@ -39,9 +39,7 @@ export const CampaignAudienceService = {
       .in("customer_id", customerIds);
     if (error) throw error;
     const rows = (data ?? []) as CommunicationPreferences[];
-    const map = new Map<string, CommunicationPreferences>(
-      rows.map((r) => [r.customer_id, r]),
-    );
+    const map = new Map<string, CommunicationPreferences>(rows.map((r) => [r.customer_id, r]));
     const eligible: string[] = [];
     for (const id of customerIds) {
       const prefs = map.get(id) ?? CommunicationPreferenceService.defaults(id);
