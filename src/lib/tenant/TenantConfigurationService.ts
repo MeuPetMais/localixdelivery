@@ -63,7 +63,7 @@ export class TenantConfigurationService {
 
   async getGroup<G extends ConfigGroup>(restaurantId: string, group: G): Promise<GroupPayload<G>> {
     const cfg = await this.get(restaurantId);
-    return (cfg as any)[group];
+    return cfg[group];
   }
 
   validate<G extends ConfigGroup>(group: G, value: GroupPayload<G>): ValidationResult {
