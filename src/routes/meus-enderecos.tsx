@@ -57,8 +57,8 @@ function MyAddressesPage() {
       await setDefaultAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", user!.id] });
       toast.success("Definido como principal");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -68,8 +68,8 @@ function MyAddressesPage() {
       await deleteAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", user!.id] });
       toast.success("Endereço excluído");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
