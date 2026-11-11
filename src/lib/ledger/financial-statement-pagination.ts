@@ -67,12 +67,21 @@ export async function readFinancialSnapshot(
   return snapshot;
 }
 export function snapshotStatement(snapshot: FinancialSnapshot, from?: string, to?: string) {
-  const start = from === undefined ? -Infinity : Date.parse(from),
-    end = to === undefined ? Infinity : Date.parse(to);
-  if (Number.isNaN(start) || Number.isNaN(end) || start > end)
+  const start = from === undefined ? null : timestampTicks(from),
+    end = to === undefined ? null : timestampTicks(to);
+  if (start !== null && end !== null && start > end)
     throw new Error("Invalid financial statement interval.");
   return snapshot.entries.filter((row) => {
-    const time = Date.parse(row.created_at);
-    return time >= start && time <= end;
+    const time = timestampTicks(row.created_at);
+    return (start === null || time >= start) && (end === null || time <= end);
   });
+}
+
+/** PostgreSQL timestamps retain microseconds; Date alone silently drops them. */
+function timestampTicks(value: string): bigint {
+  const milliseconds = Date.parse(value);
+  const fraction = /\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/.exec(value)?.[1] ?? "";
+  if (!Number.isFinite(milliseconds) || fraction.length > 6)
+    throw new Error("Invalid financial statement interval.");
+  return BigInt(milliseconds) * 1_000n + BigInt(fraction.slice(3).padEnd(3, "0"));
 }

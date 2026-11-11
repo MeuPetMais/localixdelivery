@@ -20,6 +20,7 @@ Issue #90; PR #93, Draft; base de trabalho `ac4e7e599f8f1dc61dd2e018cffe3c28ca36
 - O adaptador valida versão, formato completo das linhas, quantidade declarada versus recebida, IDs, tenant de cada lançamento e moeda única. Duplicatas são uma verificação adicional, não a prova de consistência. Falha de rede, RPC ausente, JSON cortado, schema incompatível ou limite excedido produzem erro, sem fallback para offsets ou soma parcial.
 - `getRestaurantFinancialSnapshot` deriva saldo de todos os lançamentos e extrato do período **da mesma resposta**. O port de produção de `FinanceDomain`, o dashboard e o fluxo de caixa usam `getSnapshot`. Os ports antigos de injeção continuam compatíveis; a produção não usa esse fallback. Não há cache compartilhado entre tenants. Widgets consultados em momentos diferentes ainda podem mostrar instantes distintos; não se reivindica snapshot global de toda a página nem de custos/split/reconciliação.
 - O extrato de UI limitado a 500 continua distinto de um agregado completo. `getOrderLedger` permanece uma consulta de histórico sujeita ao limite da API e não é fonte destes indicadores; evoluir essa API separadamente antes de prometer histórico ilimitado por pedido.
+- O filtro de período preserva microssegundos dos timestamps PostgreSQL, inclusive em limites inclusivos e offsets. `Date.parse` isolado perde essa precisão; regressões cobrem lançamento um microssegundo além do limite e datas anteriores a 1970. Valores monetários e fórmula contábil não foram alterados por essa correção.
 
 Fundamentação: [snapshot de instrução no PostgreSQL](https://www.postgresql.org/docs/current/transaction-iso.html), [funções RPC e valores escalares no PostgREST](https://docs.postgrest.org/en/stable/references/api/functions.html). Uma resposta escalar não divide o extrato em múltiplas requisições HTTP. A garantia depende de instalar a função revisada; não existe fallback silencioso para bancos sem ela.
 
@@ -40,13 +41,15 @@ Fundamentação: [snapshot de instrução no PostgreSQL](https://www.postgresql.
 | `bun run lint`                                                         | PASS, zero erros e 53 warnings preexistentes                                   |
 | `bun run build`                                                        | PASS, código real de saída 0                                                   |
 | `bunx tsc --noEmit`, após build                                        | PASS, saída 0                                                                  |
-| `bunx vitest run --passWithNoTests --maxWorkers 1 --testTimeout 30000` | PASS, 156 arquivos, 1.325 aprovados e 1 ignorado preexistente; 410,33 segundos |
+| `bunx vitest run --passWithNoTests --maxWorkers 1 --testTimeout 30000` | PASS, 156 arquivos, 1.327 aprovados e 1 ignorado preexistente; 282,27 segundos |
 | Prettier nos arquivos alterados suportados                             | PASS                                                                           |
 | `git diff --check` e varredura de segredos/artefatos                   | PASS                                                                           |
 
 Logs locais em `node_modules/.cache/gate4`, ignorados pelo Git. Build usa valores públicos fictícios de Supabase e não executa deploy. Build precede TypeScript para gerar as rotas, conforme a CI. O lint inicialmente apontou uma formatação do tipo de entrada e foi reexecutado integralmente após a correção. Os testes afetados pela última revisão de SQL/tipo foram reexecutados: mais 9 casos PASS. O skip de `driver-wallet.test.ts` depende de `window` e é anterior a este trabalho.
 
 O harness SQL usa as políticas originais do Ledger; `auth.uid` e `has_role` são substitutos locais que representam identidades sintéticas. Não valida emissão real de JWTs Supabase. CI remoto deve ser conferido nos [checks do PR #93](https://github.com/MeuPetMais/localixdelivery/pull/93/checks), para o SHA publicado, antes de qualquer integração.
+
+A rodada final completa inclui as duas regressões de microssegundos. O primeiro conjunto publicado, `0d81c266`, também recebeu CI remota 4/4 PASS: [execução 43099140956](https://github.com/MeuPetMais/localixdelivery/actions/runs/43099140956). A CI do complemento temporal deve ser conferida pelo SHA nos checks do PR antes da integração.
 
 ## Auditoria contábil: bloqueios preservados
 
@@ -72,7 +75,7 @@ O harness SQL usa as políticas originais do Ledger; `auth.uid` e `has_role` sã
 
 ## Git e parecer
 
-Commit de implementação: `3b0231e8b7ea318c6ad08ae73fef3de9dfeca63b` — snapshot consistente, contratos, segurança do endpoint e regressões. Este relatório é separado em commit de documentação. O PR #93 deve continuar em Draft; a base do PR não foi alterada. Os comentários de revisão não foram marcados como resolvidos sem revisão humana.
+Commit de implementação: `3b0231e8b7ea318c6ad08ae73fef3de9dfeca63b` — snapshot consistente, contratos, segurança do endpoint e regressões. Documento inicial em `0d81c2669b3b86ff2e51fc6f7fd3e80b1c7df31a`; a correção de precisão temporal e suas regressões constituem um complemento específico. O PR #93 deve continuar em Draft; a base do PR não foi alterada. Os comentários de revisão não foram marcados como resolvidos sem revisão humana.
 
 | Gate                                       | Parecer                                                                                                                                                   |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |

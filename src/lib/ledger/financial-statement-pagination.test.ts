@@ -32,6 +32,28 @@ function envelope(total: number) {
   };
 }
 describe("transactional financial snapshot boundary", () => {
+  it("does not include entries one microsecond after the upper bound", async () => {
+    const data = envelope(1);
+    data.entries[0].created_at = "2026-11-11T00:00:00.000001Z";
+    const snapshot = await readFinancialSnapshot(async () => data, restaurant);
+    expect(snapshotStatement(snapshot, undefined, "2026-11-11T00:00:00.000000Z")).toHaveLength(0);
+    expect(
+      snapshotStatement(snapshot, "2026-11-11T00:00:00.000001Z", "2026-11-11T00:00:00.000001Z"),
+    ).toHaveLength(1);
+  });
+  it("keeps precise comparisons equivalent across offsets and negative epochs", async () => {
+    const data = envelope(1);
+    data.entries[0].created_at = "1969-12-31T23:59:59.123456Z";
+    const snapshot = await readFinancialSnapshot(async () => data, restaurant);
+    expect(
+      snapshotStatement(
+        snapshot,
+        "1970-01-01T02:59:59.123456+03:00",
+        "1969-12-31T23:59:59.123456Z",
+      ),
+    ).toHaveLength(1);
+    expect(snapshotStatement(snapshot, "1969-12-31T23:59:59.123457Z")).toHaveLength(0);
+  });
   it.each([0, 501, 1000, 1201, 10001, 50000])(
     "accepts the complete scalar snapshot of %i rows",
     async (total) => {
