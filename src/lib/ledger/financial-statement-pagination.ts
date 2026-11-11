@@ -4,7 +4,7 @@
  * The caller supplies an authenticated, tenant-scoped and deterministically
  * ordered page fetcher. No database access or business math lives here.
  */
-export async function collectFinancialStatement<T>(
+export async function collectFinancialStatement<T extends { id: string }>(
   fetchPage: (start: number, end: number) => Promise<T[]>,
   options: { pageSize?: number; maxRows?: number } = {},
 ): Promise<T[]> {
@@ -16,6 +16,7 @@ export async function collectFinancialStatement<T>(
   }
 
   const rows: T[] = [];
+  const seenIds = new Set<string>();
   while (true) {
     // Fetch up to the configured boundary plus one page to distinguish a
     // complete statement from a truncated one, even at exactly maxRows.
@@ -27,6 +28,12 @@ export async function collectFinancialStatement<T>(
       throw new Error(
         "Indicadores financeiros indisponíveis: extrato excede o limite seguro de processamento.",
       );
+    }
+    for (const row of page) {
+      if (!row.id || seenIds.has(row.id)) {
+        throw new Error("Extrato financeiro inconsistente: lançamento duplicado ou sem ID.");
+      }
+      seenIds.add(row.id);
     }
     rows.push(...page);
     if (page.length < pageSize) return rows;
