@@ -48,9 +48,9 @@ describe("complete financial statement collector", () => {
 
   it("fails closed instead of returning a partial aggregate above the safety cap", async () => {
     const source = pagedSource(1_001);
-    await expect(
-      collectFinancialStatement(source.fetch, { maxRows: 1_000 }),
-    ).rejects.toThrow("limite seguro de processamento");
+    await expect(collectFinancialStatement(source.fetch, { maxRows: 1_000 })).rejects.toThrow(
+      "limite seguro de processamento",
+    );
     expect(source.ranges).toHaveLength(3);
   });
 
@@ -64,11 +64,11 @@ describe("complete financial statement collector", () => {
   });
 
   it("rejects invalid page sizes and oversized responses", async () => {
-    await expect(
-      collectFinancialStatement(async () => [], { pageSize: 0 }),
-    ).rejects.toThrow("Configuração inválida");
-    await expect(
-      collectFinancialStatement(async () => [1, 2, 3], { pageSize: 2 }),
-    ).rejects.toThrow("página maior");
+    await expect(collectFinancialStatement(async () => [], { pageSize: 0 })).rejects.toThrow(
+      "Configuração inválida",
+    );
+    await expect(collectFinancialStatement(async () => [1, 2, 3], { pageSize: 2 })).rejects.toThrow(
+      "página maior",
+    );
   });
 });
