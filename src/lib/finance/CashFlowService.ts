@@ -1,3 +1,4 @@
+import { readLedgerView, type LedgerPort } from "./FinancialDashboardService";
 // Cash Flow / Receivables / Payables / Projection services.
 //
 // Port-based, side-effect free. UI never queries the DB; it calls these
@@ -28,6 +29,7 @@ export interface PayablesPort {
 }
 
 export interface LedgerStatementPort {
+  getSnapshot?: LedgerPort["getSnapshot"];
   getStatement(input: {
     restaurantId: string;
     from?: string;
@@ -93,7 +95,7 @@ export interface FinancialProjection {
 // ---------- Helpers ----------
 
 const REVENUE = new Set(["RESTAURANT_RECEIVABLE", "PAYMENT_APPROVED"]);
-const FEES = new Set(["PLATFORM_FEE", "GATEWAY_FEE", "PAYOUT", "REFUND"]);
+const FEES = new Set(["PLATFORM_FEE", "GATEWAY_FEE", "PAYOUT", "REFUND", "CHARGEBACK"]);
 
 function dayKey(iso: string): string {
   return iso.slice(0, 10);
@@ -117,14 +119,7 @@ export class CashFlowService {
     from: string;
     to: string;
   }): Promise<CashFlowSummary> {
-    const [rows, balance] = await Promise.all([
-      this.ports.ledger.getStatement({
-        restaurantId: input.restaurantId,
-        from: input.from,
-        to: input.to,
-      }),
-      this.ports.ledger.getBalance({ restaurantId: input.restaurantId }),
-    ]);
+    const { rows, balance } = await readLedgerView(this.ports.ledger, input);
     const today = todayKey();
     const buckets = new Map<string, { inflow: number; outflow: number }>();
     let periodIn = 0,

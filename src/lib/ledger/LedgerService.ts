@@ -7,6 +7,7 @@ import type { JsonObject } from "@/lib/json";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { readFinancialSnapshot, snapshotStatement } from "./financial-statement-pagination";
 
 // ------------- Tipos -------------
 export type LedgerTransactionType =
@@ -131,63 +132,8 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-// ------------- Server API -------------
-const recordSchema = z.object({
-  orderId: z.string().uuid().nullable().optional(),
-  restaurantId: z.string().uuid().nullable().optional(),
-  customerId: z.string().uuid().nullable().optional(),
-  provider: z.string().nullable().optional(),
-  transactionType: z.enum([
-    "ORDER_CREATED",
-    "PAYMENT_PENDING",
-    "PAYMENT_APPROVED",
-    "PAYMENT_FAILED",
-    "PLATFORM_FEE",
-    "GATEWAY_FEE",
-    "RESTAURANT_RECEIVABLE",
-    "REFUND",
-    "CHARGEBACK",
-    "PAYOUT",
-    "ADJUSTMENT",
-  ]),
-  referenceType: z.string().nullable().optional(),
-  referenceId: z.string().nullable().optional(),
-  amount: z.number().finite(),
-  currency: z.string().default("BRL"),
-  status: z.enum(["PENDING", "COMPLETED", "FAILED", "CANCELLED"]).default("COMPLETED"),
-  description: z.string().nullable().optional(),
-  metadata: z.record(z.string(), z.any()).default({}),
-});
-
-/**
- * Registra um novo lançamento (uso interno de outros server services:
- * PaymentService, OrderService, Webhooks de gateway, jobs de payout).
- */
-export const recordLedgerEntry = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => recordSchema.parse(d))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("financial_ledger")
-      .insert({
-        order_id: data.orderId ?? null,
-        restaurant_id: data.restaurantId ?? null,
-        customer_id: data.customerId ?? null,
-        provider: data.provider ?? null,
-        transaction_type: data.transactionType,
-        reference_type: data.referenceType ?? null,
-        reference_id: data.referenceId ?? null,
-        amount: data.amount,
-        currency: data.currency,
-        status: data.status,
-        description: data.description ?? null,
-        metadata: data.metadata ?? {},
-      })
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-    return row as LedgerEntry;
-  });
+// Financial ledger writes are performed only by the existing trusted gateway workers.
+// The unused public admin-backed recordLedgerEntry endpoint was removed (Gate 4).
 
 /** Histórico completo por pedido (todas as movimentações vinculadas). */
 export const getOrderLedger = createServerFn({ method: "POST" })
@@ -230,15 +176,49 @@ export const getRestaurantStatement = createServerFn({ method: "POST" })
     return (rows ?? []) as LedgerEntry[];
   });
 
-/** Saldo consolidado do restaurante (a partir do extrato completo). */
+/** One RLS-scoped SQL statement supplies both all-time balance and filtered statement. */
+export const getRestaurantFinancialSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        from: z.string().datetime().optional(),
+        to: z.string().datetime().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const snapshot = await readFinancialSnapshot(async () => {
+      const { data: payload, error } = await context.supabase.rpc(
+        "get_restaurant_financial_snapshot",
+        { _restaurant_id: data.restaurantId },
+      );
+      if (error) throw new Error("Financial snapshot unavailable: " + error.message);
+      return payload;
+    }, data.restaurantId);
+    return {
+      rows: snapshotStatement(snapshot, data.from, data.to),
+      balance: computeBalance(snapshot.entries, data.restaurantId),
+      snapshotAt: snapshot.snapshot_at,
+    };
+  });
+
+/** Complete statement, retained for external read consumers. */
+export const getRestaurantFinancialStatement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        from: z.string().datetime().optional(),
+        to: z.string().datetime().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => (await getRestaurantFinancialSnapshot({ data })).rows);
+
 export const getRestaurantBalance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ restaurantId: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
-      .from("financial_ledger")
-      .select("*")
-      .eq("restaurant_id", data.restaurantId);
-    if (error) throw new Error(error.message);
-    return computeBalance((rows ?? []) as LedgerEntry[], data.restaurantId);
-  });
+  .handler(async ({ data }) => (await getRestaurantFinancialSnapshot({ data })).balance);
