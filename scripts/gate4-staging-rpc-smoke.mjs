@@ -29,9 +29,11 @@ if (missing.length) {
       },
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error(`BLOCK: ${role} JWT not accepted by staging Auth (${response.status})`);
+    if (!response.ok)
+      throw new Error(`BLOCK: ${role} JWT not accepted by staging Auth (${response.status})`);
     const user = await response.json();
-    if (!user?.id || !uuid.test(user.id)) throw new Error(`BLOCK: ${role} has no valid Auth user ID`);
+    if (!user?.id || !uuid.test(user.id))
+      throw new Error(`BLOCK: ${role} has no valid Auth user ID`);
     return user.id;
   }
 
@@ -77,7 +79,9 @@ if (missing.length) {
       verifiedUser("admin", process.env.GATE4_STAGING_ADMIN_JWT),
     ]);
     if (new Set(identities).size !== 3) {
-      throw new Error("BLOCK: owner, other owner and admin must be three distinct staging Auth users");
+      throw new Error(
+        "BLOCK: owner, other owner and admin must be three distinct staging Auth users",
+      );
     }
     console.log("PASS: three distinct JWT identities verified by staging Auth");
     await call("anonymous");
