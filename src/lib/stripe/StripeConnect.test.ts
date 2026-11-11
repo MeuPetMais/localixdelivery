@@ -89,7 +89,14 @@ describe("StripeConnectService", () => {
 });
 
 describe("PaymentsReadinessService", () => {
-  function mockRestaurant(row: any) {
+  function mockRestaurant(row: {
+    stripe_account_id?: string | null;
+    stripe_account_status?: string | null;
+    stripe_charges_enabled?: boolean;
+    stripe_payouts_enabled?: boolean;
+    stripe_details_submitted?: boolean;
+    [key: string]: unknown;
+  }) {
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       select: () => ({
         eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }),
