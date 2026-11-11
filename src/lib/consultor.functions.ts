@@ -110,10 +110,10 @@ async function buildContext(restaurantId: string, ownerId: string) {
 
   const revenueFin = (finance ?? [])
     .filter((m) => m.type === "revenue")
-    .reduce((s: number, m: any) => s + Number(m.amount), 0);
+    .reduce((s: number, m) => s + Number(m.amount), 0);
   const expenses = (finance ?? [])
     .filter((m) => m.type === "expense")
-    .reduce((s: number, m: any) => s + Number(m.amount), 0);
+    .reduce((s: number, m) => s + Number(m.amount), 0);
 
   return {
     name: rest.name,
