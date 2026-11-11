@@ -18,13 +18,13 @@ import {
   type PayablesPort,
   type LedgerStatementPort,
 } from "./CashFlowService";
-import { getRestaurantStatement, getRestaurantBalance } from "@/lib/ledger/LedgerService";
+import { getRestaurantFinancialStatement, getRestaurantBalance } from "@/lib/ledger/LedgerService";
 import { listReceivables, listPayables } from "./cashflow.functions";
 
 const ledgerPort: LedgerPort & LedgerStatementPort = {
   async getStatement({ restaurantId, from, to }) {
-    const rows = await getRestaurantStatement({
-      data: { restaurantId, from, to, limit: 500 },
+    const rows = await getRestaurantFinancialStatement({
+      data: { restaurantId, from, to },
     });
     return rows ?? [];
   },
