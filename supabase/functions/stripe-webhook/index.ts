@@ -1,3 +1,7 @@
+import type { Tables } from "../../../src/integrations/supabase/types.ts";
+function jsonObject(value: Tables<"payments">["raw"]) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
 // Stripe — Webhook receiver (Sandbox only).
 // Verifica assinatura (Stripe-Signature v1), aplica idempotência via
 // payment_webhook_events (provider, event_id) e atualiza payments/orders
@@ -49,7 +53,26 @@ async function verifyStripeSignature(
   return false;
 }
 
-function mapStatus(stripeType: string, obj: any): { local: string; paid: boolean } | null {
+interface StripeEventObject {
+  id?: string;
+  payment_status?: string;
+  payment_intent?: string | null;
+  metadata?: Record<string, string>;
+  amount?: number;
+  amount_total?: number | null;
+  currency?: string | null;
+  application_fee_amount?: number;
+  transfer_data?: { destination?: string };
+}
+interface StripeEvent {
+  id?: string;
+  type?: string;
+  data?: { object?: StripeEventObject };
+}
+function mapStatus(
+  stripeType: string,
+  obj: StripeEventObject,
+): { local: string; paid: boolean } | null {
   switch (stripeType) {
     case "checkout.session.completed":
       return {
@@ -82,7 +105,7 @@ Deno.serve(async (req) => {
   const okSig = await verifyStripeSignature(rawBody, req.headers.get("stripe-signature"), secret);
   if (!okSig) return json({ error: "invalid_signature" }, { status: 401 });
 
-  let event: any;
+  let event: StripeEvent;
   try {
     event = JSON.parse(rawBody);
   } catch {
@@ -92,7 +115,7 @@ Deno.serve(async (req) => {
   const sb = admin();
   const eventId: string | null = event?.id ?? null;
   const eventType: string = String(event?.type ?? "");
-  const obj: any = event?.data?.object ?? {};
+  const obj: StripeEventObject = event?.data?.object ?? {};
   const resourceId: string | null = obj?.id ?? null;
   const orderId: string | null = obj?.metadata?.order_id ?? null;
   const restaurantId: string | null = obj?.metadata?.restaurant_id ?? null;
@@ -151,7 +174,7 @@ Deno.serve(async (req) => {
     if (eventType.startsWith("payment_intent")) candidates.push(String(obj.id));
     if (obj?.payment_intent) candidates.push(String(obj.payment_intent));
 
-    let payment: any = null;
+    let payment: Tables<"payments"> | null = null;
     for (const ext of candidates) {
       const { data } = await sb.from("payments").select("*").eq("external_id", ext).maybeSingle();
       if (data) {
@@ -168,7 +191,7 @@ Deno.serve(async (req) => {
         .update({
           status: mapped.local,
           paid_at: paidAt ?? payment.paid_at,
-          raw: { ...(payment.raw ?? {}), last_event: eventType, last_event_id: eventId },
+          raw: { ...jsonObject(payment.raw), last_event: eventType, last_event_id: eventId },
         })
         .eq("id", payment.id);
     }
@@ -286,16 +309,17 @@ Deno.serve(async (req) => {
       .eq("id", inserted.id);
 
     return json({ ok: true, status: mapped.local });
-  } catch (e: any) {
-    console.error("[stripe-webhook] process error", e?.message);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[stripe-webhook] process error", message);
     await sb
       .from("payment_webhook_events")
       .update({
         processed: false,
-        error_message: String(e?.message ?? e),
+        error_message: String(message ?? e),
         processing_attempts: 1,
       })
       .eq("id", inserted.id);
-    return json({ error: "processing_failed", detail: String(e?.message ?? e) }, { status: 500 });
+    return json({ error: "processing_failed", detail: String(message ?? e) }, { status: 500 });
   }
 });

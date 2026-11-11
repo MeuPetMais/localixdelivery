@@ -96,7 +96,9 @@ Deno.serve(async (req) => {
   }
 });
 
-async function safeJson(req: Request): Promise<any> {
+async function safeJson(
+  req: Request,
+): Promise<{ action?: string; restaurant_id?: string; redirect_to?: string }> {
   try {
     return await req.json();
   } catch {

@@ -63,7 +63,13 @@ Deno.serve(async (req) => {
     return json({ error: "stripe_sandbox_key_missing" }, { status: 500 });
   }
 
-  let body: any = {};
+  let body: {
+    orderId?: string;
+    successUrl?: string;
+    cancelUrl?: string;
+    customerEmail?: string;
+    method?: string;
+  } = {};
   try {
     body = await req.json();
   } catch {
@@ -159,9 +165,10 @@ Deno.serve(async (req) => {
   let session;
   try {
     session = await stripe("/checkout/sessions", secret, params);
-  } catch (e: any) {
-    console.error("[stripe-checkout] create session failed", e?.message);
-    return json({ error: "stripe_failed", detail: String(e?.message ?? e) }, { status: 502 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[stripe-checkout] create session failed", message);
+    return json({ error: "stripe_failed", detail: String(message ?? e) }, { status: 502 });
   }
 
   // Registra payment PENDING (idempotente via external_id)

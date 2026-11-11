@@ -55,7 +55,17 @@ Deno.serve(async (req) => {
     });
 
     const rawBody = await tokenRes.text();
-    let tokenJson: any = {};
+    let tokenJson: {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      public_key?: string;
+      user_id?: string | number;
+      live_mode?: boolean;
+      scope?: string;
+      raw?: string;
+      [key: string]: unknown;
+    } = {};
     try {
       tokenJson = JSON.parse(rawBody);
     } catch {
@@ -141,7 +151,7 @@ function jsonErr(message: string, status: number) {
 
 function sanitize(obj: Record<string, unknown>) {
   const clone = { ...obj };
-  delete (clone as any).access_token;
-  delete (clone as any).refresh_token;
+  delete clone.access_token;
+  delete clone.refresh_token;
   return clone;
 }
