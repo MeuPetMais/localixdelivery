@@ -17,6 +17,7 @@ export interface LedgerPort {
     Array<{
       transaction_type: string;
       amount: number;
+      order_id?: string | null;
       status: string;
       currency?: string;
       created_at: string;
@@ -78,7 +79,6 @@ export class FinancialDashboardService {
 
     let grossRevenue = 0;
     let fees = 0;
-    let orders = 0;
     let pendingReceivables = 0;
     let pendingPayables = 0;
     const orderIds = new Set<string>();
@@ -87,8 +87,13 @@ export class FinancialDashboardService {
       const amt = Number(r.amount) || 0;
       const approved = APPROVED.has(r.status);
       if (REVENUE_TYPES.has(r.transaction_type) && approved) {
+        if (!r.order_id) {
+          throw new Error(
+            "Indicador de pedidos indisponível: lançamento financeiro sem pedido vinculado.",
+          );
+        }
         grossRevenue += amt;
-        orders++;
+        orderIds.add(r.order_id);
       }
       if (FEE_TYPES.has(r.transaction_type) && approved) {
         fees += Math.abs(amt);
@@ -100,6 +105,7 @@ export class FinancialDashboardService {
       }
     }
 
+    const orders = orderIds.size;
     const netRevenue = grossRevenue - fees;
     const currency = balance.currency ?? "BRL";
     const cost = this.ports.cost
@@ -124,7 +130,7 @@ export class FinancialDashboardService {
       netProfit,
       cmv,
       marginPct,
-      orders: orders || orderIds.size,
+      orders,
       averageTicket: orders > 0 ? grossRevenue / orders : 0,
       currentBalance: balance.balance,
       pendingReceivables: balance.pendingIn ?? pendingReceivables,

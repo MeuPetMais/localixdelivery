@@ -14,12 +14,14 @@ const ledger: LedgerPort = {
     return [
       {
         transaction_type: "RESTAURANT_RECEIVABLE",
+        order_id: "order-1",
         amount: 100,
         status: "COMPLETED",
         created_at: "2026-07-01",
       },
       {
         transaction_type: "RESTAURANT_RECEIVABLE",
+        order_id: "order-2",
         amount: 50,
         status: "COMPLETED",
         created_at: "2026-07-02",
@@ -68,6 +70,69 @@ describe("FinancialDashboardService", () => {
     expect(k.currentBalance).toBe(145);
     expect(k.pendingReceivables).toBe(40);
     expect(k.currency).toBe("BRL");
+  });
+
+  it("counts approved partial payments by unique order, not by ledger event", async () => {
+    const svc = new FinancialDashboardService({
+      ledger: {
+        async getStatement() {
+          return [
+            {
+              order_id: "order-1",
+              transaction_type: "PAYMENT_APPROVED",
+              amount: 30,
+              status: "COMPLETED",
+              created_at: "2026-11-11T00:00:00Z",
+            },
+            {
+              order_id: "order-1",
+              transaction_type: "PAYMENT_APPROVED",
+              amount: 20,
+              status: "COMPLETED",
+              created_at: "2026-11-11T00:01:00Z",
+            },
+            {
+              order_id: "order-2",
+              transaction_type: "PAYMENT_APPROVED",
+              amount: 50,
+              status: "COMPLETED",
+              created_at: "2026-11-11T00:02:00Z",
+            },
+          ];
+        },
+        async getBalance() {
+          return { balance: 100, currency: "BRL" };
+        },
+      },
+    });
+    const k = await svc.getExecutiveKPIs({ restaurantId: "r1" });
+    expect(k.orders).toBe(2);
+    expect(k.grossRevenue).toBe(100);
+    expect(k.averageTicket).toBe(50);
+  });
+
+  it("fails closed when a completed revenue entry lacks an order link", async () => {
+    const svc = new FinancialDashboardService({
+      ledger: {
+        async getStatement() {
+          return [
+            {
+              order_id: null,
+              transaction_type: "PAYMENT_APPROVED",
+              amount: 50,
+              status: "COMPLETED",
+              created_at: "2026-11-11T00:00:00Z",
+            },
+          ];
+        },
+        async getBalance() {
+          return { balance: 50, currency: "BRL" };
+        },
+      },
+    });
+    await expect(svc.getExecutiveKPIs({ restaurantId: "r1" })).rejects.toThrow(
+      "sem pedido vinculado",
+    );
   });
 
   it("falls back when cost port absent", async () => {
