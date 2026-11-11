@@ -614,7 +614,7 @@ function NextOrderCard({
         const parsed = JSON.parse(raw);
         const items = Array.isArray(parsed) ? parsed : (parsed?.items ?? []);
         cartTotal = items.reduce(
-          (sum: number, it: any) =>
+          (sum: number, it: { price?: number; qty?: number; quantity?: number }) =>
             sum + Number(it.price ?? 0) * Number(it.qty ?? it.quantity ?? 1),
           0,
         );
