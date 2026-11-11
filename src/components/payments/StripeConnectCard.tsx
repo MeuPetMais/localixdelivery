@@ -52,7 +52,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
     onSuccess: ({ onboardingUrl }) => {
       window.location.href = onboardingUrl;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar Stripe"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao iniciar Stripe"),
   });
 
   const relink = useMutation({
@@ -63,7 +63,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
     onSuccess: ({ url }) => {
       window.location.href = url;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar link"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao gerar link"),
   });
 
   const refresh = useMutation({
@@ -75,7 +75,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       toast.success("Dados sincronizados com a Stripe");
       qc.invalidateQueries({ queryKey: ["stripe-connect", restaurantId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao sincronizar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar"),
   });
 
   const disconnect = useMutation({
@@ -87,7 +87,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       toast.success("Conta Stripe desconectada");
       qc.invalidateQueries({ queryKey: ["stripe-connect", restaurantId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao desconectar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao desconectar"),
   });
 
   const s = statusQuery.data;
