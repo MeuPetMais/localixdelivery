@@ -88,7 +88,9 @@ export class FinancialDashboardService {
       const approved = APPROVED.has(r.status);
       if (REVENUE_TYPES.has(r.transaction_type) && approved) {
         if (!r.order_id) {
-          throw new Error("Indicador de pedidos indisponível: lançamento financeiro sem pedido vinculado.");
+          throw new Error(
+            "Indicador de pedidos indisponível: lançamento financeiro sem pedido vinculado.",
+          );
         }
         grossRevenue += amt;
         orderIds.add(r.order_id);
