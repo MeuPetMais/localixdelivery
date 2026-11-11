@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 import { isOrderGrowthEligible } from "@/lib/orders/order-metrics-contract";
 
 export type Customer360Order = {
@@ -73,7 +74,8 @@ function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function normalizeProductId(item: any): string {
+function normalizeProductId(value: unknown): string {
+  const item = record(value);
   return String(item?.productId ?? item?.product_id ?? item?.id ?? "");
 }
 
@@ -162,7 +164,7 @@ export function buildCustomer360ReadModel(
     weekdayMap.set(date.getUTCDay(), (weekdayMap.get(date.getUTCDay()) ?? 0) + 1);
     hourMap.set(date.getUTCHours(), (hourMap.get(date.getUTCHours()) ?? 0) + 1);
 
-    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    const items = Array.isArray(order.items) ? order.items : [];
     for (const item of items) {
       const productId = normalizeProductId(item);
       if (!productId) continue;

@@ -286,7 +286,7 @@ function EntregasPage() {
       setChoosingOther(false);
       invalidateDeliveryQueries();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao despachar"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao despachar"),
   });
   const assignRunner = useServerFn(assignDelivery);
   const useServerFnRef = useMemoRef(assignRunner);
@@ -298,7 +298,7 @@ function EntregasPage() {
       toast.success("Coleta confirmada");
       invalidateDeliveryQueries();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao confirmar coleta"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao confirmar coleta"),
   });
 
   const departRunner = useServerFn(departDelivery);
@@ -308,7 +308,7 @@ function EntregasPage() {
       toast.success("Rota iniciada");
       invalidateDeliveryQueries();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar rota"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao iniciar rota"),
   });
 
   const deliverRunner = useServerFn(deliverDelivery);
@@ -318,7 +318,7 @@ function EntregasPage() {
       toast.success("Entrega concluída");
       invalidateDeliveryQueries();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao concluir"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao concluir"),
   });
 
   const cancelRunner = useServerFn(cancelDelivery);
@@ -329,7 +329,7 @@ function EntregasPage() {
       toast.success("Atribuicao cancelada");
       invalidateDeliveryQueries();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao cancelar atribuicao"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao cancelar atribuicao"),
   });
 
   function openDispatch(order: Order) {

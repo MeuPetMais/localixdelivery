@@ -1,3 +1,4 @@
+import { toJson } from "@/lib/json";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerTimeline } from "../CustomerTimeline";
 import { LoyaltyEventBus } from "./LoyaltyEventBus";
@@ -15,10 +16,10 @@ import type {
   Reward,
 } from "./types";
 
-const L = () => (supabase as any).from("customer_loyalty");
-const TX = () => (supabase as any).from("loyalty_transactions");
-const LV = () => (supabase as any).from("loyalty_levels");
-const RL = () => (supabase as any).from("loyalty_rules");
+const L = () => supabase.from("customer_loyalty");
+const TX = () => supabase.from("loyalty_transactions");
+const LV = () => supabase.from("loyalty_levels");
+const RL = () => supabase.from("loyalty_rules");
 
 async function ensureBalance(customerId: string, restaurantId: string): Promise<CustomerLoyalty> {
   const { data } = await L()
@@ -53,8 +54,8 @@ async function insertTransaction(input: {
     .insert({
       points: 0,
       cashback: 0,
-      metadata: {},
       ...input,
+      metadata: toJson(input.metadata ?? {}),
     })
     .select()
     .maybeSingle();

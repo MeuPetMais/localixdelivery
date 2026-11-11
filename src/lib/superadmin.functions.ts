@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -40,7 +42,7 @@ function resolveRange(from?: string, to?: string) {
   return resolveAdminDateRangeUTC(from, to);
 }
 
-async function loadSnapshotsForOrders(sb: any, orderIds: string[]) {
+async function loadSnapshotsForOrders(sb: SupabaseClient<Database>, orderIds: string[]) {
   const { data, error } = await sb
     .from("order_pricing_snapshot")
     .select(snapshotSelect)
@@ -128,7 +130,7 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
 
     const itemMap = new Map<string, number>();
     orders.forEach((order) => {
-      const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+      const items = Array.isArray(order.items) ? order.items : [];
       items.forEach((item) => {
         const name = String(item?.name ?? "Item");
         itemMap.set(name, (itemMap.get(name) ?? 0) + Number(item?.qty ?? 1));

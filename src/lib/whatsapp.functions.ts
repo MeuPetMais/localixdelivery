@@ -1,3 +1,4 @@
+import { parseOpeningHours } from "@/lib/opening-hours";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRestaurantStatus } from "@/lib/restaurant-status";
@@ -42,7 +43,7 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
     if (!rest) throw new Error("Restaurante não encontrado");
     const status = getRestaurantStatus({
       is_open: rest.is_open,
-      opening_hours: rest.opening_hours as any,
+      opening_hours: parseOpeningHours(rest.opening_hours),
     });
     if (!status.isOpen) throw new Error("Restaurante fechado no momento");
     const phone = String(rest.whatsapp_phone ?? "").replace(/\D+/g, "");
@@ -118,8 +119,8 @@ export const buildWhatsappOrderLink = createServerFn({ method: "POST" })
       const parts = [
         insErr.message,
         insErr.code ? `código ${insErr.code}` : "",
-        (insErr as any).details ? `detalhes: ${(insErr as any).details}` : "",
-        (insErr as any).hint ? `hint: ${(insErr as any).hint}` : "",
+        insErr.details ? `detalhes: ${insErr.details}` : "",
+        insErr.hint ? `hint: ${insErr.hint}` : "",
       ].filter(Boolean);
       throw new Error(`Falha ao registrar pedido — ${parts.join(" · ")}`);
     }

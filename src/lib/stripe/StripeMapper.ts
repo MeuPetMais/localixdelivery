@@ -11,7 +11,34 @@ import type {
   StripeWebhookEvent,
 } from "./types";
 
-type Raw = Record<string, any>;
+interface Raw {
+  id?: string;
+  country?: string;
+  default_currency?: string;
+  details_submitted?: boolean;
+  charges_enabled?: boolean;
+  payouts_enabled?: boolean;
+  created?: number;
+  requirements?: {
+    disabled_reason?: string | null;
+    currently_due?: string[];
+    pending_verification?: string[];
+  };
+  card_payments?: string;
+  transfers?: string;
+  boleto_payments?: string;
+  pix_payments?: string;
+  available?: { amount?: number; currency?: string }[];
+  pending?: { amount?: number; currency?: string }[];
+  connect_reserved?: { amount?: number; currency?: string }[];
+  amount?: number;
+  currency?: string;
+  destination?: string;
+  status?: string;
+  type?: string;
+  livemode?: boolean;
+  data?: Record<string, unknown>;
+}
 
 export const StripeMapper = {
   account(raw: Raw, restaurantId: string): StripeAccount {

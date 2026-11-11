@@ -7,6 +7,7 @@
 //                 → StripePaymentEventMapper.toDomain
 //                 → (futuro) PaymentService entrega ao Payment Domain
 
+import { z } from "zod";
 import type { StripeWebhookEvent } from "./types";
 
 export type DomainPaymentEvent =
@@ -41,7 +42,22 @@ const TYPE_TO_DOMAIN: Record<string, DomainPaymentEvent> = {
   "checkout.session.completed": "CheckoutCompleted",
 };
 
-function pickMetadata(obj: any, key: string): string | null {
+const eventObjectSchema = z
+  .object({
+    id: z.string().optional(),
+    account: z.string().optional(),
+    payment_intent: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).nullable().optional(),
+    amount: z.number().optional(),
+    amount_total: z.number().nullable().optional(),
+    currency: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+  })
+  .passthrough();
+export function stripeEventObject(data: Record<string, unknown>) {
+  return eventObjectSchema.parse(data.object ?? {});
+}
+function pickMetadata(obj: ReturnType<typeof stripeEventObject>, key: string): string | null {
   const m = obj?.metadata;
   return m && typeof m[key] === "string" ? m[key] : null;
 }
@@ -61,7 +77,7 @@ export const StripePaymentEventMapper = {
     const name = TYPE_TO_DOMAIN[event.type];
     if (!name) return null;
 
-    const obj = (event.data as any)?.object ?? {};
+    const obj = stripeEventObject(event.data);
     const isCheckout = event.type === "checkout.session.completed";
 
     return {

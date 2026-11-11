@@ -1,3 +1,6 @@
+import { toJson } from "@/lib/json";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -19,7 +22,10 @@ import type {
 
 const OwnerScope = z.object({ restaurantId: z.string().uuid() });
 
-async function assertOwner(context: { supabase: any; userId: string }, restaurantId: string) {
+async function assertOwner(
+  context: { supabase: SupabaseClient<Database>; userId: string },
+  restaurantId: string,
+) {
   const { data, error } = await context.supabase
     .from("restaurants")
     .select("id, owner_id")
@@ -30,7 +36,7 @@ async function assertOwner(context: { supabase: any; userId: string }, restauran
 }
 
 async function logEvent(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   params: {
     restaurantId: string;
     menuId?: string | null;
@@ -43,7 +49,7 @@ async function logEvent(
     restaurant_id: params.restaurantId,
     menu_id: params.menuId ?? null,
     event_type: params.type,
-    payload: params.payload ?? {},
+    payload: toJson(params.payload ?? {}),
     actor_id: params.actorId,
   });
 }

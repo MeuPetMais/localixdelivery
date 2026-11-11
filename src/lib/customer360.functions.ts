@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -65,7 +67,7 @@ async function authorizeRestaurantRead(userId: string, restaurantId: string) {
 }
 
 async function loadOrdersForProjectedCustomer(
-  sb: any,
+  sb: SupabaseClient<Database>,
   restaurantId: string,
   normalizedPhone: string,
 ): Promise<Customer360Order[]> {

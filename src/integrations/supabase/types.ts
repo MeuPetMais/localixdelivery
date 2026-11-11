@@ -495,7 +495,15 @@ export type Database = {
           assigned_by?: string | null;
           active?: boolean;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "partner_growth_assignments_restaurant_id_fkey";
+            columns: ["restaurant_id"];
+            isOneToOne: false;
+            referencedRelation: "restaurants";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       customer_growth_marketing_consents: {
         Row: {
@@ -3767,6 +3775,8 @@ export type Database = {
       };
       order_pricing_snapshot: {
         Row: {
+          service_fee_payer: string;
+          realized_platform_revenue: number;
           cashback: number;
           coupon_discount: number;
           created_at: string;
@@ -3786,6 +3796,8 @@ export type Database = {
           subtotal: number;
         };
         Insert: {
+          service_fee_payer?: string;
+          realized_platform_revenue?: number;
           cashback?: number;
           coupon_discount?: number;
           created_at?: string;
@@ -3805,6 +3817,8 @@ export type Database = {
           subtotal: number;
         };
         Update: {
+          service_fee_payer?: string;
+          realized_platform_revenue?: number;
           cashback?: number;
           coupon_discount?: number;
           created_at?: string;
@@ -4523,6 +4537,8 @@ export type Database = {
       };
       platform_settings: {
         Row: {
+          support_timezone: string;
+          support_sla_settings: Json;
           banner_url: string | null;
           city_fees: Json;
           commission_rate: number;
@@ -4547,6 +4563,8 @@ export type Database = {
           updated_by: string | null;
         };
         Insert: {
+          support_timezone?: string;
+          support_sla_settings?: Json;
           banner_url?: string | null;
           city_fees?: Json;
           commission_rate?: number;
@@ -4571,6 +4589,8 @@ export type Database = {
           updated_by?: string | null;
         };
         Update: {
+          support_timezone?: string;
+          support_sla_settings?: Json;
           banner_url?: string | null;
           city_fees?: Json;
           commission_rate?: number;
@@ -6652,6 +6672,7 @@ export type Database = {
       };
       support_articles: {
         Row: {
+          archived: boolean;
           category: string;
           content: string;
           created_at: string;
@@ -6661,9 +6682,9 @@ export type Database = {
           title: string;
           updated_at: string;
           video_url: string | null;
-          archived: boolean;
         };
         Insert: {
+          archived?: boolean;
           category: string;
           content: string;
           created_at?: string;
@@ -6673,9 +6694,9 @@ export type Database = {
           title: string;
           updated_at?: string;
           video_url?: string | null;
-          archived?: boolean;
         };
         Update: {
+          archived?: boolean;
           category?: string;
           content?: string;
           created_at?: string;
@@ -6685,12 +6706,12 @@ export type Database = {
           title?: string;
           updated_at?: string;
           video_url?: string | null;
-          archived?: boolean;
         };
         Relationships: [];
       };
       support_messages: {
         Row: {
+          internal_note: boolean;
           attachments: Json;
           author_id: string;
           author_type: string;
@@ -6702,6 +6723,7 @@ export type Database = {
           ticket_id: string;
         };
         Insert: {
+          internal_note?: boolean;
           attachments?: Json;
           author_id: string;
           author_type?: string;
@@ -6713,6 +6735,7 @@ export type Database = {
           ticket_id: string;
         };
         Update: {
+          internal_note?: boolean;
           attachments?: Json;
           author_id?: string;
           author_type?: string;
@@ -6735,6 +6758,19 @@ export type Database = {
       };
       support_tickets: {
         Row: {
+          assigned_at: string | null;
+          first_response_at: string | null;
+          resolved_at: string | null;
+          closed_at: string | null;
+          sla_due_at: string | null;
+          resolution_sla_due_at: string | null;
+          sla_first_response_notified_at: string | null;
+          sla_resolution_near_notified_at: string | null;
+          sla_resolution_breached_notified_at: string | null;
+          sla_first_response_breached_notified_at: string | null;
+          origin: string;
+          tags: string[];
+          reopened_count: number;
           assigned_to: string | null;
           category: Database["public"]["Enums"]["support_category"];
           created_at: string;
@@ -6751,6 +6787,19 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          assigned_at?: string | null;
+          first_response_at?: string | null;
+          resolved_at?: string | null;
+          closed_at?: string | null;
+          sla_due_at?: string | null;
+          resolution_sla_due_at?: string | null;
+          sla_first_response_notified_at?: string | null;
+          sla_resolution_near_notified_at?: string | null;
+          sla_resolution_breached_notified_at?: string | null;
+          sla_first_response_breached_notified_at?: string | null;
+          origin?: string;
+          tags?: string[];
+          reopened_count?: number;
           assigned_to?: string | null;
           category?: Database["public"]["Enums"]["support_category"];
           created_at?: string;
@@ -6767,6 +6816,19 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          assigned_at?: string | null;
+          first_response_at?: string | null;
+          resolved_at?: string | null;
+          closed_at?: string | null;
+          sla_due_at?: string | null;
+          resolution_sla_due_at?: string | null;
+          sla_first_response_notified_at?: string | null;
+          sla_resolution_near_notified_at?: string | null;
+          sla_resolution_breached_notified_at?: string | null;
+          sla_first_response_breached_notified_at?: string | null;
+          origin?: string;
+          tags?: string[];
+          reopened_count?: number;
           assigned_to?: string | null;
           category?: Database["public"]["Enums"]["support_category"];
           created_at?: string;
@@ -7556,6 +7618,42 @@ export type Database = {
       };
     };
     Functions: {
+      get_partner_growth_priority_alerts: { Args: { _as_of?: string }; Returns: Json };
+      support_admin_take_ticket: {
+        Args: { _actor_user_id: string; _ticket_id: string };
+        Returns: Database["public"]["Tables"]["support_tickets"]["Row"];
+      };
+      support_admin_assign_ticket: {
+        Args: { _actor_user_id: string; _ticket_id: string; _assignee_id?: string | null };
+        Returns: Database["public"]["Tables"]["support_tickets"]["Row"];
+      };
+      support_admin_update_status: {
+        Args: {
+          _actor_user_id: string;
+          _ticket_id: string;
+          _status: Database["public"]["Enums"]["support_status"];
+        };
+        Returns: Database["public"]["Tables"]["support_tickets"]["Row"];
+      };
+      support_admin_update_meta: {
+        Args: {
+          _actor_user_id: string;
+          _ticket_id: string;
+          _priority?: Database["public"]["Enums"]["support_priority"] | null;
+          _category?: Database["public"]["Enums"]["support_category"] | null;
+          _tags?: string[] | null;
+        };
+        Returns: Database["public"]["Tables"]["support_tickets"]["Row"];
+      };
+      support_admin_prepare_reply: {
+        Args: {
+          _actor_user_id: string;
+          _ticket_id: string;
+          _body: string;
+          _internal_note?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["support_messages"]["Row"];
+      };
       get_partner_growth_dashboard: {
         Args: { _as_of?: string };
         Returns: Json;
@@ -7664,7 +7762,9 @@ export type Database = {
         | "marketing"
         | "analista"
         | "delivery_driver"
-        | "partner_growth";
+        | "partner_growth"
+        | "support_manager"
+        | "support_agent";
       delivery_driver_status: "ativo" | "inativo" | "afastado" | "aguardando_ativacao";
       delivery_driver_vehicle: "moto" | "bicicleta" | "carro" | "a_pe";
       delivery_queue_status: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "INATIVO";
@@ -7875,6 +7975,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: [
+        "support_manager",
+        "support_agent",
         "admin",
         "partner",
         "customer",

@@ -346,7 +346,7 @@ function CustomersPage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
-            <Customer360Detail detail={detail as any} />
+            <Customer360Detail detail={detail} />
           )}
         </DialogContent>
       </Dialog>
@@ -378,7 +378,7 @@ function FilterChip({
   );
 }
 
-function Customer360Detail({ detail }: { detail: any }) {
+function Customer360Detail({ detail }: { detail: Awaited<ReturnType<typeof getCustomer360>> }) {
   const lifecycle = LIFECYCLE_META[detail.lifecycle as Customer360Lifecycle];
   const metrics = detail.metrics;
 
@@ -474,7 +474,7 @@ function Customer360Detail({ detail }: { detail: any }) {
             automaticamente.
           </p>
           <div className="mt-3 space-y-2">
-            {detail.intelligence.map((insight: any) => (
+            {detail.intelligence.map((insight) => (
               <div key={insight.type} className="rounded-xl border p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium">{insight.title}</p>
@@ -498,7 +498,7 @@ function Customer360Detail({ detail }: { detail: any }) {
           </p>
         ) : (
           <div className="mt-3 space-y-2">
-            {metrics.favorite_products.map((product: any, index: number) => (
+            {metrics.favorite_products.map((product, index: number) => (
               <div
                 key={product.product_id}
                 className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"

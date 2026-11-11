@@ -1,3 +1,4 @@
+import { jsonObject, toJson } from "@/lib/json";
 // Tracking Domain — Mapper: row ⇄ domain / domain ⇄ payload público.
 
 import type { TrackingSnapshot, TrackingTimelineEntry } from "./tracking.types";
@@ -23,7 +24,7 @@ export function toSnapshot(row: Row): TrackingSnapshot {
     last_seen_at: (row.last_seen_at as string | null) ?? null,
     device_captured_at: (row.device_captured_at as string | null) ?? null,
     server_received_at: (row.server_received_at as string | null) ?? null,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata: jsonObject(toJson(row.metadata)),
     correlation_id: String(row.correlation_id),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
@@ -41,7 +42,7 @@ export function toTimelineEntry(row: Row): TrackingTimelineEntry {
     previous_status: (row.previous_status as TrackingTimelineEntry["previous_status"]) ?? null,
     current_status: (row.current_status as TrackingTimelineEntry["current_status"]) ?? null,
     actor: (row.actor ?? "system") as TrackingTimelineEntry["actor"],
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata: jsonObject(toJson(row.metadata)),
     correlation_id: String(row.correlation_id),
     created_at: String(row.created_at),
   };

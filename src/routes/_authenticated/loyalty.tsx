@@ -1,3 +1,11 @@
+import {
+  readBenefitConfig,
+  benefitMutationPayload,
+  type BenefitConfig,
+  type BenefitType,
+  type TriggerKind,
+} from "@/lib/customer/loyalty/benefit-config";
+import type { Json } from "@/integrations/supabase/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -270,30 +278,12 @@ function SettingsTab({ restaurantId }: { restaurantId: string }) {
 // Nenhuma regra de domínio é alterada — a UI é apenas um catálogo editável
 // sobre a mesma tabela que a aba Campanhas já consome.
 
-type BenefitType = "FREE_PRODUCT" | "DISCOUNT" | "FREE_DELIVERY" | "CASHBACK" | "COUPON" | "GIFT";
-
-type TriggerKind = "POINTS" | "ORDERS" | "PRODUCTS" | "SPENT";
-
-type BenefitConfig = {
-  ui_kind: BenefitType;
-  trigger: { kind: TriggerKind; qty: number; product_name?: string };
-  reward: {
-    product_name?: string;
-    discount_percent?: number;
-    cashback_amount?: number;
-    coupon_code?: string;
-    gift_note?: string;
-  };
-  starts_at?: string | null;
-  ends_at?: string | null;
-};
-
 type Benefit = {
   id: string;
   restaurant_id: string;
   name: string;
   rule_type: string;
-  config: BenefitConfig | any;
+  config: Json;
   active: boolean;
   starts_at: string | null;
   ends_at: string | null;
@@ -532,11 +522,7 @@ function BenefitsTab({ restaurantId }: { restaurantId: string }) {
                 </thead>
                 <tbody>
                   {rows.map((b) => {
-                    const cfg: BenefitConfig = (b.config as any) ?? {
-                      ui_kind: "DISCOUNT",
-                      trigger: { kind: "POINTS", qty: 0 },
-                      reward: {},
-                    };
+                    const cfg = readBenefitConfig(b.config);
                     const meta = typeMeta(cfg.ui_kind);
                     const Icon = meta.icon;
                     return (
@@ -657,7 +643,7 @@ function BenefitWizard({
     setStep(1);
     setSaving(false);
     if (editing) {
-      const c = (editing.config as BenefitConfig) ?? emptyCfg;
+      const c = readBenefitConfig(editing.config);
       setName(editing.name);
       setCfg({
         ...emptyCfg,
@@ -686,14 +672,18 @@ function BenefitWizard({
   const canNext = (() => {
     if (step === 1) return !!cfg.ui_kind;
     if (step === 2) return name.trim().length >= 2;
-    if (step === 3) return cfg.trigger.qty > 0;
+    if (step === 3) return Number(cfg.trigger.qty) > 0;
     if (step === 4) {
       const r = cfg.reward;
       if (cfg.ui_kind === "FREE_PRODUCT") return !!r.product_name?.trim();
       if (cfg.ui_kind === "DISCOUNT")
-        return !!r.discount_percent && r.discount_percent > 0 && r.discount_percent <= 100;
+        return (
+          !!r.discount_percent &&
+          Number(r.discount_percent) > 0 &&
+          Number(r.discount_percent) <= 100
+        );
       if (cfg.ui_kind === "FREE_DELIVERY") return true;
-      if (cfg.ui_kind === "CASHBACK") return !!r.cashback_amount && r.cashback_amount > 0;
+      if (cfg.ui_kind === "CASHBACK") return !!r.cashback_amount && Number(r.cashback_amount) > 0;
       if (cfg.ui_kind === "COUPON") return !!r.coupon_code?.trim();
       if (cfg.ui_kind === "GIFT") return !!r.gift_note?.trim();
     }
@@ -701,17 +691,14 @@ function BenefitWizard({
   })();
 
   async function save() {
+    let payload: ReturnType<typeof benefitMutationPayload>;
+    try {
+      payload = benefitMutationPayload(restaurantId, name, cfg, editing);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Configuração inválida");
+      return;
+    }
     setSaving(true);
-    const payload = {
-      restaurant_id: restaurantId,
-      name: name.trim(),
-      rule_type: cfg.ui_kind,
-      config: { ...cfg, starts_at: cfg.starts_at || null, ends_at: cfg.ends_at || null },
-      active: true,
-      starts_at: cfg.starts_at || null,
-      ends_at: cfg.ends_at || null,
-      priority: 10,
-    };
     const q = editing
       ? supabase.from("loyalty_rules").update(payload).eq("id", editing.id)
       : supabase.from("loyalty_rules").insert(payload);
@@ -992,7 +979,7 @@ type Level = {
   minimum_points: number;
   display_order: number;
   active: boolean;
-  benefits: any;
+  benefits: { free_delivery?: boolean; discount_percent?: number; points_multiplier?: number };
 };
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -1118,13 +1105,13 @@ function CustomersTab({ restaurantId }: { restaurantId: string }) {
           .eq("transaction_type", "REDEEM")
           .order("created_at", { ascending: false }),
       ]);
-      const ptsMap = new Map((pts ?? []).map((p: any) => [p.customer_id, p]));
+      const ptsMap = new Map((pts ?? []).map((p) => [p.customer_id, p]));
       const lastMap = new Map<string, string>();
-      for (const t of (last ?? []) as any[])
+      for (const t of last ?? [])
         if (!lastMap.has(t.customer_id)) lastMap.set(t.customer_id, t.created_at);
       return (custs ?? [])
         .map((c) => {
-          const p = ptsMap.get(c.id) as any;
+          const p = ptsMap.get(c.id);
           return {
             ...c,
             balance: p?.points_balance ?? 0,
@@ -1316,7 +1303,7 @@ type Rule = {
   id: string;
   name: string;
   rule_type: string;
-  config: any;
+  config: Json;
   active: boolean;
   starts_at: string | null;
   ends_at: string | null;

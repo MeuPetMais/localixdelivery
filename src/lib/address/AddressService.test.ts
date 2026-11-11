@@ -2,17 +2,25 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createAddressService } from "./AddressService";
 
 const store = new Map<string, string>();
-(globalThis as any).window = globalThis;
-(globalThis as any).localStorage = {
-  getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => {
-    store.set(k, v);
+Object.defineProperty(globalThis, "window", {
+  configurable: true,
+  writable: true,
+  value: globalThis,
+});
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  writable: true,
+  value: {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      store.set(k, v);
+    },
+    removeItem: (k: string) => {
+      store.delete(k);
+    },
+    clear: () => store.clear(),
   },
-  removeItem: (k: string) => {
-    store.delete(k);
-  },
-  clear: () => store.clear(),
-};
+});
 beforeEach(() => store.clear());
 import type { AddressProvider, AddressSuggestion, AddressDetails } from "./types";
 

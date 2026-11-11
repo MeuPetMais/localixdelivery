@@ -1,3 +1,4 @@
+import { toJson } from "@/lib/json";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerAnalyticsService } from "./CustomerAnalyticsService";
 import { CustomerScoreService } from "./CustomerScoreService";
@@ -15,9 +16,9 @@ import type {
   CustomerSegmentRecord,
 } from "./types";
 
-const SEG = () => (supabase as any).from("customer_segments");
-const INS = () => (supabase as any).from("customer_insights");
-const LOY = () => (supabase as any).from("customer_loyalty");
+const SEG = () => supabase.from("customer_segments");
+const INS = () => supabase.from("customer_insights");
+const LOY = () => supabase.from("customer_loyalty");
 
 export function loyaltyLevelRank(level: unknown): number {
   switch (String(level ?? "").toUpperCase()) {
@@ -89,7 +90,7 @@ export const CustomerIntelligenceService = {
       segment: input.segment,
       score: input.score,
       reason: input.reason ?? null,
-      metadata: input.metadata ?? {},
+      metadata: toJson(input.metadata ?? {}),
       generated_at: new Date().toISOString(),
     };
     const { data, error } = await SEG()
@@ -125,7 +126,7 @@ export const CustomerIntelligenceService = {
         severity: input.severity ?? "info",
         title: input.title,
         description: input.description ?? null,
-        metadata: input.metadata ?? {},
+        metadata: toJson(input.metadata ?? {}),
       })
       .select()
       .maybeSingle();

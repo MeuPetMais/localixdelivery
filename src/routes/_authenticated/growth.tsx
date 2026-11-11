@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/growth")({
   component: GrowthPage,
 });
 
+type GrowthData = Awaited<ReturnType<typeof getGrowthDashboardData>>;
 type TabId = "overview" | "opportunities" | "campaigns" | "automation" | "results";
 
 const TABS: Array<{ id: TabId; label: string }> = [
@@ -167,7 +168,16 @@ function Overview({
   readyJobs,
   measurement,
   providers,
-}: any) {
+}: {
+  totalCustomers: number;
+  actionable: number;
+  recurring: number;
+  atRisk: number;
+  consentedWhatsApp: number;
+  readyJobs: number;
+  measurement: GrowthData["measurement"];
+  providers: GrowthData["automation"]["providers"];
+}) {
   const providerCount = Object.values(providers).filter(Boolean).length;
   return (
     <div className="space-y-5">
@@ -232,7 +242,7 @@ function Overview({
   );
 }
 
-function Opportunities({ rows }: { rows: any[] }) {
+function Opportunities({ rows }: { rows: GrowthData["customers"]["opportunities"] }) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b p-5">
@@ -288,7 +298,13 @@ function Opportunities({ rows }: { rows: any[] }) {
   );
 }
 
-function Campaigns({ consent, providers }: any) {
+function Campaigns({
+  consent,
+  providers,
+}: {
+  consent: GrowthData["consent"];
+  providers: GrowthData["automation"]["providers"];
+}) {
   return (
     <div className="space-y-4">
       <Card className="border-amber-500/30 p-5">
@@ -306,7 +322,7 @@ function Campaigns({ consent, providers }: any) {
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {Object.entries(consent.by_channel).map(([channel, counts]: any) => (
+        {Object.entries(consent.by_channel).map(([channel, counts]) => (
           <Card key={channel} className="p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold">{channel}</h3>
@@ -325,7 +341,13 @@ function Campaigns({ consent, providers }: any) {
   );
 }
 
-function Automation({ counts, jobs }: { counts: Record<string, number>; jobs: any[] }) {
+function Automation({
+  counts,
+  jobs,
+}: {
+  counts: Record<string, number>;
+  jobs: GrowthData["automation"]["recent_jobs"];
+}) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -389,7 +411,7 @@ function Automation({ counts, jobs }: { counts: Record<string, number>; jobs: an
   );
 }
 
-function Results({ measurement }: { measurement: any }) {
+function Results({ measurement }: { measurement: GrowthData["measurement"] }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

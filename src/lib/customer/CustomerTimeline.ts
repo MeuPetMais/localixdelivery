@@ -1,8 +1,9 @@
+import { toJson } from "@/lib/json";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerEventBus } from "./CustomerEventBus";
 import type { CustomerTimelineEvent, CustomerTimelineEventType } from "./types";
 
-const T = () => (supabase as any).from("customer_timeline");
+const T = () => supabase.from("customer_timeline");
 
 export type RecordTimelineInput = {
   customer_id: string;
@@ -16,7 +17,7 @@ export type RecordTimelineInput = {
 
 export const CustomerTimeline = {
   async record(input: RecordTimelineInput): Promise<CustomerTimelineEvent | null> {
-    const payload = { metadata: {}, ...input };
+    const payload = { ...input, metadata: toJson(input.metadata ?? {}) };
     const { data, error } = await T().insert(payload).select().maybeSingle();
     if (error) throw error;
     if (data) {

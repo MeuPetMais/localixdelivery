@@ -1,3 +1,5 @@
+import { parseStoredOrderItems } from "@/lib/orders/stored-order-items";
+import type { Tables } from "@/integrations/supabase/types";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,9 +85,16 @@ function SuccessPage() {
   const fetchOrder = useServerFn(getPublicOrderById);
   const syncPaymentStatus = useServerFn(getPaymentIntentStatus);
   const cancelOrderFn = useServerFn(cancelOrderByCustomer);
-  const [order, setOrder] = useState<any>(null);
-  const [restaurant, setRestaurant] = useState<any>(null);
-  const [pricingSnapshot, setPricingSnapshot] = useState<any>(null);
+  const [order, setOrder] = useState<NonNullable<
+    Awaited<ReturnType<typeof getPublicOrderById>>["order"]
+  > | null>(null);
+  const [restaurant, setRestaurant] = useState<Pick<
+    Tables<"restaurants_public">,
+    "id" | "name" | "slug" | "logo_url" | "delivery_time" | "avg_delivery_minutes"
+  > | null>(null);
+  const [pricingSnapshot, setPricingSnapshot] = useState<
+    Awaited<ReturnType<typeof getPublicOrderById>>["pricing"] | null
+  >(null);
   const { user } = useCustomerAuth();
   const { rememberRestaurantRoute, prepareLoginRedirect } = useCustomerNavigation();
   const [waUrl, setWaUrl] = useState<string | null>(null);
@@ -147,7 +156,7 @@ function SuccessPage() {
       if (!mounted || !data) return;
       setOrder(data);
       setPricingSnapshot(res?.pricing ?? null);
-      const { data: r } = await (supabase as any)
+      const { data: r } = await supabase
         .from("restaurants_public")
         .select("id, name, slug, logo_url, delivery_time, avg_delivery_minutes")
         .eq("id", data.restaurant_id)
@@ -165,7 +174,7 @@ function SuccessPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` },
         (payload) => {
-          if (mounted) setOrder((prev: any) => ({ ...prev, ...payload.new }));
+          if (mounted) setOrder((prev) => (prev ? { ...prev, ...payload.new } : prev));
         },
       )
       .subscribe();
@@ -214,7 +223,7 @@ function SuccessPage() {
   }, [order?.id, order?.status, order?.payment_method, id, fetchOrder, syncPaymentStatus]);
 
   const { subtotal, delivery, serviceFee, items } = useMemo(() => {
-    const its: OrderItem[] = Array.isArray(order?.items) ? order.items : [];
+    const its = parseStoredOrderItems(order?.items);
     const itemSubtotal = its.reduce(
       (sum, item) => sum + Number(item.price ?? 0) * Number(item.qty ?? 0),
       0,
@@ -539,7 +548,10 @@ function SuccessPage() {
             {restaurant?.slug && (
               <Button
                 variant="outline"
-                onClick={() => navigate({ to: "/$slug", params: { slug: restaurant.slug } })}
+                onClick={() => {
+                  if (restaurant.slug)
+                    navigate({ to: "/$slug", params: { slug: restaurant.slug } });
+                }}
               >
                 <Store className="mr-1.5 h-4 w-4" /> Novo pedido
               </Button>
@@ -581,7 +593,7 @@ function SuccessPage() {
                     } catch {
                       // Best-effort cleanup; failure must not interrupt the main flow.
                     }
-                    setOrder((prev: any) => (prev ? { ...prev, status: "cancelado" } : prev));
+                    setOrder((prev) => (prev ? { ...prev, status: "cancelado" } : prev));
                     toast.success("Pedido cancelado com sucesso");
                     setCancelOpen(false);
                     navigate({ to: "/meus-pedidos" });
@@ -602,7 +614,7 @@ function SuccessPage() {
         </AlertDialog>
 
         {/* Post-delivery review */}
-        {isDelivered && restaurant && (
+        {isDelivered && restaurant?.id && (
           <div className="mt-4">
             <ReviewForm restaurantId={restaurant.id} orderId={order.id} />
           </div>

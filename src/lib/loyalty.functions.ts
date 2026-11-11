@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 // Loyalty client-safe server functions.
 // Reutiliza inteiramente o Loyalty Domain (customer_loyalty, loyalty_transactions,
 // loyalty_levels, loyalty_settings em restaurants, RPCs loyalty_reserve/commit/rollback).
@@ -113,7 +114,7 @@ async function findCustomerIdByAuth(userId: string, restaurantId: string): Promi
     .from("customers")
     .select("id, phone")
     .eq("restaurant_id", restaurantId);
-  const found = (match ?? []).find((c: any) => (c.phone || "").replace(/\D/g, "") === digits);
+  const found = (match ?? []).find((c) => (c.phone || "").replace(/\D/g, "") === digits);
   return found?.id ?? null;
 }
 
@@ -282,7 +283,7 @@ export const getMyLoyaltyHistory = createServerFn({ method: "POST" })
       q = q.eq("transaction_type", map[data.filter]);
     }
     const { data: rows } = await q;
-    return ((rows ?? []) as any[]).map((r) => ({
+    return (rows ?? []).map((r) => ({
       id: r.id,
       createdAt: r.created_at,
       type: r.transaction_type,
@@ -344,7 +345,7 @@ export const saveRestaurantLoyaltySettings = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("restaurants")
-      .update({ loyalty_settings: data.settings as any })
+      .update({ loyalty_settings: data.settings })
       .eq("id", data.restaurantId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -389,7 +390,7 @@ export const getRestaurantLoyaltyStats = createServerFn({ method: "POST" })
       ? orderRows.reduce((s, r) => s + Number(r.total ?? 0), 0) / orderRows.length
       : 0;
     return {
-      participatingCustomers: (cl ?? []).filter((c: any) => (c.points_balance ?? 0) > 0).length,
+      participatingCustomers: (cl ?? []).filter((c) => (c.points_balance ?? 0) > 0).length,
       pointsIssued,
       pointsRedeemed,
       pointsExpired,
@@ -561,7 +562,7 @@ export const getRestaurantRewards = createServerFn({ method: "POST" })
       .eq("restaurant_id", rest.id)
       .eq("active", true)
       .order("minimum_points", { ascending: true });
-    return ((levels ?? []) as any[]).map((l) => {
+    return (levels ?? []).map((l) => {
       const b = l.benefits;
       const list: string[] = Array.isArray(b)
         ? b.map((x) => String(x))
@@ -602,7 +603,7 @@ export const getRestaurantCoupons = createServerFn({ method: "POST" })
       .eq("restaurant_id", rest.id)
       .eq("is_active", true)
       .order("valid_until", { ascending: true });
-    return ((rows ?? []) as any[])
+    return (rows ?? [])
       .filter((c) => !c.valid_until || String(c.valid_until).slice(0, 10) >= today)
       .map((c) => ({
         id: c.id,
@@ -630,8 +631,9 @@ export type InProgressBenefit = {
   unlocked: boolean;
 };
 
-function describeRewardFromConfig(cfg: any): string {
-  const r = cfg?.reward ?? {};
+function describeRewardFromConfig(value: unknown): string {
+  const cfg = record(value);
+  const r = record(cfg.reward);
   const k = cfg?.ui_kind;
   if (k === "FREE_PRODUCT") return `Ganhe 1 ${r.product_name || "produto"}`;
   if (k === "DISCOUNT") return `${r.discount_percent ?? 0}% de desconto`;
@@ -658,7 +660,7 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         .eq("active", true),
       findCustomerIdByAuth(context.userId, rest.id),
     ]);
-    const activeRules = (rules ?? []) as Array<{ id: string; name: string; config: any }>;
+    const activeRules = rules ?? [];
     if (activeRules.length === 0) return [];
 
     let lifetime = 0;
@@ -674,7 +676,7 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
             .eq("customer_id", customerId)
             .eq("restaurant_id", rest.id)
             .maybeSingle()
-        : Promise.resolve({ data: null } as any),
+        : Promise.resolve({ data: null }),
       supabaseAdmin
         .from("orders")
         .select("total, items, status")
@@ -682,17 +684,14 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         .eq("customer_id", context.userId)
         .not("status", "eq", "cancelado"),
     ]);
-    lifetime = Number((clRes as any)?.data?.lifetime_points ?? 0);
-    const os = ((ordersRes as any)?.data ?? []) as Array<{
-      total: number;
-      items: any;
-      status: string;
-    }>;
+    lifetime = Number(clRes?.data?.lifetime_points ?? 0);
+    const os = ordersRes.data ?? [];
     orderCount = os.length;
     for (const o of os) {
       totalSpent += Number(o.total ?? 0);
       const items = Array.isArray(o.items) ? o.items : [];
-      for (const it of items) {
+      for (const item of items) {
+        const it = record(item);
         const name = String(it?.name ?? "")
           .toLowerCase()
           .trim();
@@ -704,8 +703,8 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
 
     return activeRules
       .map((r): InProgressBenefit | null => {
-        const cfg = r.config ?? {};
-        const trig = cfg.trigger ?? {};
+        const cfg = record(r.config);
+        const trig = record(cfg.trigger);
         const kind = String(trig.kind ?? "").toUpperCase();
         const target = Number(trig.qty ?? 0);
         if (!kind || target <= 0) return null;
@@ -743,8 +742,8 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         return {
           id: r.id,
           name: r.name,
-          ui_kind: cfg.ui_kind ?? null,
-          trigger_kind: kind as any,
+          ui_kind: typeof cfg.ui_kind === "string" ? cfg.ui_kind : null,
+          trigger_kind: String(kind),
           trigger_qty: target,
           trigger_product_name: productName,
           reward_label: describeRewardFromConfig(cfg),

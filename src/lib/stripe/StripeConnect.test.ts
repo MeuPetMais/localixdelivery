@@ -15,7 +15,11 @@ const invoke = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  (globalThis as any).window = { location: { origin: "https://app.test" } };
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    writable: true,
+    value: { location: { origin: "https://app.test" } },
+  });
 });
 
 describe("StripeConnectService", () => {

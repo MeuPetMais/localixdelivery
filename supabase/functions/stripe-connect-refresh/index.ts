@@ -20,7 +20,12 @@ async function stripeGet(path: string, secret: string) {
   return data;
 }
 
-function statusOf(a: any): string {
+function statusOf(a: {
+  charges_enabled?: boolean;
+  payouts_enabled?: boolean;
+  details_submitted?: boolean;
+  requirements?: { disabled_reason?: string | null };
+}): string {
   if (a.charges_enabled && a.payouts_enabled && a.details_submitted) return "active";
   if (a.requirements?.disabled_reason) return "restricted";
   if (a.details_submitted) return "onboarding_pending";

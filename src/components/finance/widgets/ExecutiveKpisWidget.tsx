@@ -31,6 +31,13 @@ export function ExecutiveKpisWidget({
         <WidgetLoading />
       </WidgetCard>
     );
+  if (q.isError)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Resumo executivo" />
+        <WidgetEmpty description="Resumo indisponível: confira a conciliação dos lançamentos financeiros." />
+      </WidgetCard>
+    );
   if (!q.data)
     return (
       <WidgetCard span={4}>

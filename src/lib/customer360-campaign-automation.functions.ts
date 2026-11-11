@@ -130,9 +130,14 @@ export const planAndQueueGrowthCampaign = createServerFn({ method: "POST" })
       customer360,
       insights: intelligence,
       channel: data.channel,
-      latestConsent: consent as any,
+      latestConsent: consent ? { ...consent, channel: data.channel } : null,
       providerAvailable: providerAvailable(data.channel),
-      recentJobs: (recentJobs ?? []) as any,
+      recentJobs: (recentJobs ?? []).flatMap((row) => {
+        const parsed = z
+          .enum(["SECOND_PURCHASE", "AT_RISK", "INACTIVE", "REACTIVATED", "RECURRENCE"])
+          .safeParse(row.trigger_type);
+        return parsed.success ? [{ ...row, trigger_type: parsed.data, channel: data.channel }] : [];
+      }),
     });
 
     if (!plan) {

@@ -1,3 +1,4 @@
+import { parseStoredOrderItems } from "@/lib/orders/stored-order-items";
 import { paymentMethodLabel } from "@/lib/checkout/paymentMethodLabel";
 import {
   createContext,
@@ -157,7 +158,7 @@ export function OrdersRealtimeProvider({
 
           // Kanban: patch cirúrgico no cache, sem refetch da lista inteira.
           const ordersKey = ["orders", restaurantId] as const;
-          qc.setQueriesData<any[]>({ queryKey: ordersKey }, (prev) => {
+          qc.setQueriesData<PendingOrder[]>({ queryKey: ordersKey }, (prev) => {
             const list = Array.isArray(prev) ? prev : [];
             if (evt === "INSERT") {
               if (list.some((o) => o.id === row.id)) return list;
@@ -201,11 +202,11 @@ export function OrdersRealtimeProvider({
                     customer_name: data.customer_name,
                     customer_phone: data.customer_phone,
                     address: data.address,
-                    items: (data.items as any) ?? [],
+                    items: parseStoredOrderItems(data.items),
                     payment_method: data.payment_method,
                     total: Number(data.total),
                     created_at: data.created_at,
-                    restaurant_name: (data.restaurants as any)?.name ?? null,
+                    restaurant_name: data.restaurants?.name ?? null,
                   };
                   printAutoCopies(printable).catch(() => {});
                 });

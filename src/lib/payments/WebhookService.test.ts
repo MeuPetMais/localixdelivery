@@ -119,7 +119,7 @@ describe("handleWebhook - fluxos", () => {
         status: "rejected",
         transaction_amount: 10,
         currency_id: "BRL",
-      })) as any,
+      })),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("REJECTED");
@@ -135,7 +135,7 @@ describe("handleWebhook - fluxos", () => {
         id: 1,
         status: "pending",
         transaction_amount: 10,
-      })) as any,
+      })),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("PENDING");
@@ -150,7 +150,7 @@ describe("handleWebhook - fluxos", () => {
         id: 1,
         status: "expired",
         transaction_amount: 10,
-      })) as any,
+      })),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("EXPIRED");
@@ -165,7 +165,7 @@ describe("handleWebhook - fluxos", () => {
         id: 1,
         status: "refunded",
         transaction_amount: 10,
-      })) as any,
+      })),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("REFUNDED");
@@ -180,7 +180,7 @@ describe("handleWebhook - fluxos", () => {
         id: 1,
         status: "charged_back",
         transaction_amount: 10,
-      })) as any,
+      })),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("CHARGEBACK");
@@ -193,7 +193,7 @@ describe("handleWebhook - fluxos", () => {
     const deps = makeDeps({
       fetchMpPayment: vi.fn(async () => {
         throw new Error("boom");
-      }) as any,
+      }),
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.ok).toBe(false);

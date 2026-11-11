@@ -308,21 +308,23 @@ export function sortPartnerGrowthTasks(
 }
 
 export async function loadPartnerGrowthDashboard(): Promise<PartnerGrowthDashboard> {
-  const { data, error } = await (supabase.rpc("get_partner_growth_dashboard" as any) as any);
+  const { data, error } = await supabase.rpc("get_partner_growth_dashboard");
   if (error) throw error;
   return normalizePartnerGrowthDashboard((data ?? {}) as PartnerGrowthDashboardRpc);
 }
 
 export async function loadPartnerGrowthPriorityAlerts(): Promise<PartnerGrowthPriorityAlert[]> {
-  const { data, error } = await (supabase.rpc("get_partner_growth_priority_alerts" as any) as any);
+  const { data, error } = await supabase.rpc("get_partner_growth_priority_alerts");
   if (error) throw error;
   return normalizePartnerGrowthPriorityAlerts((data ?? {}) as PartnerGrowthPriorityAlertsRpc);
 }
 
 export async function loadPartnerGrowthTasks(): Promise<PartnerGrowthTask[]> {
-  const { data, error } = await (supabase.from("partner_growth_tasks" as any) as any).select(
-    "id, restaurant_id, assigned_to, created_by, source_signal, title, notes, priority, status, due_at, created_at, updated_at, restaurants(id, name)",
-  );
+  const { data, error } = await supabase
+    .from("partner_growth_tasks")
+    .select(
+      "id, restaurant_id, assigned_to, created_by, source_signal, title, notes, priority, status, due_at, created_at, updated_at, restaurants(id, name)",
+    );
   if (error) throw error;
   return sortPartnerGrowthTasks(
     ((data ?? []) as PartnerGrowthTaskRow[]).map(normalizePartnerGrowthTask),
@@ -333,7 +335,8 @@ export async function createPartnerGrowthTask(
   input: CreatePartnerGrowthTaskInput,
   userId: string,
 ): Promise<PartnerGrowthTask> {
-  const { data, error } = await (supabase.from("partner_growth_tasks" as any) as any)
+  const { data, error } = await supabase
+    .from("partner_growth_tasks")
     .insert({
       restaurant_id: input.restaurantId,
       assigned_to: userId,
@@ -357,7 +360,8 @@ export async function updatePartnerGrowthTaskStatus(
   taskId: string,
   status: PartnerGrowthTaskStatus,
 ): Promise<PartnerGrowthTask> {
-  const { data, error } = await (supabase.from("partner_growth_tasks" as any) as any)
+  const { data, error } = await supabase
+    .from("partner_growth_tasks")
     .update({ status })
     .eq("id", taskId)
     .select(
@@ -382,9 +386,8 @@ export async function loadPartnerGrowthPortfolio(userId: string): Promise<{
 
   const roles = (rolesData ?? []).map((row) => row.role as AppRole);
 
-  const { data: assignmentsData, error: assignmentsError } = await (
-    supabase.from("partner_growth_assignments" as any) as any
-  )
+  const { data: assignmentsData, error: assignmentsError } = await supabase
+    .from("partner_growth_assignments")
     .select("id, restaurant_id, active, restaurants(id, name)")
     .eq("user_id", userId)
     .order("active", { ascending: false })

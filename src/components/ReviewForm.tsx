@@ -1,3 +1,4 @@
+import type { Tables } from "@/integrations/supabase/types";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,13 +23,16 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
-  const [existing, setExisting] = useState<any>(null);
+  const [existing, setExisting] = useState<Pick<
+    Tables<"reviews">,
+    "id" | "rating" | "comment" | "owner_reply" | "created_at"
+  > | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("reviews")
         .select("id, rating, comment, owner_reply, created_at")
         .eq("order_id", orderId)
@@ -47,7 +51,7 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
     if (rating < 1) return toast.error("Selecione uma nota");
     if (comment.length > 500) return toast.error("Comentário muito longo (máx 500)");
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("reviews")
       .insert({
         order_id: orderId,

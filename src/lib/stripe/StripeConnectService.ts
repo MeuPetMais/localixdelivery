@@ -64,13 +64,13 @@ function friendly(code: string): string {
 }
 
 async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(fn, { body });
+  const { data, error } = await supabase.functions.invoke<T & { error?: string }>(fn, { body });
   if (error) {
     // FunctionsHttpError esconde o body real; extrai para logs técnicos + msg amigável
     let code = "";
     let raw = "";
     try {
-      const res = (error as any)?.context?.response;
+      const res = error.context?.response;
       if (res && typeof res.text === "function") {
         raw = await res.text();
         try {
@@ -83,18 +83,18 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
     } catch {
       // Best-effort cleanup; the main flow must continue.
     }
-    // eslint-disable-next-line no-console
+
     console.error(`[stripe:${fn}]`, { message: error.message, code, raw });
-    const err = new Error(friendly(code || error.message || `edge_${fn}_failed`));
-    (err as any).code = code;
+    const err = Object.assign(new Error(friendly(code || error.message || `edge_${fn}_failed`)), {
+      code,
+    });
     throw err;
   }
-  const payload = data as any;
+  if (data === null) throw new Error(`Empty response from ${fn}`);
+  const payload: T & { error?: string } = data;
   if (payload?.error) {
-    // eslint-disable-next-line no-console
     console.error(`[stripe:${fn}] payload error`, payload);
-    const err = new Error(friendly(payload.error));
-    (err as any).code = payload.error;
+    const err = Object.assign(new Error(friendly(payload.error)), { code: payload.error });
     throw err;
   }
   return payload as T;

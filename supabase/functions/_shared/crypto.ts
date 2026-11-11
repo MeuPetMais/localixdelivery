@@ -38,7 +38,12 @@ export async function decryptToken(payload: string | null): Promise<string | nul
   if (!payload.startsWith("v1:")) return payload; // legado / plaintext
   const [, ivB, ctB] = payload.split(":");
   const key = await getKey();
-  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64d(ivB) }, key, b64d(ctB));
+
+  const iv = new Uint8Array(b64d(ivB));
+  const ciphertext = new Uint8Array(b64d(ctB));
+
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+
   return dec.decode(pt);
 }
 

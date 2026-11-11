@@ -161,13 +161,23 @@ function MetaPixel() {
     };
 
     if (!w.fbq) {
-      const fbq = function (...args: unknown[]) {
-        if ((fbq as any).callMethod) {
-          (fbq as any).callMethod(...args);
-        } else {
-          (fbq as any).queue.push(args);
-        }
-      } as any;
+      const fbq: {
+        (...args: unknown[]): void;
+        callMethod?: (...args: unknown[]) => void;
+        push?: unknown;
+        loaded?: boolean;
+        version?: string;
+        queue: unknown[][];
+      } = Object.assign(
+        function (...args: unknown[]) {
+          if (fbq.callMethod) {
+            fbq.callMethod(...args);
+          } else {
+            fbq.queue.push(args);
+          }
+        },
+        { queue: [] as unknown[][] },
+      );
 
       fbq.push = fbq;
       fbq.loaded = true;

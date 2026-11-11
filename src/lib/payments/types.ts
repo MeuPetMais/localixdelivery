@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 // Tipos do módulo de pagamentos (Prompt 1 — apenas estrutura).
 // Não faz integração com gateway; apenas descreve o formato dos dados.
 
@@ -25,7 +26,7 @@ export interface MercadoPagoAccount {
   expires_at: string | null;
   connected_at: string | null;
   disconnected_at: string | null;
-  raw: unknown | null;
+  raw: Json;
   created_at: string;
   updated_at: string;
 }
@@ -47,7 +48,7 @@ export interface Payment {
   ticket_url: string | null;
   payer_email: string | null;
   paid_at: string | null;
-  raw: unknown | null;
+  raw: Json;
   created_at: string;
   updated_at: string;
 }
@@ -67,7 +68,7 @@ export interface PaymentLog {
   restaurant_id: string | null;
   level: "info" | "warn" | "error" | string;
   message: string;
-  data: unknown | null;
+  data: Json;
   created_at: string;
 }
 

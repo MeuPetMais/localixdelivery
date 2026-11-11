@@ -115,7 +115,7 @@ export const getOperationsDashboard = createServerFn({ method: "GET" })
         confidence: s.confidence as TrackingConfidence,
         last_lat: s.last_lat,
         last_lng: s.last_lng,
-        last_accuracy: (s as any).last_accuracy == null ? null : Number((s as any).last_accuracy),
+        last_accuracy: s.last_accuracy == null ? null : Number(s.last_accuracy),
         last_seen_at: s.last_seen_at,
         started_at: s.created_at,
         minutes_since_start: minutes,
@@ -202,22 +202,16 @@ export const getOperationsDetail = createServerFn({ method: "GET" })
       timeline: (tlRes.data ?? []).map((r) => toTimelineEntry(r as Record<string, unknown>)),
       order: orderRes.data
         ? {
-            address: (orderRes.data as any).address ?? null,
-            order_number: (orderRes.data as any).order_number ?? null,
+            address: orderRes.data.address ?? null,
+            order_number: orderRes.data.order_number ?? null,
           }
         : null,
       restaurant: restaurantRes.data
         ? {
-            name: (restaurantRes.data as any).name ?? null,
-            address: (restaurantRes.data as any).address ?? null,
-            lat:
-              (restaurantRes.data as any).latitude == null
-                ? null
-                : Number((restaurantRes.data as any).latitude),
-            lng:
-              (restaurantRes.data as any).longitude == null
-                ? null
-                : Number((restaurantRes.data as any).longitude),
+            name: restaurantRes.data.name ?? null,
+            address: restaurantRes.data.address ?? null,
+            lat: restaurantRes.data.latitude == null ? null : Number(restaurantRes.data.latitude),
+            lng: restaurantRes.data.longitude == null ? null : Number(restaurantRes.data.longitude),
           }
         : null,
     };

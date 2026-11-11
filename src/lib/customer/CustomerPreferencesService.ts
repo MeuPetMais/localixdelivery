@@ -3,7 +3,7 @@ import { CustomerEventBus } from "./CustomerEventBus";
 import { CustomerValidator } from "./CustomerValidator";
 import type { CustomerPreferences } from "./types";
 
-const T = () => (supabase as any).from("customer_preferences");
+const T = () => supabase.from("customer_preferences");
 
 const DEFAULTS = (customerId: string): CustomerPreferences => ({
   customer_id: customerId,

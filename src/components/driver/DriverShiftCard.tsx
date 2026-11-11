@@ -73,7 +73,7 @@ export function DriverShiftCard() {
           <p className="text-sm text-muted-foreground">Turno</p>
           <p className="text-lg font-semibold">Você está fora de turno</p>
         </div>
-        <Button size="lg" onClick={() => start.mutate({} as any)} disabled={start.isPending}>
+        <Button size="lg" onClick={() => start.mutate({})} disabled={start.isPending}>
           <Play className="mr-2 h-4 w-4" /> Iniciar turno
         </Button>
       </Card>
@@ -97,15 +97,15 @@ export function DriverShiftCard() {
         </div>
         <div className="flex gap-2">
           {shift.status === "ATIVO" ? (
-            <Button variant="outline" size="sm" onClick={() => pause.mutate({} as any)}>
+            <Button variant="outline" size="sm" onClick={() => pause.mutate({})}>
               <Pause className="h-4 w-4" />
             </Button>
           ) : shift.status === "PAUSADO" ? (
-            <Button variant="outline" size="sm" onClick={() => resume.mutate({} as any)}>
+            <Button variant="outline" size="sm" onClick={() => resume.mutate({})}>
               <Play className="h-4 w-4" />
             </Button>
           ) : null}
-          <Button variant="destructive" size="sm" onClick={() => finish.mutate({} as any)}>
+          <Button variant="destructive" size="sm" onClick={() => finish.mutate({})}>
             <Square className="h-4 w-4" />
           </Button>
         </div>

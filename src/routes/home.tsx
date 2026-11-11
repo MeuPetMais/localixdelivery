@@ -34,7 +34,7 @@ function CustomerHome() {
   const { data: restaurants = [], isLoading } = useQuery({
     queryKey: ["customer-home", "restaurants"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("restaurants_public")
         .select("slug, name, logo_url, cover_url, category, is_open")
         .order("name", { ascending: true })

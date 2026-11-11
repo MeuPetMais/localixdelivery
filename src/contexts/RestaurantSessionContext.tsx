@@ -107,7 +107,7 @@ export function RestaurantSessionProvider({ children }: { children: ReactNode })
     const snapshot = sessionRef.current;
     if (!snapshot) return;
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("restaurants_public")
         .select("id, slug, name, logo_url")
         .eq("id", snapshot.restaurantId)
@@ -117,7 +117,7 @@ export function RestaurantSessionProvider({ children }: { children: ReactNode })
         setStatus("ready");
         return;
       }
-      if (!data) {
+      if (!data?.id || !data.slug) {
         setStatus("unavailable");
         return;
       }

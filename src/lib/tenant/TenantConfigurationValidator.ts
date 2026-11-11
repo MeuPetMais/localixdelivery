@@ -19,10 +19,10 @@ export function validateGroup<G extends ConfigGroup>(
   value: GroupPayload<G>,
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
-  const v = value as any;
 
   switch (group) {
-    case "payment":
+    case "payment": {
+      const v = value as GroupPayload<"payment">;
       if (v.minimum_order < 0) issues.push({ field: "minimum_order", message: "Deve ser ≥ 0" });
       if (v.maximum_order != null && v.maximum_order < v.minimum_order)
         issues.push({ field: "maximum_order", message: "Deve ser ≥ minimum_order" });
@@ -40,7 +40,9 @@ export function validateGroup<G extends ConfigGroup>(
           message: "Obrigatório quando frete grátis está ativo",
         });
       break;
-    case "delivery":
+    }
+    case "delivery": {
+      const v = value as GroupPayload<"delivery">;
       if (v.delivery_radius_km <= 0 || v.delivery_radius_km > 100)
         issues.push({ field: "delivery_radius_km", message: "Entre 0.1 e 100" });
       if (v.estimated_preparation_time < 0)
@@ -50,7 +52,9 @@ export function validateGroup<G extends ConfigGroup>(
       if (v.maximum_simultaneous_orders < 1)
         issues.push({ field: "maximum_simultaneous_orders", message: "≥ 1" });
       break;
-    case "business":
+    }
+    case "business": {
+      const v = value as GroupPayload<"business">;
       if (v.cancellation_time_limit < 0)
         issues.push({ field: "cancellation_time_limit", message: "≥ 0" });
       for (const [day, hours] of Object.entries(v.working_hours_json ?? {})) {
@@ -60,19 +64,26 @@ export function validateGroup<G extends ConfigGroup>(
           issues.push({ field: `working_hours_json.${day}`, message: "Formato HH:MM" });
       }
       break;
-    case "branding":
+    }
+    case "branding": {
+      const v = value as GroupPayload<"branding">;
       if (v.primary_color && !HEX.test(v.primary_color))
         issues.push({ field: "primary_color", message: "Cor hex inválida" });
       if (v.secondary_color && !HEX.test(v.secondary_color))
         issues.push({ field: "secondary_color", message: "Cor hex inválida" });
       break;
-    case "notifications":
+    }
+    case "notifications": {
+      const v = value as GroupPayload<"notifications">;
       if (!Array.isArray(v.preferred_channels_json) || v.preferred_channels_json.length === 0)
         issues.push({ field: "preferred_channels_json", message: "Selecione ao menos 1 canal" });
       break;
-    case "features":
+    }
+    case "features": {
+      const v = value as GroupPayload<"features">;
       // booleans; sem validações extras
       break;
+    }
   }
   return { valid: issues.length === 0, issues };
 }

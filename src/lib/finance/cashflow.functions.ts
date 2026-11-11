@@ -1,3 +1,4 @@
+import type { JsonObject } from "@/lib/json";
 // Cash Flow & Receivables — server functions.
 // Thin, RLS-enforced accessors used by CashFlow/Receivables/Payables services.
 // Never bypasses RLS; every reader is scoped by the signed-in owner.
@@ -21,7 +22,7 @@ export interface AccountReceivable {
   expected_date: string | null;
   received_date: string | null;
   status: ReceivableStatus;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +39,7 @@ export interface AccountPayable {
   status: PayableStatus;
   due_date: string | null;
   paid_date: string | null;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   created_at: string;
   updated_at: string;
 }

@@ -1,3 +1,5 @@
+import { parseStoredOrderItems, repeatStoredOrderItems } from "@/lib/orders/stored-order-items";
+import type { Json } from "@/integrations/supabase/types";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -33,7 +35,7 @@ type Order = {
   order_number: number | null;
   status: string;
   total: number;
-  items: any;
+  items: Json;
   created_at: string;
   restaurant_id: string;
   estimated_delivery_time: number | null;
@@ -103,22 +105,9 @@ function MyOrders() {
   function repeatOrder(o: Order) {
     const r = restaurants[o.restaurant_id];
     if (!r?.slug) return;
-    const items = Array.isArray(o.items) ? o.items : [];
+    const items = parseStoredOrderItems(o.items);
     try {
-      sessionStorage.setItem(
-        `repeat:${r.slug}`,
-        JSON.stringify(
-          items.map((it: any) => ({
-            id: it.id,
-            name: it.name,
-            price: Number(it.price),
-            qty: Number(it.qty),
-            kind: it.kind,
-            builderId: it.builderId,
-            selections: Array.isArray(it.selections) ? it.selections : undefined,
-          })),
-        ),
-      );
+      sessionStorage.setItem(`repeat:${r.slug}`, JSON.stringify(repeatStoredOrderItems(items)));
     } catch {
       // Best-effort cleanup; failure must not interrupt the main flow.
     }

@@ -1,3 +1,4 @@
+import type { Tables } from "@/integrations/supabase/types";
 // RC5.2.e — Driver Wallet
 // Server functions expostas ao próprio motoboy autenticado.
 // NUNCA aceitam driverId externo: derivam sempre de owner_id = context.userId.
@@ -119,7 +120,10 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       .limit(1);
     const active = activeRows?.[0] ?? null;
 
-    let activeOrder: any = null;
+    let activeOrder: Pick<
+      Tables<"orders">,
+      "id" | "order_number" | "customer_name" | "customer_phone" | "address" | "total"
+    > | null = null;
     if (active) {
       const { data: ord } = await supabase
         .from("orders")

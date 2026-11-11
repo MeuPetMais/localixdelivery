@@ -120,7 +120,7 @@ function FeaturedPage() {
     enabled: !!restaurantId,
     queryFn: async () => {
       const { data } = await supabase
-        .from("featured_sections" as any)
+        .from("featured_sections")
         .select("*")
         .eq("restaurant_id", restaurantId!)
         .maybeSingle();
@@ -147,7 +147,7 @@ function FeaturedPage() {
         restaurant_id: restaurantId,
       };
       const { error } = await supabase
-        .from("featured_sections" as any)
+        .from("featured_sections")
         .upsert(merged, { onConflict: "restaurant_id" });
       if (error) throw error;
     },
@@ -170,7 +170,7 @@ function FeaturedPage() {
         .eq("is_active", true)
         .order("position")
         .limit(200);
-      return (data ?? []) as any[];
+      return data ?? [];
     },
   });
 
@@ -178,7 +178,7 @@ function FeaturedPage() {
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
       const { error } = await supabase
         .from("menu_items")
-        .update({ is_weekly_favorite: value } as any)
+        .update({ is_weekly_favorite: value })
         .eq("id", id);
       if (error) throw error;
     },
@@ -316,7 +316,7 @@ function FeaturedPage() {
                   id={t.key}
                   disabled={saveConfig.isPending}
                   checked={enabled}
-                  onCheckedChange={(v) => saveConfig.mutate({ [t.key]: v } as any)}
+                  onCheckedChange={(v) => saveConfig.mutate({ [t.key]: v })}
                 />
               </div>
             );

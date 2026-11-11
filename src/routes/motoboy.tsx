@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -118,7 +119,7 @@ function DriverWallet() {
   const dash = dashQ.data;
   const driver = dash?.driver;
   const restaurantId = driver?.restaurant_id ?? null;
-  const operationalStatus = (dash as any)?.operationalStatus as DriverOperationalStatus | undefined;
+  const operationalStatus = dash?.operationalStatus as DriverOperationalStatus | undefined;
 
   const [goals, setGoals] = useState<DriverGoals>(DEFAULT_GOALS);
   useEffect(() => {
@@ -272,13 +273,11 @@ function DriverWallet() {
             }
           />
         )}
-        {tab === "ganhos" && (
-          <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />
-        )}
+        {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings} history={dash.history} />}
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
-        {tab === "perfil" && <DriverProfileTab driver={dash.driver as any} />}
+        {tab === "perfil" && <DriverProfileTab driver={dash.driver} />}
       </div>
 
       {goalsOpen && driver && (
@@ -364,9 +363,12 @@ export function derivePresenceStatus(input: {
   });
 }
 
-export function activeDeliveryEarning(assignment: any) {
+export function activeDeliveryEarning(
+  assignment: Omit<Parameters<typeof resolveDriverEarning>[0], "metadata"> & { metadata?: unknown },
+) {
   return resolveDriverEarning({
     ...assignment,
+    metadata: record(assignment.metadata),
     driver_distance_km: assignment.driver_distance_km ?? assignment.distance_km,
   });
 }
@@ -465,11 +467,11 @@ function HomeTab(props: {
   const { dash } = props;
   const q = dash.queue;
   const driver = dash.driver;
-  const restaurantName = (dash as any).restaurant?.name as string | undefined;
+  const restaurantName = dash.restaurant?.name as string | undefined;
   const firstName = driver.name.split(" ")[0];
   const hasActive = !!dash.active;
   const presence =
-    ((dash as any).operationalStatus as DriverPresenceStatus | undefined) ??
+    (dash.operationalStatus as DriverPresenceStatus | undefined) ??
     derivePresenceStatus({
       online: !!driver.online,
       queueStatus: q.status,
@@ -479,13 +481,13 @@ function HomeTab(props: {
     ? Math.max(0, Math.round((Date.now() - new Date(q.waitingSince).getTime()) / 60000))
     : 0;
   const waitLabel = `${String(Math.floor(waitMin / 60)).padStart(2, "0")}:${String(waitMin % 60).padStart(2, "0")}`;
-  const nextMin = (q as any).nextDepartureMin as number | null | undefined;
+  const nextMin = q.nextDepartureMin as number | null | undefined;
   const avgMin = Math.round(dash.stats.avgAssignToDelivered || 0);
   const canOperate = driver.status === "ativo";
   const isReturning = presence === "retornando";
   const showQueueRecovery = driver.online && !q.inQueue && !isReturning && !hasActive;
-  const nextDriverName = (q as any).nextDriverName as string | null | undefined;
-  const estimatedWaitMinutes = (q as any).estimatedWaitMinutes as number | null | undefined;
+  const nextDriverName = q.nextDriverName as string | null | undefined;
+  const estimatedWaitMinutes = q.estimatedWaitMinutes as number | null | undefined;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-500">
@@ -629,7 +631,7 @@ function ActiveDeliveryCard(props: {
   busy?: boolean;
 }) {
   const a = props.active.assignment;
-  const o = props.active.order as any;
+  const o = props.active.order;
   // RC6.6 — Fluxo simplificado: Novo pedido → Retirar → Em entrega → Entregue → Retornando (auto-fila)
   const isNew = a.status === "ATRIBUIDO";
   const inRoute = a.status === "EM_ROTA" || a.status === "COLETANDO";
@@ -858,7 +860,7 @@ function HistoryTab(props: { dash: Dash }) {
             {day}
           </p>
           <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
-            {items.map((h: any) => (
+            {items.map((h) => (
               <div key={h.id} className="flex items-center gap-3 p-4">
                 <div
                   className={`rounded-full p-2 ${h.status === "ENTREGUE" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}

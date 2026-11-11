@@ -46,7 +46,7 @@ export const CustomerAnalyticsService = {
     for (const o of realizedOrders) {
       const ch = String(o.payment_method ?? "unknown");
       channelCount.set(ch, (channelCount.get(ch) ?? 0) + 1);
-      const items = Array.isArray(o.items) ? (o.items as any[]) : [];
+      const items = Array.isArray(o.items) ? o.items : [];
       for (const it of items) {
         const pid = String(it?.id ?? it?.product_id ?? "");
         if (pid) {
@@ -102,7 +102,7 @@ export const CustomerAnalyticsService = {
     restaurantId: string,
     limit = 200,
   ): Promise<CustomerAnalytics> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("orders")
       .select("id,total,created_at,items,payment_method,status")
       .eq("customer_id", customerId)

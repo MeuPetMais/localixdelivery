@@ -8,8 +8,8 @@ import { CustomerPreferencesService } from "./CustomerPreferencesService";
 import { CustomerFavoritesService } from "./CustomerFavoritesService";
 import type { CustomerConsent, CustomerConsentType, CustomerProfile } from "./types";
 
-const P = () => (supabase as any).from("customer_profiles");
-const C = () => (supabase as any).from("customer_consents");
+const P = () => supabase.from("customer_profiles");
+const C = () => supabase.from("customer_consents");
 
 /**
  * CustomerService — public facade of the Customer CRM Domain.
@@ -30,7 +30,14 @@ export const CustomerService = {
   ): Promise<CustomerProfile> {
     const v = CustomerValidator.validateProfile(patch);
     if (!v.ok) throw new Error(v.issues.map((i) => i.message).join("; "));
-    const { data, error } = await P().update(patch).eq("id", customerId).select().maybeSingle();
+    const { status, notes, ...profilePatch } = patch;
+    if (status !== undefined || notes !== undefined)
+      throw new Error("Profile status and notes are not supported by the current schema");
+    const { data, error } = await P()
+      .update(profilePatch)
+      .eq("id", customerId)
+      .select()
+      .maybeSingle();
     if (error) throw error;
     CustomerAudit.record({ customerId, action: "profile.updated", data: patch });
     await CustomerEventBus.publish({
@@ -98,7 +105,7 @@ export const CustomerService = {
     customerId: string,
     limit = 20,
   ): Promise<Array<{ id: string; total: number; status: string; created_at: string }>> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("orders")
       .select("id,total,status,created_at")
       .eq("customer_id", customerId)

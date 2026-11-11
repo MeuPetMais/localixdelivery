@@ -53,12 +53,12 @@ export const getMyBenefits = createServerFn({ method: "GET" })
       .eq("customer_id", userId);
 
     const restaurantIds = Array.from(
-      new Set((orderRows ?? []).map((o: any) => o.restaurant_id).filter(Boolean)),
+      new Set((orderRows ?? []).map((o) => o.restaurant_id).filter(Boolean)),
     );
 
     // Per-restaurant order counts (for loyalty)
     const countsByRestaurant = new Map<string, number>();
-    (orderRows ?? []).forEach((o: any) => {
+    (orderRows ?? []).forEach((o) => {
       countsByRestaurant.set(o.restaurant_id, (countsByRestaurant.get(o.restaurant_id) ?? 0) + 1);
     });
 
@@ -86,7 +86,7 @@ export const getMyBenefits = createServerFn({ method: "GET" })
     // 3. Fetch restaurants, active coupons, active promotions in parallel
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [restRes, couponsRes, promosRes] = await Promise.all([
-      (supabaseAdmin as any)
+      supabaseAdmin
         .from("restaurants_public")
         .select("id, name, slug, logo_url")
         .in("id", restaurantIds),
@@ -106,13 +106,16 @@ export const getMyBenefits = createServerFn({ method: "GET" })
         .not("promo_price", "is", null),
     ]);
 
-    const restList: BenefitRestaurant[] = (restRes.data ?? []) as any[];
+    const restList: BenefitRestaurant[] = (restRes.data ?? []).filter(
+      (row): row is BenefitRestaurant =>
+        typeof row.id === "string" && typeof row.name === "string" && typeof row.slug === "string",
+    );
     const restMap = new Map<string, BenefitRestaurant>(restList.map((r) => [r.id, r]));
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const coupons: BenefitCoupon[] = ((couponsRes.data ?? []) as any[])
+    const coupons: BenefitCoupon[] = (couponsRes.data ?? [])
       .filter((c) => !c.valid_until || new Date(c.valid_until) >= today)
       .map((c) => ({
         id: c.id,
@@ -124,7 +127,7 @@ export const getMyBenefits = createServerFn({ method: "GET" })
       .filter((c) => !!c.restaurant);
 
     const now = Date.now();
-    const promotions: BenefitPromotion[] = ((promosRes.data ?? []) as any[])
+    const promotions: BenefitPromotion[] = (promosRes.data ?? [])
       .filter((p) => {
         if (p.is_paused) return false;
         const price = Number(p.price);

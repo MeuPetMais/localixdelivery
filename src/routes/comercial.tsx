@@ -130,7 +130,7 @@ function CommercialPage() {
     setError(null);
 
     // partner_leads is a new Staging table and is not in the generated client types yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const leadsTable = supabase.from("partner_leads");
     const { data, error: queryError } = await leadsTable
       .select(
@@ -304,7 +304,7 @@ function CommercialPage() {
   ) {
     setSaving(true);
     // partner_leads is not in generated client types yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const leadsTable = supabase.from("partner_leads");
     const { error: updateError } = await leadsTable.update(patch).eq("id", leadId);
     setSaving(false);
@@ -359,7 +359,7 @@ function CommercialPage() {
     setChannelsDraft((lead?.current_channels ?? []).join(", "));
     setSelectedLeadId(leadId);
     // New CRM table is not in generated client types yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const activitiesTable = supabase.from("partner_lead_activities");
     const { data, error: activitiesError } = await activitiesTable
       .select("id,lead_id,activity_type,note,occurred_at,created_at")
@@ -426,7 +426,7 @@ function CommercialPage() {
     if (!selectedLeadId || !activityNote.trim()) return;
     setSaving(true);
     // New CRM table is not in generated client types yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const activitiesTable = supabase.from("partner_lead_activities");
     const { error: activityError } = await activitiesTable.insert({
       lead_id: selectedLeadId,

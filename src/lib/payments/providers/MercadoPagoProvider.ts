@@ -43,7 +43,7 @@ export function buildMercadoPagoPaymentIntentBody(input: CreateCheckoutInput) {
   };
 }
 
-async function callMpOauth<T = any>(action: string, body: Record<string, unknown>): Promise<T> {
+async function callMpOauth<T = void>(action: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("mp-oauth", {
     body: { action, ...body },
   });
@@ -65,7 +65,16 @@ export const MercadoPagoProvider: PaymentProvider = {
   },
 
   async getStatus(restaurantId) {
-    const d = await callMpOauth<any>("status", { restaurant_id: restaurantId });
+    const d = await callMpOauth<{
+      connected: boolean;
+      mp_user_id?: string;
+      live_mode?: boolean;
+      scope?: string;
+      connected_at?: string;
+      disconnected_at?: string;
+      expires_at?: string;
+      public_key?: string;
+    }>("status", { restaurant_id: restaurantId });
     return {
       provider: "mercado_pago",
       connected: !!d.connected,
@@ -97,11 +106,19 @@ export const MercadoPagoProvider: PaymentProvider = {
         };
       }
     }
-    const { data, error } = await supabase.functions.invoke("mp-payment-intent", {
+    const { data, error } = await supabase.functions.invoke<{
+      error?: string;
+      payment_url?: string;
+      payment_id?: string;
+      qr_code?: string;
+      qr_code_base64?: string;
+      expiration_date?: string;
+      status?: string;
+    }>("mp-payment-intent", {
       body: buildMercadoPagoPaymentIntentBody(input),
     });
     if (error) throw new Error(error.message);
-    if ((data as any)?.error) throw new Error(String((data as any).error));
+    if (data?.error) throw new Error(String(data.error));
     return {
       provider: "mercado_pago",
       redirectUrl: (data?.payment_url as string) ?? null,

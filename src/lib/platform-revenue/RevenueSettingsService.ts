@@ -27,7 +27,7 @@ export const RevenueSettingsService = {
   async load(force = false): Promise<RevenuePolicy> {
     if (!force && cache && Date.now() - cache.at < TTL) return cache.value;
     const { data } = await supabase
-      .from("platform_settings" as any)
+      .from("platform_settings")
       .select(
         "platform_fee_until_30, platform_fee_above_30, currency, service_fee_enabled, service_fee_type, service_fee_value, effective_from, effective_until",
       )

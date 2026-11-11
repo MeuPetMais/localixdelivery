@@ -7,10 +7,12 @@ const providerSource = readFileSync(
   "utf8",
 );
 
+const cardBranchStart = providerSource.indexOf('if (input.method === "card")');
 const cardBranch = providerSource.slice(
-  providerSource.indexOf('if (input.method === "card")'),
+  cardBranchStart,
   providerSource.indexOf(
-    'const { data, error } = await supabase.functions.invoke("mp-payment-intent"',
+    "const { data, error } = await supabase.functions.invoke",
+    cardBranchStart,
   ),
 );
 
@@ -29,7 +31,9 @@ describe("MercadoPagoProvider transparent card feature flag", () => {
   });
 
   it("cartao habilitado delega para mp-payment-intent com contrato transparente", () => {
-    expect(providerSource).toContain('supabase.functions.invoke("mp-payment-intent"');
+    expect(providerSource).toMatch(
+      /supabase\.functions\.invoke(?:<[\s\S]*?>)?\("mp-payment-intent"/,
+    );
     expect(providerSource).toContain("body: buildMercadoPagoPaymentIntentBody(input)");
     expect(providerSource).toContain(
       'payment_method: input.method === "card" ? "credit_card" : "pix"',

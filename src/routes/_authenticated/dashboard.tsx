@@ -1,3 +1,4 @@
+import { parseOpeningHours } from "@/lib/opening-hours";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -139,15 +140,15 @@ function Dashboard() {
 
   const status = useRestaurantStatus({
     is_open: restaurant.is_open,
-    opening_hours: (restaurant as any).opening_hours,
+    opening_hours: parseOpeningHours(restaurant.opening_hours),
   });
   if (typeof window !== "undefined") {
     // Temporary diagnostics (dashboard)
-    // eslint-disable-next-line no-console
+
     console.log("[status:dashboard]", {
       manualStatus: status.manualStatus,
       isOpen: status.isOpen,
-      todaySchedule: (restaurant as any).opening_hours ?? null,
+      todaySchedule: restaurant.opening_hours ?? null,
       computedStatus: status.reason,
     });
   }
@@ -934,7 +935,7 @@ function ActivePromosBanner({ restaurantId }: { restaurantId: string }) {
         .select("id,price,promo_price,promo_starts_at,promo_ends_at,is_available")
         .eq("restaurant_id", restaurantId)
         .not("promo_price", "is", null);
-      return (data ?? []).filter((i: any) => {
+      return (data ?? []).filter((i) => {
         if (!i.is_available) return false;
         if (!i.promo_price || Number(i.promo_price) >= Number(i.price)) return false;
         if (i.promo_starts_at && nowIso < i.promo_starts_at) return false;

@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -26,15 +27,16 @@ async function readLimitedBody(response: Response) {
   return body.slice(0, 300);
 }
 
-function sanitizeError(error: any): SanitizedError {
-  if (!error) return null;
+function sanitizeError(value: unknown): SanitizedError {
+  if (!value) return null;
+  const error = record(value);
   return {
-    name: error.name ?? null,
-    message: error.message ?? null,
-    code: error.code ?? null,
-    details: error.details ?? null,
-    hint: error.hint ?? null,
-    status: error.status ?? null,
+    name: typeof error.name === "string" ? error.name : null,
+    message: typeof error.message === "string" ? error.message : null,
+    code: typeof error.code === "string" ? error.code : null,
+    details: typeof error.details === "string" ? error.details : null,
+    hint: typeof error.hint === "string" ? error.hint : null,
+    status: typeof error.status === "number" ? error.status : null,
   };
 }
 

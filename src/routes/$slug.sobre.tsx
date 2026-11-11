@@ -141,7 +141,7 @@ function SobrePage() {
     retry: 3,
     refetchOnWindowFocus: "always",
     queryFn: async () => {
-      const { data: rest, error } = await (supabase as any)
+      const { data: rest, error } = await supabase
         .from("restaurants_public")
         .select("id, name, slug")
         .eq("slug", slug)
@@ -185,7 +185,7 @@ function SobrePage() {
     queryKey: ["public-reviews", restaurantId],
     enabled: tab === "avaliacoes" && !!restaurantId,
     queryFn: async () => {
-      const { data: rows, error } = await (supabase as any)
+      const { data: rows, error } = await supabase
         .from("reviews")
         .select("id, customer_name, rating, comment, created_at")
         .eq("restaurant_id", restaurantId!)
@@ -204,7 +204,7 @@ function SobrePage() {
     enabled: tab === "horarios" && !!slug,
     refetchOnWindowFocus: "always",
     queryFn: async () => {
-      const { data: rest, error } = await (supabase as any)
+      const { data: rest, error } = await supabase
         .from("restaurants_public")
         .select("id, name, slug, opening_hours, is_open")
         .eq("slug", slug)
@@ -217,14 +217,14 @@ function SobrePage() {
     },
   });
 
-  const liveHours = (hoursData?.opening_hours ?? null) as any;
+  const liveHours = hoursData?.opening_hours ?? null;
   const status = useRestaurantStatus({ is_open: hoursData?.is_open, opening_hours: liveHours });
 
   const { data: infoData, isLoading: isInfoLoading } = useQuery({
     queryKey: ["public-restaurant-info", slug],
     enabled: tab === "info" && !!slug,
     queryFn: async () => {
-      const { data: rest, error } = await (supabase as any)
+      const { data: rest, error } = await supabase
         .from("restaurants_public")
         .select(
           "id, name, slug, description, address, address_number, complement, neighborhood, city, state, zip_code, landline_phone, instagram, facebook, website, email, latitude, longitude, google_maps_url",
@@ -252,7 +252,7 @@ function SobrePage() {
     queryKey: ["public-restaurant-payments", slug],
     enabled: tab === "pagamentos" && !!slug,
     queryFn: async () => {
-      const { data: rest, error } = await (supabase as any)
+      const { data: rest, error } = await supabase
         .from("restaurants_public")
         .select("id, name, slug, payment_methods")
         .eq("slug", slug)
@@ -317,7 +317,6 @@ function SobrePage() {
   const hasHours = !!hours && Object.keys(hours).length > 0;
   const openNow = status.isOpen;
   if (typeof window !== "undefined" && hoursData) {
-    // eslint-disable-next-line no-console
     console.log("[status:sobre]", {
       manualStatus: status.manualStatus,
       isOpen: status.isOpen,
@@ -797,7 +796,13 @@ function InfoRow({
   );
 }
 
-function PaymentMethod({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+function PaymentMethod({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-[hsl(var(--success)/0.08)] p-3">
       <Icon className="h-5 w-5 shrink-0 text-success" />
