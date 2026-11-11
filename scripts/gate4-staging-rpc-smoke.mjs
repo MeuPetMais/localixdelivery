@@ -21,6 +21,20 @@ if (missing.length) {
   if (!uuid.test(id)) throw new Error("BLOCK: invalid staging restaurant UUID");
   const endpoint = `${baseUrl}/rest/v1/rpc/get_restaurant_financial_snapshot`;
 
+  async function verifiedUser(role, token) {
+    const response = await fetch(`${baseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: process.env.GATE4_STAGING_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new Error(`BLOCK: ${role} JWT not accepted by staging Auth (${response.status})`);
+    const user = await response.json();
+    if (!user?.id || !uuid.test(user.id)) throw new Error(`BLOCK: ${role} has no valid Auth user ID`);
+    return user.id;
+  }
+
   async function call(role, token) {
     const headers = {
       apikey: process.env.GATE4_STAGING_ANON_KEY,
@@ -57,6 +71,15 @@ if (missing.length) {
   }
 
   try {
+    const identities = await Promise.all([
+      verifiedUser("owner", process.env.GATE4_STAGING_OWNER_JWT),
+      verifiedUser("other owner", process.env.GATE4_STAGING_OTHER_OWNER_JWT),
+      verifiedUser("admin", process.env.GATE4_STAGING_ADMIN_JWT),
+    ]);
+    if (new Set(identities).size !== 3) {
+      throw new Error("BLOCK: owner, other owner and admin must be three distinct staging Auth users");
+    }
+    console.log("PASS: three distinct JWT identities verified by staging Auth");
     await call("anonymous");
     const owner = await call("owner", process.env.GATE4_STAGING_OWNER_JWT);
     const other = await call("other owner", process.env.GATE4_STAGING_OTHER_OWNER_JWT);
