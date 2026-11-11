@@ -121,7 +121,7 @@ describe("RestaurantSettingsService", () => {
   });
 
   it("toggles feature flags and emits FeatureFlagChanged", async () => {
-    const events: any[] = [];
+    const events: Parameters<Parameters<typeof ctx.bus.subscribe>[0]>[0][] = [];
     ctx.bus.subscribe((e) => events.push(e));
     const r = await ctx.features.set(RID, "loyalty_enabled", true);
     expect(r.ok).toBe(true);
