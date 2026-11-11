@@ -62,7 +62,7 @@ describe("TrackingRetentionService", () => {
     const client = fakeClient({
       tracking_timeline: { online: 500, archive: 120, purge: 30 },
     });
-    const logs: any[] = [];
+    const logs: unknown[] = [];
     const svc = createTrackingRetentionService({
       client,
       now: () => NOW,
@@ -99,9 +99,9 @@ describe("TrackingRetentionService", () => {
 
   it("serviço nunca expõe API de exclusão", () => {
     const svc = createTrackingRetentionService({ client: fakeClient({}), logger: () => {} });
-    expect((svc as any).delete).toBeUndefined();
-    expect((svc as any).purge).toBeUndefined();
-    expect((svc as any).archive).toBeUndefined();
+    expect((svc as unknown as Record<string, unknown>).delete).toBeUndefined();
+    expect((svc as unknown as Record<string, unknown>).purge).toBeUndefined();
+    expect((svc as unknown as Record<string, unknown>).archive).toBeUndefined();
   });
 });
 
