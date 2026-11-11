@@ -9,7 +9,6 @@ import { OrderEventBus } from "./domain-events";
 import { TransitionValidator } from "./TransitionValidator";
 import { canTransition, isTerminal } from "./OrderStateMachine";
 import { OrderTimelineService } from "./OrderTimelineService";
-import type { StatusHistoryRow } from "./OrderOrchestrator";
 import { canActorPerform } from "./OrderPermissions";
 
 function makeDeps(order: OrderSnapshot | null): OrchestratorDeps & {
