@@ -26,7 +26,7 @@ class MemoryTenantRepo implements TenantConfigRepository {
     return this.data;
   }
   async saveGroup<G extends ConfigGroup>(_r: string, group: G, value: GroupPayload<G>) {
-    (this.data as any)[group] = value;
+    Object.assign(this.data, { [group]: value });
   }
   async bumpVersion() {
     this.data.configuration_version = (this.data.configuration_version ?? 0) + 1;
@@ -116,7 +116,7 @@ describe("RestaurantSettingsService", () => {
 
   it("rejects invalid payment configuration", async () => {
     const bad = { ...DEFAULT_CONFIG.payment, minimum_order: -1 };
-    const r = await ctx.service.updateGroup(RID, "payment", bad as any);
+    const r = await ctx.service.updateGroup(RID, "payment", bad);
     expect(r.ok).toBe(false);
   });
 
@@ -133,7 +133,7 @@ describe("RestaurantSettingsService", () => {
 describe("EmployeeService", () => {
   it("invites, updates and removes employees emitting events", async () => {
     const ctx = build();
-    const events: any[] = [];
+    const events: Parameters<Parameters<typeof ctx.bus.subscribe>[0]>[0][] = [];
     ctx.bus.subscribe((e) => events.push(e));
     const emp = await ctx.employees.invite({
       restaurant_id: RID,
