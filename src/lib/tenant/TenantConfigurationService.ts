@@ -88,8 +88,8 @@ export class TenantConfigurationService {
       await this.audit.diff(
         restaurantId,
         group,
-        previous[group] as Record<string, unknown>,
-        value as Record<string, unknown>,
+        previous[group] as unknown as Record<string, unknown>,
+        value as unknown as Record<string, unknown>,
         changedBy,
       );
     }
