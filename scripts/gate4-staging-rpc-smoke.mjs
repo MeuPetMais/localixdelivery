@@ -34,8 +34,10 @@ if (missing.length) {
       signal: AbortSignal.timeout(15000),
     });
     if (role === "anonymous") {
-      if (response.ok) throw new Error("FAIL: anonymous execution allowed");
-      console.log("PASS: anonymous execution denied");
+      if (response.status !== 401 && response.status !== 403) {
+        throw new Error(`FAIL: anonymous response must be HTTP 401/403, got ${response.status}`);
+      }
+      console.log("PASS: anonymous execution denied (HTTP 401/403)");
       return 0;
     }
     if (!response.ok) throw new Error(`FAIL: ${role} HTTP ${response.status}`);
