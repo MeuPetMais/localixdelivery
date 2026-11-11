@@ -1,3 +1,6 @@
+import type { Json } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getDriverOperationalStatus } from "@/lib/driver-operational-status";
@@ -6,7 +9,11 @@ import { z } from "zod";
 const VEHICLES = ["moto", "bicicleta", "carro", "a_pe"] as const;
 const STATUSES = ["ativo", "inativo", "afastado"] as const;
 
-async function assertOwner(supabase: any, userId: string, restaurantId: string) {
+async function assertOwner(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  restaurantId: string,
+) {
   const { data } = await supabase
     .from("restaurants")
     .select("id, owner_id")
@@ -22,8 +29,8 @@ async function audit(
   restaurantId: string,
   driverId: string | null,
   action: string,
-  before: unknown,
-  after: unknown,
+  before: Json,
+  after: Json,
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin.from("delivery_driver_audit").insert({
@@ -31,8 +38,8 @@ async function audit(
     restaurant_id: restaurantId,
     driver_id: driverId,
     action,
-    before: (before ?? null) as any,
-    after: (after ?? null) as any,
+    before: before ?? null,
+    after: after ?? null,
   });
 }
 
@@ -64,7 +71,7 @@ export const listDrivers = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const drivers = rows ?? [];
-    const driverIds = drivers.map((d: any) => d.id);
+    const driverIds = drivers.map((d) => d.id);
     if (driverIds.length === 0) return [];
 
     const [{ data: queueRows }, { data: activeRows }, { data: shiftRows }] = await Promise.all([
@@ -85,13 +92,13 @@ export const listDrivers = createServerFn({ method: "GET" })
         .neq("status", "FINALIZADO"),
     ]);
 
-    const queueByDriver = new Map((queueRows ?? []).map((q: any) => [q.driver_id, q]));
-    const activeByDriver = new Map((activeRows ?? []).map((a: any) => [a.driver_id, a]));
-    const shiftByDriver = new Map((shiftRows ?? []).map((s: any) => [s.driver_id, s]));
+    const queueByDriver = new Map((queueRows ?? []).map((q) => [q.driver_id, q]));
+    const activeByDriver = new Map((activeRows ?? []).map((a) => [a.driver_id, a]));
+    const shiftByDriver = new Map((shiftRows ?? []).map((s) => [s.driver_id, s]));
 
-    return drivers.map((driver: any) => {
-      const queue = queueByDriver.get(driver.id) as any;
-      const shift = shiftByDriver.get(driver.id) as any;
+    return drivers.map((driver) => {
+      const queue = queueByDriver.get(driver.id);
+      const shift = shiftByDriver.get(driver.id);
       return {
         ...driver,
         queue_status: queue?.status ?? null,
@@ -100,7 +107,7 @@ export const listDrivers = createServerFn({ method: "GET" })
         shift_status: shift?.status ?? null,
         shift_current_state: shift?.current_state ?? null,
         has_active_assignment: activeByDriver.has(driver.id),
-        active_assignment_status: (activeByDriver.get(driver.id) as any)?.status ?? null,
+        active_assignment_status: activeByDriver.get(driver.id)?.status ?? null,
         operational_status: getDriverOperationalStatus({
           driverStatus: driver.status,
           online: driver.online,
@@ -148,9 +155,7 @@ export const createDriver = createServerFn({ method: "POST" })
     const newUserId = created.user.id;
 
     // Concede role delivery_driver
-    await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newUserId, role: "delivery_driver" as any });
+    await supabaseAdmin.from("user_roles").insert({ user_id: newUserId, role: "delivery_driver" });
 
     // Insere driver
     const { data: driver, error } = await supabaseAdmin
@@ -276,7 +281,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     // Whitelist rígido: apenas presença/localização. Nada mais pode ser mutado por aqui.
-    const patch: Record<string, unknown> = {
+    const patch: Database["public"]["Tables"]["delivery_drivers"]["Update"] = {
       online: data.online,
       last_seen_at: new Date().toISOString(),
     };
@@ -285,7 +290,7 @@ export const setMyPresence = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("delivery_drivers")
-      .update(patch as any)
+      .update(patch)
       .eq("owner_id", context.userId)
       .select()
       .maybeSingle();
@@ -337,7 +342,7 @@ export const updateMyDriverProfile = createServerFn({ method: "POST" })
     if (!before) throw new Error("Perfil de entregador não encontrado");
     const { data: after, error } = await supabaseAdmin
       .from("delivery_drivers")
-      .update(data.patch as any)
+      .update(data.patch)
       .eq("owner_id", context.userId)
       .select()
       .single();

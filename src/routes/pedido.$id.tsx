@@ -1,3 +1,5 @@
+import { parseStoredOrderItems, repeatStoredOrderItems } from "@/lib/orders/stored-order-items";
+import type { Json } from "@/integrations/supabase/types";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -50,7 +52,7 @@ type Order = {
   status: string;
   total: number;
   discount: number | null;
-  items: any;
+  items: Json;
   customer_name: string;
   customer_phone: string;
   address: string;
@@ -110,7 +112,7 @@ function TrackOrder() {
         lastStatusRef.current = next.status;
         setOrder(next);
         if (initial) {
-          const { data: r } = await (supabase as any)
+          const { data: r } = await supabase
             .from("restaurants_public")
             .select("id, name, slug, delivery_fee")
             .eq("id", next.restaurant_id)
@@ -146,7 +148,7 @@ function TrackOrder() {
         <div>
           <p className="text-lg font-bold">Pedido não encontrado</p>
           {restaurantPath ? (
-            <Link to={restaurantPath as any} className="text-sm text-primary hover:underline">
+            <Link to={restaurantPath} className="text-sm text-primary hover:underline">
               Voltar ao cardápio
             </Link>
           ) : (
@@ -160,31 +162,7 @@ function TrackOrder() {
 
   const cancelled = order.status === "cancelado";
   const currentIdx = statusIndex(order.status);
-  const items: Array<{
-    id?: string;
-    name: string;
-    price: number;
-    qty: number;
-    kind?: "product" | "builder";
-    builderId?: string;
-    selections?: Array<{
-      group_id?: string;
-      groupId?: string;
-      option_id?: string;
-      optionId?: string;
-      quantity?: number;
-      qty?: number;
-    }>;
-    addons?: Array<{
-      groupId?: string;
-      groupName?: string;
-      optionId?: string;
-      name?: string;
-      quantity?: number;
-      unitPrice?: number;
-      total?: number;
-    }>;
-  }> = Array.isArray(order.items) ? order.items : [];
+  const items = parseStoredOrderItems(order.items);
   const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
   const fee = Math.max(0, Number(order.total) - subtotal + Number(order.discount ?? 0));
 
@@ -193,17 +171,7 @@ function TrackOrder() {
     try {
       sessionStorage.setItem(
         `repeat:${restaurant.slug}`,
-        JSON.stringify(
-          items.map((it: any) => ({
-            id: it.id,
-            name: it.name,
-            price: Number(it.price),
-            qty: Number(it.qty),
-            kind: it.kind,
-            builderId: it.builderId,
-            selections: Array.isArray(it.selections) ? it.selections : undefined,
-          })),
-        ),
+        JSON.stringify(repeatStoredOrderItems(items)),
       );
     } catch {
       // Best-effort cleanup; failure must not interrupt the main flow.
@@ -294,7 +262,7 @@ function TrackOrder() {
         <Card className="p-5">
           <h2 className="mb-3 font-display text-lg font-bold">Itens do pedido</h2>
           <ul className="space-y-2 text-sm">
-            {items.map((it: any, i: number) => (
+            {items.map((it, i: number) => (
               <li key={i} className="flex items-start justify-between gap-3">
                 <div>
                   <span className="font-medium">
@@ -469,18 +437,16 @@ function InfoRow({
 }
 function labelOf(s: string) {
   return (
-    (
-      {
-        aguardando_pagamento: "Aguardando pagamento",
-        pago: "Aguardando aceite",
-        aceito: "Aceito",
-        novo: "Recebido",
-        em_preparo: "Em preparo",
-        pronto: "Pronto",
-        saiu_para_entrega: "Saiu para entrega",
-        entregue: "Entregue",
-        cancelado: "Cancelado",
-      } as any
-    )[s] ?? s
+    {
+      aguardando_pagamento: "Aguardando pagamento",
+      pago: "Aguardando aceite",
+      aceito: "Aceito",
+      novo: "Recebido",
+      em_preparo: "Em preparo",
+      pronto: "Pronto",
+      saiu_para_entrega: "Saiu para entrega",
+      entregue: "Entregue",
+      cancelado: "Cancelado",
+    }[s] ?? s
   );
 }

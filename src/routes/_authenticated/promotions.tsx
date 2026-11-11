@@ -175,10 +175,7 @@ function PromotionsPage() {
   }
 
   async function updateOne(id: string, patch: Partial<Item>) {
-    const { error } = await supabase
-      .from("menu_items")
-      .update(patch as any)
-      .eq("id", id);
+    const { error } = await supabase.from("menu_items").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     invalidate();
   }
@@ -511,7 +508,7 @@ function ActionBtn({
   disabled,
 }: {
   onClick: () => void;
-  icon: any;
+  icon: typeof Tag;
   label: string;
   tone?: "default" | "success" | "warn" | "muted" | "destructive";
   disabled?: boolean;
@@ -641,7 +638,7 @@ function PromotionDialog({
             : Number(price);
         return supabase
           .from("menu_items")
-          .update({ ...basePatch, promo_price: promo } as any)
+          .update({ ...basePatch, promo_price: promo })
           .eq("id", id);
       });
       const results = await Promise.all(updates);
@@ -655,8 +652,9 @@ function PromotionDialog({
             : `${selectedIds.length} promoção(ões) criada(s).`,
       );
       onSaved();
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao salvar.");
+    } catch (e) {
+      const eMessage = e instanceof Error ? e.message : String(e);
+      toast.error(eMessage ?? "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
@@ -730,7 +728,12 @@ function PromotionDialog({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Tipo</Label>
-            <Select value={discMode} onValueChange={(v) => setDiscMode(v as any)}>
+            <Select
+              value={discMode}
+              onValueChange={(v) => {
+                if (v === "price" || v === "percent") setDiscMode(v);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

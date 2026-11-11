@@ -1,3 +1,4 @@
+import type { ProductOptionGroup, ProductOption } from "./types";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -39,7 +40,7 @@ describe("ProductConfigurationService clone helpers", () => {
   });
 
   it("rejects a copied group when its dependency is outside the selection", () => {
-    const groups = [
+    const groups: ProductOptionGroup[] = [
       {
         id: "dependent",
         product_id: "source",
@@ -53,7 +54,7 @@ describe("ProductConfigurationService clone helpers", () => {
         depends_on_group_id: "base",
         depends_on_option_id: null,
       },
-    ] as any;
+    ];
 
     expect(validateCloneDependencies(groups, [])).toEqual([
       'O grupo "Molhos" depende de outro grupo que também precisa ser selecionado.',
@@ -61,7 +62,7 @@ describe("ProductConfigurationService clone helpers", () => {
   });
 
   it("accepts dependencies when the referenced group and option are selected", () => {
-    const groups = [
+    const groups: ProductOptionGroup[] = [
       {
         id: "base",
         product_id: "source",
@@ -86,9 +87,9 @@ describe("ProductConfigurationService clone helpers", () => {
         depends_on_group_id: "base",
         depends_on_option_id: "base-option",
       },
-    ] as any;
+    ];
 
-    const options = [
+    const options: ProductOption[] = [
       {
         id: "base-option",
         group_id: "base",
@@ -98,7 +99,7 @@ describe("ProductConfigurationService clone helpers", () => {
         display_order: 0,
         active: true,
       },
-    ] as any;
+    ];
 
     expect(validateCloneDependencies(groups, options)).toEqual([]);
   });

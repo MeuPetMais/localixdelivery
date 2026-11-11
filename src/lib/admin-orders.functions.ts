@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -315,7 +317,7 @@ function escapePostgrestPattern(value: string) {
   return value.replace(/[%_,]/g, "\\$&");
 }
 
-async function findRestaurantIdsByName(supabaseAdmin: any, search: string) {
+async function findRestaurantIdsByName(supabaseAdmin: SupabaseClient<Database>, search: string) {
   const pattern = `%${escapePostgrestPattern(search)}%`;
   const { data, error } = await supabaseAdmin
     .from("restaurants")
@@ -326,7 +328,10 @@ async function findRestaurantIdsByName(supabaseAdmin: any, search: string) {
   return (data ?? []).map((row: { id: string }) => row.id);
 }
 
-async function findOrderIdsByPaymentStatus(supabaseAdmin: any, paymentStatus: string) {
+async function findOrderIdsByPaymentStatus(
+  supabaseAdmin: SupabaseClient<Database>,
+  paymentStatus: string,
+) {
   const { data, error } = await supabaseAdmin
     .from("order_payment")
     .select("order_id")
@@ -344,7 +349,7 @@ function byOrderId<T extends { order_id: string }>(rows: T[] | null | undefined)
   return map;
 }
 
-async function loadPageRelations(supabaseAdmin: any, orders: OrderRow[]) {
+async function loadPageRelations(supabaseAdmin: SupabaseClient<Database>, orders: OrderRow[]) {
   const orderIds = orders.map((order) => order.id);
   const restaurantIds = Array.from(new Set(orders.map((order) => order.restaurant_id)));
   if (!orderIds.length) {

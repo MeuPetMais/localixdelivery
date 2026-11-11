@@ -1,3 +1,4 @@
+import { jsonObject, toJson } from "@/lib/json";
 // Tracking Domain — Snapshot store (in-memory / testes).
 // Persistência real vive nas server functions (Supabase). Este store existe
 // para orquestração local, testes e uso client-side controlado.
@@ -38,7 +39,7 @@ export function createInMemorySnapshotStore(): SnapshotStore {
         last_heading: existing?.last_heading ?? null,
         last_accuracy: existing?.last_accuracy ?? null,
         last_seen_at: existing?.last_seen_at ?? null,
-        metadata: { ...(existing?.metadata ?? {}), ...(input.metadata ?? {}) },
+        metadata: { ...(existing?.metadata ?? {}), ...jsonObject(toJson(input.metadata)) },
         correlation_id: input.correlation_id ?? existing?.correlation_id ?? cryptoRandom(),
         created_at: existing?.created_at ?? now(),
         updated_at: now(),
@@ -52,7 +53,7 @@ export function createInMemorySnapshotStore(): SnapshotStore {
       const next: TrackingSnapshot = {
         ...cur,
         ...patch,
-        metadata: { ...cur.metadata, ...(patch.metadata ?? {}) },
+        metadata: { ...cur.metadata, ...jsonObject(toJson(patch.metadata)) },
         updated_at: now(),
       };
       store.set(assignmentId, next);

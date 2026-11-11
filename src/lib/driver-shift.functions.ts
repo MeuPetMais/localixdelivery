@@ -1,3 +1,6 @@
+import type { JsonObject } from "@/lib/json";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // RC5.2.f — Driver Shift server functions.
 // Toda mutação passa pelo motoboy autenticado (owner_id = context.userId).
 
@@ -43,11 +46,11 @@ type ShiftRow = {
   delivery_minutes: number;
   return_minutes: number;
   pause_minutes: number;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   updated_at: string;
 };
 
-async function loadDriver(ctx: { supabase: any; userId: string }) {
+async function loadDriver(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data } = await ctx.supabase
     .from("delivery_drivers")
     .select("id, restaurant_id, status")
@@ -57,7 +60,10 @@ async function loadDriver(ctx: { supabase: any; userId: string }) {
   return data as { id: string; restaurant_id: string; status: string };
 }
 
-async function loadOpenShift(supabase: any, driverId: string): Promise<ShiftRow | null> {
+async function loadOpenShift(
+  supabase: SupabaseClient<Database>,
+  driverId: string,
+): Promise<ShiftRow | null> {
   const { data } = await supabase
     .from("driver_shifts")
     .select("*")
@@ -69,7 +75,7 @@ async function loadOpenShift(supabase: any, driverId: string): Promise<ShiftRow 
 }
 
 async function insertTimeline(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   shiftId: string,
   event: ShiftEvent,
   prev: ShiftCurrentState | null,
@@ -94,7 +100,7 @@ async function insertTimeline(
  * Sempre passa por aqui — nunca escreva `current_state` cru.
  */
 async function applyTransition(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   shift: ShiftRow,
   nextState: ShiftCurrentState,
   event: ShiftEvent,
@@ -323,7 +329,12 @@ export const listActiveShifts = createServerFn({ method: "GET" })
       .eq("restaurant_id", rid)
       .neq("status", "FINALIZADO")
       .order("started_at", { ascending: true });
-    return (data ?? []) as unknown as (ShiftRow & { delivery_drivers: any })[];
+    return (data ?? []) as unknown as (ShiftRow & {
+      delivery_drivers: Pick<
+        Database["public"]["Tables"]["delivery_drivers"]["Row"],
+        "id" | "name" | "photo_url" | "vehicle_type"
+      > | null;
+    })[];
   });
 
 export const getShiftStats = createServerFn({ method: "GET" })

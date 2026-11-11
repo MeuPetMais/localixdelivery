@@ -1,3 +1,6 @@
+import { toJson } from "@/lib/json";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -17,7 +20,10 @@ import type { ProductLifecycleStatus, ProductRecord } from "./types";
 
 const OwnerScope = z.object({ restaurantId: z.string().uuid() });
 
-async function assertOwner(context: { supabase: any; userId: string }, restaurantId: string) {
+async function assertOwner(
+  context: { supabase: SupabaseClient<Database>; userId: string },
+  restaurantId: string,
+) {
   const { data, error } = await context.supabase
     .from("restaurants")
     .select("id, owner_id")
@@ -27,7 +33,10 @@ async function assertOwner(context: { supabase: any; userId: string }, restauran
   if (!data || data.owner_id !== context.userId) throw new Error("Forbidden: restaurant scope");
 }
 
-async function nextVersionNumber(supabase: any, productId: string): Promise<number> {
+async function nextVersionNumber(
+  supabase: SupabaseClient<Database>,
+  productId: string,
+): Promise<number> {
   const { data, error } = await supabase
     .from("product_versions")
     .select("version")
@@ -39,7 +48,7 @@ async function nextVersionNumber(supabase: any, productId: string): Promise<numb
 }
 
 async function writeAudit(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   params: {
     productId: string;
     restaurantId: string;
@@ -53,12 +62,12 @@ async function writeAudit(
     restaurant_id: params.restaurantId,
     actor_id: params.actorId,
     action: params.action,
-    payload: params.payload ?? {},
+    payload: toJson(params.payload ?? {}),
   });
 }
 
 async function writeVersion(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   params: {
     productId: string;
     restaurantId: string;
@@ -73,7 +82,7 @@ async function writeVersion(
     restaurant_id: params.restaurantId,
     version,
     status: params.status,
-    changes_json: params.changes,
+    changes_json: toJson(params.changes),
     created_by: params.actorId,
   });
   return version;

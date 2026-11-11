@@ -57,8 +57,9 @@ function AuthedFavorites() {
     setLoading(true);
     try {
       setFavorites(await listMyFavoritesEnriched());
-    } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível carregar seus favoritos");
+    } catch (e) {
+      const eMessage = e instanceof Error ? e.message : String(e);
+      toast.error(eMessage ?? "Não foi possível carregar seus favoritos");
     } finally {
       setLoading(false);
     }
@@ -73,8 +74,9 @@ function AuthedFavorites() {
       await toggleFavorite({ restaurantId: fav.restaurantId, kind: fav.kind, itemId: fav.itemId });
       setFavorites((prev) => prev?.filter((f) => f.id !== fav.id) ?? null);
       toast.success("Removido dos favoritos");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao remover");
+    } catch (e) {
+      const eMessage = e instanceof Error ? e.message : String(e);
+      toast.error(eMessage ?? "Falha ao remover");
     }
   }
 
@@ -155,13 +157,13 @@ function FavoriteCard({ fav, onRemove }: { fav: EnrichedFavorite; onRemove: () =
       navigate({
         to: "/$slug/montar",
         params: { slug: fav.restaurantSlug },
-        search: { builder: fav.itemId } as any,
+        search: { builder: fav.itemId },
       });
     } else {
       navigate({
         to: "/$slug",
         params: { slug: fav.restaurantSlug },
-        search: { add: fav.itemId } as any,
+        search: { add: fav.itemId },
       });
     }
   }

@@ -1,3 +1,5 @@
+import { record } from "@/lib/json";
+import type { Tables } from "@/integrations/supabase/types";
 import type { Customer360Insight } from "@/lib/customer360-intelligence";
 
 export type GrowthMeasurementEventType =
@@ -66,4 +68,16 @@ export function measurementSourceForInsight(insight: Customer360Insight) {
     source_ref: insight.type,
     action_key: insight.recommended_action,
   };
+}
+
+export function measurementEvents(
+  rows: Tables<"growth_measurement_events">[],
+): GrowthMeasurementEvent[] {
+  return rows
+    .filter((row): row is typeof row & { event_type: GrowthMeasurementEventType } =>
+      ["OPPORTUNITY_VIEWED", "ACTION_SELECTED", "ACTION_EXECUTED", "ORDER_ATTRIBUTED"].includes(
+        row.event_type,
+      ),
+    )
+    .map((row) => ({ ...row, metadata: record(row.metadata) }));
 }

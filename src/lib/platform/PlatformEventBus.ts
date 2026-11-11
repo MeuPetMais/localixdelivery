@@ -16,7 +16,7 @@ class Bus {
         await handler(event);
       } catch (err) {
         // Não propagar falhas de subscribers (auditoria/notify) para o publisher.
-        // eslint-disable-next-line no-console
+
         console.error("[PlatformEventBus] subscriber error", err);
       }
     }

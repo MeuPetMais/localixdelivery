@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Tables, Json } from "@/integrations/supabase/types";
 import { createServerFn } from "@tanstack/react-start";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
@@ -85,15 +87,16 @@ async function assertSupportRole(userId: string) {
   if (!role) throw new Error("Forbidden");
   let allowedCategories: SupportCategory[] = [];
   if (role !== "admin") {
-    const { data: member, error: memberError } = await (
-      supabaseAdmin.from("support_team_members") as any
-    )
+    const { data: member, error: memberError } = await supabaseAdmin
+      .from("support_team_members")
       .select("active, role, allowed_categories")
       .eq("user_id", userId)
       .maybeSingle();
     if (memberError) throw new Error(memberError.message);
     if (!member?.active || member.role !== role) throw new Error("Forbidden");
-    allowedCategories = Array.isArray(member.allowed_categories) ? member.allowed_categories : [];
+    allowedCategories = (member.allowed_categories ?? []).filter(
+      (category): category is SupportCategory => categorySchema.safeParse(category).success,
+    );
   }
 
   return { supabaseAdmin, role, roles, allowedCategories };
@@ -116,12 +119,12 @@ async function auditSupportTicket(input: {
   actorId: string;
   actorRole: SupportRole;
   action: string;
-  before?: unknown;
-  after?: unknown;
-  metadata?: Record<string, unknown>;
+  before?: Json;
+  after?: Json;
+  metadata?: { [key: string]: Json | undefined };
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await (supabaseAdmin.from("support_ticket_audit") as any).insert({
+  await supabaseAdmin.from("support_ticket_audit").insert({
     ticket_id: input.ticketId,
     actor_id: input.actorId,
     actor_role: input.actorRole,
@@ -137,12 +140,12 @@ async function auditSupportTeam(input: {
   action: string;
   targetUserId?: string | null;
   targetEmail?: string | null;
-  before?: unknown;
-  after?: unknown;
-  metadata?: Record<string, unknown>;
+  before?: Json;
+  after?: Json;
+  metadata?: { [key: string]: Json | undefined };
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await (supabaseAdmin.from("support_team_audit") as any).insert({
+  await supabaseAdmin.from("support_team_audit").insert({
     actor_id: input.actorId,
     target_user_id: input.targetUserId ?? null,
     target_email: input.targetEmail ?? null,
@@ -153,13 +156,17 @@ async function auditSupportTeam(input: {
   });
 }
 
-function pickRestaurantName(row: any): string {
+type TicketRow = Tables<"support_tickets"> & {
+  restaurants: { name: string } | { name: string }[] | null;
+};
+
+function pickRestaurantName(row: TicketRow): string {
   const restaurant = Array.isArray(row.restaurants) ? row.restaurants[0] : row.restaurants;
   return restaurant?.name ?? "Estabelecimento";
 }
 
 function normalizeTicket(
-  row: any,
+  row: TicketRow,
   lastMessageBody: string | null,
   assigneeLabel: string | null,
 ): SupportTicketListItem {
@@ -187,7 +194,9 @@ function normalizeTicket(
   };
 }
 
-function normalizeSlaSettings(row: any): SupportSlaSettings {
+function normalizeSlaSettings(
+  row: Pick<Tables<"platform_settings">, "support_sla_settings" | "support_timezone"> | null,
+): SupportSlaSettings {
   const settings = parseSupportSlaSettings(row?.support_sla_settings ?? null);
   return {
     ...settings,
@@ -205,8 +214,11 @@ function assertCanAccessTicketCategory(input: {
   }
 }
 
+function supportTicketQuery(client: SupabaseClient<Database>) {
+  return client.from("support_tickets").select("*, restaurants(id, name, slug)");
+}
 function applySupportCategoryScope(
-  query: any,
+  query: ReturnType<typeof supportTicketQuery>,
   role: SupportRole,
   allowedCategories: SupportCategory[],
 ) {
@@ -214,11 +226,15 @@ function applySupportCategoryScope(
   return query.in("category", allowedCategories);
 }
 
-async function loadAssigneeLabels(supabaseAdmin: any, userIds: string[]) {
-  const unique = Array.from(new Set(userIds.filter(Boolean)));
+async function loadAssigneeLabels(
+  supabaseAdmin: SupabaseClient<Database>,
+  userIds: (string | null)[],
+) {
+  const unique = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
   if (unique.length === 0) return new Map<string, string>();
 
-  const { data: members } = await (supabaseAdmin.from("support_team_members") as any)
+  const { data: members } = await supabaseAdmin
+    .from("support_team_members")
     .select("user_id, name, email")
     .in("user_id", unique);
   const labels = new Map<string, string>();
@@ -259,7 +275,8 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     if (role === "support_agent" && allowedCategories.length === 0)
       return { tickets: [], metrics: buildSupportMetrics([]) };
 
-    let query = (supabaseAdmin.from("support_tickets") as any)
+    let query = supabaseAdmin
+      .from("support_tickets")
       .select("*, restaurants(id, name, slug)")
       .order("last_message_at", { ascending: false })
       .limit(500);
@@ -277,8 +294,9 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
 
-    const ids = (rows ?? []).map((row: any) => row.id);
-    const { data: messages } = await (supabaseAdmin.from("support_messages") as any)
+    const ids = (rows ?? []).map((row) => row.id);
+    const { data: messages } = await supabaseAdmin
+      .from("support_messages")
       .select("ticket_id, body, created_at, internal_note")
       .in("ticket_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .eq("internal_note", false)
@@ -293,10 +311,10 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
 
     const assigneeLabels = await loadAssigneeLabels(
       supabaseAdmin,
-      (rows ?? []).map((row: any) => row.assigned_to).filter(Boolean),
+      (rows ?? []).map((row) => row.assigned_to).filter(Boolean),
     );
 
-    let tickets = (rows ?? []).map((row: any) =>
+    let tickets = (rows ?? []).map((row) =>
       normalizeTicket(
         row,
         lastMessageByTicket.get(row.id) ?? null,
@@ -334,13 +352,15 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: settingsRow } = await (supabaseAdmin.from("platform_settings") as any)
+    const { data: settingsRow } = await supabaseAdmin
+      .from("platform_settings")
       .select("support_timezone, support_sla_settings")
       .eq("id", true)
       .maybeSingle();
     const settings = normalizeSlaSettings(settingsRow);
 
-    let query = (supabaseAdmin.from("support_tickets") as any)
+    let query = supabaseAdmin
+      .from("support_tickets")
       .select("*, restaurants(id, name, slug)")
       .order("created_at", { ascending: false })
       .limit(2000);
@@ -357,11 +377,12 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
 
     const assigneeLabels = await loadAssigneeLabels(
       supabaseAdmin,
-      (rows ?? []).map((row: any) => row.assigned_to).filter(Boolean),
+      (rows ?? []).map((row) => row.assigned_to).filter(Boolean),
     );
 
-    const ids = (rows ?? []).map((row: any) => row.id);
-    const { data: audits } = await (supabaseAdmin.from("support_ticket_audit") as any)
+    const ids = (rows ?? []).map((row) => row.id);
+    const { data: audits } = await supabaseAdmin
+      .from("support_ticket_audit")
       .select("ticket_id, before, after, created_at")
       .in("ticket_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: true });
@@ -372,8 +393,14 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
     > = {};
     const openWait = new Map<string, string>();
     for (const audit of audits ?? []) {
-      const beforeStatus = audit.before?.status;
-      const afterStatus = audit.after?.status;
+      const beforeStatus =
+        audit.before && typeof audit.before === "object" && !Array.isArray(audit.before)
+          ? audit.before.status
+          : undefined;
+      const afterStatus =
+        audit.after && typeof audit.after === "object" && !Array.isArray(audit.after)
+          ? audit.after.status
+          : undefined;
       if (afterStatus === "respondido" && beforeStatus !== "respondido") {
         openWait.set(audit.ticket_id, audit.created_at);
       }
@@ -395,7 +422,7 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       ];
     }
 
-    const tickets = (rows ?? []).map((row: any) => ({
+    const tickets = (rows ?? []).map((row) => ({
       id: row.id,
       ticket_number: row.ticket_number,
       restaurant_id: row.restaurant_id,
@@ -427,7 +454,8 @@ export const getAdminSupportTicket = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role, allowedCategories } = await assertSupportRole(context.userId);
 
-    const { data: ticket, error } = await (supabaseAdmin.from("support_tickets") as any)
+    const { data: ticket, error } = await supabaseAdmin
+      .from("support_tickets")
       .select("*, restaurants(id, name, slug, whatsapp_phone)")
       .eq("id", data.ticketId)
       .single();
@@ -438,9 +466,8 @@ export const getAdminSupportTicket = createServerFn({ method: "POST" })
       category: ticket.category as SupportCategory,
     });
 
-    const { data: messages, error: messagesError } = await (
-      supabaseAdmin.from("support_messages") as any
-    )
+    const { data: messages, error: messagesError } = await supabaseAdmin
+      .from("support_messages")
       .select("*")
       .eq("ticket_id", data.ticketId)
       .order("created_at", { ascending: true });
@@ -453,10 +480,10 @@ export const getAdminSupportTicket = createServerFn({ method: "POST" })
     return {
       ticket: normalizeTicket(
         ticket,
-        (messages ?? []).filter((message: any) => !message.internal_note).at(-1)?.body ?? null,
+        (messages ?? []).filter((message) => !message.internal_note).at(-1)?.body ?? null,
         ticket.assigned_to ? (assigneeLabels.get(ticket.assigned_to) ?? null) : null,
       ),
-      messages: (messages ?? []).map((message: any) => ({
+      messages: (messages ?? []).map((message) => ({
         ...message,
         attachments: Array.isArray(message.attachments) ? message.attachments : [],
         internal_note: Boolean(message.internal_note),
@@ -471,7 +498,8 @@ export const listSupportTeam = createServerFn({ method: "GET" })
     if (!canSupport(role, "manage_team") && role !== "support_manager")
       throw new Error("Forbidden");
 
-    const { data, error } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data, error } = await supabaseAdmin
+      .from("support_team_members")
       .select("user_id, name, email, role, active, created_at")
       .eq("active", true)
       .in("role", managedSupportRoles);
@@ -514,7 +542,7 @@ export const takeSupportTicket = createServerFn({ method: "POST" })
       category: before.category as SupportCategory,
     });
 
-    const { error } = await (supabaseAdmin as any).rpc("support_admin_take_ticket", {
+    const { error } = await supabaseAdmin.rpc("support_admin_take_ticket", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
     });
@@ -541,9 +569,8 @@ export const assignSupportTicket = createServerFn({ method: "POST" })
       category: before.category as SupportCategory,
     });
     if (data.assigneeId) {
-      const { data: target, error: targetError } = await (
-        supabaseAdmin.from("support_team_members") as any
-      )
+      const { data: target, error: targetError } = await supabaseAdmin
+        .from("support_team_members")
         .select("role, active, allowed_categories")
         .eq("user_id", data.assigneeId)
         .maybeSingle();
@@ -558,7 +585,7 @@ export const assignSupportTicket = createServerFn({ method: "POST" })
       }
     }
 
-    const { error } = await (supabaseAdmin as any).rpc("support_admin_assign_ticket", {
+    const { error } = await supabaseAdmin.rpc("support_admin_assign_ticket", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
       _assignee_id: data.assigneeId,
@@ -597,7 +624,7 @@ export const updateSupportTicketMeta = createServerFn({ method: "POST" })
       allowedCategories,
       category: before.category as SupportCategory,
     });
-    const { error } = await (supabaseAdmin as any).rpc("support_admin_update_meta", {
+    const { error } = await supabaseAdmin.rpc("support_admin_update_meta", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
       _priority: (patch.priority as SupportPriority | undefined) ?? null,
@@ -642,7 +669,7 @@ export const updateSupportTicketStatus = createServerFn({ method: "POST" })
     if (data.status === "resolvido" && !canResolveTicket(role, before.assigned_to, context.userId))
       throw new Error("Forbidden");
 
-    const { error } = await (supabaseAdmin as any).rpc("support_admin_update_status", {
+    const { error } = await supabaseAdmin.rpc("support_admin_update_status", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
       _status: data.status,
@@ -676,7 +703,7 @@ export const sendSupportMessage = createServerFn({ method: "POST" })
       category: ticket.category as SupportCategory,
     });
 
-    const { error } = await (supabaseAdmin as any).rpc("support_admin_prepare_reply", {
+    const { error } = await supabaseAdmin.rpc("support_admin_prepare_reply", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
       _body: sanitizeSupportText(data.body),
@@ -836,7 +863,8 @@ export const listInternalNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { data, error } = await (supabaseAdmin.from("notifications") as any)
+    const { data, error } = await supabaseAdmin
+      .from("notifications")
       .select("id, template_code, priority, payload_json, read_at, created_at")
       .eq("recipient_id", context.userId)
       .eq("recipient_type", "admin")
@@ -854,7 +882,8 @@ export const markInternalNotificationRead = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => notificationIdSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { error } = await (supabaseAdmin.from("notifications") as any)
+    const { error } = await supabaseAdmin
+      .from("notifications")
       .update({ read_at: new Date().toISOString() })
       .eq("id", data.id)
       .eq("recipient_id", context.userId);
@@ -896,7 +925,8 @@ export const updateSupportSlaSettings = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await assertAdmin(context.userId);
     const serialized = serializeSupportSlaSettings(data);
-    const { error } = await (supabaseAdmin.from("platform_settings") as any)
+    const { error } = await supabaseAdmin
+      .from("platform_settings")
       .update({
         support_timezone: data.timezone,
         support_sla_settings: serialized,
@@ -925,22 +955,26 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertAdmin(context.userId);
 
-    const { data: members, error } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: members, error } = await supabaseAdmin
+      .from("support_team_members")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
-    const userIds = (members ?? []).map((member: any) => member.user_id);
+    const userIds = (members ?? []).map((member) => member.user_id);
     const [ticketsQ, messagesQ, invitesQ] = await Promise.all([
-      (supabaseAdmin.from("support_tickets") as any)
+      supabaseAdmin
+        .from("support_tickets")
         .select("assigned_to, status, created_at, first_response_at, resolved_at, last_message_at")
         .in("assigned_to", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]),
-      (supabaseAdmin.from("support_messages") as any)
+      supabaseAdmin
+        .from("support_messages")
         .select("author_id, created_at")
         .eq("author_type", "suporte")
         .in("author_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"])
         .order("created_at", { ascending: false }),
-      (supabaseAdmin.from("support_team_invites") as any)
+      supabaseAdmin
+        .from("support_team_invites")
         .select("id, name, email, role, allowed_categories, status, expires_at, created_at")
         .eq("status", "pending")
         .order("created_at", { ascending: false }),
@@ -948,14 +982,14 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
 
     const tickets = ticketsQ.data ?? [];
     const messages = messagesQ.data ?? [];
-    const membersWithStats = (members ?? []).map((member: any) => {
-      const assigned = tickets.filter((ticket: any) => ticket.assigned_to === member.user_id);
-      const resolved = assigned.filter((ticket: any) => ticket.status === "resolvido");
+    const membersWithStats = (members ?? []).map((member) => {
+      const assigned = tickets.filter((ticket) => ticket.assigned_to === member.user_id);
+      const resolved = assigned.filter((ticket) => ticket.status === "resolvido");
       const firstResponseDurations = assigned
-        .filter((ticket: any) => ticket.first_response_at)
+        .filter((ticket) => ticket.first_response_at)
         .map(
-          (ticket: any) =>
-            new Date(ticket.first_response_at).getTime() - new Date(ticket.created_at).getTime(),
+          (ticket) =>
+            new Date(ticket.first_response_at!).getTime() - new Date(ticket.created_at).getTime(),
         );
       const avgFirst = firstResponseDurations.length
         ? Math.round(
@@ -965,12 +999,12 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
           )
         : 0;
       const lastMessage =
-        messages.find((message: any) => message.author_id === member.user_id)?.created_at ?? null;
+        messages.find((message) => message.author_id === member.user_id)?.created_at ?? null;
       return {
         user_id: member.user_id,
         name: member.name,
         email: member.email,
-        role: member.role,
+        role: z.enum(["support_manager", "support_agent"]).parse(member.role),
         active: Boolean(member.active),
         allowed_categories: member.allowed_categories ?? [],
         invited_at: member.invited_at ?? null,
@@ -978,7 +1012,7 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
         last_activity_at:
           member.last_activity_at ?? lastMessage ?? assigned[0]?.last_message_at ?? null,
         active_tickets: assigned.filter(
-          (ticket: any) => !["resolvido", "fechado"].includes(ticket.status),
+          (ticket) => !["resolvido", "fechado"].includes(ticket.status),
         ).length,
         resolved_tickets: resolved.length,
         avg_first_response_minutes: avgFirst,
@@ -987,11 +1021,11 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
 
     return {
       members: membersWithStats,
-      invites: (invitesQ.data ?? []).map((invite: any) => ({
+      invites: (invitesQ.data ?? []).map((invite) => ({
         id: invite.id,
         name: invite.name,
         email: invite.email,
-        role: invite.role,
+        role: z.enum(["support_manager", "support_agent"]).parse(invite.role),
         allowed_categories: invite.allowed_categories ?? [],
         status: invite.status,
         expires_at: invite.expires_at,
@@ -1013,7 +1047,8 @@ export const inviteSupportTeamMember = createServerFn({ method: "POST" })
     const expiresAt = new Date(Date.now() + 7 * 24 * 3_600_000).toISOString();
     const allowed = data.allowedCategories ?? [];
 
-    const { data: invite, error } = await (supabaseAdmin.from("support_team_invites") as any)
+    const { data: invite, error } = await supabaseAdmin
+      .from("support_team_invites")
       .insert({
         name: data.name,
         email,
@@ -1064,7 +1099,8 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const tokenHash = sha256(data.token);
-    const { data: invite, error } = await (supabaseAdmin.from("support_team_invites") as any)
+    const { data: invite, error } = await supabaseAdmin
+      .from("support_team_invites")
       .select("*")
       .eq("token_hash", tokenHash)
       .maybeSingle();
@@ -1074,7 +1110,8 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
     try {
       assertSupportInviteNotExpired(invite);
     } catch (inviteError) {
-      await (supabaseAdmin.from("support_team_invites") as any)
+      await supabaseAdmin
+        .from("support_team_invites")
         .update({ status: "expired" })
         .eq("id", invite.id)
         .eq("status", "pending");
@@ -1102,24 +1139,24 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
       accepted_at: new Date().toISOString(),
     };
 
-    const { error: memberError } = await (supabaseAdmin.from("support_team_members") as any).upsert(
-      memberRow,
-      { onConflict: "user_id" },
-    );
+    const { error: memberError } = await supabaseAdmin
+      .from("support_team_members")
+      .upsert(memberRow, { onConflict: "user_id" });
     if (memberError) throw new Error(memberError.message);
 
     await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", context.userId)
-      .in("role", managedSupportRoles as any);
+      .in("role", managedSupportRoles);
     const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({
       user_id: context.userId,
       role: invite.role,
-    } as any);
+    });
     if (roleError) throw new Error(roleError.message);
 
-    const { error: inviteUpdateError } = await (supabaseAdmin.from("support_team_invites") as any)
+    const { error: inviteUpdateError } = await supabaseAdmin
+      .from("support_team_invites")
       .update({
         status: "accepted",
         accepted_by: context.userId,
@@ -1160,17 +1197,19 @@ export const updateSupportTeamMemberRole = createServerFn({ method: "POST" })
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (
-      supabaseAdmin.from("support_team_members") as any
-    )
+    const { data: before, error: beforeError } = await supabaseAdmin
+      .from("support_team_members")
       .select("*")
       .eq("user_id", data.userId)
       .single();
     if (beforeError) throw new Error(beforeError.message);
 
-    const patch: Record<string, unknown> = { role: data.role };
+    const patch: Database["public"]["Tables"]["support_team_members"]["Update"] = {
+      role: data.role,
+    };
     if (data.allowedCategories) patch.allowed_categories = data.allowedCategories;
-    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: after, error } = await supabaseAdmin
+      .from("support_team_members")
       .update(patch)
       .eq("user_id", data.userId)
       .select("*")
@@ -1181,10 +1220,10 @@ export const updateSupportTeamMemberRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId)
-      .in("role", managedSupportRoles as any);
+      .in("role", managedSupportRoles);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
-      .upsert({ user_id: data.userId, role: data.role } as any);
+      .upsert({ user_id: data.userId, role: data.role });
     if (roleError) throw new Error(roleError.message);
 
     await auditSupportTeam({
@@ -1215,15 +1254,15 @@ export const setSupportTeamMemberActive = createServerFn({ method: "POST" })
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (
-      supabaseAdmin.from("support_team_members") as any
-    )
+    const { data: before, error: beforeError } = await supabaseAdmin
+      .from("support_team_members")
       .select("*")
       .eq("user_id", data.userId)
       .single();
     if (beforeError) throw new Error(beforeError.message);
 
-    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: after, error } = await supabaseAdmin
+      .from("support_team_members")
       .update({ active: data.active })
       .eq("user_id", data.userId)
       .select("*")
@@ -1258,15 +1297,15 @@ export const removeSupportTeamAccess = createServerFn({ method: "POST" })
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (
-      supabaseAdmin.from("support_team_members") as any
-    )
+    const { data: before, error: beforeError } = await supabaseAdmin
+      .from("support_team_members")
       .select("*")
       .eq("user_id", data.userId)
       .single();
     if (beforeError) throw new Error(beforeError.message);
 
-    const { data: after, error } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: after, error } = await supabaseAdmin
+      .from("support_team_members")
       .update({ active: false })
       .eq("user_id", data.userId)
       .select("*")
@@ -1277,7 +1316,7 @@ export const removeSupportTeamAccess = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId)
-      .in("role", managedSupportRoles as any);
+      .in("role", managedSupportRoles);
     await auditSupportTeam({
       actorId: context.userId,
       action: "support_team.access_removed",

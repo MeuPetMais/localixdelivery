@@ -11,10 +11,10 @@ import type {
   PaymentProvider,
 } from "./PaymentProvider";
 
-async function invokeStripe<T = any>(name: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body });
+async function invokeStripe<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke<T & { error?: string }>(name, { body });
   if (error) throw new Error(error.message);
-  if ((data as any)?.error) throw new Error(String((data as any).error));
+  if (data?.error) throw new Error(String(data.error));
   return data as T;
 }
 
@@ -35,7 +35,10 @@ export const StripeProvider: PaymentProvider = {
   },
 
   async getStatus(restaurantId) {
-    const d = await invokeStripe<any>("stripe-connect-refresh", { restaurantId });
+    const d = await invokeStripe<{ accountId?: string; status?: string; lastSync?: string }>(
+      "stripe-connect-refresh",
+      { restaurantId },
+    );
     return {
       provider: "stripe",
       connected: !!d?.accountId && d?.status === "active",
@@ -56,7 +59,7 @@ export const StripeProvider: PaymentProvider = {
   },
 
   async createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult> {
-    const data = await invokeStripe<any>("stripe-checkout", {
+    const data = await invokeStripe<{ url?: string; sessionId?: string }>("stripe-checkout", {
       orderId: input.orderId,
       method: input.method,
       successUrl: input.successUrl,

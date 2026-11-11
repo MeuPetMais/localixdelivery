@@ -1,3 +1,4 @@
+import { dashboardBalance } from "./dashboard-balance";
 // Finance Domain — extended with CashFlow / Receivables / Payables / Projection.
 // Composes real ports bound to LedgerService server functions and the
 // cashflow.functions accessors (RLS-scoped).
@@ -24,29 +25,24 @@ const ledgerPort: LedgerPort & LedgerStatementPort = {
   async getStatement({ restaurantId, from, to }) {
     const rows = await getRestaurantStatement({
       data: { restaurantId, from, to, limit: 500 },
-    } as any);
-    return (rows ?? []) as any;
+    });
+    return rows ?? [];
   },
   async getBalance({ restaurantId }) {
-    const b = await getRestaurantBalance({ data: { restaurantId } } as any);
-    return {
-      balance: (b as any)?.balance ?? 0,
-      currency: (b as any)?.currency ?? "BRL",
-      pendingIn: (b as any)?.pendingIn,
-      pendingOut: (b as any)?.pendingOut,
-    };
+    const b = await getRestaurantBalance({ data: { restaurantId } });
+    return dashboardBalance(b);
   },
 };
 
 const receivablesPort: ReceivablesPort = {
   async list({ restaurantId, from, to, status }) {
-    return (await listReceivables({ data: { restaurantId, from, to, status } } as any)) as any;
+    return await listReceivables({ data: { restaurantId, from, to, status } });
   },
 };
 
 const payablesPort: PayablesPort = {
   async list({ restaurantId, from, to, status }) {
-    return (await listPayables({ data: { restaurantId, from, to, status } } as any)) as any;
+    return await listPayables({ data: { restaurantId, from, to, status } });
   },
 };
 

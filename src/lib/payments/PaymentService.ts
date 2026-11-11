@@ -1,3 +1,4 @@
+import type { TablesUpdate } from "@/integrations/supabase/types";
 // PaymentService — orquestração isolada do módulo de pagamentos.
 // Regras arquiteturais:
 //  - Toda comunicação com gateways passa por Edge Functions.
@@ -53,12 +54,15 @@ export const PaymentService = {
   },
   async getMercadoPagoPublicKey(restaurantId: string): Promise<string | null> {
     const { supabase } = await import("@/integrations/supabase/client");
-    const { data, error } = await supabase.functions.invoke("mp-public-key", {
+    const { data, error } = await supabase.functions.invoke<{
+      error?: string;
+      public_key?: string | null;
+    }>("mp-public-key", {
       body: { restaurant_id: restaurantId },
     });
     if (error) throw new Error(error.message);
-    if ((data as any)?.error) throw new Error(String((data as any).error));
-    return (data as any)?.public_key ?? null;
+    if (data?.error) throw new Error(String(data.error));
+    return data?.public_key ?? null;
   },
   async disconnect(providerId: string, restaurantId: string) {
     return this.provider(providerId).disconnect(restaurantId);
@@ -93,7 +97,7 @@ export const PaymentService = {
         .select("payment_provider")
         .eq("id", restaurantId)
         .maybeSingle();
-      const p = (data as any)?.payment_provider;
+      const p = data?.payment_provider;
       if (p && paymentProviders[p]) return p;
     } catch {
       /* fallback abaixo */
@@ -105,7 +109,7 @@ export const PaymentService = {
     const { supabase } = await import("@/integrations/supabase/client");
     const { error } = await supabase
       .from("restaurants")
-      .update({ payment_provider: providerId } as any)
+      .update({ payment_provider: providerId })
       .eq("id", restaurantId);
     if (error) throw new Error(error.message);
   },
@@ -167,19 +171,16 @@ export const PaymentService = {
   }) {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data: existing } = await supabase
-      .from("payments" as any)
+      .from("payments")
       .select("id, status")
       .eq("provider", input.provider)
       .eq("external_id", input.externalId)
       .maybeSingle();
     if (!existing) return { ok: false as const, reason: "not_found" as const };
-    if ((existing as any).status === input.status) return { ok: true as const, changed: false };
-    const patch: Record<string, unknown> = { status: input.status };
+    if (existing.status === input.status) return { ok: true as const, changed: false };
+    const patch: TablesUpdate<"payments"> = { status: input.status };
     if (input.status === "approved") patch.paid_at = input.paidAt ?? new Date().toISOString();
-    const { error } = await supabase
-      .from("payments" as any)
-      .update(patch)
-      .eq("id", (existing as any).id);
+    const { error } = await supabase.from("payments").update(patch).eq("id", existing.id);
     if (error) return { ok: false as const, reason: error.message };
     return { ok: true as const, changed: true };
   },

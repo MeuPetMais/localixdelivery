@@ -455,9 +455,8 @@ export async function printAutoCopies(order: PrintableOrder) {
   if (copies.delivery) jobs.push("customer");
   if (copies.customer) jobs.push("customer");
   for (const t of jobs) {
-    // eslint-disable-next-line no-await-in-loop
     await printOrder(order, { template: t, paper });
-    // eslint-disable-next-line no-await-in-loop
+
     await new Promise((r) => setTimeout(r, 400));
   }
 }

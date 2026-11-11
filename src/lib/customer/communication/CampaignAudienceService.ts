@@ -17,7 +17,7 @@ import { CommunicationPreferenceService } from "./CommunicationPreferenceService
 export const CampaignAudienceService = {
   async candidateIds(input: CampaignAudienceInput): Promise<string[]> {
     if (input.customer_ids?.length) return [...new Set(input.customer_ids)];
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("customer_segments")
       .select("customer_id, segment")
       .eq("restaurant_id", input.restaurant_id);
@@ -33,7 +33,7 @@ export const CampaignAudienceService = {
     requireMarketing = true,
   ) {
     if (customerIds.length === 0) return { eligible: [] as string[], filtered_out: 0 };
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("customer_communication_preferences")
       .select("*")
       .in("customer_id", customerIds);
@@ -93,7 +93,7 @@ export const CampaignPreview = {
       );
       eligible_by_channel[c] = eligible.length;
     }
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("customer_segments")
       .select("segment")
       .eq("restaurant_id", input.restaurant_id);

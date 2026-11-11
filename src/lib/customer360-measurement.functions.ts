@@ -1,3 +1,6 @@
+import { measurementEvents } from "@/lib/customer360-measurement";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -67,7 +70,11 @@ async function authorizeRestaurant(userId: string, restaurantId: string) {
   return supabaseAdmin;
 }
 
-async function assertCustomerTenant(sb: any, restaurantId: string, customerId: string) {
+async function assertCustomerTenant(
+  sb: SupabaseClient<Database>,
+  restaurantId: string,
+  customerId: string,
+) {
   const { data, error } = await sb
     .from("customers")
     .select("id,restaurant_id,phone")
@@ -201,5 +208,5 @@ export const getGrowthMeasurementSummary = createServerFn({ method: "POST" })
     if (data.to) query = query.lte("occurred_at", data.to);
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
-    return summarizeGrowthMeasurement((rows ?? []) as any);
+    return summarizeGrowthMeasurement(measurementEvents(rows ?? []));
   });

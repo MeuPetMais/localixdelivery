@@ -39,25 +39,25 @@ function makeVersioningRepo(): VersioningRepository & { rows: VersionRow[] } {
   const rows: VersionRow[] = [];
   return {
     rows,
-    async append(row) {
-      const full = { ...row, created_at: new Date().toISOString() } as VersionRow;
+    async append<G extends ConfigGroup>(row: Omit<VersionRow<G>, "created_at">) {
+      const full = { ...row, created_at: new Date().toISOString() } as VersionRow<G>;
       rows.push(full);
-      return full as any;
+      return full;
     },
-    async latest(rid, group) {
+    async latest<G extends ConfigGroup>(rid: string, group: G) {
       const filtered = rows.filter((r) => r.restaurant_id === rid && r.group_name === group);
-      return (filtered[filtered.length - 1] as any) ?? null;
+      return (filtered[filtered.length - 1] as VersionRow<G> | undefined) ?? null;
     },
-    async history(rid, group, limit = 20) {
+    async history<G extends ConfigGroup>(rid: string, group: G, limit = 20) {
       return rows
         .filter((r) => r.restaurant_id === rid && r.group_name === group)
-        .slice(-limit) as any;
+        .slice(-limit) as VersionRow<G>[];
     },
-    async at(rid, group, version) {
+    async at<G extends ConfigGroup>(rid: string, group: G, version: number) {
       return (
         (rows.find(
           (r) => r.restaurant_id === rid && r.group_name === group && r.version === version,
-        ) as any) ?? null
+        ) as VersionRow<G> | undefined) ?? null
       );
     },
   };
@@ -100,7 +100,7 @@ describe("TenantConfigurationValidator", () => {
   it("working hours must be HH:MM", () => {
     const r = validateGroup("business", {
       ...DEFAULT_CONFIG.business,
-      working_hours_json: { mon: { open: "9", close: "18:00" } } as any,
+      working_hours_json: { mon: { open: "9", close: "18:00" } },
     });
     expect(r.valid).toBe(false);
   });

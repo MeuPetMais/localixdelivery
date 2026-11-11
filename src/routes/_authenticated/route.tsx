@@ -1,3 +1,4 @@
+import { parseOpeningHours } from "@/lib/opening-hours";
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
   const restaurantName = restaurant?.name ?? "Localix";
   const restaurantStatus = useRestaurantStatus({
     is_open: restaurant?.is_open,
-    opening_hours: (restaurant as any)?.opening_hours,
+    opening_hours: parseOpeningHours(restaurant?.opening_hours),
   });
   const dashboardStatus = restaurant
     ? {

@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CommunicationEventBus } from "./CommunicationEventBus";
 import type { CommunicationChannel, CommunicationPreferences } from "./types";
 
-const T = () => (supabase as any).from("customer_communication_preferences");
+const T = () => supabase.from("customer_communication_preferences");
 
 const DEFAULTS = (customerId: string): CommunicationPreferences => ({
   customer_id: customerId,

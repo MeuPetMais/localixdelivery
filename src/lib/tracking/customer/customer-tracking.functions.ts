@@ -54,7 +54,21 @@ export const getCustomerTracking = createServerFn({ method: "POST" })
 
     return buildCustomerView(data.orderId, {
       order_status: String(order.status),
-      tracking_status: (snap?.status as any) ?? null,
+      tracking_status: z
+        .enum([
+          "AGUARDANDO",
+          "ATRIBUIDO",
+          "COLETANDO",
+          "EM_ROTA",
+          "PROXIMO_AO_DESTINO",
+          "ENTREGUE",
+          "RETORNANDO",
+          "RETORNO_NAO_CONFIRMADO",
+          "SEM_SINAL",
+          "CANCELADO",
+        ])
+        .nullable()
+        .parse(snap?.status ?? null),
       eta_seconds: snap?.eta_seconds == null ? null : Number(snap.eta_seconds),
       driver_name: driverName,
       driver_location: driverLocation,

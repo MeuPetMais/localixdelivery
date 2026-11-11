@@ -1,3 +1,4 @@
+import { jsonObject, toJson } from "@/lib/json";
 // Tracking Domain — Timeline store (append-only, in-memory / testes).
 // Nunca armazenar posição GPS continuamente aqui. Somente eventos relevantes.
 
@@ -37,7 +38,7 @@ export function createInMemoryTimelineStore(): TimelineStore {
         previous_status: input.previous_status ?? null,
         current_status: input.current_status ?? null,
         actor: input.actor ?? "system",
-        metadata: input.metadata ?? {},
+        metadata: jsonObject(toJson(input.metadata)),
         correlation_id: input.correlation_id,
         created_at: new Date().toISOString(),
       };

@@ -1,3 +1,4 @@
+import { toJson } from "@/lib/json";
 import { supabase } from "@/integrations/supabase/client";
 import { CommunicationEventBus } from "./CommunicationEventBus";
 import type {
@@ -6,7 +7,7 @@ import type {
   CommunicationHistoryFilter,
 } from "./types";
 
-const T = () => (supabase as any).from("customer_communication_history");
+const T = () => supabase.from("customer_communication_history");
 
 export const CommunicationHistoryService = {
   async log(entry: CommunicationHistoryEntry): Promise<CommunicationHistoryEntry> {
@@ -16,7 +17,7 @@ export const CommunicationHistoryService = {
       event_type: entry.event_type,
       status: entry.status ?? "logged",
       reference_id: entry.reference_id ?? null,
-      metadata_json: entry.metadata_json ?? {},
+      metadata_json: toJson(entry.metadata_json ?? {}),
     };
     const { data, error } = await T().insert(row).select().maybeSingle();
     if (error) throw error;

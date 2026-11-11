@@ -65,7 +65,7 @@ export const getPlatformSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PlatformSettings | null> => {
     const sb = await assertAdmin(context.userId);
-    const { data, error } = await (sb as any)
+    const { data, error } = await sb
       .from("platform_settings")
       .select("*")
       .eq("id", true)
@@ -88,10 +88,7 @@ export const updatePlatformSettings = createServerFn({ method: "POST" })
       domain: data.domain || null,
       updated_by: context.userId,
     };
-    const { error } = await sb
-      .from("platform_settings" as any)
-      .update(payload)
-      .eq("id", true);
+    const { error } = await sb.from("platform_settings").update(payload).eq("id", true);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

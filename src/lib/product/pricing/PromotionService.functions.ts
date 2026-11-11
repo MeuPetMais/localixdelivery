@@ -1,3 +1,5 @@
+import { promotionColumnPatch } from "./promotion-patch";
+import type { JsonObject } from "@/lib/json";
 // Server functions para CRUD de promoções.
 // RLS já garante isolamento por restaurant_id (owner_id).
 import { createServerFn } from "@tanstack/react-start";
@@ -12,7 +14,7 @@ export const listPromotions = createServerFn({ method: "GET" })
   .inputValidator((d: { restaurant_id: string; status?: PromotionStatus }) => d)
   .handler(async ({ data, context }) => {
     let q = context.supabase
-      .from("promotions" as any)
+      .from("promotions")
       .select("*, rules:promotion_rules(*), targets:promotion_targets(*)")
       .eq("restaurant_id", data.restaurant_id)
       .order("priority", { ascending: true });
@@ -29,7 +31,7 @@ export const createPromotion = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
-      .from("promotions" as any)
+      .from("promotions")
       .insert({
         restaurant_id: data.restaurant_id,
         name: data.name,
@@ -57,9 +59,10 @@ export const updatePromotion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string; patch: Partial<Promotion> }) => d)
   .handler(async ({ data, context }) => {
+    const patch = promotionColumnPatch(data.patch);
     const { data: row, error } = await context.supabase
-      .from("promotions" as any)
-      .update(data.patch as any)
+      .from("promotions")
+      .update(patch)
       .eq("id", data.id)
       .select("*")
       .single();
@@ -72,7 +75,7 @@ export const transitionPromotion = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; status: PromotionStatus }) => d)
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
-      .from("promotions" as any)
+      .from("promotions")
       .update({ status: data.status })
       .eq("id", data.id)
       .select("*")
@@ -85,10 +88,7 @@ export const deletePromotion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("promotions" as any)
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("promotions").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -101,7 +101,7 @@ export const upsertPromotionRule = createServerFn({ method: "POST" })
       promotion_id: string;
       rule_type: string;
       operator?: string;
-      value: Record<string, any>;
+      value: JsonObject;
     }) => d,
   )
   .handler(async ({ data, context }) => {
@@ -112,11 +112,8 @@ export const upsertPromotionRule = createServerFn({ method: "POST" })
       value: data.value,
     };
     const q = data.id
-      ? context.supabase
-          .from("promotion_rules" as any)
-          .update(payload)
-          .eq("id", data.id)
-      : context.supabase.from("promotion_rules" as any).insert(payload);
+      ? context.supabase.from("promotion_rules").update(payload).eq("id", data.id)
+      : context.supabase.from("promotion_rules").insert(payload);
     const { data: row, error } = await q.select("*").single();
     if (error) throw new Error(error.message);
     return row;
@@ -134,11 +131,8 @@ export const upsertPromotionTarget = createServerFn({ method: "POST" })
       target_id: data.target_id ?? null,
     };
     const q = data.id
-      ? context.supabase
-          .from("promotion_targets" as any)
-          .update(payload)
-          .eq("id", data.id)
-      : context.supabase.from("promotion_targets" as any).insert(payload);
+      ? context.supabase.from("promotion_targets").update(payload).eq("id", data.id)
+      : context.supabase.from("promotion_targets").insert(payload);
     const { data: row, error } = await q.select("*").single();
     if (error) throw new Error(error.message);
     return row;
@@ -157,7 +151,7 @@ export const recordPromotionUsage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
-      .from("promotion_usage" as any)
+      .from("promotion_usage")
       .insert({
         promotion_id: data.promotion_id,
         restaurant_id: data.restaurant_id,

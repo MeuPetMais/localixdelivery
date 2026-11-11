@@ -1,3 +1,5 @@
+import { z } from "zod";
+import type { JsonObject } from "@/lib/json";
 // WebhookService — processamento de eventos do Mercado Pago.
 //
 // Contrato:
@@ -39,11 +41,29 @@ export interface MpPayment {
   date_of_expiration?: string | null;
 }
 
+const webhookPayloadSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).optional(),
+    type: z.string().optional(),
+    topic: z.string().optional(),
+    action: z.string().optional(),
+    resource: z.string().optional(),
+    external_reference: z.string().nullable().optional(),
+    data: z
+      .object({
+        id: z.union([z.string(), z.number()]).optional(),
+        external_reference: z.string().nullable().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
 export interface WebhookInput {
   provider?: string;
   headers: Record<string, string | null | undefined>;
   rawBody: string;
-  parsed?: Record<string, any> | null;
+  parsed?: WebhookPayload | null;
 }
 
 export interface StoredEvent {
@@ -145,18 +165,14 @@ export interface WebhookDeps {
     action: string | null;
     resource_id: string | null;
     external_reference: string | null;
-    payload_json: Record<string, any>;
+    payload_json: WebhookPayload;
     signature: string | null;
   }): Promise<StoredEvent>;
   markProcessed(eventPk: string, ok: boolean, error?: string | null): Promise<void>;
   enqueueRetry(eventPk: string, err: string): Promise<void>;
   fetchMpPayment(paymentId: string): Promise<MpPayment | null>;
-  updateOrderPayment(
-    orderId: string,
-    status: LocalPaymentStatus,
-    patch: Record<string, any>,
-  ): Promise<void>;
-  updateOrder(orderId: string, patch: Record<string, any>): Promise<void>;
+  updateOrderPayment(orderId: string, status: LocalPaymentStatus, patch: JsonObject): Promise<void>;
+  updateOrder(orderId: string, patch: JsonObject): Promise<void>;
   recordLedger(entry: {
     orderId: string;
     restaurantId: string | null;
@@ -170,7 +186,7 @@ export interface WebhookDeps {
     amount: number;
     referenceId: string | null;
     description: string;
-    metadata?: Record<string, any>;
+    metadata?: JsonObject;
   }): Promise<void>;
   getOrderByPayment(
     paymentId: string,
@@ -311,22 +327,23 @@ export async function handleWebhook(
       paymentId: String(mp.id),
       amount,
       currency: mp.currency_id ?? "BRL",
-      raw: mp as any,
+      raw: { ...mp },
     });
 
     await deps.markProcessed(stored.id, true);
     return { ok: true, duplicated: false, status: local, eventName, orderId: link.orderId };
-  } catch (err: any) {
-    const msg = err?.message ?? String(err);
+  } catch (err) {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    const msg = errMessage ?? String(err);
     await deps.markProcessed(stored.id, false, msg);
     await deps.enqueueRetry(stored.id, msg).catch(() => {});
     return { ok: false, duplicated: false, reason: msg };
   }
 }
 
-function safeJson(s: string): Record<string, any> | null {
+function safeJson(s: string): WebhookPayload | null {
   try {
-    return JSON.parse(s);
+    return webhookPayloadSchema.parse(JSON.parse(s));
   } catch {
     return null;
   }

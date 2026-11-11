@@ -38,7 +38,7 @@ function ReviewsPage() {
     queryKey: ["owner-reviews", restaurant?.id],
     enabled: !!restaurant?.id,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("reviews")
         .select(
           "id, customer_name, rating, comment, owner_reply, owner_reply_at, created_at, order_id",
@@ -53,7 +53,7 @@ function ReviewsPage() {
     const text = (replies[r.id] ?? "").trim();
     if (!text) return toast.error("Escreva uma resposta");
     setSaving(r.id);
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("reviews")
       .update({ owner_reply: text, owner_reply_at: new Date().toISOString() })
       .eq("id", r.id);

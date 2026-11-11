@@ -1,3 +1,4 @@
+import type { JsonObject } from "@/lib/json";
 // LedgerService — Livro razão financeiro (append-only).
 // Regra de ouro: NUNCA modificar registros. Sempre criar novos lançamentos.
 // Componentes React NÃO devem acessar `financial_ledger` diretamente —
@@ -36,7 +37,7 @@ export interface LedgerEntry {
   currency: string;
   status: LedgerStatus;
   description: string | null;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   created_at: string;
   updated_at: string;
 }
@@ -53,7 +54,7 @@ export interface LedgerRecordInput {
   currency?: string;
   status?: LedgerStatus;
   description?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }
 
 export interface BalanceSummary {
@@ -66,6 +67,8 @@ export interface BalanceSummary {
   payouts: number;
   netBalance: number;
   entriesCount: number;
+  /** Both gross payments and receivables exist; the posting basis is ambiguous. */
+  ambiguousPostingBasis: boolean;
 }
 
 // ------------- Núcleo puro (testável) -------------
@@ -116,6 +119,11 @@ export function computeBalance(entries: LedgerEntry[], restaurantId: string): Ba
     payouts: round2(payouts),
     netBalance: round2(netBalance),
     entriesCount: scoped.length,
+    ambiguousPostingBasis:
+      scoped.some((e) => e.status === "COMPLETED" && e.transaction_type === "PAYMENT_APPROVED") &&
+      scoped.some(
+        (e) => e.status === "COMPLETED" && e.transaction_type === "RESTAURANT_RECEIVABLE",
+      ),
   };
 }
 

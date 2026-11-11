@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, ShieldAlert, WifiOff } from "lucide-react";
@@ -76,9 +77,8 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
   const restaurant = data?.[0] ?? null;
 
   if (error) {
-    const kind = classifyError(error as any);
+    const kind = classifyError(error);
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.error("[RestaurantContext] fetch error", { kind, error });
     }
     return { kind, error } as FetchResult;
@@ -99,7 +99,7 @@ export function useCurrentRestaurant(userId: string) {
     gcTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    retry: (failureCount, err: any) => {
+    retry: (failureCount, err) => {
       // Never retry permission errors
       const kind = classifyError(err);
       if (kind === "permission_error") return false;
@@ -203,7 +203,7 @@ export function RestaurantProvider({
   }
 
   if (status === "permission_error" || status === "connection_error") {
-    const errObj = (error as any) ?? {};
+    const errObj = record(error);
     const errDetails = {
       code: errObj?.code,
       message: errObj?.message,
@@ -211,7 +211,6 @@ export function RestaurantProvider({
       hint: errObj?.hint,
     };
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.error("[RestaurantContext] rendering error state", {
         status,
         authUserId: userId,

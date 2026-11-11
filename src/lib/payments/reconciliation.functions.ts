@@ -1,3 +1,6 @@
+import { gatewayFromStoredPayment } from "./reconciliation-gateway";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // Server functions para o painel admin de Conciliação Financeira.
 // Somente admins. Leitura + acionamento de reconciliação por pedido.
 
@@ -33,7 +36,7 @@ export interface ReconciliationRow {
   created_at: string;
 }
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data } = await ctx.supabase.rpc("has_role", {
     _user_id: ctx.userId,
     _role: "admin",
@@ -152,8 +155,8 @@ export const runOrderReconciliation = createServerFn({ method: "POST" })
         .eq("order_id", data.order_id)
         .maybeSingle(),
     ]);
-    const snap = snapRes.data as any;
-    const pay = payRes.data as any;
+    const snap = snapRes.data;
+    const pay = payRes.data;
 
     const snapshot: InternalSnapshot | null = snap
       ? {
@@ -166,19 +169,7 @@ export const runOrderReconciliation = createServerFn({ method: "POST" })
         }
       : null;
 
-    let gateway: GatewayPayment | null = null;
-    if (pay?.payment_id) {
-      const intent = (pay.payment_intent ?? {}) as any;
-      gateway = {
-        id: pay.payment_id,
-        external_reference: pay.external_reference ?? intent.external_reference ?? data.order_id,
-        transaction_amount: Number(intent.transaction_amount ?? pay.transaction_amount ?? 0),
-        currency_id: intent.currency_id ?? "BRL",
-        fee_details: intent.fee_details ?? null,
-        net_received_amount: intent.net_received_amount ?? null,
-        status: intent.status ?? null,
-      };
-    }
+    const gateway = gatewayFromStoredPayment(pay, data.order_id);
 
     const result = reconcile({ gateway, snapshot });
 

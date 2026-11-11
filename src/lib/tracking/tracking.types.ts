@@ -1,3 +1,4 @@
+import type { JsonObject } from "@/lib/json";
 // Tracking Domain — Types
 // RC5.3.a Tracking Core. Alinhado a docs/DOMAIN_MANIFEST_TRACKING.md.
 // Tracking apenas observa/calcula/publica; nunca muta Orders/Delivery/Driver.
@@ -35,7 +36,7 @@ export interface TrackingSnapshot {
   last_seen_at: string | null;
   device_captured_at?: string | null;
   server_received_at?: string | null;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   correlation_id: string;
   created_at: string;
   updated_at: string;
@@ -51,7 +52,7 @@ export interface TrackingTimelineEntry {
   previous_status: TrackingStatus | null;
   current_status: TrackingStatus | null;
   actor: TrackingActor;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   correlation_id: string;
   created_at: string;
 }

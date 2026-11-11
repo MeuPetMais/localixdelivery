@@ -1,3 +1,6 @@
+import type { JsonObject } from "@/lib/json";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // Server functions do Split — orquestração, EventBus, gravação em payment_split.
 // Só admins acionam / listam globalmente. Restaurantes leem apenas os seus (via RLS).
 
@@ -15,7 +18,7 @@ import {
   type SplitSnapshot,
 } from "./SplitService";
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
+async function assertAdmin(ctx: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data } = await ctx.supabase.rpc("has_role", {
     _user_id: ctx.userId,
     _role: "admin",
@@ -23,7 +26,11 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
   if (!data) throw new Error("Forbidden");
 }
 
-async function persistAndPublish(admin: any, plan: SplitPlan, splitReference?: string) {
+async function persistAndPublish(
+  admin: SupabaseClient<Database>,
+  plan: SplitPlan,
+  splitReference?: string,
+) {
   const row = {
     order_id: plan.order_id,
     payment_id: plan.payment_id,
@@ -74,10 +81,10 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
 
-    const order = orderRes.data as any;
-    const snapRow = snapRes.data as any;
-    const payRow = payRes.data as any;
-    const recRow = recRes.data as any;
+    const order = orderRes.data;
+    const snapRow = snapRes.data;
+    const payRow = payRes.data;
+    const recRow = recRes.data;
 
     const restaurantId = order?.restaurant_id ?? payRow?.restaurant_id ?? null;
 
@@ -101,7 +108,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
         .eq("restaurant_id", restaurantId)
         .maybeSingle();
       if (acc) {
-        const a = acc as any;
+        const a = acc;
         const notExpired = !a.expires_at || new Date(a.expires_at).getTime() > Date.now();
         account = {
           connected: Boolean(a.connected),
@@ -123,7 +130,7 @@ export const runOrderSplit = createServerFn({ method: "POST" })
 
     const plan = planSplit({ snapshot, account, reconciliation, payment });
 
-    const evtPayload = (extra: Record<string, any> = {}) => ({
+    const evtPayload = (extra: JsonObject = {}) => ({
       provider: "mercadopago",
       orderId: plan.order_id,
       restaurantId: plan.restaurant_id,
@@ -177,14 +184,14 @@ export const completeOrderSplit = createServerFn({ method: "POST" })
     if (!current) throw new Error("split_not_found");
 
     const plan: SplitPlan = {
-      order_id: (current as any).order_id,
-      payment_id: (current as any).payment_id,
-      restaurant_id: (current as any).restaurant_id,
+      order_id: current.order_id,
+      payment_id: current.payment_id,
+      restaurant_id: current.restaurant_id,
       provider: "mercadopago",
-      restaurant_amount: Number((current as any).restaurant_amount),
-      platform_amount: Number((current as any).platform_amount),
-      gateway_fee: Number((current as any).gateway_fee),
-      status: (current as any).status,
+      restaurant_amount: Number(current.restaurant_amount),
+      platform_amount: Number(current.platform_amount),
+      gateway_fee: Number(current.gateway_fee),
+      status: current.status,
     };
 
     const next = finalizeSplit(plan, data.result);
@@ -194,7 +201,7 @@ export const completeOrderSplit = createServerFn({ method: "POST" })
       data.result.ok ? data.result.split_reference : undefined,
     );
 
-    const payload = (extra: Record<string, any> = {}) => ({
+    const payload = (extra: JsonObject = {}) => ({
       provider: "mercadopago",
       orderId: next.order_id,
       restaurantId: next.restaurant_id,
@@ -288,11 +295,11 @@ export const getSplitReport = createServerFn({ method: "POST" })
       .select("restaurant_amount, platform_amount");
     const platform_total =
       Math.round(
-        (sums ?? []).reduce((a: number, r: any) => a + Number(r.platform_amount ?? 0), 0) * 100,
+        (sums ?? []).reduce((a: number, r) => a + Number(r.platform_amount ?? 0), 0) * 100,
       ) / 100;
     const restaurant_total =
       Math.round(
-        (sums ?? []).reduce((a: number, r: any) => a + Number(r.restaurant_amount ?? 0), 0) * 100,
+        (sums ?? []).reduce((a: number, r) => a + Number(r.restaurant_amount ?? 0), 0) * 100,
       ) / 100;
     return {
       total: counts.reduce((a, c) => a + (c.count ?? 0), 0),

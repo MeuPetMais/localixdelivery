@@ -54,10 +54,14 @@ export interface RetentionQueryClient {
   ): Promise<{ oldest: string | null; newest: string | null }>;
 }
 
+function retentionTable(table: string): "tracking_timeline" | "tracking_eta_history" {
+  if (table === "tracking_timeline" || table === "tracking_eta_history") return table;
+  throw new Error(`Unknown tracking table: ${table}`);
+}
 // Cliente Supabase padrão (produção). Substituível em testes.
 export const supabaseRetentionClient: RetentionQueryClient = {
   async countBetween(table, fromExclusiveIso, toInclusiveIso) {
-    let q = (supabase as any).from(table).select("id", { count: "exact", head: true });
+    let q = supabase.from(retentionTable(table)).select("id", { count: "exact", head: true });
     if (fromExclusiveIso) q = q.gt("created_at", fromExclusiveIso);
     if (toInclusiveIso) q = q.lte("created_at", toInclusiveIso);
     const { count, error } = await q;
@@ -65,7 +69,7 @@ export const supabaseRetentionClient: RetentionQueryClient = {
     return count ?? 0;
   },
   async boundsBetween(table, fromExclusiveIso, toInclusiveIso) {
-    const base = (supabase as any).from(table).select("created_at");
+    const base = supabase.from(retentionTable(table)).select("created_at");
     let qOld = base;
     let qNew = base;
     if (fromExclusiveIso) {

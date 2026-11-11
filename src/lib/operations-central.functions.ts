@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // RC7.0 — Central Operacional: agregador read-only para o painel do restaurante.
 // Não altera Orders/Payments/Delivery/Tracking/Queue/Wallet — apenas lê.
 import { createServerFn } from "@tanstack/react-start";
@@ -12,7 +14,11 @@ import {
 
 export type { CentralGroup } from "./operations-central";
 
-async function assertOwner(supabase: any, userId: string, restaurantId: string) {
+async function assertOwner(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  restaurantId: string,
+) {
   const { data } = await supabase
     .from("restaurants")
     .select("id, owner_id")
@@ -113,8 +119,8 @@ export const getOperationsCentral = createServerFn({ method: "GET" })
         .from("orders")
         .select("id, order_number, customer_name")
         .in("id", orderIds);
-      for (const o of (os ?? []) as any[]) {
-        orders[o.id] = { order_number: o.order_number, customer_name: o.customer_name };
+      for (const o of os ?? []) {
+        orders[o.id] = { order_number: o.order_number ?? 0, customer_name: o.customer_name };
       }
     }
 

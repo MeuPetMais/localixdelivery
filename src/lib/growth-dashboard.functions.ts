@@ -1,3 +1,4 @@
+import { measurementEvents } from "@/lib/customer360-measurement";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -108,7 +109,7 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
       REACTIVATED: 0,
     };
 
-    const opportunities = (customersQ.data ?? []).map((customer: any) => {
+    const opportunities = (customersQ.data ?? []).map((customer) => {
       const lifecycle = resolveCustomer360LifecycleFromProjection({
         totalOrders: Number(customer.total_orders ?? 0),
         totalSpent: Number(customer.total_spent ?? 0),
@@ -147,7 +148,10 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
       })
       .slice(0, 100);
 
-    const latestConsentByCustomerChannel = new Map<string, any>();
+    const latestConsentByCustomerChannel = new Map<
+      string,
+      NonNullable<typeof consentsQ.data>[number]
+    >();
     for (const row of consentsQ.data ?? []) {
       const key = `${row.customer_id}:${row.channel}`;
       if (!latestConsentByCustomerChannel.has(key)) latestConsentByCustomerChannel.set(key, row);
@@ -189,6 +193,6 @@ export const getGrowthDashboardData = createServerFn({ method: "POST" })
         recent_jobs: (jobsQ.data ?? []).slice(0, 50),
         providers,
       },
-      measurement: summarizeGrowthMeasurement((measurementQ.data ?? []) as any),
+      measurement: summarizeGrowthMeasurement(measurementEvents(measurementQ.data ?? [])),
     };
   });

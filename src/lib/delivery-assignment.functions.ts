@@ -1,3 +1,6 @@
+import { jsonObject } from "@/lib/json";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // RC5.2.a.2 — Server Functions do Delivery Assignment Domain.
 // Todas autenticadas via requireSupabaseAuth. Nunca fazem UPDATE direto:
 // toda mutação passa pelo DeliveryOrchestrator → RPC atômica CAS.
@@ -29,8 +32,8 @@ const CancelInput = IdInput.extend({ reason: z.string().max(500).optional() });
 const RestaurantInput = z.object({ restaurantId: z.string().uuid() });
 
 async function requireOwnerOrAdmin(
-  supabase: any,
-  admin: any,
+  supabase: SupabaseClient<Database>,
+  admin: SupabaseClient<Database>,
   userId: string,
   restaurantId: string,
 ): Promise<{ actor: DeliveryActor }> {
@@ -46,8 +49,8 @@ async function requireOwnerOrAdmin(
 }
 
 async function requireDriverOwnerOrAdmin(
-  supabase: any,
-  admin: any,
+  supabase: SupabaseClient<Database>,
+  admin: SupabaseClient<Database>,
   userId: string,
   assignment: AssignmentSnapshot,
 ): Promise<{ actor: DeliveryActor; actorId: string }> {
@@ -69,8 +72,8 @@ async function requireDriverOwnerOrAdmin(
 }
 
 async function requireAssignmentOwnerOrAdmin(
-  supabase: any,
-  admin: any,
+  supabase: SupabaseClient<Database>,
+  admin: SupabaseClient<Database>,
   userId: string,
   assignment: AssignmentSnapshot,
 ): Promise<{ actor: DeliveryActor; actorId: string }> {
@@ -78,7 +81,7 @@ async function requireAssignmentOwnerOrAdmin(
   return { actor, actorId: userId };
 }
 
-async function buildOrchestrator(callerSupabase: any) {
+async function buildOrchestrator(callerSupabase: SupabaseClient<Database>) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return {
     admin: supabaseAdmin,
@@ -182,7 +185,8 @@ export const assignDelivery = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!queueEntry) throw new Error("DRIVER_NOT_IN_QUEUE");
 
-    const { data: rawSettings } = await (supabaseAdmin.from("driver_earning_settings") as any)
+    const { data: rawSettings } = await supabaseAdmin
+      .from("driver_earning_settings")
       .select("base_fee, per_km_fee, minimum_fee, maximum_fee, is_active")
       .eq("restaurant_id", order.restaurant_id)
       .eq("is_active", true)
@@ -220,7 +224,8 @@ export const assignDelivery = createServerFn({ method: "POST" })
         .select("metadata")
         .eq("id", res.assignment_id)
         .maybeSingle();
-      const { error: snapshotErr } = await (supabaseAdmin.from("delivery_assignments") as any)
+      const { error: snapshotErr } = await supabaseAdmin
+        .from("delivery_assignments")
         .update({
           estimated_minutes: data.estimatedMinutes ?? null,
           distance_km: data.distanceKm ?? null,
@@ -229,7 +234,7 @@ export const assignDelivery = createServerFn({ method: "POST" })
           driver_distance_km: earning.distanceKm,
           driver_earning_amount: earning.amount,
           driver_earning_calculated_at: new Date().toISOString(),
-          metadata: { ...((currentAssignment as any)?.metadata ?? {}), ...assignmentMetadata },
+          metadata: { ...jsonObject(currentAssignment?.metadata), ...assignmentMetadata },
         })
         .eq("id", res.assignment_id);
       if (snapshotErr) throw new Error(snapshotErr.message);

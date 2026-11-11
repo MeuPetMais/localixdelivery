@@ -7,13 +7,13 @@ export const listProductInsights = createServerFn({ method: "GET" })
   .inputValidator((d: { restaurant_id: string; limit?: number }) => d)
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
-      .from("product_insights" as any)
+      .from("product_insights")
       .select("*")
       .eq("restaurant_id", data.restaurant_id)
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 100);
     if (error) throw new Error(error.message);
-    return (rows ?? []) as any;
+    return rows ?? [];
   });
 
 export const listProductRecommendations = createServerFn({ method: "GET" })
@@ -21,7 +21,7 @@ export const listProductRecommendations = createServerFn({ method: "GET" })
   .inputValidator((d: { restaurant_id: string; type?: string; limit?: number }) => d)
   .handler(async ({ data, context }) => {
     let q = context.supabase
-      .from("product_recommendations" as any)
+      .from("product_recommendations")
       .select("*")
       .eq("restaurant_id", data.restaurant_id)
       .order("score", { ascending: false })
@@ -29,7 +29,7 @@ export const listProductRecommendations = createServerFn({ method: "GET" })
     if (data.type) q = q.eq("recommendation_type", data.type);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as any;
+    return rows ?? [];
   });
 
 export const persistIntelligenceSnapshot = createServerFn({ method: "POST" })
@@ -45,26 +45,24 @@ export const persistIntelligenceSnapshot = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     if (data.replace) {
       await context.supabase
-        .from("product_insights" as any)
+        .from("product_insights")
         .delete()
         .eq("restaurant_id", data.restaurant_id);
       await context.supabase
-        .from("product_recommendations" as any)
+        .from("product_recommendations")
         .delete()
         .eq("restaurant_id", data.restaurant_id);
     }
     if (data.insights.length) {
       const { error } = await context.supabase
-        .from("product_insights" as any)
-        .insert(data.insights.map((i) => ({ ...i, restaurant_id: data.restaurant_id })) as any);
+        .from("product_insights")
+        .insert(data.insights.map((i) => ({ ...i, restaurant_id: data.restaurant_id })));
       if (error) throw new Error(error.message);
     }
     if (data.recommendations.length) {
       const { error } = await context.supabase
-        .from("product_recommendations" as any)
-        .insert(
-          data.recommendations.map((r) => ({ ...r, restaurant_id: data.restaurant_id })) as any,
-        );
+        .from("product_recommendations")
+        .insert(data.recommendations.map((r) => ({ ...r, restaurant_id: data.restaurant_id })));
       if (error) throw new Error(error.message);
     }
     return {

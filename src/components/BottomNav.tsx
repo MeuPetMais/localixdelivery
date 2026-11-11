@@ -124,7 +124,7 @@ export function BottomNav() {
           return (
             <li key={key} className="flex-1">
               <Link
-                {...(linkProps as any)}
+                {...linkProps}
                 onClick={(e) => handleClick(e, key, targetPath)}
                 className="group relative flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium outline-none touch-manipulation"
                 aria-current={active ? "page" : undefined}

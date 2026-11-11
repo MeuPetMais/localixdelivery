@@ -2,20 +2,9 @@
 // Reservation/commit/rollback flow for redemption during checkout.
 // Not client-safe: importado apenas por server functions / server routes.
 
-type SupabaseAdmin =
-  Awaited<
-    ReturnType<
-      (typeof import("@/integrations/supabase/client.server"))["supabaseAdmin"] extends infer T
-        ? never
-        : never
-    >
-  > extends never
-    ? any
-    : any;
-
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
+  return supabaseAdmin;
 }
 
 export interface RedemptionQuote {

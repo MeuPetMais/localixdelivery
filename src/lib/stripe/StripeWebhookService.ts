@@ -7,6 +7,7 @@ import StripeEventBus, { type StripeEventName } from "./StripeEventBus";
 import { StripeMapper } from "./StripeMapper";
 import {
   StripePaymentEventMapper,
+  stripeEventObject,
   type DomainPaymentEvent,
   type DomainPaymentPayload,
 } from "./StripePaymentEventMapper";
@@ -52,7 +53,7 @@ export const StripeWebhookService = {
     // 1) EventBus interno do Stripe Domain (para observabilidade e eventos de conta).
     await StripeEventBus.publish("WebhookReceived", {
       restaurantId,
-      accountId: (event.data as any)?.object?.account ?? null,
+      accountId: stripeEventObject(event.data).account ?? null,
       raw: event as unknown as Record<string, unknown>,
     });
 
@@ -60,7 +61,7 @@ export const StripeWebhookService = {
     if (mapped) {
       await StripeEventBus.publish(mapped, {
         restaurantId,
-        accountId: (event.data as any)?.object?.id ?? null,
+        accountId: stripeEventObject(event.data).id ?? null,
         raw: event.data as Record<string, unknown>,
       });
     }

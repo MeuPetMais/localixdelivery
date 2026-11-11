@@ -91,7 +91,7 @@ describe("PG-1B partner growth route guard", () => {
 
   it("loads only the current user's own role and assignment wallet", () => {
     expect(libSource).toContain('.from("user_roles")');
-    expect(libSource).toContain('.from("partner_growth_assignments" as any)');
+    expect(libSource).toContain('.from("partner_growth_assignments")');
     expect(libSource).toContain('.select("id, restaurant_id, active, restaurants(id, name)")');
     expect(libSource).toContain('.eq("user_id", userId)');
     expect(libSource).not.toContain("service_role");
@@ -124,8 +124,8 @@ describe("PG-1B partner growth route guard", () => {
 
 describe("PG-2A partner growth dashboard", () => {
   it("loads the dashboard through the dedicated aggregate RPC only", () => {
-    expect(libSource).toContain('supabase.rpc("get_partner_growth_dashboard" as any)');
-    expect(libSource).toContain('supabase.rpc("get_partner_growth_priority_alerts" as any)');
+    expect(libSource).toContain('supabase.rpc("get_partner_growth_dashboard")');
+    expect(libSource).toContain('supabase.rpc("get_partner_growth_priority_alerts")');
     expect(libSource).not.toContain('.from("orders")');
     expect(libSource).not.toContain('.from("customers")');
     expect(libSource).not.toContain("service_role");
@@ -375,7 +375,7 @@ describe("PG-2C1 partner growth manual tasks", () => {
   });
 
   it("loads, creates, and updates tasks without service_role or direct order/customer reads", () => {
-    expect(libSource).toContain('.from("partner_growth_tasks" as any)');
+    expect(libSource).toContain('.from("partner_growth_tasks")');
     expect(libSource).toContain("loadPartnerGrowthTasks");
     expect(libSource).toContain("createPartnerGrowthTask");
     expect(libSource).toContain("updatePartnerGrowthTaskStatus");

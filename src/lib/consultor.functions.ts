@@ -1,3 +1,4 @@
+import { record } from "@/lib/json";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -59,7 +60,7 @@ async function buildContext(restaurantId: string, ownerId: string) {
       .eq("is_active", true),
     supabaseAdmin
       .from("ingredients")
-      .select("name, current_stock, min_stock, unit, cost_per_unit")
+      .select("name, current_stock:stock, min_stock, unit, cost_per_unit:unit_cost")
       .eq("restaurant_id", restaurantId),
     supabaseAdmin
       .from("financial_movements")
@@ -84,10 +85,11 @@ async function buildContext(restaurantId: string, ownerId: string) {
   // top items
   const tally = new Map<string, { qty: number; revenue: number }>();
   for (const o of validOrders) {
-    const its = (o.items as any[]) ?? [];
+    const its = o.items ?? [];
     if (!Array.isArray(its)) continue;
-    for (const it of its) {
-      if (!it?.name) continue;
+    for (const value of its) {
+      const it = record(value);
+      if (typeof it.name !== "string" || !it.name) continue;
       const cur = tally.get(it.name) ?? { qty: 0, revenue: 0 };
       cur.qty += Number(it.quantity ?? it.qty ?? 1);
       cur.revenue += Number(it.price ?? 0) * Number(it.quantity ?? it.qty ?? 1);
@@ -105,7 +107,7 @@ async function buildContext(restaurantId: string, ownerId: string) {
   const inactiveCustomers = (customers ?? []).length - activeCustomers;
 
   const lowStock = (ingredients ?? []).filter(
-    (i: any) => Number(i.current_stock) <= Number(i.min_stock),
+    (i) => Number(i.current_stock) <= Number(i.min_stock),
   );
 
   const revenueFin = (finance ?? [])
@@ -131,7 +133,7 @@ async function buildContext(restaurantId: string, ownerId: string) {
     menuSize: (items ?? []).length,
     unavailableItems: (items ?? []).filter((i) => !i.is_available).length,
     activeCoupons: (coupons ?? []).length,
-    lowStockItems: lowStock.map((i: any) => i.name).slice(0, 8),
+    lowStockItems: lowStock.map((i) => i.name).slice(0, 8),
     finance: { revenueRegistered: revenueFin, expenses, balance: revenueFin - expenses },
   };
 }

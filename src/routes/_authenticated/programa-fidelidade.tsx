@@ -76,7 +76,7 @@ function ProgramaFidelidadePage() {
       qc.invalidateQueries({ queryKey: ["loyalty-settings"] });
       qc.invalidateQueries({ queryKey: ["loyalty-stats"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar"),
+    onError: (e) => toast.error(e?.message ?? "Falha ao salvar"),
   });
 
   if (!restaurant) {

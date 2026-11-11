@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // QueueService — Server Functions (RC5.2.a.1)
 // Fachada TS para as RPCs SECURITY DEFINER (queue_enqueue, queue_dequeue,
 // queue_return, queue_remove, queue_next_driver). Todas exigem sessão
@@ -14,7 +16,7 @@ const RestDriverInput = z.object({
 });
 
 async function assertOwnerOrDriver(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   userId: string,
   restaurantId: string,
   driverId: string,

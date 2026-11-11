@@ -1,3 +1,5 @@
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // RC8.0 — Financeiro: server function que agrega ganhos por entregador em um período.
 // Read-only. Não altera Orders/Payments/Delivery/Tracking/Queue/Wallet.
 import { createServerFn } from "@tanstack/react-start";
@@ -12,7 +14,11 @@ import {
   type Period,
 } from "./financial-closing";
 
-async function assertOwner(supabase: any, userId: string, restaurantId: string) {
+async function assertOwner(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  restaurantId: string,
+) {
   const { data } = await supabase
     .from("restaurants")
     .select("id, owner_id")
@@ -62,7 +68,7 @@ export const getFinancialClosing = createServerFn({ method: "GET" })
         .eq("restaurant_id", data.restaurantId),
     ]);
 
-    const drivers = aggregateByDriver((rows ?? []) as DeliveredRow[], (driversList ?? []) as any[]);
+    const drivers = aggregateByDriver((rows ?? []) as DeliveredRow[], driversList ?? []);
 
     return {
       period: data.period,
