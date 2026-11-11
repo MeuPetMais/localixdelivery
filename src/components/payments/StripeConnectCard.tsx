@@ -52,7 +52,8 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
     onSuccess: ({ onboardingUrl }) => {
       window.location.href = onboardingUrl;
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao iniciar Stripe"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar Stripe"),
   });
 
   const relink = useMutation({
