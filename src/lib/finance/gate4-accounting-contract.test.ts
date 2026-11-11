@@ -96,8 +96,6 @@ describe("Gate 4 - current Ledger accounting safety characterization", () => {
       entry("RESTAURANT_RECEIVABLE", 48.51, { order_id: ORDER_2 }),
     ];
     expect(computeBalance(rows, REST_A).ambiguousPostingBasis).toBe(true);
-    expect(() => dashboardBalance(computeBalance(rows, REST_A))).toThrow(
-      "Saldo indisponível",
-    );
+    expect(() => dashboardBalance(computeBalance(rows, REST_A))).toThrow("Saldo indisponível");
   });
 });
