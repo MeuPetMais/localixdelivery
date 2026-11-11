@@ -28,7 +28,7 @@ function makeDeps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   };
 }
 
-function payload(overrides: Record<string, any> = {}) {
+function payload(overrides: Record<string, unknown> = {}) {
   return {
     id: "notif-1",
     type: "payment",
