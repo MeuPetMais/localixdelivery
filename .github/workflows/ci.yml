@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - audit/pre-sale-ci-independent-checks
+      - codex/gate3-lint-fix
 
 permissions:
   contents: read
