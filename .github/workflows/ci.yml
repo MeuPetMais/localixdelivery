@@ -8,6 +8,7 @@ on:
       - main
       - audit/pre-sale-ci-independent-checks
       - codex/gate3-lint-fix
+      - audit/gate4-accounting-contract-tests
 
 permissions:
   contents: read
