@@ -273,10 +273,16 @@ export const getRestaurantBalance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ restaurantId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
-      .from("financial_ledger")
-      .select("*")
-      .eq("restaurant_id", data.restaurantId);
-    if (error) throw new Error(error.message);
-    return computeBalance((rows ?? []) as LedgerEntry[], data.restaurantId);
+    const rows = await collectFinancialStatement<LedgerEntry>(async (start, end) => {
+      const { data: page, error } = await context.supabase
+        .from("financial_ledger")
+        .select("*")
+        .eq("restaurant_id", data.restaurantId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, end);
+      if (error) throw new Error(error.message);
+      return (page ?? []) as LedgerEntry[];
+    });
+    return computeBalance(rows, data.restaurantId);
   });
