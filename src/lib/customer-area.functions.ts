@@ -53,11 +53,11 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
       ]);
 
     const filteredOrders = (orders ?? []).filter(
-      (o: any) => normalize(o.customer_phone ?? "") === phone,
+      (o) => normalize(o.customer_phone ?? "") === phone,
     );
 
     const addresses = Array.from(
-      new Set(filteredOrders.map((o: any) => o.address).filter(Boolean) as string[]),
+      new Set(filteredOrders.map((o) => o.address).filter(Boolean) as string[]),
     ).slice(0, 5);
 
     const name = customers[0]?.name ?? "";
@@ -68,7 +68,7 @@ export const lookupCustomerArea = createServerFn({ method: "POST" })
 
     const today = new Date(new Date().toDateString());
     const validCoupons = (coupons ?? []).filter(
-      (c: any) => !c.valid_until || new Date(c.valid_until) >= today,
+      (c) => !c.valid_until || new Date(c.valid_until) >= today,
     );
 
     return {
