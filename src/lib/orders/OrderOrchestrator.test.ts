@@ -9,6 +9,7 @@ import { OrderEventBus } from "./domain-events";
 import { TransitionValidator } from "./TransitionValidator";
 import { canTransition, isTerminal } from "./OrderStateMachine";
 import { OrderTimelineService } from "./OrderTimelineService";
+import type { StatusHistoryRow } from "./OrderOrchestrator";
 import { canActorPerform } from "./OrderPermissions";
 
 function makeDeps(order: OrderSnapshot | null): OrchestratorDeps & {
@@ -201,7 +202,7 @@ describe("OrderTimelineService", () => {
         metadata: {},
         created_at: "2025-01-01T11:32:00Z",
       },
-    ] as any;
+    ] as StatusHistoryRow[];
     const tl = OrderTimelineService.build(rows);
     expect(tl[0].label).toBe("Pedido criado");
     expect(tl[1].label).toBe("Aguardando pagamento");
