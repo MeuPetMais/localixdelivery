@@ -88,11 +88,13 @@ Tracking Domain
 ## 8. Dependências
 
 **Consome:**
+
 - Orders
 - Delivery
 - Driver
 
 **Publica para:**
+
 - Operations
 - Customer
 - Restaurant
@@ -148,6 +150,7 @@ Toda informação derivada carrega nível de confiança:
 - `LOW`
 
 Aplicável a:
+
 - ETA
 - GPS
 - Retorno
@@ -156,6 +159,7 @@ Aplicável a:
 ## 15. Realtime
 
 Canais:
+
 - **Cliente** — `tracking-order-{order_id}`
 - **Motoboy** — `tracking-driver-{driver_id}`
 - **Restaurante** — `tracking-restaurant-{restaurant_id}`
@@ -166,21 +170,25 @@ Nunca compartilhar dados entre restaurantes.
 ## 16. Visões
 
 **Cliente**
+
 - Status
 - ETA
 - Mensagem
 
 **Motoboy**
+
 - Entrega
 - Rota
 - ETA
 
 **Restaurante**
+
 - Posição operacional
 - ETA
 - Retorno
 
 **Operations Center**
+
 - Operação completa
 
 ## 17. RLS
@@ -236,11 +244,11 @@ Checklist obrigatório para qualquer release do domínio:
 Política oficial de retenção. **Observacional**: identifica e reporta, nunca
 exclui automaticamente. Aplica-se a `tracking_timeline` e `tracking_eta_history`.
 
-| Idade         | Tier      | Ação                                          |
-| ------------- | --------- | --------------------------------------------- |
-| 0 – 90 dias   | `ONLINE`  | Hot storage, consultas frequentes             |
-| 91 – 365 dias | `ARCHIVE` | Cold storage, consulta sob demanda            |
-| > 365 dias    | `PURGE`   | Elegível para expurgo manual/administrativo   |
+| Idade         | Tier      | Ação                                        |
+| ------------- | --------- | ------------------------------------------- |
+| 0 – 90 dias   | `ONLINE`  | Hot storage, consultas frequentes           |
+| 91 – 365 dias | `ARCHIVE` | Cold storage, consulta sob demanda          |
+| > 365 dias    | `PURGE`   | Elegível para expurgo manual/administrativo |
 
 Serviço: `TrackingRetentionService` (`src/lib/tracking/retention`).
 Comando: `retentionPreview()` — retorna contagem, tamanho estimado e período
@@ -254,7 +262,6 @@ por tabela/tier. Todo relatório carrega `correlation_id` propagado nos logs.
 - **RC5.3.d** — Customer Tracking
 - **RC5.3.e** — Operations Tracking
 - **RC5.3.x.3** — Retention Policy
-
 
 ---
 

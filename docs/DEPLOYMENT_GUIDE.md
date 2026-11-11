@@ -4,11 +4,11 @@ Como promover mudanças até produção com segurança.
 
 ## 1. Ambientes
 
-| Ambiente | URL | Origem |
-| --- | --- | --- |
-| Preview | `id-preview--<project>.lovable.app` | último commit do editor |
-| Produção | `localixdelivery.lovable.app` | último Publish |
-| Backend stable | `project--<project>.lovable.app` | idem produção |
+| Ambiente       | URL                                 | Origem                  |
+| -------------- | ----------------------------------- | ----------------------- |
+| Preview        | `id-preview--<project>.lovable.app` | último commit do editor |
+| Produção       | `localixdelivery.lovable.app`       | último Publish          |
+| Backend stable | `project--<project>.lovable.app`    | idem produção           |
 
 ## 2. Frontend
 
@@ -69,12 +69,12 @@ Requer aprovação dupla (engenharia + pagamentos). Sempre acompanhado de:
 
 ## 9. Falhas comuns e mitigação
 
-| Sintoma | Provável causa | Ação |
-| --- | --- | --- |
-| `Unauthorized: No authorization header` | `attachSupabaseAuth` ausente | Restaurar em `src/start.ts` |
-| `Expected 3 parts in JWT; got 1` | `supabaseAdmin` usado para read público | Trocar por cliente publishable |
-| `permission denied for table X` | GRANT ausente | Migração adicional |
-| Webhook MP 401 | Assinatura inválida | Revisar `MP_WEBHOOK_SECRET` |
+| Sintoma                                 | Provável causa                          | Ação                           |
+| --------------------------------------- | --------------------------------------- | ------------------------------ |
+| `Unauthorized: No authorization header` | `attachSupabaseAuth` ausente            | Restaurar em `src/start.ts`    |
+| `Expected 3 parts in JWT; got 1`        | `supabaseAdmin` usado para read público | Trocar por cliente publishable |
+| `permission denied for table X`         | GRANT ausente                           | Migração adicional             |
+| Webhook MP 401                          | Assinatura inválida                     | Revisar `MP_WEBHOOK_SECRET`    |
 
 ## 10. Referências
 

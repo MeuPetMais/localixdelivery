@@ -36,11 +36,16 @@ function iconFor(kind: string | null) {
 
 function formatRemaining(b: InProgressBenefit): string {
   if (b.unit === "R$") return `Faltam R$ ${b.remaining.toFixed(2)}`;
-  const label = b.unit === "pts"
-    ? (b.remaining === 1 ? "ponto" : "pontos")
-    : b.unit === "pedidos"
-      ? (b.remaining === 1 ? "pedido" : "pedidos")
-      : (b.trigger_product_name || (b.remaining === 1 ? "produto" : "produtos"));
+  const label =
+    b.unit === "pts"
+      ? b.remaining === 1
+        ? "ponto"
+        : "pontos"
+      : b.unit === "pedidos"
+        ? b.remaining === 1
+          ? "pedido"
+          : "pedidos"
+        : b.trigger_product_name || (b.remaining === 1 ? "produto" : "produtos");
   return `Faltam ${b.remaining} ${label}`;
 }
 
@@ -98,7 +103,8 @@ export function LoyaltyBenefitsBlock({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Aplique seus pontos abaixo. Recompensas em produto, frete grátis, cupom e cashback ficam disponíveis na sua Carteira.
+            Aplique seus pontos abaixo. Recompensas em produto, frete grátis, cupom e cashback ficam
+            disponíveis na sua Carteira.
           </p>
           <Button asChild size="sm" variant="secondary" className="w-full">
             <Link to="/fidelidade">Ver na Carteira</Link>

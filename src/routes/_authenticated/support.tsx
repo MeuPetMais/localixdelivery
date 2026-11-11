@@ -26,15 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  LifeBuoy,
-  Plus,
-  Loader2,
-  Send,
-  
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { LifeBuoy, Plus, Loader2, Send, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { suggestSupportArticles } from "@/lib/support-admin.functions";
 import { sanitizeSupportText } from "@/lib/support-operations";
@@ -47,8 +39,17 @@ export const Route = createFileRoute("/_authenticated/support")({
 type TicketStatus = "aberto" | "em_analise" | "respondido" | "resolvido" | "fechado";
 type Priority = "baixa" | "media" | "alta" | "urgente";
 type Category =
-  | "problema_tecnico" | "pedido" | "pagamentos" | "cardapio" | "builder"
-  | "impressao" | "financeiro" | "fidelidade" | "ia" | "sugestao" | "outro";
+  | "problema_tecnico"
+  | "pedido"
+  | "pagamentos"
+  | "cardapio"
+  | "builder"
+  | "impressao"
+  | "financeiro"
+  | "fidelidade"
+  | "ia"
+  | "sugestao"
+  | "outro";
 
 type Ticket = {
   id: string;
@@ -78,7 +79,6 @@ type SuggestedArticle = {
   category: string;
   video_url?: string | null;
 };
-
 
 const STATUS_LABEL: Record<TicketStatus, string> = {
   aberto: "Aberto",
@@ -155,7 +155,6 @@ function SupportPage() {
     },
   });
 
-
   // Realtime: atualizar lista quando o suporte responder
   useEffect(() => {
     if (!restaurant?.id) return;
@@ -163,7 +162,12 @@ function SupportPage() {
       .channel(`support-tickets-${restaurant.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "support_tickets", filter: `restaurant_id=eq.${restaurant.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "support_tickets",
+          filter: `restaurant_id=eq.${restaurant.id}`,
+        },
         () => qc.invalidateQueries({ queryKey: ["support-tickets", restaurant.id] }),
       )
       .subscribe();
@@ -178,10 +182,7 @@ function SupportPage() {
       if (statusFilter !== "todos" && t.status !== statusFilter) return false;
       if (search) {
         const q = search.toLowerCase();
-        if (
-          !t.subject.toLowerCase().includes(q) &&
-          !String(t.ticket_number ?? "").includes(q)
-        )
+        if (!t.subject.toLowerCase().includes(q) && !String(t.ticket_number ?? "").includes(q))
           return false;
       }
       return true;
@@ -231,14 +232,19 @@ function SupportPage() {
               className="pl-9"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os status</SelectItem>
               {(Object.keys(STATUS_LABEL) as TicketStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                <SelectItem key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -322,8 +328,8 @@ function KpiCard({
     tone === "blue"
       ? "text-blue-600 dark:text-blue-400"
       : tone === "emerald"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : "text-foreground";
+        ? "text-emerald-600 dark:text-emerald-400"
+        : "text-foreground";
   return (
     <Card className="p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
@@ -429,10 +435,14 @@ function NewTicketDialog({
             <div>
               <label className="text-xs font-medium">Categoria</label>
               <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {CATEGORY_OPTIONS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -440,10 +450,14 @@ function NewTicketDialog({
             <div>
               <label className="text-xs font-medium">Prioridade</label>
               <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {PRIORITY_OPTIONS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -458,43 +472,57 @@ function NewTicketDialog({
               placeholder="Conte com detalhes o que aconteceu, quando começou, quais telas etc."
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Enviaremos automaticamente informações técnicas do seu dispositivo (URL, navegador, tamanho da tela) para ajudar no diagnóstico.
+              Enviaremos automaticamente informações técnicas do seu dispositivo (URL, navegador,
+              tamanho da tela) para ajudar no diagnóstico.
             </p>
           </div>
         </div>
-          {(suggestions.data ?? []).length > 0 && (
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <div className="mb-2 text-xs font-semibold text-muted-foreground">Artigos que podem ajudar</div>
-              <div className="space-y-2">
-                {(suggestions.data ?? []).map((article: SuggestedArticle) => (
-                  <button
-                    key={article.id}
-                    type="button"
-                    onClick={() => setOpenedArticle(article)}
-                    className="block w-full rounded-md border bg-background p-2 text-left text-sm transition hover:bg-accent"
-                  >
-                    <div className="font-medium">{article.title}</div>
-                    <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{sanitizeSupportText(article.content, 160)}</div>
-                  </button>
-                ))}
-              </div>
-              {openedArticle && (
-                <div className="mt-3 rounded-md border bg-background p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold">{openedArticle.title}</div>
-                      <div className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{sanitizeSupportText(openedArticle.content, 900)}</div>
-                    </div>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setOpenedArticle(null)}>
-                      Fechar
-                    </Button>
-                  </div>
-                </div>
-              )}
+        {(suggestions.data ?? []).length > 0 && (
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="mb-2 text-xs font-semibold text-muted-foreground">
+              Artigos que podem ajudar
             </div>
-          )}
+            <div className="space-y-2">
+              {(suggestions.data ?? []).map((article: SuggestedArticle) => (
+                <button
+                  key={article.id}
+                  type="button"
+                  onClick={() => setOpenedArticle(article)}
+                  className="block w-full rounded-md border bg-background p-2 text-left text-sm transition hover:bg-accent"
+                >
+                  <div className="font-medium">{article.title}</div>
+                  <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                    {sanitizeSupportText(article.content, 160)}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {openedArticle && (
+              <div className="mt-3 rounded-md border bg-background p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold">{openedArticle.title}</div>
+                    <div className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {sanitizeSupportText(openedArticle.content, 900)}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setOpenedArticle(null)}
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={saving} className="gap-2">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} Abrir chamado
           </Button>
@@ -552,7 +580,12 @@ function TicketDrawer({
       .channel(`support-msgs-${ticketId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "support_messages", filter: `ticket_id=eq.${ticketId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_messages",
+          filter: `ticket_id=eq.${ticketId}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: ["support-messages", ticketId] });
           qc.invalidateQueries({ queryKey: ["support-ticket", ticketId] });
@@ -598,7 +631,12 @@ function TicketDrawer({
   const t = ticketQuery.data;
 
   return (
-    <Sheet open={!!ticketId} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Sheet
+      open={!!ticketId}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="border-b p-4">
           <SheetTitle className="flex items-center gap-2">
@@ -634,7 +672,9 @@ function TicketDrawer({
                 }`}
               >
                 <div className="whitespace-pre-wrap break-words">{m.body}</div>
-                <div className={`mt-1 text-[10px] ${m.author_type === "cliente" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                <div
+                  className={`mt-1 text-[10px] ${m.author_type === "cliente" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                >
                   {m.author_type === "cliente" ? "Você" : "Suporte Localix"} ·{" "}
                   {new Date(m.created_at).toLocaleString("pt-BR")}
                 </div>
@@ -654,8 +694,17 @@ function TicketDrawer({
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
               }}
             />
-            <Button onClick={send} disabled={sending || !reply.trim()} size="icon" className="h-auto">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Button
+              onClick={send}
+              disabled={sending || !reply.trim()}
+              size="icon"
+              className="h-auto"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
           {t && t.status !== "resolvido" && t.status !== "fechado" && (

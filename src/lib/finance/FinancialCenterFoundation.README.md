@@ -6,16 +6,16 @@ Every value comes from existing services.
 
 ## Reused (not recreated)
 
-| Concern            | Owner                                   |
-| ------------------ | --------------------------------------- |
-| Movements / balance| `LedgerService` (`src/lib/ledger`)      |
-| Fees / totals      | `PricingEngine` (`src/lib/payments`)    |
-| Reconciliation     | `ReconciliationService`                 |
-| Split              | `SplitService`                          |
-| Payments / gateway | `PaymentService`, `PaymentIntent`       |
-| Cost / margin      | `CostEngine`, `ProfitabilityEngine`     |
-| Notifications      | `NotificationCenter` (`src/lib/notifications`) |
-| Widget primitives  | `src/components/dashboard/WidgetPrimitives` |
+| Concern             | Owner                                          |
+| ------------------- | ---------------------------------------------- |
+| Movements / balance | `LedgerService` (`src/lib/ledger`)             |
+| Fees / totals       | `PricingEngine` (`src/lib/payments`)           |
+| Reconciliation      | `ReconciliationService`                        |
+| Split               | `SplitService`                                 |
+| Payments / gateway  | `PaymentService`, `PaymentIntent`              |
+| Cost / margin       | `CostEngine`, `ProfitabilityEngine`            |
+| Notifications       | `NotificationCenter` (`src/lib/notifications`) |
+| Widget primitives   | `src/components/dashboard/WidgetPrimitives`    |
 
 ## Added
 

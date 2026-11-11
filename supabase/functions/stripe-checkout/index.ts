@@ -11,11 +11,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 
 function admin() {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function toCents(v: number): number {
@@ -66,7 +64,11 @@ Deno.serve(async (req) => {
   }
 
   let body: any = {};
-  try { body = await req.json(); } catch { /* noop */ }
+  try {
+    body = await req.json();
+  } catch {
+    /* noop */
+  }
 
   const orderId: string | null = body?.orderId ?? null;
   const successUrl: string = body?.successUrl ?? "";
@@ -76,12 +78,14 @@ Deno.serve(async (req) => {
   const method: "card" | "pix" = rawMethod === "pix" ? "pix" : "card";
 
   if (!orderId || !successUrl || !cancelUrl) {
-    return json({ error: "missing_params", need: ["orderId","successUrl","cancelUrl"] }, { status: 400 });
+    return json(
+      { error: "missing_params", need: ["orderId", "successUrl", "cancelUrl"] },
+      { status: 400 },
+    );
   }
   if (!customerEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customerEmail)) {
     return json({ error: "customer_email_required" }, { status: 400 });
   }
-
 
   const sb = admin();
 
@@ -92,7 +96,8 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (orderErr) return json({ error: "db_error", detail: orderErr.message }, { status: 500 });
   if (!order) return json({ error: "order_not_found" }, { status: 404 });
-  if (!order.total || Number(order.total) <= 0) return json({ error: "invalid_amount" }, { status: 400 });
+  if (!order.total || Number(order.total) <= 0)
+    return json({ error: "invalid_amount" }, { status: 400 });
 
   const amountBRL = Number(order.total);
   const amount = toCents(amountBRL);
@@ -140,14 +145,14 @@ Deno.serve(async (req) => {
     params["payment_method_options[pix][expires_after_seconds]"] = "3600";
   }
 
-
   if (splitEligible) {
     params["payment_intent_data[application_fee_amount]"] = String(toCents(platformFeeBRL));
     params["payment_intent_data[transfer_data][destination]"] = rest!.stripe_account_id as string;
     params["payment_intent_data[metadata][split]"] = "true";
     params["payment_intent_data[metadata][platform_fee_brl]"] = platformFeeBRL.toFixed(2);
     params["payment_intent_data[metadata][restaurant_amount_brl]"] = restaurantAmountBRL.toFixed(2);
-    params["payment_intent_data[metadata][destination_account]"] = rest!.stripe_account_id as string;
+    params["payment_intent_data[metadata][destination_account]"] = rest!
+      .stripe_account_id as string;
   }
   if (customerEmail) params.customer_email = customerEmail;
 
@@ -161,7 +166,11 @@ Deno.serve(async (req) => {
 
   // Registra payment PENDING (idempotente via external_id)
   const externalId = String(session.id);
-  const existing = await sb.from("payments").select("id").eq("external_id", externalId).maybeSingle();
+  const existing = await sb
+    .from("payments")
+    .select("id")
+    .eq("external_id", externalId)
+    .maybeSingle();
   if (!existing.data) {
     await sb.from("payments").insert({
       order_id: order.id,

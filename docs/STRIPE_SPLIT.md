@@ -47,10 +47,10 @@ Reentregar o mesmo `payment_intent.succeeded` **não** duplica valores.
 ## Contratos
 
 ```ts
-StripeService.split.calculateSplit({ amount, restaurantStripeAccountId, orderId, restaurantId })
-StripeService.split.buildTransferData(split, ids)
-StripeService.split.validateSplit(split)
-StripeService.split.summarizeSplit(split)
+StripeService.split.calculateSplit({ amount, restaurantStripeAccountId, orderId, restaurantId });
+StripeService.split.buildTransferData(split, ids);
+StripeService.split.validateSplit(split);
+StripeService.split.summarizeSplit(split);
 ```
 
 `validateSplit` garante: `platformFee ∈ [0, gross]`, `sum(platform + restaurant) == gross ± 0.01`, `destination` começa com `acct_`.

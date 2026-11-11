@@ -62,32 +62,34 @@ describe("ConfigurationRuleEngine", () => {
         min_selection: 0,
       }),
     ];
-    const opts = [
-      o({ id: "borda-yes", group_id: "borda" }),
-      o({ id: "cat", group_id: "recheio" }),
-    ];
+    const opts = [o({ id: "borda-yes", group_id: "borda" }), o({ id: "cat", group_id: "recheio" })];
     const res = ConfigurationRuleEngine.validate(groups, opts, []);
     expect(res.valid).toBe(true);
   });
 });
 
 describe("PriceCalculationStrategy", () => {
-  const groups = [g({ id: "size", price_strategy: "MAX" }), g({ id: "add", type: "MULTIPLE", price_strategy: "SUM", required: false, min_selection: 0, max_selection: 5 })];
+  const groups = [
+    g({ id: "size", price_strategy: "MAX" }),
+    g({
+      id: "add",
+      type: "MULTIPLE",
+      price_strategy: "SUM",
+      required: false,
+      min_selection: 0,
+      max_selection: 5,
+    }),
+  ];
   const opts = [
     o({ id: "p", group_id: "size", price_adjustment: 30 }),
     o({ id: "g", group_id: "size", price_adjustment: 50 }),
     o({ id: "bacon", group_id: "add", price_adjustment: 5, max_quantity: 3 }),
   ];
   it("SUM sums adjustments", () => {
-    const total = PriceCalculationStrategy.calculate(
-      0,
-      groups,
-      opts,
-      [
-        { group_id: "size", option_id: "g", quantity: 1 },
-        { group_id: "add", option_id: "bacon", quantity: 2 },
-      ],
-    );
+    const total = PriceCalculationStrategy.calculate(0, groups, opts, [
+      { group_id: "size", option_id: "g", quantity: 1 },
+      { group_id: "add", option_id: "bacon", quantity: 2 },
+    ]);
     expect(total).toBe(60); // 50 (MAX of size) + 10 (bacon x2)
   });
   it("FIXED ignores base and deltas", () => {
@@ -101,7 +103,15 @@ describe("PriceCalculationStrategy", () => {
     expect(total).toBe(79.9);
   });
   it("AVERAGE of 2 pizza flavors", () => {
-    const gg = [g({ id: "sabor", type: "MULTIPLE", price_strategy: "AVERAGE", min_selection: 1, max_selection: 2 })];
+    const gg = [
+      g({
+        id: "sabor",
+        type: "MULTIPLE",
+        price_strategy: "AVERAGE",
+        min_selection: 1,
+        max_selection: 2,
+      }),
+    ];
     const oo = [
       o({ id: "marg", group_id: "sabor", price_adjustment: 40 }),
       o({ id: "cala", group_id: "sabor", price_adjustment: 60 }),

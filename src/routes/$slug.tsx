@@ -4,12 +4,40 @@ import { CreateLocalixCta } from "@/components/CreateLocalixCta";
 import { useRestaurantSession } from "@/contexts/RestaurantSessionContext";
 
 const RESERVED_SLUGS = new Set([
-  "admin", "ai", "auth", "beneficios", "builders", "cliente", "consultor",
-  "customers", "dashboard", "entrar", "esqueci-senha", "favoritos", "featured",
-  "finance", "finance-ai", "home", "inventory", "kitchen", "loyalty", "menu",
-  "meus-enderecos", "meus-pedidos", "orders", "pedido", "pedido-sucesso",
-  "perfil", "print-settings", "promotions", "r", "redefinir-senha", "reviews", "settings",
-  "suppliers", "units",
+  "admin",
+  "ai",
+  "auth",
+  "beneficios",
+  "builders",
+  "cliente",
+  "consultor",
+  "customers",
+  "dashboard",
+  "entrar",
+  "esqueci-senha",
+  "favoritos",
+  "featured",
+  "finance",
+  "finance-ai",
+  "home",
+  "inventory",
+  "kitchen",
+  "loyalty",
+  "menu",
+  "meus-enderecos",
+  "meus-pedidos",
+  "orders",
+  "pedido",
+  "pedido-sucesso",
+  "perfil",
+  "print-settings",
+  "promotions",
+  "r",
+  "redefinir-senha",
+  "reviews",
+  "settings",
+  "suppliers",
+  "units",
 ]);
 
 export const Route = createFileRoute("/$slug")({
@@ -27,7 +55,9 @@ function NotFoundRestaurant() {
   // Restaurante removido/renomeado: apenas informa. Nunca redireciona
   // para outro estabelecimento nem lista restaurantes.
   const { markUnavailable } = useRestaurantSession();
-  useEffect(() => { markUnavailable(); }, [markUnavailable]);
+  useEffect(() => {
+    markUnavailable();
+  }, [markUnavailable]);
   return (
     <div className="grid min-h-screen place-items-center px-4 text-center">
       <div className="space-y-3">
@@ -46,4 +76,3 @@ function SlugLayout() {
     </>
   );
 }
-

@@ -7,16 +7,17 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
 
-
 function admin(): SupabaseClient {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
-async function verifyStripeSignature(payload: string, header: string | null, secret: string): Promise<boolean> {
+async function verifyStripeSignature(
+  payload: string,
+  header: string | null,
+  secret: string,
+): Promise<boolean> {
   if (!header) return false;
   const parts: Record<string, string[]> = {};
   for (const seg of header.split(",")) {
@@ -30,7 +31,11 @@ async function verifyStripeSignature(payload: string, header: string | null, sec
 
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    "raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`${ts}.${payload}`));
   const hex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -47,7 +52,10 @@ async function verifyStripeSignature(payload: string, header: string | null, sec
 function mapStatus(stripeType: string, obj: any): { local: string; paid: boolean } | null {
   switch (stripeType) {
     case "checkout.session.completed":
-      return { local: obj?.payment_status === "paid" ? "approved" : "pending", paid: obj?.payment_status === "paid" };
+      return {
+        local: obj?.payment_status === "paid" ? "approved" : "pending",
+        paid: obj?.payment_status === "paid",
+      };
     case "payment_intent.succeeded":
       return { local: "approved", paid: true };
     case "payment_intent.processing":
@@ -75,7 +83,11 @@ Deno.serve(async (req) => {
   if (!okSig) return json({ error: "invalid_signature" }, { status: 401 });
 
   let event: any;
-  try { event = JSON.parse(rawBody); } catch { return json({ error: "bad_json" }, { status: 400 }); }
+  try {
+    event = JSON.parse(rawBody);
+  } catch {
+    return json({ error: "bad_json" }, { status: 400 });
+  }
 
   const sb = admin();
   const eventId: string | null = event?.id ?? null;
@@ -121,11 +133,14 @@ Deno.serve(async (req) => {
 
   const mapped = mapStatus(eventType, obj);
   if (!mapped) {
-    await sb.from("payment_webhook_events").update({
-      processed: true,
-      processed_at: new Date().toISOString(),
-      error_message: "ignored: unsupported event type",
-    }).eq("id", inserted.id);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        error_message: "ignored: unsupported event type",
+      })
+      .eq("id", inserted.id);
     return json({ ok: true, ignored: true });
   }
 
@@ -139,17 +154,23 @@ Deno.serve(async (req) => {
     let payment: any = null;
     for (const ext of candidates) {
       const { data } = await sb.from("payments").select("*").eq("external_id", ext).maybeSingle();
-      if (data) { payment = data; break; }
+      if (data) {
+        payment = data;
+        break;
+      }
     }
 
     const paidAt = mapped.paid ? new Date().toISOString() : null;
 
     if (payment) {
-      await sb.from("payments").update({
-        status: mapped.local,
-        paid_at: paidAt ?? payment.paid_at,
-        raw: { ...(payment.raw ?? {}), last_event: eventType, last_event_id: eventId },
-      }).eq("id", payment.id);
+      await sb
+        .from("payments")
+        .update({
+          status: mapped.local,
+          paid_at: paidAt ?? payment.paid_at,
+          raw: { ...(payment.raw ?? {}), last_event: eventType, last_event_id: eventId },
+        })
+        .eq("id", payment.id);
     }
 
     // Mapear status → transição no domínio de Orders.
@@ -174,12 +195,15 @@ Deno.serve(async (req) => {
         metadata: { event_type: eventType, event_id: eventId },
       });
       if (!tr.ok) {
-        console.warn("[stripe-webhook] order transition rejected", { orderId, correlationId, reason: tr.reason ?? tr.error });
+        console.warn("[stripe-webhook] order transition rejected", {
+          orderId,
+          correlationId,
+          reason: tr.reason ?? tr.error,
+        });
       }
     }
 
     if (orderId && mapped.paid) {
-
       // ledger idempotente por reference_id
       const refId = String(obj.payment_intent ?? obj.id);
       const { data: ledgerExists } = await sb
@@ -195,7 +219,9 @@ Deno.serve(async (req) => {
           restaurant_id: restaurantId,
           provider: "stripe",
           transaction_type: "PAYMENT_APPROVED",
-          amount: payment ? Number(payment.amount) : (Number(obj.amount ?? obj.amount_total ?? 0) / 100),
+          amount: payment
+            ? Number(payment.amount)
+            : Number(obj.amount ?? obj.amount_total ?? 0) / 100,
           currency: "BRL",
           status: "COMPLETED",
           reference_type: "stripe_payment",
@@ -251,20 +277,25 @@ Deno.serve(async (req) => {
       }
     }
 
-
-    await sb.from("payment_webhook_events").update({
-      processed: true,
-      processed_at: new Date().toISOString(),
-    }).eq("id", inserted.id);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+      })
+      .eq("id", inserted.id);
 
     return json({ ok: true, status: mapped.local });
   } catch (e: any) {
     console.error("[stripe-webhook] process error", e?.message);
-    await sb.from("payment_webhook_events").update({
-      processed: false,
-      error_message: String(e?.message ?? e),
-      processing_attempts: 1,
-    }).eq("id", inserted.id);
+    await sb
+      .from("payment_webhook_events")
+      .update({
+        processed: false,
+        error_message: String(e?.message ?? e),
+        processing_attempts: 1,
+      })
+      .eq("id", inserted.id);
     return json({ error: "processing_failed", detail: String(e?.message ?? e) }, { status: 500 });
   }
 });

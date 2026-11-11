@@ -29,6 +29,7 @@
 ---
 
 ## BD-001
+
 **Decisão:** A Localix opera sem mensalidade e sem comissão sobre
 faturamento.
 **Status:** Aprovado.
@@ -38,6 +39,7 @@ tradicionais. Alinha incentivos entre plataforma e restaurante.
 Serviço por pedido (ver BD-002).
 
 ## BD-002
+
 **Decisão:** Taxa de Serviço Localix de **R$ 0,99 fixa por pedido**.
 **Status:** Aprovado.
 **Racional:** Previsibilidade para o restaurante; custo marginal
@@ -46,6 +48,7 @@ decrescente conforme ticket médio cresce.
 faixa de taxa anteriormente considerada.
 
 ## BD-003
+
 **Decisão:** A Taxa de Serviço deve aparecer de forma explícita e
 identificada no checkout, para cliente final e para o estabelecimento.
 **Status:** Aprovado.
@@ -54,6 +57,7 @@ identificada no checkout, para cliente final e para o estabelecimento.
 como linha própria.
 
 ## BD-004
+
 **Decisão:** **Stripe Connect** é o gateway oficial e único da
 plataforma.
 **Status:** Aprovado.
@@ -63,6 +67,7 @@ maduros.
 Outros gateways não são adicionados como padrão (ver BD-015).
 
 ## BD-005
+
 **Decisão:** A equipe Localix presta suporte gratuito ao parceiro
 durante todo o onboarding Stripe.
 **Status:** Aprovado.
@@ -71,6 +76,7 @@ durante todo o onboarding Stripe.
 dedicada de onboarding assistido.
 
 ## BD-006
+
 **Decisão:** Elegibilidade mínima do parceiro: **600 pedidos/mês**
 (média operacional).
 **Status:** Aprovado.
@@ -80,6 +86,7 @@ e qualidade de atendimento.
 assistida (ver BD-010).
 
 ## BD-007
+
 **Decisão:** **Pedido mínimo de R$ 20,00** no checkout.
 **Status:** Aprovado.
 **Racional:** Preserva economia unitária do pedido para restaurante
@@ -88,6 +95,7 @@ e plataforma.
 (`minimum_order = 20`).
 
 ## BD-008
+
 **Decisão:** Uso obrigatório do **checkout oficial Localix**.
 **Status:** Aprovado.
 **Racional:** Garante rastreabilidade, aplicação correta da taxa,
@@ -96,6 +104,7 @@ integração com fidelidade e experiência unificada.
 paralelas de pagamento.
 
 ## BD-009
+
 **Decisão:** Fluxo oficial de implantação:
 `Cadastro → Validação → Onboarding Stripe → Configuração →
 Treinamento → Publicação → Homologação`.
@@ -105,6 +114,7 @@ Treinamento → Publicação → Homologação`.
 treinamento.
 
 ## BD-010
+
 **Decisão:** O período inicial de implantação pode ser acompanhado
 pela equipe Localix para validação operacional antes da homologação
 definitiva.
@@ -115,6 +125,7 @@ volume ainda está em ramp-up.
 assistida, e critério firme na homologação.
 
 ## BD-011
+
 **Decisão:** O cliente final pertence ao restaurante — não ao
 marketplace.
 **Status:** Aprovado.
@@ -123,17 +134,20 @@ marketplace.
 próprio estabelecimento; Localix é infraestrutura.
 
 ## BD-012
+
 **Decisão:** Fontes de receita:
+
 - Principal: Taxa de Serviço Localix.
 - Futuras: Marketplace de Insumos, Serviços Premium, Publicidade,
   Parcerias, Integrações, Novos módulos.
-**Status:** Aprovado.
-**Racional:** Diversificação futura sem depender de mensalidade ou
-comissão sobre faturamento.
-**Impacto:** Nenhuma fonte futura substitui o modelo principal sem
-nova decisão registrada aqui.
+  **Status:** Aprovado.
+  **Racional:** Diversificação futura sem depender de mensalidade ou
+  comissão sobre faturamento.
+  **Impacto:** Nenhuma fonte futura substitui o modelo principal sem
+  nova decisão registrada aqui.
 
 ## BD-013
+
 **Decisão:** Toda nova funcionalidade deve responder positivamente a
 pelo menos uma das perguntas:
 aumenta vendas? reduz custos? melhora a operação? aumenta
@@ -143,6 +157,7 @@ fidelização? melhora a experiência? fortalece o modelo Localix?
 **Impacto:** Aplicável a todo backlog, prompts e planejamentos.
 
 ## BD-014
+
 **Decisão:** Roadmap oficial: Billing Domain → Stripe Connect →
 Wallet → Marketplace → BI → IA → Aplicativo.
 **Status:** Aprovado.
@@ -151,22 +166,25 @@ percebido, respeitando dependências técnicas.
 **Impacto:** Base para planejamento de sprints e prompts subsequentes.
 
 ## BD-015
+
 **Decisão:** Restrições comerciais permanentes:
+
 - Não criar novos planos.
 - Não criar cobrança de mensalidade.
 - Não criar comissão sobre faturamento.
 - Não adicionar novos gateways como padrão.
 - Stripe Connect é o gateway oficial.
 - Outros gateways somente com decisão estratégica formal futura.
-**Status:** Aprovado.
-**Racional:** Protege a identidade comercial da Localix contra
-regressões de modelo.
-**Impacto:** Qualquer proposta em conflito exige nova decisão
-registrada neste documento antes da implementação.
+  **Status:** Aprovado.
+  **Racional:** Protege a identidade comercial da Localix contra
+  regressões de modelo.
+  **Impacto:** Qualquer proposta em conflito exige nova decisão
+  registrada neste documento antes da implementação.
 
 ---
 
 **Governança.**
+
 - Este arquivo é append-only.
 - Alterações a decisões existentes exigem nova entrada `BD-###`
   indicando explicitamente qual decisão está sendo revogada ou

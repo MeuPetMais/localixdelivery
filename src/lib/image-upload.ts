@@ -52,7 +52,8 @@ export async function uploadProductImage(
   const blob = await compressToWebp(file);
   onProgress?.(45);
 
-  const ext = blob.type === "image/webp" ? "webp" : file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const ext =
+    blob.type === "image/webp" ? "webp" : (file.name.split(".").pop()?.toLowerCase() ?? "jpg");
   const path = `${restaurantId}/${crypto.randomUUID()}.${ext}`;
 
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, blob, {
@@ -76,7 +77,6 @@ export async function deleteProductImage(storagePath: string): Promise<void> {
   if (!storagePath) return;
   await supabase.storage.from(BUCKET).remove([storagePath]);
 }
-
 
 export async function uploadCategoryImage(
   file: File,
@@ -112,10 +112,7 @@ export async function uploadCategoryImage(
   return { storage_path: path, url: signed.signedUrl };
 }
 
-export async function deleteCategoryImage(
-  restaurantId: string,
-  categoryId: string,
-): Promise<void> {
+export async function deleteCategoryImage(restaurantId: string, categoryId: string): Promise<void> {
   const path = `${restaurantId}/categories/${categoryId}.webp`;
   await supabase.storage.from(BUCKET).remove([path]);
 }

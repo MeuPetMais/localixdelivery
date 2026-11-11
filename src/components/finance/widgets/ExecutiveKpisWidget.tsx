@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { FinanceDomain, type FinanceFilters } from "@/lib/finance";
-import { WidgetCard, WidgetHeader, WidgetLoading, WidgetEmpty } from "@/components/dashboard/WidgetPrimitives";
+import {
+  WidgetCard,
+  WidgetHeader,
+  WidgetLoading,
+  WidgetEmpty,
+} from "@/components/dashboard/WidgetPrimitives";
 import { brl } from "@/lib/format";
 
 const service = FinanceDomain.createDashboardService();
@@ -19,8 +24,20 @@ export function ExecutiveKpisWidget({
     staleTime: 30_000,
   });
 
-  if (q.isLoading) return <WidgetCard span={4}><WidgetHeader title="Resumo executivo" /><WidgetLoading /></WidgetCard>;
-  if (!q.data) return <WidgetCard span={4}><WidgetHeader title="Resumo executivo" /><WidgetEmpty description="Sem dados no período." /></WidgetCard>;
+  if (q.isLoading)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Resumo executivo" />
+        <WidgetLoading />
+      </WidgetCard>
+    );
+  if (!q.data)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Resumo executivo" />
+        <WidgetEmpty description="Sem dados no período." />
+      </WidgetCard>
+    );
 
   const k = q.data;
   const items: Array<[string, string]> = [

@@ -7,7 +7,11 @@
 
 import { paymentsRepo, platformFeesRepo } from "./repositories";
 import { getProvider, paymentProviders, DEFAULT_PROVIDER_ID } from "./providers";
-import type { CreateCheckoutInput, CreateCheckoutResult, PaymentProvider } from "./providers/PaymentProvider";
+import type {
+  CreateCheckoutInput,
+  CreateCheckoutResult,
+  PaymentProvider,
+} from "./providers/PaymentProvider";
 import { assertTransparentCardReady, type TransparentCardInput } from "./transparent-card";
 import type { PaymentMethod, PlatformFees } from "./types";
 
@@ -62,12 +66,14 @@ export const PaymentService = {
 
   // ------- Taxas da plataforma -------
   async calcFees(subtotal: number): Promise<FeeBreakdown> {
-    const cfg = (await platformFeesRepo.get()) ?? ({
-      min_order: 20,
-      fee_up_to_30: 0.99,
-      fee_above_30: 1.49,
-      monthly_fee: 0,
-    } as PlatformFees);
+    const cfg =
+      (await platformFeesRepo.get()) ??
+      ({
+        min_order: 20,
+        fee_up_to_30: 0.99,
+        fee_above_30: 1.49,
+        monthly_fee: 0,
+      } as PlatformFees);
     const platformFee = subtotal <= 30 ? Number(cfg.fee_up_to_30) : Number(cfg.fee_above_30);
     return {
       subtotal,
@@ -89,7 +95,9 @@ export const PaymentService = {
         .maybeSingle();
       const p = (data as any)?.payment_provider;
       if (p && paymentProviders[p]) return p;
-    } catch { /* fallback abaixo */ }
+    } catch {
+      /* fallback abaixo */
+    }
     return DEFAULT_PROVIDER_ID;
   },
   async setPrimaryProvider(restaurantId: string, providerId: string): Promise<void> {
@@ -138,8 +146,6 @@ export const PaymentService = {
     return provider.createCheckout(checkoutInput);
   },
 
-
-
   async refreshStatus(_paymentId: string): Promise<never> {
     throw new Error("PaymentService.refreshStatus ainda não implementado.");
   },
@@ -170,7 +176,10 @@ export const PaymentService = {
     if ((existing as any).status === input.status) return { ok: true as const, changed: false };
     const patch: Record<string, unknown> = { status: input.status };
     if (input.status === "approved") patch.paid_at = input.paidAt ?? new Date().toISOString();
-    const { error } = await supabase.from("payments" as any).update(patch).eq("id", (existing as any).id);
+    const { error } = await supabase
+      .from("payments" as any)
+      .update(patch)
+      .eq("id", (existing as any).id);
     if (error) return { ok: false as const, reason: error.message };
     return { ok: true as const, changed: true };
   },

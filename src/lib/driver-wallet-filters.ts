@@ -8,7 +8,12 @@ export type HistoryItem = {
   delivered_at: string | null;
   created_at?: string | null;
   earnings: number;
-  order?: { order_number?: number | null; customer_name?: string | null; address?: string | null } | null;
+  earningsSource?: string | null;
+  order?: {
+    order_number?: number | null;
+    customer_name?: string | null;
+    address?: string | null;
+  } | null;
 };
 
 export type DailyPoint = { date: string; value: number; count: number };
@@ -46,7 +51,12 @@ export function rangeBounds(
   return { from, to: t };
 }
 
-export function filterHistory(items: HistoryItem[], range: WalletRange, custom?: { from?: string | null; to?: string | null }, now = new Date()): HistoryItem[] {
+export function filterHistory(
+  items: HistoryItem[],
+  range: WalletRange,
+  custom?: { from?: string | null; to?: string | null },
+  now = new Date(),
+): HistoryItem[] {
   const { from, to } = rangeBounds(range, custom, now);
   return items.filter((h) => {
     const ts = h.delivered_at ?? h.created_at ?? null;

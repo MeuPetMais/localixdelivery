@@ -9,11 +9,7 @@
 import type { OrderState } from "./OrderStateMachine";
 import { TransitionValidator } from "./TransitionValidator";
 import type { OrderActorType } from "./OrderPermissions";
-import {
-  OrderEventBus,
-  STATE_TO_EVENT,
-  type OrderDomainEventPayload,
-} from "./domain-events";
+import { OrderEventBus, STATE_TO_EVENT, type OrderDomainEventPayload } from "./domain-events";
 import { buildAuditMetadata, type OrderAuditContext } from "./OrderAudit";
 
 export interface OrderSnapshot {
@@ -42,14 +38,16 @@ export interface OrchestratorDeps {
   // por uma operação atômica única (RPC + CAS). Preserva compatibilidade dos testes
   // e do path da UI que ainda usam a variante em dois passos.
   applyAtomic?: (
-    row: Omit<StatusHistoryRow, "id" | "created_at"> & { next_status: OrderState; expected_from: OrderState },
+    row: Omit<StatusHistoryRow, "id" | "created_at"> & {
+      next_status: OrderState;
+      expected_from: OrderState;
+    },
   ) => Promise<void>;
   publish?: (
     name: ReturnType<() => (typeof STATE_TO_EVENT)[OrderState]>,
     payload: OrderDomainEventPayload,
   ) => Promise<void>;
 }
-
 
 export interface TransitionInput {
   orderId: string;
@@ -89,8 +87,6 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       };
     }
 
-
-
     const metadata = buildAuditMetadata(input.audit, input.metadata ?? {});
     const historyRow = {
       order_id: order.id,
@@ -107,7 +103,6 @@ export function createOrchestrator(deps: OrchestratorDeps) {
       await deps.updateOrderStatus(order.id, input.to);
       await deps.insertHistory(historyRow);
     }
-
 
     const eventName = STATE_TO_EVENT[input.to];
     await publish(eventName, {

@@ -2,7 +2,16 @@
 // Reservation/commit/rollback flow for redemption during checkout.
 // Not client-safe: importado apenas por server functions / server routes.
 
-type SupabaseAdmin = Awaited<ReturnType<typeof import("@/integrations/supabase/client.server")["supabaseAdmin"] extends infer T ? never : never>> extends never ? any : any;
+type SupabaseAdmin =
+  Awaited<
+    ReturnType<
+      (typeof import("@/integrations/supabase/client.server"))["supabaseAdmin"] extends infer T
+        ? never
+        : never
+    >
+  > extends never
+    ? any
+    : any;
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -11,10 +20,10 @@ async function admin() {
 
 export interface RedemptionQuote {
   points: number;
-  discount: number;      // R$
+  discount: number; // R$
   pointsPerReal: number; // 1 / rate → cada quantos pontos = 1 real
-  maxByCap: number;      // limite pelo teto (max_discount_percent)
-  maxByBalance: number;  // limite pelo saldo
+  maxByCap: number; // limite pelo teto (max_discount_percent)
+  maxByBalance: number; // limite pelo saldo
 }
 
 /** Cotação de resgate. Retorna quantos pontos podem ser aplicados e o desconto. */
@@ -27,7 +36,8 @@ export async function quoteRedemption(params: {
   const sb = await admin();
   const [{ data: rest }, { data: bal }] = await Promise.all([
     sb.from("restaurants").select("loyalty_settings").eq("id", params.restaurantId).maybeSingle(),
-    sb.from("customer_loyalty")
+    sb
+      .from("customer_loyalty")
       .select("points_balance")
       .eq("customer_id", params.customerId)
       .eq("restaurant_id", params.restaurantId)
@@ -44,7 +54,8 @@ export async function quoteRedemption(params: {
   const maxByCap = Math.floor(params.subtotal * maxPct * pointsPerReal);
   const requested = Math.max(0, Math.floor(params.requestedPoints ?? Math.min(balance, maxByCap)));
   const points = Math.min(requested, balance, maxByCap);
-  if (points < minRedeem) return { points: 0, discount: 0, pointsPerReal, maxByCap, maxByBalance: balance };
+  if (points < minRedeem)
+    return { points: 0, discount: 0, pointsPerReal, maxByCap, maxByBalance: balance };
   const discount = Math.round((points / pointsPerReal) * 100) / 100;
   return { points, discount, pointsPerReal, maxByCap, maxByBalance: balance };
 }

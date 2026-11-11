@@ -57,8 +57,8 @@ function MyAddressesPage() {
       await setDefaultAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", user!.id] });
       toast.success("Definido como principal");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -68,8 +68,8 @@ function MyAddressesPage() {
       await deleteAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", user!.id] });
       toast.success("Endereço excluído");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -78,11 +78,15 @@ function MyAddressesPage() {
       <header className="border-b bg-background">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/cliente"><ArrowLeft className="h-5 w-5" /></Link>
+            <Link to="/cliente">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
           </Button>
           <div>
             <h1 className="font-display text-lg font-extrabold">Meus Endereços</h1>
-            <p className="text-xs text-muted-foreground">Cadastre e gerencie seus locais de entrega</p>
+            <p className="text-xs text-muted-foreground">
+              Cadastre e gerencie seus locais de entrega
+            </p>
           </div>
         </div>
       </header>
@@ -90,7 +94,10 @@ function MyAddressesPage() {
       <main className="mx-auto max-w-2xl space-y-3 px-4 py-6">
         <Button
           className="w-full"
-          onClick={() => { setEditingId(null); setPickerOpen(true); }}
+          onClick={() => {
+            setEditingId(null);
+            setPickerOpen(true);
+          }}
         >
           <Plus className="mr-1.5 h-4 w-4" /> Novo endereço
         </Button>
@@ -126,7 +133,9 @@ function MyAddressesPage() {
                         {[a.city, a.state].filter(Boolean).join("/")}
                       </p>
                     )}
-                    {a.notes && <p className="mt-1 text-xs italic text-muted-foreground">"{a.notes}"</p>}
+                    {a.notes && (
+                      <p className="mt-1 text-xs italic text-muted-foreground">"{a.notes}"</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -136,7 +145,14 @@ function MyAddressesPage() {
                     <Star className="mr-1 h-3.5 w-3.5" /> Tornar principal
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => { setEditingId(a.id); setPickerOpen(true); }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingId(a.id);
+                    setPickerOpen(true);
+                  }}
+                >
                   <Pencil className="mr-1 h-3.5 w-3.5" /> Editar
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => handleDelete(a.id)}>
@@ -150,7 +166,10 @@ function MyAddressesPage() {
 
       <AddressPickerModal
         open={pickerOpen}
-        onOpenChange={(v) => { setPickerOpen(v); if (!v) setEditingId(null); }}
+        onOpenChange={(v) => {
+          setPickerOpen(v);
+          if (!v) setEditingId(null);
+        }}
         userId={user.id}
         initialMode={editingId ? "list" : "form"}
       />

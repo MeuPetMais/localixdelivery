@@ -18,16 +18,16 @@ No business logic or payment flows were modified.
 
 ## 2. Findings & Resolutions
 
-| # | Area | Finding | Severity | Resolution |
-|---|------|---------|----------|------------|
-| 1 | Logs | Ad-hoc `console.error(err)` in server functions could echo tokens embedded in Supabase error messages. | Medium | Introduced `sanitizeLogPayload` / `sanitizeLogString` in `@/lib/security`. Guide mandates use at every log boundary. |
-| 2 | Webhooks | Signature comparisons used `===`. | Medium | Added `timingSafeEqualStr` helper; `SECURITY_GUIDE` §4 requires it in `/api/public/*`. |
-| 3 | Error envelopes | Inconsistent error shapes between server functions leaked internal messages. | Medium | Standardized via `toSafeError`. |
-| 4 | RBAC docs | Permission matrices (Operations/Finance/Analytics/Platform) existed but weren't declared canonical. | Low | Declared single source of truth in guide §2. |
-| 5 | RLS visibility | Reminder — every "draft/active/deleted_at" column needs an owner-side SELECT policy alongside the public one. | Low | Rule codified in guide §3. |
-| 6 | AI | Prompt payloads must always go through `ContextBuilder.build`. | Low | Codified in guide §9; already enforced in `AIOrchestrator`. |
-| 7 | Secrets | Reminder — `SUPABASE_SERVICE_ROLE_KEY`, `MP_*` must be read inside `.handler()` only. | Low | Guide §5. |
-| 8 | Frontend | No secret other than the Supabase publishable pair is allowed in `VITE_*`. | Low | Guide §5/§11. |
+| #   | Area            | Finding                                                                                                       | Severity | Resolution                                                                                                           |
+| --- | --------------- | ------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| 1   | Logs            | Ad-hoc `console.error(err)` in server functions could echo tokens embedded in Supabase error messages.        | Medium   | Introduced `sanitizeLogPayload` / `sanitizeLogString` in `@/lib/security`. Guide mandates use at every log boundary. |
+| 2   | Webhooks        | Signature comparisons used `===`.                                                                             | Medium   | Added `timingSafeEqualStr` helper; `SECURITY_GUIDE` §4 requires it in `/api/public/*`.                               |
+| 3   | Error envelopes | Inconsistent error shapes between server functions leaked internal messages.                                  | Medium   | Standardized via `toSafeError`.                                                                                      |
+| 4   | RBAC docs       | Permission matrices (Operations/Finance/Analytics/Platform) existed but weren't declared canonical.           | Low      | Declared single source of truth in guide §2.                                                                         |
+| 5   | RLS visibility  | Reminder — every "draft/active/deleted_at" column needs an owner-side SELECT policy alongside the public one. | Low      | Rule codified in guide §3.                                                                                           |
+| 6   | AI              | Prompt payloads must always go through `ContextBuilder.build`.                                                | Low      | Codified in guide §9; already enforced in `AIOrchestrator`.                                                          |
+| 7   | Secrets         | Reminder — `SUPABASE_SERVICE_ROLE_KEY`, `MP_*` must be read inside `.handler()` only.                         | Low      | Guide §5.                                                                                                            |
+| 8   | Frontend        | No secret other than the Supabase publishable pair is allowed in `VITE_*`.                                    | Low      | Guide §5/§11.                                                                                                        |
 
 No critical vulnerabilities were found. No RLS-bypass paths, no
 client-exposed service-role usage, no unsigned webhook writers, no

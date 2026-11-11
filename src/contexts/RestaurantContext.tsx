@@ -33,7 +33,9 @@ type FetchResult =
   | { kind: "permission_error"; error: unknown }
   | { kind: "connection_error"; error: unknown };
 
-function classifyError(error: { code?: string; message?: string; status?: number } | null): FetchResult["kind"] {
+function classifyError(
+  error: { code?: string; message?: string; status?: number } | null,
+): FetchResult["kind"] {
   if (!error) return "connection_error";
   const code = error.code ?? "";
   const msg = (error.message ?? "").toLowerCase();
@@ -54,11 +56,20 @@ function classifyError(error: { code?: string; message?: string; status?: number
 async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
   // Admin impersonation: view any active restaurant as if it were ours.
   let impersonateId: string | null = null;
-  try { impersonateId = localStorage.getItem("localix:impersonate_restaurant_id"); } catch {}
+  try {
+    impersonateId = localStorage.getItem("localix:impersonate_restaurant_id");
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 
   const query = impersonateId
     ? supabase.from("restaurants").select("*").eq("id", impersonateId).limit(1)
-    : supabase.from("restaurants").select("*").eq("owner_id", userId).order("created_at", { ascending: true }).limit(1);
+    : supabase
+        .from("restaurants")
+        .select("*")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1);
 
   const { data, error } = await query;
 
@@ -75,7 +86,6 @@ async function fetchMyRestaurant(userId: string): Promise<FetchResult> {
   if (!restaurant) return { kind: "missing" };
   return { kind: "found", restaurant };
 }
-
 
 /**
  * Centralized hook to access the current owner's restaurant resolution.
@@ -110,7 +120,10 @@ export function useCurrentRestaurant(userId: string) {
   return {
     status,
     restaurant: query.data?.kind === "found" ? query.data.restaurant : null,
-    error: query.data && query.data.kind !== "found" && query.data.kind !== "missing" ? query.data.error : query.error,
+    error:
+      query.data && query.data.kind !== "found" && query.data.kind !== "missing"
+        ? query.data.error
+        : query.error,
     refetch: query.refetch,
   };
 }
@@ -162,7 +175,12 @@ export function RestaurantProvider({
       .channel(`my-restaurant-${restaurant.id}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "restaurants", filter: `id=eq.${restaurant.id}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "restaurants",
+          filter: `id=eq.${restaurant.id}`,
+        },
         (payload) => {
           qc.setQueryData(MY_RESTAURANT_QUERY_KEY(userId), {
             kind: "found",

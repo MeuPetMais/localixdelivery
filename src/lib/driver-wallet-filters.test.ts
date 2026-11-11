@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { rangeBounds, filterHistory, summarize, toCsv, type HistoryItem } from "./driver-wallet-filters";
+import {
+  rangeBounds,
+  filterHistory,
+  summarize,
+  toCsv,
+  type HistoryItem,
+} from "./driver-wallet-filters";
 
 const REF = new Date("2025-06-15T15:00:00");
 

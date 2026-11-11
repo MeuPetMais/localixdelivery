@@ -83,7 +83,8 @@ function SupportTeamPage() {
       toast.success("Convite criado");
       refresh();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao convidar"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao convidar"),
   });
 
   const updateRole = useMutation({
@@ -92,7 +93,8 @@ function SupportTeamPage() {
       toast.success("Papel atualizado");
       refresh();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao alterar papel"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao alterar papel"),
   });
 
   const setActive = useMutation({
@@ -101,7 +103,8 @@ function SupportTeamPage() {
       toast.success("Status atualizado");
       refresh();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao atualizar status"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar status"),
   });
 
   const removeAccess = useMutation({
@@ -110,11 +113,30 @@ function SupportTeamPage() {
       toast.success("Acesso removido");
       refresh();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao remover acesso"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao remover acesso"),
   });
 
-  const members = query.data?.members ?? [];
-  const invites = query.data?.invites ?? [];
+  type SupportTeamRow = {
+    user_id: string;
+    name: string;
+    email: string;
+    role: ManagedSupportRole;
+    active: boolean;
+    active_tickets: number;
+    resolved_tickets: number;
+    avg_first_response_minutes: number;
+    last_activity_at?: string | null;
+  };
+  type PendingInvite = {
+    id: string;
+    name: string;
+    email: string;
+    role: ManagedSupportRole;
+    expires_at: string;
+  };
+  const members: SupportTeamRow[] = query.data?.members ?? [];
+  const invites: PendingInvite[] = query.data?.invites ?? [];
   const totals = useMemo(
     () => ({
       active: members.filter((member) => member.active).length,
@@ -128,7 +150,10 @@ function SupportTeamPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/admin/support" className="mb-2 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100">
+          <Link
+            to="/admin/support"
+            className="mb-2 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100"
+          >
             <ArrowLeft className="h-4 w-4" />
             Voltar para suporte
           </Link>
@@ -136,7 +161,9 @@ function SupportTeamPage() {
             <ShieldCheck className="h-5 w-5 text-primary" />
             Equipe de atendimento
           </h1>
-          <p className="text-sm text-slate-400">Somente administradores gerenciam acesso interno ao suporte.</p>
+          <p className="text-sm text-slate-400">
+            Somente administradores gerenciam acesso interno ao suporte.
+          </p>
         </div>
         <Button className="gap-2" onClick={() => setInviteOpen(true)}>
           <MailPlus className="h-4 w-4" />
@@ -164,25 +191,43 @@ function SupportTeamPage() {
         {query.isLoading ? (
           <div className="p-8 text-center text-sm text-slate-400">Carregando equipe...</div>
         ) : query.isError ? (
-          <div className="p-8 text-center text-sm text-red-300">Acesso negado ou falha ao carregar equipe.</div>
+          <div className="p-8 text-center text-sm text-red-300">
+            Acesso negado ou falha ao carregar equipe.
+          </div>
         ) : members.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-400">Nenhum atendente cadastrado.</div>
         ) : (
           members.map((member) => (
-            <div key={member.user_id} className="grid grid-cols-[1.1fr_1.4fr_160px_110px_110px_110px_150px_190px] gap-3 border-b border-slate-800 px-4 py-3 text-sm last:border-0">
+            <div
+              key={member.user_id}
+              className="grid grid-cols-[1.1fr_1.4fr_160px_110px_110px_110px_150px_190px] gap-3 border-b border-slate-800 px-4 py-3 text-sm last:border-0"
+            >
               <div className="truncate font-medium text-slate-100">{member.name}</div>
               <div className="truncate text-slate-300">{member.email}</div>
-              <Select value={member.role} onValueChange={(role) => updateRole.mutate({ userId: member.user_id, role: role as ManagedSupportRole })}>
+              <Select
+                value={member.role}
+                onValueChange={(role) =>
+                  updateRole.mutate({ userId: member.user_id, role: role as ManagedSupportRole })
+                }
+              >
                 <SelectTrigger className="h-8 border-slate-700 bg-slate-950 text-slate-100">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {MANAGED_SUPPORT_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>{roleLabel(role)}</SelectItem>
+                    <SelectItem key={role} value={role}>
+                      {roleLabel(role)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Badge className={member.active ? "bg-emerald-500/15 text-emerald-200" : "bg-slate-700 text-slate-300"}>
+              <Badge
+                className={
+                  member.active
+                    ? "bg-emerald-500/15 text-emerald-200"
+                    : "bg-slate-700 text-slate-300"
+                }
+              >
                 {member.active ? "Ativo" : "Inativo"}
               </Badge>
               <span className="text-slate-300">{member.active_tickets}</span>
@@ -194,7 +239,11 @@ function SupportTeamPage() {
                   variant="ghost"
                   className="h-8 px-2 text-slate-200 hover:bg-slate-800"
                   title="Ver desempenho"
-                  onClick={() => toast.info(`Ultima atividade: ${member.last_activity_at ? new Date(member.last_activity_at).toLocaleString("pt-BR") : "sem atividade"}`)}
+                  onClick={() =>
+                    toast.info(
+                      `Ultima atividade: ${member.last_activity_at ? new Date(member.last_activity_at).toLocaleString("pt-BR") : "sem atividade"}`,
+                    )
+                  }
                 >
                   <BarChart3 className="h-4 w-4" />
                 </Button>
@@ -202,7 +251,9 @@ function SupportTeamPage() {
                   size="sm"
                   variant="ghost"
                   className="h-8 px-2 text-slate-200 hover:bg-slate-800"
-                  onClick={() => setActive.mutate({ userId: member.user_id, active: !member.active })}
+                  onClick={() =>
+                    setActive.mutate({ userId: member.user_id, active: !member.active })
+                  }
                   title={member.active ? "Inativar" : "Ativar"}
                 >
                   {member.active ? <Ban className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
@@ -213,7 +264,8 @@ function SupportTeamPage() {
                   className="h-8 px-2 text-red-300 hover:bg-slate-800"
                   title="Remover acesso"
                   onClick={() => {
-                    if (confirm(`Remover acesso ao suporte de ${member.name}?`)) removeAccess.mutate(member.user_id);
+                    if (confirm(`Remover acesso ao suporte de ${member.name}?`))
+                      removeAccess.mutate(member.user_id);
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -229,10 +281,16 @@ function SupportTeamPage() {
           <div className="mb-3 text-sm font-semibold text-slate-100">Convites pendentes</div>
           <div className="space-y-2">
             {invites.map((invite) => (
-              <div key={invite.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm">
+              <div
+                key={invite.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm"
+              >
                 <div>
                   <div className="font-medium text-slate-100">{invite.name}</div>
-                  <div className="text-xs text-slate-400">{invite.email} - {roleLabel(invite.role)} - expira {new Date(invite.expires_at).toLocaleDateString("pt-BR")}</div>
+                  <div className="text-xs text-slate-400">
+                    {invite.email} - {roleLabel(invite.role)} - expira{" "}
+                    {new Date(invite.expires_at).toLocaleDateString("pt-BR")}
+                  </div>
                 </div>
                 <Badge className="bg-amber-500/15 text-amber-200">Pendente</Badge>
               </div>
@@ -248,32 +306,57 @@ function SupportTeamPage() {
           </DialogHeader>
           <div className="space-y-3">
             <Field label="Nome">
-              <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className="border-slate-700 bg-slate-950" />
+              <Input
+                value={form.name}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, name: event.target.value }))
+                }
+                className="border-slate-700 bg-slate-950"
+              />
             </Field>
             <Field label="E-mail">
-              <Input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className="border-slate-700 bg-slate-950" />
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, email: event.target.value }))
+                }
+                className="border-slate-700 bg-slate-950"
+              />
             </Field>
             <Field label="Papel">
-              <Select value={form.role} onValueChange={(role) => setForm((current) => ({ ...current, role: role as ManagedSupportRole }))}>
+              <Select
+                value={form.role}
+                onValueChange={(role) =>
+                  setForm((current) => ({ ...current, role: role as ManagedSupportRole }))
+                }
+              >
                 <SelectTrigger className="border-slate-700 bg-slate-950">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {MANAGED_SUPPORT_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>{roleLabel(role)}</SelectItem>
+                    <SelectItem key={role} value={role}>
+                      {roleLabel(role)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
             <Field label="Categoria permitida">
-              <Select value={form.category} onValueChange={(category) => setForm((current) => ({ ...current, category }))}>
+              <Select
+                value={form.category}
+                onValueChange={(category) => setForm((current) => ({ ...current, category }))}
+              >
                 <SelectTrigger className="border-slate-700 bg-slate-950">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
                   {SUPPORT_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>{CATEGORY_LABEL[category]}</SelectItem>
+                    <SelectItem key={category} value={category}>
+                      {CATEGORY_LABEL[category]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -285,8 +368,13 @@ function SupportTeamPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setInviteOpen(false)}>Fechar</Button>
-            <Button onClick={() => invite.mutate()} disabled={invite.isPending || !form.name.trim() || !form.email.trim()}>
+            <Button variant="ghost" onClick={() => setInviteOpen(false)}>
+              Fechar
+            </Button>
+            <Button
+              onClick={() => invite.mutate()}
+              disabled={invite.isPending || !form.name.trim() || !form.email.trim()}
+            >
               Enviar convite
             </Button>
           </DialogFooter>

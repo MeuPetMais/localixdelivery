@@ -61,7 +61,9 @@ describe("ProductValidator", () => {
   it("requires image + description when publishable", () => {
     const r = ProductValidator.validate({ name: "X", price: 10 }, { requirePublishable: true });
     expect(r.ok).toBe(false);
-    expect(r.issues.map((i) => i.field)).toEqual(expect.arrayContaining(["category_id", "image_url", "description"]));
+    expect(r.issues.map((i) => i.field)).toEqual(
+      expect.arrayContaining(["category_id", "image_url", "description"]),
+    );
   });
 });
 
@@ -70,7 +72,9 @@ describe("ProductAvailabilityService", () => {
     expect(ProductAvailabilityService.resolve(baseProduct()).available).toBe(true);
   });
   it("blocks by channel", () => {
-    const r = ProductAvailabilityService.resolve(baseProduct({ available_delivery: false }), { channel: "delivery" });
+    const r = ProductAvailabilityService.resolve(baseProduct({ available_delivery: false }), {
+      channel: "delivery",
+    });
     expect(r.available).toBe(false);
     expect(r.reasons).toContain("channel:delivery_disabled");
   });
@@ -88,7 +92,10 @@ describe("ProductAvailabilityService", () => {
 describe("ProductSearchService", () => {
   it("indexes and finds by name/tag/category", () => {
     const docs = ProductSearchService.index(
-      [baseProduct({ id: "a", name: "Pizza Calabresa" }), baseProduct({ id: "b", name: "Burger", category_id: "c2" })],
+      [
+        baseProduct({ id: "a", name: "Pizza Calabresa" }),
+        baseProduct({ id: "b", name: "Burger", category_id: "c2" }),
+      ],
       { a: ["promo", "italiana"] },
     );
     expect(ProductSearchService.search(docs, { q: "calabresa" }).map((d) => d.id)).toEqual(["a"]);
@@ -101,8 +108,15 @@ describe("ProductEventBus", () => {
   beforeEach(() => ProductEventBus.clear());
   it("delivers events to subscribers", async () => {
     const seen: string[] = [];
-    ProductEventBus.subscribe((e) => { seen.push(e.type); });
-    await ProductEventBus.publish({ type: "ProductCreated", productId: "p", restaurantId: "r", at: "now" });
+    ProductEventBus.subscribe((e) => {
+      seen.push(e.type);
+    });
+    await ProductEventBus.publish({
+      type: "ProductCreated",
+      productId: "p",
+      restaurantId: "r",
+      at: "now",
+    });
     expect(seen).toEqual(["ProductCreated"]);
   });
 });

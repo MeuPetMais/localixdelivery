@@ -10,7 +10,7 @@ export type PromoLike = {
   is_available?: boolean | null;
   is_paused?: boolean | null;
   price: number | string;
-  promo_price: number | string | null;
+  promo_price?: number | string | null;
   promo_starts_at?: string | null;
   promo_ends_at?: string | null;
   recurrence_days?: number[] | null;
@@ -84,7 +84,11 @@ export const WEEKDAYS = [
   { value: 6, label: "Sáb", full: "Sábado" },
 ];
 
-export const CAMPAIGN_TEMPLATES: { label: string; emoji: string; suggest?: { percent?: number; days?: number[]; start?: string; end?: string } }[] = [
+export const CAMPAIGN_TEMPLATES: {
+  label: string;
+  emoji: string;
+  suggest?: { percent?: number; days?: number[]; start?: string; end?: string };
+}[] = [
   { label: "Promoção do Dia", emoji: "🔥", suggest: { percent: 15 } },
   { label: "Happy Hour", emoji: "🍻", suggest: { percent: 20, start: "18:00", end: "20:00" } },
   { label: "Terça da Pizza", emoji: "🍕", suggest: { percent: 30, days: [2] } },

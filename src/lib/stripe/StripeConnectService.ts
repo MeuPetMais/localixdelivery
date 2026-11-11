@@ -58,7 +58,8 @@ const FRIENDLY: Record<string, string> = {
 
 function friendly(code: string): string {
   if (FRIENDLY[code]) return FRIENDLY[code];
-  if (code.startsWith("Stripe:")) return `Stripe recusou a operação: ${code.replace(/^Stripe:\s*/, "")}`;
+  if (code.startsWith("Stripe:"))
+    return `Stripe recusou a operação: ${code.replace(/^Stripe:\s*/, "")}`;
   return "Não foi possível concluir a operação com a Stripe. Tente novamente.";
 }
 
@@ -79,7 +80,9 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
           code = raw;
         }
       }
-    } catch {}
+    } catch {
+      // Best-effort cleanup; the main flow must continue.
+    }
     // eslint-disable-next-line no-console
     console.error(`[stripe:${fn}]`, { message: error.message, code, raw });
     const err = new Error(friendly(code || error.message || `edge_${fn}_failed`));

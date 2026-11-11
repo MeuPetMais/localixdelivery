@@ -23,7 +23,9 @@ export interface QueueRpc {
   returnToQueue: (restaurantId: string, driverId: string) => Promise<string>;
   remove: (restaurantId: string, driverId: string) => Promise<boolean>;
   nextDriver: (restaurantId: string) => Promise<{
-    queue_id: string; driver_id: string; queue_position: number;
+    queue_id: string;
+    driver_id: string;
+    queue_position: number;
   } | null>;
   list: (restaurantId: string) => Promise<QueueEntry[]>;
 }
@@ -38,9 +40,7 @@ export function createQueueService(rpc: QueueRpc) {
     list: (restaurantId: string) => rpc.list(restaurantId),
     async driverPosition(restaurantId: string, driverId: string): Promise<number | null> {
       const entries = await rpc.list(restaurantId);
-      const found = entries.find(
-        (e) => e.driver_id === driverId && e.status === "AGUARDANDO",
-      );
+      const found = entries.find((e) => e.driver_id === driverId && e.status === "AGUARDANDO");
       return found?.position ?? null;
     },
     async queueLength(restaurantId: string): Promise<number> {

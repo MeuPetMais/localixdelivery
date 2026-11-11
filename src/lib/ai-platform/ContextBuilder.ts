@@ -10,7 +10,10 @@ function sanitize(value: unknown, depth = 0): unknown {
   if (typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (SENSITIVE_KEYS.test(k)) { out[k] = "[redacted]"; continue; }
+      if (SENSITIVE_KEYS.test(k)) {
+        out[k] = "[redacted]";
+        continue;
+      }
       out[k] = sanitize(v, depth + 1);
     }
     return out;
@@ -33,8 +36,12 @@ function sanitize(value: unknown, depth = 0): unknown {
  */
 export const ContextBuilder = {
   build(input: {
-    restaurant_id: string; skill: AISkillKey; question?: string;
-    domain_snapshot: Record<string, unknown>; locale?: string; actor_id?: string;
+    restaurant_id: string;
+    skill: AISkillKey;
+    question?: string;
+    domain_snapshot: Record<string, unknown>;
+    locale?: string;
+    actor_id?: string;
     metadata?: Record<string, unknown>;
   }): AISkillContext {
     return {

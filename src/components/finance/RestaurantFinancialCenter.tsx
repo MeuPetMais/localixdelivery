@@ -20,10 +20,17 @@ export function RestaurantFinancialCenter({
     if (!restaurantId) return;
     FinanceAudit.emit({ type: "VIEW", restaurantId });
     let cancel = false;
-    service.getStatus({ restaurantId })
-      .then(s => { if (!cancel) setStatus(s); })
-      .catch(() => { if (!cancel) setStatus(null); });
-    return () => { cancel = true; };
+    service
+      .getStatus({ restaurantId })
+      .then((s) => {
+        if (!cancel) setStatus(s);
+      })
+      .catch(() => {
+        if (!cancel) setStatus(null);
+      });
+    return () => {
+      cancel = true;
+    };
   }, [restaurantId]);
 
   return (

@@ -12,7 +12,12 @@ interface Props {
 }
 
 export function DashboardHeader({
-  restaurantName, status, onSearch, onOpenNotifications, onOpenUserMenu, scheduleLabel,
+  restaurantName,
+  status,
+  onSearch,
+  onOpenNotifications,
+  onOpenUserMenu,
+  scheduleLabel,
 }: Props) {
   const statusLabel = getDashboardStatusLabel(status);
 
@@ -39,10 +44,18 @@ export function DashboardHeader({
             className="h-9 rounded-lg border bg-background pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </label>
-        <button aria-label="Notificações" onClick={onOpenNotifications} className="rounded-full p-2 hover:bg-muted">
+        <button
+          aria-label="Notificações"
+          onClick={onOpenNotifications}
+          className="rounded-full p-2 hover:bg-muted"
+        >
           <Bell className="h-5 w-5" />
         </button>
-        <button aria-label="Usuário" onClick={onOpenUserMenu} className="rounded-full p-2 hover:bg-muted">
+        <button
+          aria-label="Usuário"
+          onClick={onOpenUserMenu}
+          className="rounded-full p-2 hover:bg-muted"
+        >
           <User className="h-5 w-5" />
         </button>
       </div>

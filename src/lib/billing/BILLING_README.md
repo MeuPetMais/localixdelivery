@@ -9,7 +9,8 @@ import { BillingService } from "@/lib/billing";
 
 // Elegibilidade
 const r = BillingService.eligibility.evaluate({
-  monthlyOrders: 720, averageTicket: 38,
+  monthlyOrders: 720,
+  averageTicket: 38,
 });
 
 // Lifecycle

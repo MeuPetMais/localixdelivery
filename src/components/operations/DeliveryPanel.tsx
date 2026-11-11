@@ -9,9 +9,14 @@ export function DeliveryPanel({ cards }: { cards: OperationsOrderCard[] }) {
       </div>
       <ul className="space-y-2">
         {inFlight.map((c) => (
-          <li key={c.id} className="flex items-center justify-between rounded-lg border bg-card p-3 text-sm">
+          <li
+            key={c.id}
+            className="flex items-center justify-between rounded-lg border bg-card p-3 text-sm"
+          >
             <div className="min-w-0">
-              <p className="truncate font-medium">{c.number} • {c.customerName}</p>
+              <p className="truncate font-medium">
+                {c.number} • {c.customerName}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {c.driverName ?? "Sem entregador"} • ETA {c.etaMinutes ?? "—"}min
               </p>
@@ -19,7 +24,9 @@ export function DeliveryPanel({ cards }: { cards: OperationsOrderCard[] }) {
             <span className="text-xs uppercase text-muted-foreground">{c.status}</span>
           </li>
         ))}
-        {inFlight.length === 0 && <li className="text-sm text-muted-foreground">Sem entregas em andamento.</li>}
+        {inFlight.length === 0 && (
+          <li className="text-sm text-muted-foreground">Sem entregas em andamento.</li>
+        )}
       </ul>
     </div>
   );

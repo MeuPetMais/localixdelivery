@@ -66,11 +66,11 @@ export type LoyaltyExpiringInfo = {
 };
 
 export type LoyaltyAnalytics = {
-  activeCustomers: number;         // clientes com saldo > 0
-  neverRedeemed: number;           // clientes com saldo mas sem REDEEM
-  expiringSoonCustomers: number;   // com evento PointsExpiring aberto
-  expirationRate: number;          // 0..1: expirados / emitidos
-  utilizationRate: number;         // 0..1: resgatados / emitidos
+  activeCustomers: number; // clientes com saldo > 0
+  neverRedeemed: number; // clientes com saldo mas sem REDEEM
+  expiringSoonCustomers: number; // com evento PointsExpiring aberto
+  expirationRate: number; // 0..1: expirados / emitidos
+  utilizationRate: number; // 0..1: resgatados / emitidos
 };
 
 // ------------- Helpers -------------
@@ -154,7 +154,10 @@ export const getMyLoyaltyForRestaurant = createServerFn({ method: "GET" })
     let nextLvl: { name: string; minimum_points: number } | null = null;
     for (const l of list) {
       if (lifetime >= l.minimum_points) currentLvl = l;
-      else { nextLvl = l; break; }
+      else {
+        nextLvl = l;
+        break;
+      }
     }
     const base = currentLvl?.minimum_points ?? 0;
     const target = nextLvl?.minimum_points ?? base;
@@ -165,7 +168,13 @@ export const getMyLoyaltyForRestaurant = createServerFn({ method: "GET" })
       balance,
       lifetime,
       level: currentLvl?.name ?? null,
-      nextLevel: nextLvl ? { name: nextLvl.name, minimum_points: nextLvl.minimum_points, remaining: Math.max(0, nextLvl.minimum_points - lifetime) } : null,
+      nextLevel: nextLvl
+        ? {
+            name: nextLvl.name,
+            minimum_points: nextLvl.minimum_points,
+            remaining: Math.max(0, nextLvl.minimum_points - lifetime),
+          }
+        : null,
       progress,
       settings,
       restaurantId: rest.id,
@@ -178,25 +187,47 @@ export const getMyLoyaltyForRestaurant = createServerFn({ method: "GET" })
 export const quoteLoyaltyRedemption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string().min(1),
-      subtotal: z.number().nonnegative(),
-      points: z.number().int().nonnegative().optional(),
-    }).parse(d),
+    z
+      .object({
+        slug: z.string().min(1),
+        subtotal: z.number().nonnegative(),
+        points: z.number().int().nonnegative().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const rest = await findRestaurantBySlug(data.slug);
-    if (!rest) return { points: 0, discount: 0, balance: 0, maxPoints: 0, minRedeem: 100, active: false };
+    if (!rest)
+      return { points: 0, discount: 0, balance: 0, maxPoints: 0, minRedeem: 100, active: false };
     const s = normalizeSettings(rest.loyalty_settings);
-    if (!s.active) return { points: 0, discount: 0, balance: 0, maxPoints: 0, minRedeem: s.min_redeem, active: false };
+    if (!s.active)
+      return {
+        points: 0,
+        discount: 0,
+        balance: 0,
+        maxPoints: 0,
+        minRedeem: s.min_redeem,
+        active: false,
+      };
 
     const customerId = await findCustomerIdByAuth(context.userId, rest.id);
-    if (!customerId) return { points: 0, discount: 0, balance: 0, maxPoints: 0, minRedeem: s.min_redeem, active: true };
+    if (!customerId)
+      return {
+        points: 0,
+        discount: 0,
+        balance: 0,
+        maxPoints: 0,
+        minRedeem: s.min_redeem,
+        active: true,
+      };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cl } = await supabaseAdmin
-      .from("customer_loyalty").select("points_balance")
-      .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle();
+      .from("customer_loyalty")
+      .select("points_balance")
+      .eq("customer_id", customerId)
+      .eq("restaurant_id", rest.id)
+      .maybeSingle();
     const balance = Number(cl?.points_balance ?? 0);
     const cap = Math.floor(data.subtotal * (s.max_discount_percent / 100) * s.points_per_real);
     const maxPoints = Math.max(0, Math.min(balance, cap));
@@ -211,10 +242,12 @@ export const quoteLoyaltyRedemption = createServerFn({ method: "POST" })
 export const getMyLoyaltyHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string().optional(),
-      filter: z.enum(["all", "earn", "redeem", "expire", "bonus"]).optional(),
-    }).parse(d),
+    z
+      .object({
+        slug: z.string().optional(),
+        filter: z.enum(["all", "earn", "redeem", "expire", "bonus"]).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<LoyaltyTransaction[]> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -232,20 +265,33 @@ export const getMyLoyaltyHistory = createServerFn({ method: "POST" })
 
     let q = supabaseAdmin
       .from("loyalty_transactions")
-      .select("id, created_at, transaction_type, source, points, balance_after, description, reference_type, reference_id")
+      .select(
+        "id, created_at, transaction_type, source, points, balance_after, description, reference_type, reference_id",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (restaurantId) q = q.eq("restaurant_id", restaurantId);
     if (customerId) q = q.eq("customer_id", customerId);
     if (data.filter && data.filter !== "all") {
-      const map: Record<string, string> = { earn: "EARN", redeem: "REDEEM", expire: "EXPIRE", bonus: "BONUS" };
+      const map: Record<string, string> = {
+        earn: "EARN",
+        redeem: "REDEEM",
+        expire: "EXPIRE",
+        bonus: "BONUS",
+      };
       q = q.eq("transaction_type", map[data.filter]);
     }
     const { data: rows } = await q;
     return ((rows ?? []) as any[]).map((r) => ({
-      id: r.id, createdAt: r.created_at, type: r.transaction_type, source: r.source,
-      points: r.points, balance_after: r.balance_after, description: r.description,
-      reference_type: r.reference_type, reference_id: r.reference_id,
+      id: r.id,
+      createdAt: r.created_at,
+      type: r.transaction_type,
+      source: r.source,
+      points: r.points,
+      balance_after: r.balance_after,
+      description: r.description,
+      reference_type: r.reference_type,
+      reference_id: r.reference_id,
     }));
   });
 
@@ -253,7 +299,11 @@ export const getMyLoyaltyHistory = createServerFn({ method: "POST" })
 
 async function ensureOwner(userId: string, restaurantId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.from("restaurants").select("owner_id").eq("id", restaurantId).maybeSingle();
+  const { data } = await supabaseAdmin
+    .from("restaurants")
+    .select("owner_id")
+    .eq("id", restaurantId)
+    .maybeSingle();
   if (!data || data.owner_id !== userId) throw new Error("Sem permissão");
 }
 
@@ -263,25 +313,31 @@ export const getRestaurantLoyaltySettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<LoyaltySettings> => {
     await ensureOwner(context.userId, data.restaurantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rest } = await supabaseAdmin.from("restaurants").select("loyalty_settings").eq("id", data.restaurantId).maybeSingle();
+    const { data: rest } = await supabaseAdmin
+      .from("restaurants")
+      .select("loyalty_settings")
+      .eq("id", data.restaurantId)
+      .maybeSingle();
     return normalizeSettings(rest?.loyalty_settings);
   });
 
 export const saveRestaurantLoyaltySettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      restaurantId: z.string().uuid(),
-      settings: z.object({
-        active: z.boolean(),
-        points_per_real: z.number().min(0.01).max(100),
-        min_order: z.number().min(0),
-        min_redeem: z.number().int().min(1),
-        max_discount_percent: z.number().min(1).max(100),
-        validity_days: z.number().int().min(30).max(3650),
-        earn_on: z.enum(["paid", "delivered"]),
-      }),
-    }).parse(d),
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        settings: z.object({
+          active: z.boolean(),
+          points_per_real: z.number().min(0.01).max(100),
+          min_order: z.number().min(0),
+          min_redeem: z.number().int().min(1),
+          max_discount_percent: z.number().min(1).max(100),
+          validity_days: z.number().int().min(30).max(3650),
+          earn_on: z.enum(["paid", "delivered"]),
+        }),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await ensureOwner(context.userId, data.restaurantId);
@@ -303,20 +359,40 @@ export const getRestaurantLoyaltyStats = createServerFn({ method: "POST" })
     await ensureOwner(context.userId, data.restaurantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: cl }, { data: tx }, { data: ord }] = await Promise.all([
-      supabaseAdmin.from("customer_loyalty").select("customer_id, points_balance").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("loyalty_transactions").select("transaction_type, points").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("orders").select("total, loyalty_discount").eq("restaurant_id", data.restaurantId).gt("loyalty_discount", 0),
+      supabaseAdmin
+        .from("customer_loyalty")
+        .select("customer_id, points_balance")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("loyalty_transactions")
+        .select("transaction_type, points")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("orders")
+        .select("total, loyalty_discount")
+        .eq("restaurant_id", data.restaurantId)
+        .gt("loyalty_discount", 0),
     ]);
     const rows = (tx ?? []) as Array<{ transaction_type: string; points: number }>;
-    const pointsIssued = rows.filter((r) => r.transaction_type === "EARN").reduce((s, r) => s + r.points, 0);
-    const pointsRedeemed = -rows.filter((r) => r.transaction_type === "REDEEM").reduce((s, r) => s + r.points, 0);
-    const pointsExpired = -rows.filter((r) => r.transaction_type === "EXPIRE").reduce((s, r) => s + r.points, 0);
+    const pointsIssued = rows
+      .filter((r) => r.transaction_type === "EARN")
+      .reduce((s, r) => s + r.points, 0);
+    const pointsRedeemed = -rows
+      .filter((r) => r.transaction_type === "REDEEM")
+      .reduce((s, r) => s + r.points, 0);
+    const pointsExpired = -rows
+      .filter((r) => r.transaction_type === "EXPIRE")
+      .reduce((s, r) => s + r.points, 0);
     const orderRows = (ord ?? []) as Array<{ total: number; loyalty_discount: number | null }>;
     const discountsGiven = orderRows.reduce((s, r) => s + Number(r.loyalty_discount ?? 0), 0);
-    const avg = orderRows.length ? orderRows.reduce((s, r) => s + Number(r.total ?? 0), 0) / orderRows.length : 0;
+    const avg = orderRows.length
+      ? orderRows.reduce((s, r) => s + Number(r.total ?? 0), 0) / orderRows.length
+      : 0;
     return {
       participatingCustomers: (cl ?? []).filter((c: any) => (c.points_balance ?? 0) > 0).length,
-      pointsIssued, pointsRedeemed, pointsExpired,
+      pointsIssued,
+      pointsRedeemed,
+      pointsExpired,
       discountsGiven: Math.round(discountsGiven * 100) / 100,
       avgTicketWithLoyalty: Math.round(avg * 100) / 100,
     };
@@ -332,8 +408,10 @@ export const applyLoyaltyReserveForOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
-      .from("orders").select("id, restaurant_id, customer_phone, loyalty_points_reserved")
-      .eq("id", data.orderId).maybeSingle();
+      .from("orders")
+      .select("id, restaurant_id, customer_phone, loyalty_points_reserved")
+      .eq("id", data.orderId)
+      .maybeSingle();
     if (!order) throw new Error("Pedido não encontrado");
     if ((order.loyalty_points_reserved ?? 0) > 0) return { ok: true, alreadyReserved: true };
 
@@ -379,7 +457,11 @@ export const getMyExpiringPoints = createServerFn({ method: "POST" })
       if (exp <= nowMs || exp > horizonMs) continue;
       const remaining = Math.max(1, Math.ceil((exp - nowMs) / 86400_000));
       const bucket = remaining <= 1 ? 1 : remaining <= 7 ? 7 : 30;
-      const cur = buckets.get(bucket) ?? { days: bucket, points: 0, expireAt: new Date(exp).toISOString() };
+      const cur = buckets.get(bucket) ?? {
+        days: bucket,
+        points: 0,
+        expireAt: new Date(exp).toISOString(),
+      };
       cur.points += r.points;
       if (new Date(cur.expireAt).getTime() > exp) cur.expireAt = new Date(exp).toISOString();
       buckets.set(bucket, cur);
@@ -398,19 +480,45 @@ export const getRestaurantLoyaltyAnalytics = createServerFn({ method: "POST" })
     await ensureOwner(context.userId, data.restaurantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: cl }, { data: tx }, { data: ev }] = await Promise.all([
-      supabaseAdmin.from("customer_loyalty").select("customer_id, points_balance").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("loyalty_transactions").select("customer_id, transaction_type, points").eq("restaurant_id", data.restaurantId),
-      supabaseAdmin.from("loyalty_events").select("customer_id, event_type").eq("restaurant_id", data.restaurantId).eq("event_type", "PointsExpiring"),
+      supabaseAdmin
+        .from("customer_loyalty")
+        .select("customer_id, points_balance")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("loyalty_transactions")
+        .select("customer_id, transaction_type, points")
+        .eq("restaurant_id", data.restaurantId),
+      supabaseAdmin
+        .from("loyalty_events")
+        .select("customer_id, event_type")
+        .eq("restaurant_id", data.restaurantId)
+        .eq("event_type", "PointsExpiring"),
     ]);
     const balances = (cl ?? []) as Array<{ customer_id: string; points_balance: number }>;
     const activeCustomers = balances.filter((c) => (c.points_balance ?? 0) > 0).length;
-    const txs = (tx ?? []) as Array<{ customer_id: string; transaction_type: string; points: number }>;
-    const redeemersSet = new Set(txs.filter((t) => t.transaction_type === "REDEEM").map((t) => t.customer_id));
-    const neverRedeemed = balances.filter((c) => (c.points_balance ?? 0) > 0 && !redeemersSet.has(c.customer_id)).length;
-    const issued = txs.filter((t) => t.transaction_type === "EARN").reduce((s, t) => s + t.points, 0);
-    const redeemed = -txs.filter((t) => t.transaction_type === "REDEEM").reduce((s, t) => s + t.points, 0);
-    const expired = -txs.filter((t) => t.transaction_type === "EXPIRE").reduce((s, t) => s + t.points, 0);
-    const expiringSoonCustomers = new Set(((ev ?? []) as Array<{ customer_id: string }>).map((e) => e.customer_id)).size;
+    const txs = (tx ?? []) as Array<{
+      customer_id: string;
+      transaction_type: string;
+      points: number;
+    }>;
+    const redeemersSet = new Set(
+      txs.filter((t) => t.transaction_type === "REDEEM").map((t) => t.customer_id),
+    );
+    const neverRedeemed = balances.filter(
+      (c) => (c.points_balance ?? 0) > 0 && !redeemersSet.has(c.customer_id),
+    ).length;
+    const issued = txs
+      .filter((t) => t.transaction_type === "EARN")
+      .reduce((s, t) => s + t.points, 0);
+    const redeemed = -txs
+      .filter((t) => t.transaction_type === "REDEEM")
+      .reduce((s, t) => s + t.points, 0);
+    const expired = -txs
+      .filter((t) => t.transaction_type === "EXPIRE")
+      .reduce((s, t) => s + t.points, 0);
+    const expiringSoonCustomers = new Set(
+      ((ev ?? []) as Array<{ customer_id: string }>).map((e) => e.customer_id),
+    ).size;
     return {
       activeCustomers,
       neverRedeemed,
@@ -440,8 +548,11 @@ export const getRestaurantRewards = createServerFn({ method: "POST" })
     let lifetime = 0;
     if (customerId) {
       const { data: cl } = await supabaseAdmin
-        .from("customer_loyalty").select("lifetime_points")
-        .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle();
+        .from("customer_loyalty")
+        .select("lifetime_points")
+        .eq("customer_id", customerId)
+        .eq("restaurant_id", rest.id)
+        .maybeSingle();
       lifetime = Number(cl?.lifetime_points ?? 0);
     }
     const { data: levels } = await supabaseAdmin
@@ -560,7 +671,9 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         ? supabaseAdmin
             .from("customer_loyalty")
             .select("lifetime_points")
-            .eq("customer_id", customerId).eq("restaurant_id", rest.id).maybeSingle()
+            .eq("customer_id", customerId)
+            .eq("restaurant_id", rest.id)
+            .maybeSingle()
         : Promise.resolve({ data: null } as any),
       supabaseAdmin
         .from("orders")
@@ -570,13 +683,19 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         .not("status", "eq", "cancelado"),
     ]);
     lifetime = Number((clRes as any)?.data?.lifetime_points ?? 0);
-    const os = ((ordersRes as any)?.data ?? []) as Array<{ total: number; items: any; status: string }>;
+    const os = ((ordersRes as any)?.data ?? []) as Array<{
+      total: number;
+      items: any;
+      status: string;
+    }>;
     orderCount = os.length;
     for (const o of os) {
       totalSpent += Number(o.total ?? 0);
       const items = Array.isArray(o.items) ? o.items : [];
       for (const it of items) {
-        const name = String(it?.name ?? "").toLowerCase().trim();
+        const name = String(it?.name ?? "")
+          .toLowerCase()
+          .trim();
         if (!name) continue;
         const qty = Number(it?.qty ?? it?.quantity ?? 1);
         productCounts.set(name, (productCounts.get(name) ?? 0) + qty);
@@ -595,10 +714,16 @@ export const getMyInProgressBenefits = createServerFn({ method: "POST" })
         let unit: InProgressBenefit["unit"] = "pts";
         let productName: string | null = null;
 
-        if (kind === "POINTS") { progress = lifetime; unit = "pts"; }
-        else if (kind === "ORDERS") { progress = orderCount; unit = "pedidos"; }
-        else if (kind === "SPENT") { progress = totalSpent; unit = "R$"; }
-        else if (kind === "PRODUCTS") {
+        if (kind === "POINTS") {
+          progress = lifetime;
+          unit = "pts";
+        } else if (kind === "ORDERS") {
+          progress = orderCount;
+          unit = "pedidos";
+        } else if (kind === "SPENT") {
+          progress = totalSpent;
+          unit = "R$";
+        } else if (kind === "PRODUCTS") {
           productName = String(trig.product_name ?? "").trim() || null;
           if (productName) {
             const key = productName.toLowerCase();

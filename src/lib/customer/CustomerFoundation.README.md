@@ -6,19 +6,19 @@ pattern used by `src/lib/product/`, `src/lib/recipes/` and `src/lib/catalog/`.
 
 ## Files
 
-| File | Responsibility |
-|---|---|
-| `types.ts` | Shared types (`CustomerProfile`, `CustomerPreferences`, `CustomerConsent`, `CustomerTimelineEvent`). |
-| `CustomerService.ts` | Public facade — profile, consents, order history, and sub-services. |
-| `CustomerAddressService.ts` | Thin wrapper over existing `customer-addresses.ts` + event emission. |
-| `CustomerPreferencesService.ts` | CRUD for `customer_preferences` with sane defaults. |
-| `CustomerFavoritesService.ts` | CRUD for `customer_favorites` (product / category / restaurant). |
-| `CustomerTimeline.ts` | `customer_timeline` reader/writer + `TimelineEventCreated` event. |
-| `CustomerValidator.ts` | Pure validation for profile / address / preferences. |
-| `CustomerAudit.ts` | In-memory audit log (persistence lives in `customer_timeline` + `customer_consents`). |
-| `CustomerEventBus.ts` | In-process bus: `CustomerCreated`, `CustomerUpdated`, `AddressAdded`, `AddressChanged`, `PreferenceChanged`, `FavoriteAdded`, `FavoriteRemoved`, `ConsentUpdated`, `TimelineEventCreated`. |
-| `index.ts` | Barrel export. |
-| `CustomerFoundation.test.ts` | Vitest suite for pure logic (validator, event bus, audit). |
+| File                            | Responsibility                                                                                                                                                                             |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types.ts`                      | Shared types (`CustomerProfile`, `CustomerPreferences`, `CustomerConsent`, `CustomerTimelineEvent`).                                                                                       |
+| `CustomerService.ts`            | Public facade — profile, consents, order history, and sub-services.                                                                                                                        |
+| `CustomerAddressService.ts`     | Thin wrapper over existing `customer-addresses.ts` + event emission.                                                                                                                       |
+| `CustomerPreferencesService.ts` | CRUD for `customer_preferences` with sane defaults.                                                                                                                                        |
+| `CustomerFavoritesService.ts`   | CRUD for `customer_favorites` (product / category / restaurant).                                                                                                                           |
+| `CustomerTimeline.ts`           | `customer_timeline` reader/writer + `TimelineEventCreated` event.                                                                                                                          |
+| `CustomerValidator.ts`          | Pure validation for profile / address / preferences.                                                                                                                                       |
+| `CustomerAudit.ts`              | In-memory audit log (persistence lives in `customer_timeline` + `customer_consents`).                                                                                                      |
+| `CustomerEventBus.ts`           | In-process bus: `CustomerCreated`, `CustomerUpdated`, `AddressAdded`, `AddressChanged`, `PreferenceChanged`, `FavoriteAdded`, `FavoriteRemoved`, `ConsentUpdated`, `TimelineEventCreated`. |
+| `index.ts`                      | Barrel export.                                                                                                                                                                             |
+| `CustomerFoundation.test.ts`    | Vitest suite for pure logic (validator, event bus, audit).                                                                                                                                 |
 
 ## New tables
 

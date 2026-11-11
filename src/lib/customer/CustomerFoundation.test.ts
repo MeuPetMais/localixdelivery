@@ -30,11 +30,21 @@ describe("CustomerValidator.validateAddress", () => {
     expect(r.issues.length).toBeGreaterThanOrEqual(3);
   });
   it("validates CEP format", () => {
-    const r = CustomerValidator.validateAddress({ label: "Casa", street: "Rua A", neighborhood: "Centro", cep: "123" });
+    const r = CustomerValidator.validateAddress({
+      label: "Casa",
+      street: "Rua A",
+      neighborhood: "Centro",
+      cep: "123",
+    });
     expect(r.ok).toBe(false);
   });
   it("accepts complete address", () => {
-    const r = CustomerValidator.validateAddress({ label: "Casa", street: "Rua A", neighborhood: "Centro", cep: "01000-000" });
+    const r = CustomerValidator.validateAddress({
+      label: "Casa",
+      street: "Rua A",
+      neighborhood: "Centro",
+      cep: "01000-000",
+    });
     expect(r.ok).toBe(true);
   });
 });
@@ -52,16 +62,22 @@ describe("CustomerEventBus", () => {
   beforeEach(() => CustomerEventBus.clear());
   it("delivers events to subscribers", async () => {
     const received: CustomerDomainEvent[] = [];
-    CustomerEventBus.subscribe((e) => { received.push(e); });
+    CustomerEventBus.subscribe((e) => {
+      received.push(e);
+    });
     await CustomerEventBus.publish({
-      type: "CustomerCreated", customerId: "u1", at: new Date().toISOString(),
+      type: "CustomerCreated",
+      customerId: "u1",
+      at: new Date().toISOString(),
     });
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe("CustomerCreated");
   });
   it("unsubscribes cleanly", async () => {
     const received: CustomerDomainEvent[] = [];
-    const off = CustomerEventBus.subscribe((e) => { received.push(e); });
+    const off = CustomerEventBus.subscribe((e) => {
+      received.push(e);
+    });
     off();
     await CustomerEventBus.publish({ type: "CustomerCreated", customerId: "u1", at: "now" });
     expect(received).toHaveLength(0);

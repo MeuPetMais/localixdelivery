@@ -27,8 +27,14 @@ export function CommandPalette({ commands }: { commands: CommandItem[] }) {
   const filtered = commands.filter((c) => c.label.toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24" onClick={() => setOpen(false)}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-xl border bg-background shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg rounded-xl border bg-background shadow-xl"
+      >
         <input
           autoFocus
           value={q}
@@ -37,7 +43,9 @@ export function CommandPalette({ commands }: { commands: CommandItem[] }) {
           className="w-full border-b bg-transparent px-4 py-3 text-sm outline-none"
         />
         <ul className="max-h-80 overflow-y-auto p-2">
-          {filtered.length === 0 && <li className="p-3 text-sm text-muted-foreground">Nenhum resultado</li>}
+          {filtered.length === 0 && (
+            <li className="p-3 text-sm text-muted-foreground">Nenhum resultado</li>
+          )}
           {filtered.map((c) => (
             <li key={c.id}>
               <button

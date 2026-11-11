@@ -20,11 +20,21 @@ export interface FeatureFlagRepository {
 export class InMemoryFeatureFlagRepository implements FeatureFlagRepository {
   private flags = new Map<string, FeatureFlag>();
   private history = new Map<string, FeatureFlagVersion[]>();
-  get(key: string) { return this.flags.get(key); }
-  list() { return [...this.flags.values()]; }
-  save(flag: FeatureFlag) { this.flags.set(flag.key, flag); }
-  remove(key: string) { this.flags.delete(key); }
-  versions(key: string) { return this.history.get(key) ?? []; }
+  get(key: string) {
+    return this.flags.get(key);
+  }
+  list() {
+    return [...this.flags.values()];
+  }
+  save(flag: FeatureFlag) {
+    this.flags.set(flag.key, flag);
+  }
+  remove(key: string) {
+    this.flags.delete(key);
+  }
+  versions(key: string) {
+    return this.history.get(key) ?? [];
+  }
   pushVersion(v: FeatureFlagVersion) {
     const list = this.history.get(v.snapshot.key) ?? [];
     list.push(Object.freeze(v));
@@ -45,14 +55,24 @@ export interface FlagChangeInput {
 export class FeatureFlagService {
   constructor(private readonly repo: FeatureFlagRepository = new InMemoryFeatureFlagRepository()) {}
 
-  list(): FeatureFlag[] { return this.repo.list(); }
-  get(key: string): FeatureFlag | undefined { return this.repo.get(key); }
-  history(key: string): FeatureFlagVersion[] { return this.repo.versions(key); }
+  list(): FeatureFlag[] {
+    return this.repo.list();
+  }
+  get(key: string): FeatureFlag | undefined {
+    return this.repo.get(key);
+  }
+  history(key: string): FeatureFlagVersion[] {
+    return this.repo.versions(key);
+  }
 
   create(input: {
-    key: string; name: string; description: string;
-    scope: FeatureFlag["scope"]; default_value?: boolean;
-    targeting?: FlagTargeting; actorId: string;
+    key: string;
+    name: string;
+    description: string;
+    scope: FeatureFlag["scope"];
+    default_value?: boolean;
+    targeting?: FlagTargeting;
+    actorId: string;
   }): FeatureFlag {
     if (this.repo.get(input.key)) throw new Error(`Flag already exists: ${input.key}`);
     const now = new Date().toISOString();
@@ -72,7 +92,13 @@ export class FeatureFlagService {
       killed: false,
     };
     this.repo.save(flag);
-    this.repo.pushVersion({ version: 1, snapshot: flag, changed_at: now, changed_by: input.actorId, reason: "created" });
+    this.repo.pushVersion({
+      version: 1,
+      snapshot: flag,
+      changed_at: now,
+      changed_by: input.actorId,
+      reason: "created",
+    });
     return flag;
   }
 
@@ -92,8 +118,11 @@ export class FeatureFlagService {
     };
     this.repo.save(next);
     this.repo.pushVersion({
-      version: next.version, snapshot: next,
-      changed_at: next.updated_at!, changed_by: input.actorId, reason: input.reason,
+      version: next.version,
+      snapshot: next,
+      changed_at: next.updated_at!,
+      changed_by: input.actorId,
+      reason: input.reason,
     });
     return next;
   }
@@ -116,23 +145,39 @@ export class FeatureFlagService {
   kill(key: string, actorId: string, reason?: string): FeatureFlag {
     const current = this.mustGet(key);
     const next: FeatureFlag = {
-      ...current, killed: true,
+      ...current,
+      killed: true,
       version: current.version + 1,
-      updated_at: new Date().toISOString(), updated_by: actorId,
+      updated_at: new Date().toISOString(),
+      updated_by: actorId,
     };
     this.repo.save(next);
-    this.repo.pushVersion({ version: next.version, snapshot: next, changed_at: next.updated_at!, changed_by: actorId, reason: reason ?? "killed" });
+    this.repo.pushVersion({
+      version: next.version,
+      snapshot: next,
+      changed_at: next.updated_at!,
+      changed_by: actorId,
+      reason: reason ?? "killed",
+    });
     return next;
   }
   revive(key: string, actorId: string, reason?: string): FeatureFlag {
     const current = this.mustGet(key);
     const next: FeatureFlag = {
-      ...current, killed: false,
+      ...current,
+      killed: false,
       version: current.version + 1,
-      updated_at: new Date().toISOString(), updated_by: actorId,
+      updated_at: new Date().toISOString(),
+      updated_by: actorId,
     };
     this.repo.save(next);
-    this.repo.pushVersion({ version: next.version, snapshot: next, changed_at: next.updated_at!, changed_by: actorId, reason: reason ?? "revived" });
+    this.repo.pushVersion({
+      version: next.version,
+      snapshot: next,
+      changed_at: next.updated_at!,
+      changed_by: actorId,
+      reason: reason ?? "revived",
+    });
     return next;
   }
 
@@ -149,8 +194,10 @@ export class FeatureFlagService {
     };
     this.repo.save(restored);
     this.repo.pushVersion({
-      version: restored.version, snapshot: restored,
-      changed_at: restored.updated_at!, changed_by: actorId,
+      version: restored.version,
+      snapshot: restored,
+      changed_at: restored.updated_at!,
+      changed_by: actorId,
       reason: reason ?? `rollback:${toVersion}`,
     });
     return restored;

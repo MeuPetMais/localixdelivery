@@ -4,31 +4,31 @@ Snapshot pós-consolidação (pré Prompt 20).
 
 ## 1. Métricas
 
-| Indicador | Valor |
-| --- | ---: |
-| Domínios de negócio | 16 |
-| Pastas em `src/lib/` | 60 |
-| Rotas TanStack | ~60 |
-| Edge functions Supabase | 5 (todas dedicadas a Mercado Pago) |
-| Tabelas Supabase (`public`) | 115 |
-| EventBuses | 14 |
-| Suites de teste (`*.test.ts`) | 37 |
-| Cobertura estimada (unitária) | ~92% dos Services críticos |
-| Duplicações eliminadas neste prompt | 0 (nenhuma real encontrada) |
-| Arquivos removidos neste prompt | 0 |
+| Indicador                           |                              Valor |
+| ----------------------------------- | ---------------------------------: |
+| Domínios de negócio                 |                                 16 |
+| Pastas em `src/lib/`                |                                 60 |
+| Rotas TanStack                      |                                ~60 |
+| Edge functions Supabase             | 5 (todas dedicadas a Mercado Pago) |
+| Tabelas Supabase (`public`)         |                                115 |
+| EventBuses                          |                                 14 |
+| Suites de teste (`*.test.ts`)       |                                 37 |
+| Cobertura estimada (unitária)       |         ~92% dos Services críticos |
+| Duplicações eliminadas neste prompt |        0 (nenhuma real encontrada) |
+| Arquivos removidos neste prompt     |                                  0 |
 
 ## 2. Saúde por eixo
 
-| Eixo | Nota | Observação |
-| --- | :-: | --- |
-| Arquitetura | A | Facades por domínio, sem ciclos, sem SELECT cross-domain. |
-| Escalabilidade | B+ | EventBus in-process; migrar para fila durável no Prompt 20. |
-| Segurança | A | RLS + `has_role` + GRANTs corretos; webhooks com HMAC. |
-| Performance | B+ | Cache in-memory por worker; falta cache distribuído. |
-| Testabilidade | A- | Services puros e sem I/O direto. |
-| Manutenibilidade | A | Template único de domínio; imports via barrel. |
-| Documentação | A | README + MANIFEST por domínio + Baseline + Decisions. |
-| **Média** | **A-** | |
+| Eixo             |  Nota  | Observação                                                  |
+| ---------------- | :----: | ----------------------------------------------------------- |
+| Arquitetura      |   A    | Facades por domínio, sem ciclos, sem SELECT cross-domain.   |
+| Escalabilidade   |   B+   | EventBus in-process; migrar para fila durável no Prompt 20. |
+| Segurança        |   A    | RLS + `has_role` + GRANTs corretos; webhooks com HMAC.      |
+| Performance      |   B+   | Cache in-memory por worker; falta cache distribuído.        |
+| Testabilidade    |   A-   | Services puros e sem I/O direto.                            |
+| Manutenibilidade |   A    | Template único de domínio; imports via barrel.              |
+| Documentação     |   A    | README + MANIFEST por domínio + Baseline + Decisions.       |
+| **Média**        | **A-** |                                                             |
 
 ## 3. Riscos remanescentes
 

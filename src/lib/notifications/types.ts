@@ -1,12 +1,6 @@
 // Notification Center — tipos e enums
 
-export type NotificationChannel =
-  | "IN_APP"
-  | "PUSH"
-  | "EMAIL"
-  | "SMS"
-  | "WHATSAPP"
-  | "WEBSOCKET";
+export type NotificationChannel = "IN_APP" | "PUSH" | "EMAIL" | "SMS" | "WHATSAPP" | "WEBSOCKET";
 
 export type NotificationStatus =
   | "PENDING"
@@ -18,12 +12,7 @@ export type NotificationStatus =
 
 export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
 
-export type NotificationRecipientType =
-  | "customer"
-  | "restaurant"
-  | "admin"
-  | "courier"
-  | "system";
+export type NotificationRecipientType = "customer" | "restaurant" | "admin" | "courier" | "system";
 
 export interface NotificationTemplate {
   code: string;

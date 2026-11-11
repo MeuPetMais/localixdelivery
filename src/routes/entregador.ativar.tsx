@@ -12,9 +12,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  validateDriverActivation, activateDriverAccount,
-} from "@/lib/driver-activation.functions";
+import { validateDriverActivation, activateDriverAccount } from "@/lib/driver-activation.functions";
 
 export const Route = createFileRoute("/entregador/ativar")({
   ssr: false,
@@ -28,8 +26,11 @@ export const Route = createFileRoute("/entregador/ativar")({
 });
 
 type Match = {
-  driverId: string; name: string; restaurantName: string;
-  vehicleType: string; vehiclePlate: string | null;
+  driverId: string;
+  name: string;
+  restaurantName: string;
+  vehicleType: string;
+  vehiclePlate: string | null;
 };
 
 function ActivateDriver() {
@@ -59,13 +60,18 @@ function ActivateDriver() {
         return;
       }
       setMatch({
-        driverId: res.driverId!, name: res.name!,
+        driverId: res.driverId!,
+        name: res.name!,
         restaurantName: res.restaurantName!,
-        vehicleType: res.vehicleType!, vehiclePlate: res.vehiclePlate ?? null,
+        vehicleType: res.vehicleType!,
+        vehiclePlate: res.vehiclePlate ?? null,
       });
       setStep(3);
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleActivate() {
@@ -77,15 +83,20 @@ function ActivateDriver() {
         data: { cpf, phone, password: pw, email: email.trim() || null },
       });
       const { error } = await supabase.auth.signInWithPassword({
-        email: res.email, password: pw,
+        email: res.email,
+        password: pw,
       });
       if (error) throw error;
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) throw new Error("Não foi possível confirmar a sessão. Tente entrar novamente.");
+      if (userError || !userData.user)
+        throw new Error("Não foi possível confirmar a sessão. Tente entrar novamente.");
       setStep(4);
       setTimeout(() => nav({ to: "/motoboy", replace: true }), 1500);
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const pwStrength = (() => {
@@ -105,7 +116,9 @@ function ActivateDriver() {
             <Bike className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Localix Entregador</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Localix Entregador
+            </p>
             <p className="font-display text-lg font-extrabold leading-tight">Ativação da conta</p>
           </div>
         </div>
@@ -113,7 +126,9 @@ function ActivateDriver() {
 
         {step === 1 && (
           <Card className="rounded-3xl border-none p-6 shadow-sm">
-            <h1 className="font-display text-2xl font-extrabold">Bem-vindo ao Localix Entregador</h1>
+            <h1 className="font-display text-2xl font-extrabold">
+              Bem-vindo ao Localix Entregador
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Você foi cadastrado por um restaurante parceiro. Vamos ativar sua conta.
             </p>
@@ -131,11 +146,21 @@ function ActivateDriver() {
             <div className="space-y-3">
               <div>
                 <Label>CPF</Label>
-                <Input inputMode="numeric" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                />
               </div>
               <div>
                 <Label>Telefone</Label>
-                <Input inputMode="tel" placeholder="(11) 90000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Input
+                  inputMode="tel"
+                  placeholder="(11) 90000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
               </div>
             </div>
             <div className="mt-6 flex gap-2">
@@ -147,8 +172,8 @@ function ActivateDriver() {
               </Button>
             </div>
             <p className="mt-4 text-center text-[11px] text-muted-foreground">
-              Não compartilhamos seus dados. Se não encontrarmos seu cadastro,
-              procure o restaurante que te contratou.
+              Não compartilhamos seus dados. Se não encontrarmos seu cadastro, procure o restaurante
+              que te contratou.
             </p>
           </Card>
         )}
@@ -170,21 +195,41 @@ function ActivateDriver() {
                 <Lock className="h-4 w-4 text-primary" /> Criar acesso
               </div>
               <div>
-                <Label>E-mail <span className="text-xs text-muted-foreground">(opcional)</span></Label>
-                <Input type="email" placeholder="voce@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Label>
+                  E-mail <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <Input
+                  type="email"
+                  placeholder="voce@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div>
                 <Label>Senha</Label>
-                <PasswordInput placeholder="Mínimo 8 caracteres" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+                <PasswordInput
+                  placeholder="Mínimo 8 caracteres"
+                  value={pw}
+                  onChange={(e) => setPw(e.target.value)}
+                  autoComplete="new-password"
+                />
                 <div className="mt-1 flex gap-1">
                   {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className={`h-1 flex-1 rounded ${i < pwStrength ? "bg-primary" : "bg-muted"}`} />
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded ${i < pwStrength ? "bg-primary" : "bg-muted"}`}
+                    />
                   ))}
                 </div>
               </div>
               <div>
                 <Label>Confirmar senha</Label>
-                <PasswordInput placeholder="Repita a senha" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+                <PasswordInput
+                  placeholder="Repita a senha"
+                  value={pw2}
+                  onChange={(e) => setPw2(e.target.value)}
+                  autoComplete="new-password"
+                />
               </div>
             </div>
             <div className="mt-6 flex gap-2">
@@ -203,7 +248,9 @@ function ActivateDriver() {
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h2 className="mt-4 font-display text-2xl font-extrabold">Bem-vindo, {match.name.split(" ")[0]}!</h2>
+            <h2 className="mt-4 font-display text-2xl font-extrabold">
+              Bem-vindo, {match.name.split(" ")[0]}!
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Você está vinculado a <strong>{match.restaurantName}</strong>.
             </p>
@@ -212,7 +259,10 @@ function ActivateDriver() {
         )}
 
         <div className="mt-6 text-center">
-          <a href="/entregador/esqueci-senha" className="text-xs text-muted-foreground underline underline-offset-4">
+          <a
+            href="/entregador/esqueci-senha"
+            className="text-xs text-muted-foreground underline underline-offset-4"
+          >
             Esqueci minha senha
           </a>
         </div>

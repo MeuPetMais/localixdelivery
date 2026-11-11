@@ -30,11 +30,11 @@ supabase/               (config + migrations + edge functions)
 
 ## 3. Arquivos sensíveis identificados
 
-| Arquivo | Ação |
-|---|---|
-| `.env` | Ignorado. Valores públicos (VITE_*) já são anon key; ainda assim, não commitar. |
-| `supabase/config.toml` | Ok commitar (sem secrets). |
-| `.lovable/project.json` | Ok commitar. |
+| Arquivo                 | Ação                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `.env`                  | Ignorado. Valores públicos (VITE\_\*) já são anon key; ainda assim, não commitar. |
+| `supabase/config.toml`  | Ok commitar (sem secrets).                                                        |
+| `.lovable/project.json` | Ok commitar.                                                                      |
 
 Nenhum secret privado (Stripe secret, service role, webhook secret) foi encontrado no repositório — todos vivem em Lovable Cloud > Secrets.
 

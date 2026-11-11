@@ -51,11 +51,36 @@ describe("ADMIN-FIN-2 authoritative admin finance contract", () => {
     const rows = buildAdminFinanceByRestaurant(
       [{ id: "restaurant-1", name: "Parceiro" }],
       [
-        { id: "order-1", restaurant_id: "restaurant-1", status: "entregue", created_at: "2026-08-28T10:00:00.000Z" },
-        { id: "order-2", restaurant_id: "restaurant-1", status: "cancelado", created_at: "2026-08-28T11:00:00.000Z" },
-        { id: "order-3", restaurant_id: "restaurant-1", status: "pago", created_at: "2026-08-28T12:00:00.000Z" },
-        { id: "order-4", restaurant_id: "restaurant-1", status: "reembolsado", created_at: "2026-08-28T13:00:00.000Z" },
-        { id: "order-5", restaurant_id: "restaurant-1", status: "chargeback", created_at: "2026-08-28T14:00:00.000Z" },
+        {
+          id: "order-1",
+          restaurant_id: "restaurant-1",
+          status: "entregue",
+          created_at: "2026-08-28T10:00:00.000Z",
+        },
+        {
+          id: "order-2",
+          restaurant_id: "restaurant-1",
+          status: "cancelado",
+          created_at: "2026-08-28T11:00:00.000Z",
+        },
+        {
+          id: "order-3",
+          restaurant_id: "restaurant-1",
+          status: "pago",
+          created_at: "2026-08-28T12:00:00.000Z",
+        },
+        {
+          id: "order-4",
+          restaurant_id: "restaurant-1",
+          status: "reembolsado",
+          created_at: "2026-08-28T13:00:00.000Z",
+        },
+        {
+          id: "order-5",
+          restaurant_id: "restaurant-1",
+          status: "chargeback",
+          created_at: "2026-08-28T14:00:00.000Z",
+        },
       ],
       [
         {
@@ -147,16 +172,28 @@ describe("ADMIN-FIN-2 authoritative admin finance contract", () => {
   });
 
   it("groups daily revenue by the Sao Paulo civil date", () => {
-    expect(buildAdminDailyRevenue(
-      [
-        { id: "order-1", restaurant_id: "restaurant-1", status: "pago", created_at: "2026-08-28T02:59:59.999Z" },
-        { id: "order-2", restaurant_id: "restaurant-1", status: "pago", created_at: "2026-08-28T03:00:00.000Z" },
-      ],
-      [
-        { order_id: "order-1", customer_total: 10 },
-        { order_id: "order-2", customer_total: 20 },
-      ],
-    )).toEqual([
+    expect(
+      buildAdminDailyRevenue(
+        [
+          {
+            id: "order-1",
+            restaurant_id: "restaurant-1",
+            status: "pago",
+            created_at: "2026-08-28T02:59:59.999Z",
+          },
+          {
+            id: "order-2",
+            restaurant_id: "restaurant-1",
+            status: "pago",
+            created_at: "2026-08-28T03:00:00.000Z",
+          },
+        ],
+        [
+          { order_id: "order-1", customer_total: 10 },
+          { order_id: "order-2", customer_total: 20 },
+        ],
+      ),
+    ).toEqual([
       { date: "08-27", revenue: 10 },
       { date: "08-28", revenue: 20 },
     ]);
@@ -167,13 +204,15 @@ describe("ADMIN-FIN-2 authoritative admin finance contract", () => {
     const dashboard = readFileSync("src/routes/admin.index.tsx", "utf8");
     const finance = readFileSync("src/routes/admin.financeiro.tsx", "utf8");
     const transactions = readFileSync("src/routes/admin.transacoes.tsx", "utf8");
-    const auditedSource = source.slice(
-      source.indexOf("export const getSuperadminOverview"),
-      source.indexOf("export const listAdminPartners"),
-    ) + source.slice(
-      source.indexOf("export const listAdminTransactions"),
-      source.indexOf("export const setPartnerActive"),
-    );
+    const auditedSource =
+      source.slice(
+        source.indexOf("export const getSuperadminOverview"),
+        source.indexOf("export const listAdminPartners"),
+      ) +
+      source.slice(
+        source.indexOf("export const listAdminTransactions"),
+        source.indexOf("export const setPartnerActive"),
+      );
 
     expect(source).toContain("order_pricing_snapshot");
     expect(auditedSource).toContain("loadSnapshotsForOrders");
@@ -182,8 +221,12 @@ describe("ADMIN-FIN-2 authoritative admin finance contract", () => {
     expect(auditedSource).toContain("restaurant_net");
     expect(auditedSource).not.toContain("COMMISSION_RATE");
     expect(auditedSource).not.toContain("FIXED_FEE");
-    expect(auditedSource).not.toMatch(/0\.99|0\.05|5\s*%|total\s*-\s*commission|count\s*\*\s*0\.99/);
-    expect(auditedSource).not.toMatch(/\.insert\s*\(|\.update\s*\(|\.delete\s*\(|api\.mercadopago\.com/);
+    expect(auditedSource).not.toMatch(
+      /0\.99|0\.05|5\s*%|total\s*-\s*commission|count\s*\*\s*0\.99/,
+    );
+    expect(auditedSource).not.toMatch(
+      /\.insert\s*\(|\.update\s*\(|\.delete\s*\(|api\.mercadopago\.com/,
+    );
     expect(auditedSource).not.toMatch(/select\("[^"]*\btotal\b/);
 
     expect(dashboard).not.toContain("Receita comiss");

@@ -5,8 +5,10 @@ import type { Reward, CustomerLoyalty } from "./types";
  * Decides whether a customer's balance can afford a reward.
  */
 export const RewardService = {
-  canRedeem(reward: Reward, balance: Pick<CustomerLoyalty, "points_balance" | "cashback_balance">):
-    { ok: true } | { ok: false; reason: string } {
+  canRedeem(
+    reward: Reward,
+    balance: Pick<CustomerLoyalty, "points_balance" | "cashback_balance">,
+  ): { ok: true } | { ok: false; reason: string } {
     if (reward.points_cost != null && reward.points_cost > balance.points_balance) {
       return { ok: false, reason: "insufficient_points" };
     }

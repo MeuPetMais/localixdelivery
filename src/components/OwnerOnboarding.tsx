@@ -31,12 +31,16 @@ function loadDraft(): Draft {
 function saveDraft(d: Draft) {
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 }
 function clearDraft() {
   try {
     localStorage.removeItem(DRAFT_KEY);
-  } catch {}
+  } catch {
+    // Storage may be unavailable; continue without persistence.
+  }
 }
 
 export function OwnerOnboarding({

@@ -119,7 +119,9 @@ function MyOrders() {
           })),
         ),
       );
-    } catch {}
+    } catch {
+      // Best-effort cleanup; failure must not interrupt the main flow.
+    }
     navigate({ to: "/$slug", params: { slug: r.slug } });
   }
 
@@ -152,7 +154,15 @@ function MyOrders() {
               Faça login para acompanhar seus pedidos, favoritos e histórico de compras.
             </p>
             <Button asChild className="mt-6 rounded-full" size="lg">
-              <Link to="/entrar" search={{ redirect: currentRestaurantSlug || lastRestaurantSlug ? `/${currentRestaurantSlug ?? lastRestaurantSlug}` : "/cliente" }}>
+              <Link
+                to="/entrar"
+                search={{
+                  redirect:
+                    currentRestaurantSlug || lastRestaurantSlug
+                      ? `/${currentRestaurantSlug ?? lastRestaurantSlug}`
+                      : "/cliente",
+                }}
+              >
                 Entrar na minha conta
               </Link>
             </Button>
@@ -162,7 +172,7 @@ function MyOrders() {
     );
   }
 
-  const meta = (user?.user_metadata ?? {}) as Record<string, any>;
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const displayName =
     (meta.full_name as string | undefined) ??
     (meta.name as string | undefined) ??
@@ -178,9 +188,23 @@ function MyOrders() {
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-5 md:px-6">
         {/* Stats */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard icon={<ShoppingBag className="h-5 w-5" />} label="Pedidos" value={loading ? "—" : stats.total} />
-          <StatCard icon={<Clock className="h-5 w-5" />} label="Em andamento" value={loading ? "—" : stats.ongoing} tone="amber" />
-          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Finalizados" value={loading ? "—" : stats.done} tone="emerald" />
+          <StatCard
+            icon={<ShoppingBag className="h-5 w-5" />}
+            label="Pedidos"
+            value={loading ? "—" : stats.total}
+          />
+          <StatCard
+            icon={<Clock className="h-5 w-5" />}
+            label="Em andamento"
+            value={loading ? "—" : stats.ongoing}
+            tone="amber"
+          />
+          <StatCard
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            label="Finalizados"
+            value={loading ? "—" : stats.done}
+            tone="emerald"
+          />
           <StatCard icon={<Heart className="h-5 w-5" />} label="Favoritos" value="—" tone="rose" />
         </section>
 
@@ -303,13 +327,19 @@ function ActiveOrderCard({
       <div className="flex items-start gap-3">
         <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-background shadow-sm">
           {restaurant?.logo_url ? (
-            <img src={restaurant.logo_url} alt={restaurant.name} className="h-full w-full object-cover" />
+            <img
+              src={restaurant.logo_url}
+              alt={restaurant.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <Utensils className="h-5 w-5 text-primary" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display font-extrabold">{restaurant?.name ?? "Pedido em andamento"}</p>
+          <p className="truncate font-display font-extrabold">
+            {restaurant?.name ?? "Pedido em andamento"}
+          </p>
           <p className="text-xs text-muted-foreground">
             Pedido {order.order_number ? `#${order.order_number}` : ""}
           </p>
@@ -355,7 +385,11 @@ function HistoryCard({
       <div className="flex items-start gap-3">
         <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-muted">
           {restaurant?.logo_url ? (
-            <img src={restaurant.logo_url} alt={restaurant.name} className="h-full w-full object-cover" />
+            <img
+              src={restaurant.logo_url}
+              alt={restaurant.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <Utensils className="h-5 w-5 text-muted-foreground" />
           )}
@@ -403,17 +437,33 @@ function EmptyState({ onExplore }: { onExplore: () => void }) {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     novo: { label: "Recebido", cls: "bg-primary/10 text-primary border-primary/30" },
-    aguardando_pagamento: { label: "Aguardando pagamento", cls: "bg-slate-500/10 text-slate-700 border-slate-500/30" },
+    aguardando_pagamento: {
+      label: "Aguardando pagamento",
+      cls: "bg-slate-500/10 text-slate-700 border-slate-500/30",
+    },
     pago: { label: "Aguardando aceite", cls: "bg-primary/10 text-primary border-primary/30" },
     aceito: { label: "Aceito", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
     em_preparo: { label: "Em Preparo", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
     pronto: { label: "Pronto", cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30" },
-    saiu_para_entrega: { label: "Saiu p/ Entrega", cls: "bg-blue-500/10 text-blue-700 border-blue-500/30" },
-    entregue: { label: "Entregue", cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" },
-    cancelado: { label: "Cancelado", cls: "bg-destructive/10 text-destructive border-destructive/30" },
+    saiu_para_entrega: {
+      label: "Saiu p/ Entrega",
+      cls: "bg-blue-500/10 text-blue-700 border-blue-500/30",
+    },
+    entregue: {
+      label: "Entregue",
+      cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+    },
+    cancelado: {
+      label: "Cancelado",
+      cls: "bg-destructive/10 text-destructive border-destructive/30",
+    },
   };
   const m = map[status] ?? { label: status, cls: "" };
-  return <Badge variant="outline" className={`mt-1 text-[10px] ${m.cls}`}>{m.label}</Badge>;
+  return (
+    <Badge variant="outline" className={`mt-1 text-[10px] ${m.cls}`}>
+      {m.label}
+    </Badge>
+  );
 }
 
 function formatWhen(iso: string) {

@@ -85,24 +85,24 @@ O Gate não altera a state machine.
 
 ## 5. Métricas obrigatórias da Fase 1
 
-| Métrica | Definição | Fonte |
-|---|---|---|
-| total_orders | quantidade de pedidos realizados elegíveis | `customers.total_orders` / validação em `orders` |
-| total_spent | soma de `orders.total` dos pedidos elegíveis | `customers.total_spent` |
-| avg_ticket | total_spent / total_orders | `customers.avg_ticket` |
-| first_order_at | menor `created_at` elegível | `orders` |
-| last_order_at | maior `created_at` elegível | `customers.last_order_at` |
-| days_since_last_order | diferença entre referência temporal e last_order_at | derivado |
-| avg_days_between_orders | média dos intervalos entre compras elegíveis consecutivas | `orders` |
-| frequency_per_30d | pedidos elegíveis normalizados por janela/tenure | derivado |
-| favorite_products | produtos por quantidade comprada | `orders.items` |
-| predominant_weekday | dia da semana com maior frequência | `orders.created_at` |
-| predominant_hour | faixa/horário mais frequente | `orders.created_at` |
-| coupon_usage_count | pedidos elegíveis com `coupon_id` | `orders` |
-| promotion_usage | usos vinculados ao cliente/pedido quando comprováveis | `promotion_usage` |
-| cancellations | pedidos cancelados do mesmo cliente partner-scoped | `orders` |
-| refunds | pedidos reembolsados | `orders` |
-| chargebacks | pedidos em chargeback | `orders` |
+| Métrica                 | Definição                                                 | Fonte                                            |
+| ----------------------- | --------------------------------------------------------- | ------------------------------------------------ |
+| total_orders            | quantidade de pedidos realizados elegíveis                | `customers.total_orders` / validação em `orders` |
+| total_spent             | soma de `orders.total` dos pedidos elegíveis              | `customers.total_spent`                          |
+| avg_ticket              | total_spent / total_orders                                | `customers.avg_ticket`                           |
+| first_order_at          | menor `created_at` elegível                               | `orders`                                         |
+| last_order_at           | maior `created_at` elegível                               | `customers.last_order_at`                        |
+| days_since_last_order   | diferença entre referência temporal e last_order_at       | derivado                                         |
+| avg_days_between_orders | média dos intervalos entre compras elegíveis consecutivas | `orders`                                         |
+| frequency_per_30d       | pedidos elegíveis normalizados por janela/tenure          | derivado                                         |
+| favorite_products       | produtos por quantidade comprada                          | `orders.items`                                   |
+| predominant_weekday     | dia da semana com maior frequência                        | `orders.created_at`                              |
+| predominant_hour        | faixa/horário mais frequente                              | `orders.created_at`                              |
+| coupon_usage_count      | pedidos elegíveis com `coupon_id`                         | `orders`                                         |
+| promotion_usage         | usos vinculados ao cliente/pedido quando comprováveis     | `promotion_usage`                                |
+| cancellations           | pedidos cancelados do mesmo cliente partner-scoped        | `orders`                                         |
+| refunds                 | pedidos reembolsados                                      | `orders`                                         |
+| chargebacks             | pedidos em chargeback                                     | `orders`                                         |
 
 ### 5.1 Categoria favorita
 
@@ -111,6 +111,7 @@ Não será tratada como métrica histórica autoritativa na Fase 1.
 O snapshot atual de `orders.items` não contém categoria comprovadamente estável.
 
 Pode ser exposta futuramente como:
+
 - categoria atual aproximada; ou
 - categoria histórica após snapshot dedicado.
 
@@ -119,27 +120,35 @@ Pode ser exposta futuramente como:
 Os nomes abaixo são contratos de produto; thresholds finais devem ser parametrizados e testados antes de automação.
 
 ### NEW
+
 Cliente com exatamente 1 compra realizada.
 
 ### AWAITING_SECOND_PURCHASE
+
 Cliente com exatamente 1 compra realizada e dentro da janela definida para tentativa de segunda compra.
 
 ### RECURRING
+
 Cliente com 2 ou mais compras realizadas.
 
 ### HIGH_VALUE
+
 Cliente que ultrapassa threshold de gasto/ticket definido por política do Growth.
 
 ### LOYAL
+
 Cliente recorrente que também satisfaz critérios de frequência/tenure definidos pelo Growth.
 
 ### AT_RISK
+
 Cliente previamente recorrente cuja recência excede seu comportamento esperado ou threshold configurado.
 
 ### INACTIVE
+
 Cliente sem compra por janela de inatividade definida.
 
 ### REACTIVATED
+
 Cliente que realiza nova compra após ter cumprido critério de INACTIVE.
 
 ## 7. Regra de thresholds
@@ -250,8 +259,8 @@ O Customer 360 deverá operar a partir da identidade partner-scoped de `customer
 A futura camada deverá oferecer semanticamente operações equivalentes a:
 
 ```ts
-getCustomer360(restaurantId, customerId)
-listCustomer360(restaurantId, filters)
+getCustomer360(restaurantId, customerId);
+listCustomer360(restaurantId, filters);
 ```
 
 A implementação concreta poderá ser service server-side, RPC ou composição controlada, desde que:
@@ -279,27 +288,35 @@ O Gate é PASS quando:
 ## 15. Gates seguintes
 
 ### GROWTH-1 — Contract Repair
+
 Correções isoladas de incompatibilidades comprovadas.
 
 ### GROWTH-2 — Customer 360 Read Model
+
 Implementação server-side read-only.
 
 ### GROWTH-3 — Metric Integrity
+
 Testes determinísticos com fixtures.
 
 ### GROWTH-4 — Tenant Security
+
 Matriz E2E cross-tenant/RBAC.
 
 ### GROWTH-5 — Customer 360 UI
+
 UI consumindo somente contratos validados.
 
 ### GROWTH-6 — Customer Intelligence
+
 Segmentação, score, oportunidades e insights.
 
 ### GROWTH-7 — Measurement
+
 Ação → novo pedido → resultado.
 
 ### GROWTH-8 — Campaign Automation
+
 Somente após consentimento, persistência, opt-out, atribuição e auditoria.
 
 ## 16. Fora do escopo

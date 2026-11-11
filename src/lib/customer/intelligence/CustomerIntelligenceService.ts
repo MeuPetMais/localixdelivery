@@ -21,11 +21,16 @@ const LOY = () => (supabase as any).from("customer_loyalty");
 
 export function loyaltyLevelRank(level: unknown): number {
   switch (String(level ?? "").toUpperCase()) {
-    case "BRONZE": return 1;
-    case "SILVER": return 2;
-    case "GOLD": return 3;
-    case "DIAMOND": return 4;
-    default: return 0;
+    case "BRONZE":
+      return 1;
+    case "SILVER":
+      return 2;
+    case "GOLD":
+      return 3;
+    case "DIAMOND":
+      return 4;
+    default:
+      return 0;
   }
 }
 
@@ -41,17 +46,25 @@ export const CustomerIntelligenceService = {
   recommendations: CustomerRecommendationService,
 
   /** Full snapshot for a single customer × restaurant. */
-  async snapshot(customerId: string, restaurantId: string): Promise<{
+  async snapshot(
+    customerId: string,
+    restaurantId: string,
+  ): Promise<{
     analytics: CustomerAnalytics;
     score: CustomerScore;
     segment: CustomerSegment;
     tags: CustomerSegment[];
     recommendations: CustomerRecommendation[];
   }> {
-    const analytics = await CustomerAnalyticsService.forAuthenticatedCustomer(customerId, restaurantId);
+    const analytics = await CustomerAnalyticsService.forAuthenticatedCustomer(
+      customerId,
+      restaurantId,
+    );
     const { data: loy } = await LOY()
       .select("points_balance,level")
-      .eq("customer_id", customerId).eq("restaurant_id", restaurantId).maybeSingle();
+      .eq("customer_id", customerId)
+      .eq("restaurant_id", restaurantId)
+      .maybeSingle();
     const score = CustomerScoreService.compute(analytics, {
       loyaltyPoints: Number(loy?.points_balance ?? 0),
       loyaltyLevelRank: loyaltyLevelRank(loy?.level),
@@ -63,8 +76,12 @@ export const CustomerIntelligenceService = {
 
   /** Persist segment + emit event. */
   async persistSegment(input: {
-    restaurantId: string; customerId: string; segment: CustomerSegment;
-    score: number; reason?: string; metadata?: Record<string, unknown>;
+    restaurantId: string;
+    customerId: string;
+    segment: CustomerSegment;
+    score: number;
+    reason?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<CustomerSegmentRecord> {
     const row = {
       restaurant_id: input.restaurantId,
@@ -77,7 +94,8 @@ export const CustomerIntelligenceService = {
     };
     const { data, error } = await SEG()
       .upsert(row, { onConflict: "restaurant_id,customer_id" })
-      .select().maybeSingle();
+      .select()
+      .maybeSingle();
     if (error) throw error;
     await IntelligenceEventBus.publish({
       type: "CustomerSegmentUpdated",
@@ -91,23 +109,32 @@ export const CustomerIntelligenceService = {
 
   /** Persist insight + emit event. */
   async createInsight(input: {
-    restaurantId: string; customerId: string; type: CustomerInsightType;
-    severity?: CustomerInsightSeverity; title: string; description?: string;
+    restaurantId: string;
+    customerId: string;
+    type: CustomerInsightType;
+    severity?: CustomerInsightSeverity;
+    title: string;
+    description?: string;
     metadata?: Record<string, unknown>;
   }): Promise<CustomerInsightRecord> {
-    const { data, error } = await INS().insert({
-      restaurant_id: input.restaurantId,
-      customer_id: input.customerId,
-      insight_type: input.type,
-      severity: input.severity ?? "info",
-      title: input.title,
-      description: input.description ?? null,
-      metadata: input.metadata ?? {},
-    }).select().maybeSingle();
+    const { data, error } = await INS()
+      .insert({
+        restaurant_id: input.restaurantId,
+        customer_id: input.customerId,
+        insight_type: input.type,
+        severity: input.severity ?? "info",
+        title: input.title,
+        description: input.description ?? null,
+        metadata: input.metadata ?? {},
+      })
+      .select()
+      .maybeSingle();
     if (error) throw error;
     const insight = data as CustomerInsightRecord;
     await IntelligenceEventBus.publish({
-      type: "CustomerInsightGenerated", insight, at: new Date().toISOString(),
+      type: "CustomerInsightGenerated",
+      insight,
+      at: new Date().toISOString(),
     });
     return insight;
   },
@@ -121,31 +148,54 @@ export const CustomerIntelligenceService = {
     segment: CustomerSegment,
   ): Array<Omit<CustomerInsightRecord, "id" | "generated_at" | "acknowledged_at">> {
     const out: Array<Omit<CustomerInsightRecord, "id" | "generated_at" | "acknowledged_at">> = [];
-    const base = { restaurant_id: restaurantId, customer_id: customerId, metadata: {} as Record<string, unknown> };
+    const base = {
+      restaurant_id: restaurantId,
+      customer_id: customerId,
+      metadata: {} as Record<string, unknown>,
+    };
 
     if (analytics.total_orders === 0) {
-      out.push({ ...base, insight_type: "NO_PURCHASE", severity: "info",
-        title: "Cliente ainda não comprou", description: "Cadastrado mas sem pedidos." });
+      out.push({
+        ...base,
+        insight_type: "NO_PURCHASE",
+        severity: "info",
+        title: "Cliente ainda não comprou",
+        description: "Cadastrado mas sem pedidos.",
+      });
     }
     if (segment === "VIP" && analytics.days_since_last_order > 30) {
-      out.push({ ...base, insight_type: "VIP_INACTIVE", severity: "critical",
+      out.push({
+        ...base,
+        insight_type: "VIP_INACTIVE",
+        severity: "critical",
         title: "Cliente VIP inativo",
-        description: `Sem comprar há ${analytics.days_since_last_order} dias.` });
+        description: `Sem comprar há ${analytics.days_since_last_order} dias.`,
+      });
     }
     if (segment === "AT_RISK") {
-      out.push({ ...base, insight_type: "AT_RISK", severity: "warning",
+      out.push({
+        ...base,
+        insight_type: "AT_RISK",
+        severity: "warning",
         title: "Cliente em risco",
-        description: `Frequência caiu; última compra há ${analytics.days_since_last_order} dias.` });
+        description: `Frequência caiu; última compra há ${analytics.days_since_last_order} dias.`,
+      });
     }
     if (score.breakdown.frequency < 30 && analytics.total_orders >= 3) {
-      out.push({ ...base, insight_type: "FREQUENCY_DROP", severity: "warning",
+      out.push({
+        ...base,
+        insight_type: "FREQUENCY_DROP",
+        severity: "warning",
         title: "Queda de frequência",
-        description: "Frequência mensal abaixo do esperado." });
+        description: "Frequência mensal abaixo do esperado.",
+      });
     }
     if (analytics.favorite_categories[0]) {
       const c = analytics.favorite_categories[0];
       out.push({
-        ...base, insight_type: "FAVORITE_CATEGORY", severity: "info",
+        ...base,
+        insight_type: "FAVORITE_CATEGORY",
+        severity: "info",
         title: `Categoria favorita: ${c.name ?? c.category_id}`,
         description: `${c.qty} itens dessa categoria.`,
         metadata: { category_id: c.category_id, qty: c.qty },
@@ -161,15 +211,21 @@ export const CustomerIntelligenceService = {
     avg_score: number;
     high_risk: number;
   }> {
-    const { data, error } = await SEG()
-      .select("segment,score")
-      .eq("restaurant_id", restaurantId);
+    const { data, error } = await SEG().select("segment,score").eq("restaurant_id", restaurantId);
     if (error) throw error;
     const rows = (data ?? []) as Array<{ segment: CustomerSegment; score: number }>;
     const by_segment = {
-      NEW: 0, ACTIVE: 0, LOYAL: 0, VIP: 0, AT_RISK: 0, INACTIVE: 0, HIGH_VALUE: 0, LOW_VALUE: 0,
+      NEW: 0,
+      ACTIVE: 0,
+      LOYAL: 0,
+      VIP: 0,
+      AT_RISK: 0,
+      INACTIVE: 0,
+      HIGH_VALUE: 0,
+      LOW_VALUE: 0,
     } as Record<CustomerSegment, number>;
-    let sum = 0; let high = 0;
+    let sum = 0;
+    let high = 0;
     for (const r of rows) {
       if (r.segment in by_segment) by_segment[r.segment]++;
       sum += Number(r.score ?? 0);

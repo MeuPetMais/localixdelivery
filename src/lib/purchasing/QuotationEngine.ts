@@ -23,10 +23,10 @@ export const QuotationEngine = {
     weights: QuoteScoreWeights = { price: 0.6, delivery: 0.25, quality: 0.15 },
   ): ScoredQuote[] {
     if (!quotes.length) return [];
-    const minPrice = Math.min(...quotes.map(q => q.price));
-    const minDelivery = Math.min(...quotes.map(q => q.delivery_time ?? 30));
+    const minPrice = Math.min(...quotes.map((q) => q.price));
+    const minDelivery = Math.min(...quotes.map((q) => q.delivery_time ?? 30));
     return quotes
-      .map(q => {
+      .map((q) => {
         const priceScore = minPrice > 0 ? minPrice / q.price : 1;
         const deliveryScore = minDelivery > 0 ? minDelivery / (q.delivery_time ?? 30) : 1;
         const quality = (supplierRatings.get(q.supplier_id) ?? 3) / 5;

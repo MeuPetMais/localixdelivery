@@ -72,8 +72,6 @@ export function ReviewForm({ orderId, restaurantId, customerName, customerPhone 
     qc.invalidateQueries({ queryKey: ["owner-reviews"] });
   }
 
-
-
   if (checking || authLoading) return null;
 
   if (existing) {

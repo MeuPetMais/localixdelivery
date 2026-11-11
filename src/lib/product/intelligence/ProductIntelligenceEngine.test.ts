@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
-  SalesRankingService, CrossSellService, UpsellService,
-  ProductHealthScoreEngine, RecommendationEngine, ProductIntelligenceService,
+  SalesRankingService,
+  CrossSellService,
+  UpsellService,
+  ProductHealthScoreEngine,
+  RecommendationEngine,
+  ProductIntelligenceService,
   ProductPerformanceService,
 } from "./index";
 import type { OrderLineSample, ProductSalesStat } from "./types";
@@ -9,8 +13,14 @@ import type { OrderLineSample, ProductSalesStat } from "./types";
 const REST = "r1";
 
 const stat = (over: Partial<ProductSalesStat> = {}): ProductSalesStat => ({
-  product_id: "p", units_sold: 10, revenue: 100, cost: 50, orders: 8, price: 10,
-  category_id: "c1", ...over,
+  product_id: "p",
+  units_sold: 10,
+  revenue: 100,
+  cost: 50,
+  orders: 8,
+  price: 10,
+  category_id: "c1",
+  ...over,
 });
 
 describe("Product Intelligence Engine", () => {
@@ -37,9 +47,18 @@ describe("Product Intelligence Engine", () => {
   });
 
   it("HealthScore combina vendas, margem, disponibilidade, reviews", () => {
-    const h = ProductHealthScoreEngine.compute(stats[0], { max_units_in_dataset: 50, is_available: true, in_stock: true, avg_rating: 4.5 });
+    const h = ProductHealthScoreEngine.compute(stats[0], {
+      max_units_in_dataset: 50,
+      is_available: true,
+      in_stock: true,
+      avg_rating: 4.5,
+    });
     expect(h.score).toBeGreaterThan(70);
-    const bad = ProductHealthScoreEngine.compute(stats[2], { max_units_in_dataset: 50, is_available: false, in_stock: false });
+    const bad = ProductHealthScoreEngine.compute(stats[2], {
+      max_units_in_dataset: 50,
+      is_available: false,
+      in_stock: false,
+    });
     expect(bad.score).toBeLessThan(30);
   });
 
@@ -65,20 +84,35 @@ describe("Product Intelligence Engine", () => {
   });
 
   it("RecommendationEngine: parado gera LOW_SELLER + HIDE", () => {
-    const { insights, recommendations } = RecommendationEngine.generate({ restaurant_id: REST, stats });
-    expect(insights.some((i) => i.product_id === "c" && i.insight_type === "LOW_SELLER")).toBe(true);
-    expect(recommendations.some((r) => r.product_id === "c" && r.recommendation_type === "HIDE")).toBe(true);
+    const { insights, recommendations } = RecommendationEngine.generate({
+      restaurant_id: REST,
+      stats,
+    });
+    expect(insights.some((i) => i.product_id === "c" && i.insight_type === "LOW_SELLER")).toBe(
+      true,
+    );
+    expect(
+      recommendations.some((r) => r.product_id === "c" && r.recommendation_type === "HIDE"),
+    ).toBe(true);
   });
 
   it("RecommendationEngine: margem baixa gera LOW_MARGIN + PRICE_REVIEW", () => {
-    const { insights, recommendations } = RecommendationEngine.generate({ restaurant_id: REST, stats });
-    expect(insights.some((i) => i.product_id === "b" && i.insight_type === "LOW_MARGIN")).toBe(true);
-    expect(recommendations.some((r) => r.product_id === "b" && r.recommendation_type === "PRICE_REVIEW")).toBe(true);
+    const { insights, recommendations } = RecommendationEngine.generate({
+      restaurant_id: REST,
+      stats,
+    });
+    expect(insights.some((i) => i.product_id === "b" && i.insight_type === "LOW_MARGIN")).toBe(
+      true,
+    );
+    expect(
+      recommendations.some((r) => r.product_id === "b" && r.recommendation_type === "PRICE_REVIEW"),
+    ).toBe(true);
   });
 
   it("RecommendationEngine: sem estoque gera insight OUT_OF_STOCK crítico", () => {
     const { insights } = RecommendationEngine.generate({
-      restaurant_id: REST, stats,
+      restaurant_id: REST,
+      stats,
       availability: { a: { is_available: true, in_stock: false } },
     });
     const oos = insights.find((i) => i.product_id === "a" && i.insight_type === "OUT_OF_STOCK");
@@ -87,7 +121,9 @@ describe("Product Intelligence Engine", () => {
 
   it("RecommendationEngine: best seller gera FEATURED", () => {
     const { recommendations } = RecommendationEngine.generate({ restaurant_id: REST, stats });
-    expect(recommendations.some((r) => r.product_id === "a" && r.recommendation_type === "FEATURED")).toBe(true);
+    expect(
+      recommendations.some((r) => r.product_id === "a" && r.recommendation_type === "FEATURED"),
+    ).toBe(true);
   });
 
   it("ProductIntelligenceService.generate retorna todos os agregados", async () => {

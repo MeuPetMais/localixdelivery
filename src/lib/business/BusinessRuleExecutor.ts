@@ -122,7 +122,10 @@ export class BusinessRuleExecutor {
   }
 
   runAll(ctx: BusinessRuleContext, opts?: ExecuteOptions): Promise<AggregatedResult> {
-    const all = this.registry.all().filter((r) => r.enabled).sort((a, b) => a.priority - b.priority);
+    const all = this.registry
+      .all()
+      .filter((r) => r.enabled)
+      .sort((a, b) => a.priority - b.priority);
     return this.runRules(all, ctx, opts);
   }
 

@@ -43,12 +43,14 @@ O teste criou dados sintéticos somente dentro da transação e comprovou:
 ## Compatibilidade
 
 Antes do CAT-1:
+
 - 16 categorias;
 - 32 produtos;
 - 32 produtos categorizados;
 - 0 produtos órfãos.
 
 Após migration e testes:
+
 - 16 categorias;
 - 32 produtos;
 - 32 produtos categorizados;
@@ -57,6 +59,7 @@ Após migration e testes:
 ## Deploy
 
 CAT-2 e CAT-3 foram publicados com:
+
 - produção: READY / SUCCESS;
 - staging: READY / SUCCESS;
 - sem `aliasError`.
@@ -64,6 +67,7 @@ CAT-2 e CAT-3 foram publicados com:
 ## Checkout e financeiro
 
 A DEC-015 não alterou:
+
 - `OrderService`;
 - `PricingEngine`;
 - `PaymentService`;
@@ -79,6 +83,7 @@ Portanto, o gate é encerrado como **PASS TÉCNICO CONTROLADO**, e não como val
 ## Próxima validação recomendada
 
 Executar pedido controlado em ambiente apropriado com:
+
 1. produto vinculado a subcategoria;
 2. adição ao carrinho;
 3. preview de preço autoritativo;

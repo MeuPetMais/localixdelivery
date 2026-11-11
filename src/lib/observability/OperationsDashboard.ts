@@ -10,7 +10,9 @@ export const OperationsDashboard = {
   snapshot(opts?: { tenant_id?: string }): OperationsDashboardSnapshot {
     const health = HealthCenter.snapshot();
     const active = health.components.filter((c) => c.status === "healthy").length;
-    const degraded = health.components.filter((c) => c.status === "degraded" || c.status === "down").length;
+    const degraded = health.components.filter(
+      (c) => c.status === "degraded" || c.status === "down",
+    ).length;
     return {
       at: new Date().toISOString(),
       health,

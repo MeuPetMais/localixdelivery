@@ -52,7 +52,8 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
     onSuccess: ({ onboardingUrl }) => {
       window.location.href = onboardingUrl;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar Stripe"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar Stripe"),
   });
 
   const relink = useMutation({
@@ -63,7 +64,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
     onSuccess: ({ url }) => {
       window.location.href = url;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar link"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao gerar link"),
   });
 
   const refresh = useMutation({
@@ -75,7 +76,7 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       toast.success("Dados sincronizados com a Stripe");
       qc.invalidateQueries({ queryKey: ["stripe-connect", restaurantId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao sincronizar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar"),
   });
 
   const disconnect = useMutation({
@@ -87,13 +88,12 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       toast.success("Conta Stripe desconectada");
       qc.invalidateQueries({ queryKey: ["stripe-connect", restaurantId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao desconectar"),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao desconectar"),
   });
 
   const s = statusQuery.data;
   const status = s?.status ?? "not_created";
   const connected = !!s?.accountId && status !== "not_created";
-
 
   return (
     <Card className="p-6">
@@ -108,7 +108,8 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
               <StatusBadge loading={statusQuery.isLoading} status={status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Gateway oficial de pagamentos da Localix. Recebimentos diretamente no CNPJ do parceiro.
+              Gateway oficial de pagamentos da Localix. Recebimentos diretamente no CNPJ do
+              parceiro.
             </p>
           </div>
         </div>
@@ -158,7 +159,6 @@ export function StripeConnectCard({ restaurantId, urlParam }: Props) {
       </div>
 
       {connected && s && (
-
         <>
           <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
             <Info label="Conta" value={s.accountId ?? "—"} />
@@ -234,7 +234,11 @@ function CapabilityBadge({
       : state === "pending"
         ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
         : "bg-muted text-muted-foreground";
-  return <Badge variant="outline" className={cls}>{label}: {state}</Badge>;
+  return (
+    <Badge variant="outline" className={cls}>
+      {label}: {state}
+    </Badge>
+  );
 }
 
 function fmt(iso: string | null) {

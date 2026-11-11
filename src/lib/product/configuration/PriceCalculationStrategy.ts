@@ -1,9 +1,4 @@
-import type {
-  PriceStrategy,
-  ProductOption,
-  ProductOptionGroup,
-  SelectedOption,
-} from "./types";
+import type { PriceStrategy, ProductOption, ProductOptionGroup, SelectedOption } from "./types";
 
 function apply(strategy: PriceStrategy, deltas: number[]): number {
   if (deltas.length === 0) return 0;

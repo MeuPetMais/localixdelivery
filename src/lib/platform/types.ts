@@ -127,9 +127,19 @@ export interface PlatformAuditEntry {
 }
 
 export type PlatformDomainEvent =
-  | { type: "PlatformTenantStatusChanged"; tenantId: string; from: TenantStatus; to: TenantStatus; actorId: string }
+  | {
+      type: "PlatformTenantStatusChanged";
+      tenantId: string;
+      from: TenantStatus;
+      to: TenantStatus;
+      actorId: string;
+    }
   | { type: "PlatformPlanChanged"; tenantId: string; from: PlanTier; to: PlanTier; actorId: string }
   | { type: "PlatformFeatureFlagChanged"; key: string; enabled: boolean; actorId: string }
   | { type: "PlatformAdminGranted"; userId: string; role: PlatformRole; actorId: string }
   | { type: "PlatformAdminRevoked"; userId: string; actorId: string }
-  | { type: "PlatformIncidentReported"; incidentId: string; severity: "low" | "medium" | "high" | "critical" };
+  | {
+      type: "PlatformIncidentReported";
+      incidentId: string;
+      severity: "low" | "medium" | "high" | "critical";
+    };

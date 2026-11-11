@@ -4,15 +4,15 @@ Eventos internos do Payment Domain (vocabulário estável, independente de
 gateway). Todo gateway (Mercado Pago, Stripe, futuros) deve traduzir seus
 eventos brutos para esta lista.
 
-| Evento              | Quando                                              |
-|---------------------|-----------------------------------------------------|
-| `PaymentCreated`    | Intent criada; ainda não iniciada pelo cliente      |
-| `PaymentProcessing` | Cliente iniciou pagamento; aguardando confirmação   |
-| `PaymentApproved`   | Pagamento confirmado                                |
-| `PaymentFailed`     | Falha (recusa, expiração de método, etc.)           |
-| `PaymentCancelled`  | Cancelado pelo cliente ou pelo sistema              |
-| `PaymentRefunded`   | Estorno total ou parcial                            |
-| `CheckoutCompleted` | Sessão de checkout finalizada (Stripe Checkout)     |
+| Evento              | Quando                                            |
+| ------------------- | ------------------------------------------------- |
+| `PaymentCreated`    | Intent criada; ainda não iniciada pelo cliente    |
+| `PaymentProcessing` | Cliente iniciou pagamento; aguardando confirmação |
+| `PaymentApproved`   | Pagamento confirmado                              |
+| `PaymentFailed`     | Falha (recusa, expiração de método, etc.)         |
+| `PaymentCancelled`  | Cancelado pelo cliente ou pelo sistema            |
+| `PaymentRefunded`   | Estorno total ou parcial                          |
+| `CheckoutCompleted` | Sessão de checkout finalizada (Stripe Checkout)   |
 
 ## Payload padrão
 
@@ -35,15 +35,15 @@ eventos brutos para esta lista.
 
 Implementado em `src/lib/stripe/StripePaymentEventMapper.ts`.
 
-| Stripe                            | Payment Domain     |
-|-----------------------------------|--------------------|
-| `payment_intent.created`          | `PaymentCreated`   |
-| `payment_intent.processing`       | `PaymentProcessing`|
-| `payment_intent.succeeded`        | `PaymentApproved`  |
-| `payment_intent.payment_failed`   | `PaymentFailed`    |
-| `payment_intent.canceled`         | `PaymentCancelled` |
-| `charge.refunded`                 | `PaymentRefunded`  |
-| `checkout.session.completed`      | `CheckoutCompleted`|
+| Stripe                          | Payment Domain      |
+| ------------------------------- | ------------------- |
+| `payment_intent.created`        | `PaymentCreated`    |
+| `payment_intent.processing`     | `PaymentProcessing` |
+| `payment_intent.succeeded`      | `PaymentApproved`   |
+| `payment_intent.payment_failed` | `PaymentFailed`     |
+| `payment_intent.canceled`       | `PaymentCancelled`  |
+| `charge.refunded`               | `PaymentRefunded`   |
+| `checkout.session.completed`    | `CheckoutCompleted` |
 
 ## Regras
 

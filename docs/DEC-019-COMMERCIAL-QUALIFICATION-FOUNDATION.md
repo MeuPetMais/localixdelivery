@@ -33,13 +33,13 @@ A Ficha Comercial registra volume estimado, confirmação de decisor e canais at
 O componente **Volume mensal** do Fit Score vale até 25 pontos e segue a regra:
 
 | Pedidos estimados/mês | Pontos |
-| ---: | ---: |
-| abaixo de 150 | 0 |
-| 150–249 | 5 |
-| 250–349 | 10 |
-| 350–449 | 15 |
-| 450–599 | 20 |
-| 600 ou mais | 25 |
+| --------------------: | -----: |
+|         abaixo de 150 |      0 |
+|               150–249 |      5 |
+|               250–349 |     10 |
+|               350–449 |     15 |
+|               450–599 |     20 |
+|           600 ou mais |     25 |
 
 A regra é ascendente. Estar abaixo de 150 não desqualifica automaticamente o lead; apenas atribui 0 ponto neste componente.
 

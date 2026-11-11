@@ -74,52 +74,84 @@ describe("Customer 360 read model", () => {
   });
 
   it("classifies one recent purchase as awaiting second purchase", () => {
-    expect(resolveCustomer360Lifecycle({
-      total_orders: 1,
-      total_spent: 30,
-      avg_ticket: 30,
-      first_order_at: "2026-09-20T00:00:00.000Z",
-      last_order_at: "2026-09-20T00:00:00.000Z",
-      days_since_last_order: 4,
-      avg_days_between_orders: null,
-      frequency_per_30d: 1,
-      favorite_products: [],
-      predominant_weekday_utc: 0,
-      predominant_hour_utc: 12,
-      coupon_usage_count: 0,
-      cancellations: 0,
-      refunds: 0,
-      chargebacks: 0,
-    })).toBe("AWAITING_SECOND_PURCHASE");
+    expect(
+      resolveCustomer360Lifecycle({
+        total_orders: 1,
+        total_spent: 30,
+        avg_ticket: 30,
+        first_order_at: "2026-09-20T00:00:00.000Z",
+        last_order_at: "2026-09-20T00:00:00.000Z",
+        days_since_last_order: 4,
+        avg_days_between_orders: null,
+        frequency_per_30d: 1,
+        favorite_products: [],
+        predominant_weekday_utc: 0,
+        predominant_hour_utc: 12,
+        coupon_usage_count: 0,
+        cancellations: 0,
+        refunds: 0,
+        chargebacks: 0,
+      }),
+    ).toBe("AWAITING_SECOND_PURCHASE");
   });
 });
-
 
 it("classifies a purchase after a long gap as reactivated", () => {
   const reactivatedCustomer = { ...customer, total_orders: 3, total_spent: 120, avg_ticket: 40 };
   const result = buildCustomer360ReadModel(
     reactivatedCustomer,
     [
-      { id: "o1", total: 30, created_at: "2026-01-01T12:00:00.000Z", items: [], status: "entregue" },
-      { id: "o2", total: 40, created_at: "2026-02-01T12:00:00.000Z", items: [], status: "entregue" },
-      { id: "o3", total: 50, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "concluido" },
+      {
+        id: "o1",
+        total: 30,
+        created_at: "2026-01-01T12:00:00.000Z",
+        items: [],
+        status: "entregue",
+      },
+      {
+        id: "o2",
+        total: 40,
+        created_at: "2026-02-01T12:00:00.000Z",
+        items: [],
+        status: "entregue",
+      },
+      {
+        id: "o3",
+        total: 50,
+        created_at: "2026-09-20T12:00:00.000Z",
+        items: [],
+        status: "concluido",
+      },
     ],
     new Date("2026-09-24T12:00:00.000Z"),
   );
   expect(result.lifecycle).toBe("REACTIVATED");
 });
 
-
 describe("GROWTH-3 metric integrity matrix", () => {
   it("rejects projected customers with no realized sale", () => {
-    const zeroCustomer = { ...customer, total_orders: 0, total_spent: 0, avg_ticket: 0, last_order_at: null };
-    expect(() => buildCustomer360ReadModel(
-      zeroCustomer,
-      [
-        { id: "n1", total: 30, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "cancelado" },
-      ],
-      new Date("2026-09-24T12:00:00.000Z"),
-    )).toThrow("at least one realized purchase");
+    const zeroCustomer = {
+      ...customer,
+      total_orders: 0,
+      total_spent: 0,
+      avg_ticket: 0,
+      last_order_at: null,
+    };
+    expect(() =>
+      buildCustomer360ReadModel(
+        zeroCustomer,
+        [
+          {
+            id: "n1",
+            total: 30,
+            created_at: "2026-09-20T12:00:00.000Z",
+            items: [],
+            status: "cancelado",
+          },
+        ],
+        new Date("2026-09-24T12:00:00.000Z"),
+      ),
+    ).toThrow("at least one realized purchase");
   });
 
   it("excludes every non-realized status from realized metrics", () => {
@@ -142,8 +174,20 @@ describe("GROWTH-3 metric integrity matrix", () => {
     const result = buildCustomer360ReadModel(
       realizedCustomer,
       [
-        { id: "ok1", total: 30, created_at: "2026-09-10T12:00:00.000Z", items: [], status: "entregue" },
-        { id: "ok2", total: 40, created_at: "2026-09-20T12:00:00.000Z", items: [], status: "concluido" },
+        {
+          id: "ok1",
+          total: 30,
+          created_at: "2026-09-10T12:00:00.000Z",
+          items: [],
+          status: "entregue",
+        },
+        {
+          id: "ok2",
+          total: 40,
+          created_at: "2026-09-20T12:00:00.000Z",
+          items: [],
+          status: "concluido",
+        },
         ...statuses.map((status, index) => ({
           id: `x${index}`,
           total: 999,
@@ -164,42 +208,74 @@ describe("GROWTH-3 metric integrity matrix", () => {
   });
 
   it("keeps list and detail lifecycle thresholds consistent", () => {
-    expect(resolveCustomer360LifecycleFromProjection({
-      totalOrders: 2,
-      totalSpent: 100,
-      lastOrderAt: "2026-08-01T00:00:00.000Z",
-      now: new Date("2026-09-24T00:00:00.000Z"),
-    })).toBe("AT_RISK");
+    expect(
+      resolveCustomer360LifecycleFromProjection({
+        totalOrders: 2,
+        totalSpent: 100,
+        lastOrderAt: "2026-08-01T00:00:00.000Z",
+        now: new Date("2026-09-24T00:00:00.000Z"),
+      }),
+    ).toBe("AT_RISK");
 
-    expect(resolveCustomer360LifecycleFromProjection({
-      totalOrders: 2,
-      totalSpent: 100,
-      lastOrderAt: "2026-06-01T00:00:00.000Z",
-      now: new Date("2026-09-24T00:00:00.000Z"),
-    })).toBe("INACTIVE");
+    expect(
+      resolveCustomer360LifecycleFromProjection({
+        totalOrders: 2,
+        totalSpent: 100,
+        lastOrderAt: "2026-06-01T00:00:00.000Z",
+        now: new Date("2026-09-24T00:00:00.000Z"),
+      }),
+    ).toBe("INACTIVE");
 
-    expect(resolveCustomer360LifecycleFromProjection({
-      totalOrders: 6,
-      totalSpent: 300,
-      lastOrderAt: "2026-09-20T00:00:00.000Z",
-      now: new Date("2026-09-24T00:00:00.000Z"),
-    })).toBe("LOYAL");
+    expect(
+      resolveCustomer360LifecycleFromProjection({
+        totalOrders: 6,
+        totalSpent: 300,
+        lastOrderAt: "2026-09-20T00:00:00.000Z",
+        now: new Date("2026-09-24T00:00:00.000Z"),
+      }),
+    ).toBe("LOYAL");
 
-    expect(resolveCustomer360LifecycleFromProjection({
-      totalOrders: 3,
-      totalSpent: 600,
-      lastOrderAt: "2026-09-20T00:00:00.000Z",
-      now: new Date("2026-09-24T00:00:00.000Z"),
-    })).toBe("HIGH_VALUE");
+    expect(
+      resolveCustomer360LifecycleFromProjection({
+        totalOrders: 3,
+        totalSpent: 600,
+        lastOrderAt: "2026-09-20T00:00:00.000Z",
+        now: new Date("2026-09-24T00:00:00.000Z"),
+      }),
+    ).toBe("HIGH_VALUE");
   });
 
   it("computes frequency and predominant UTC behavior deterministically", () => {
     const result = buildCustomer360ReadModel(
-      { ...customer, total_orders: 3, total_spent: 120, avg_ticket: 40, last_order_at: "2026-09-21T18:00:00.000Z" },
+      {
+        ...customer,
+        total_orders: 3,
+        total_spent: 120,
+        avg_ticket: 40,
+        last_order_at: "2026-09-21T18:00:00.000Z",
+      },
       [
-        { id: "o1", total: 30, created_at: "2026-09-01T18:00:00.000Z", items: [], status: "entregue" },
-        { id: "o2", total: 40, created_at: "2026-09-11T18:00:00.000Z", items: [], status: "entregue" },
-        { id: "o3", total: 50, created_at: "2026-09-21T18:00:00.000Z", items: [], status: "concluido" },
+        {
+          id: "o1",
+          total: 30,
+          created_at: "2026-09-01T18:00:00.000Z",
+          items: [],
+          status: "entregue",
+        },
+        {
+          id: "o2",
+          total: 40,
+          created_at: "2026-09-11T18:00:00.000Z",
+          items: [],
+          status: "entregue",
+        },
+        {
+          id: "o3",
+          total: 50,
+          created_at: "2026-09-21T18:00:00.000Z",
+          items: [],
+          status: "concluido",
+        },
       ],
       new Date("2026-10-01T18:00:00.000Z"),
     );
@@ -240,11 +316,13 @@ describe("GROWTH-3 metric integrity matrix", () => {
   });
 
   it("does not allow zero-purchase lifecycle classification in projection summaries", () => {
-    expect(() => resolveCustomer360LifecycleFromProjection({
-      totalOrders: 0,
-      totalSpent: 0,
-      lastOrderAt: null,
-      now: new Date("2026-09-24T00:00:00.000Z"),
-    })).toThrow("at least one realized purchase");
+    expect(() =>
+      resolveCustomer360LifecycleFromProjection({
+        totalOrders: 0,
+        totalSpent: 0,
+        lastOrderAt: null,
+        now: new Date("2026-09-24T00:00:00.000Z"),
+      }),
+    ).toThrow("at least one realized purchase");
   });
 });

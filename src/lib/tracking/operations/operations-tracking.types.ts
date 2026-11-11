@@ -2,10 +2,19 @@
 // Visão operacional agregada consumida pelo restaurante. Apenas leitura;
 // nunca muta Orders/Delivery/Tracking. Sem dados financeiros/wallet/ranking.
 
-import type { TrackingSnapshot, TrackingTimelineEntry, TrackingStatus, TrackingConfidence } from "../tracking.types";
+import type {
+  TrackingSnapshot,
+  TrackingTimelineEntry,
+  TrackingStatus,
+  TrackingConfidence,
+} from "../tracking.types";
 
 export type OperationsDriverState =
-  | "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "PAUSA" | "OFFLINE";
+  | "AGUARDANDO"
+  | "EM_ENTREGA"
+  | "RETORNANDO"
+  | "PAUSA"
+  | "OFFLINE";
 
 export interface OperationsDriverRow {
   driver_id: string;
@@ -99,7 +108,12 @@ export interface OperationsDashboardData {
 export interface OperationsDetail {
   snapshot: TrackingSnapshot;
   timeline: TrackingTimelineEntry[];
-  restaurant: { name: string | null; address: string | null; lat: number | null; lng: number | null } | null;
+  restaurant: {
+    name: string | null;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
+  } | null;
   order: { address: string | null; order_number: number | null } | null;
 }
 

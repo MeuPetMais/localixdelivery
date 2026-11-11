@@ -1,37 +1,59 @@
 import { describe, it, expect } from "vitest";
 import {
-  classifyDriver, averageMinutes, returnGapsMinutes,
+  classifyDriver,
+  averageMinutes,
+  returnGapsMinutes,
   type AssignmentLite,
 } from "./operations-central";
 
 const drv = (over: Partial<{ status: string; online: boolean }> = {}) => ({
-  id: "d1", status: over.status ?? "ativo", online: over.online ?? false,
+  id: "d1",
+  status: over.status ?? "ativo",
+  online: over.online ?? false,
 });
 
 describe("classifyDriver", () => {
   it("pausa quando afastado (mesmo online)", () => {
-    expect(classifyDriver(drv({ status: "afastado", online: true }), undefined, undefined)).toBe("pausa");
+    expect(classifyDriver(drv({ status: "afastado", online: true }), undefined, undefined)).toBe(
+      "pausa",
+    );
   });
   it("pausa quando turno esta PAUSADO", () => {
-    expect(classifyDriver(
-      drv({ online: true }),
-      undefined,
-      undefined,
-      { driver_id: "d1", status: "PAUSADO", current_state: "PAUSA" },
-    )).toBe("pausa");
+    expect(
+      classifyDriver(drv({ online: true }), undefined, undefined, {
+        driver_id: "d1",
+        status: "PAUSADO",
+        current_state: "PAUSA",
+      }),
+    ).toBe("pausa");
   });
   it("em_entrega quando há atribuição ativa", () => {
-    expect(classifyDriver(drv({ online: true }), undefined, {
-      driver_id: "d1", status: "EM_ROTA", assigned_at: null, delivered_at: null,
-    })).toBe("em_entrega");
+    expect(
+      classifyDriver(drv({ online: true }), undefined, {
+        driver_id: "d1",
+        status: "EM_ROTA",
+        assigned_at: null,
+        delivered_at: null,
+      }),
+    ).toBe("em_entrega");
   });
   it("retornando quando queue.status = RETORNANDO", () => {
-    expect(classifyDriver(drv({ online: true }), { driver_id: "d1", status: "RETORNANDO", position: 0 }, undefined))
-      .toBe("retornando");
+    expect(
+      classifyDriver(
+        drv({ online: true }),
+        { driver_id: "d1", status: "RETORNANDO", position: 0 },
+        undefined,
+      ),
+    ).toBe("retornando");
   });
   it("na_fila quando AGUARDANDO na fila", () => {
-    expect(classifyDriver(drv({ online: true }), { driver_id: "d1", status: "AGUARDANDO", position: 1 }, undefined))
-      .toBe("na_fila");
+    expect(
+      classifyDriver(
+        drv({ online: true }),
+        { driver_id: "d1", status: "AGUARDANDO", position: 1 },
+        undefined,
+      ),
+    ).toBe("na_fila");
   });
   it("disponivel quando online sem fila explicita", () => {
     expect(classifyDriver(drv({ online: true }), undefined, undefined)).toBe("disponivel");
@@ -40,9 +62,14 @@ describe("classifyDriver", () => {
     expect(classifyDriver(drv({ online: false }), undefined, undefined)).toBe("offline");
   });
   it("ignora atribuição terminada", () => {
-    expect(classifyDriver(drv({ online: true }), undefined, {
-      driver_id: "d1", status: "ENTREGUE", assigned_at: null, delivered_at: null,
-    })).toBe("disponivel");
+    expect(
+      classifyDriver(drv({ online: true }), undefined, {
+        driver_id: "d1",
+        status: "ENTREGUE",
+        assigned_at: null,
+        delivered_at: null,
+      }),
+    ).toBe("disponivel");
   });
 });
 
@@ -54,22 +81,52 @@ describe("averageMinutes", () => {
 describe("returnGapsMinutes", () => {
   it("calcula gap entre entrega e próxima atribuição por motoboy", () => {
     const a: AssignmentLite[] = [
-      { driver_id: "d1", status: "ENTREGUE", assigned_at: "2025-06-01T10:00:00Z", delivered_at: "2025-06-01T10:20:00Z" },
-      { driver_id: "d1", status: "ATRIBUIDO", assigned_at: "2025-06-01T10:30:00Z", delivered_at: null },
+      {
+        driver_id: "d1",
+        status: "ENTREGUE",
+        assigned_at: "2025-06-01T10:00:00Z",
+        delivered_at: "2025-06-01T10:20:00Z",
+      },
+      {
+        driver_id: "d1",
+        status: "ATRIBUIDO",
+        assigned_at: "2025-06-01T10:30:00Z",
+        delivered_at: null,
+      },
     ];
     expect(returnGapsMinutes(a)).toEqual([10]);
   });
   it("descarta gaps > 120min ou negativos", () => {
     const a: AssignmentLite[] = [
-      { driver_id: "d1", status: "ENTREGUE", assigned_at: "2025-06-01T08:00:00Z", delivered_at: "2025-06-01T08:20:00Z" },
-      { driver_id: "d1", status: "ATRIBUIDO", assigned_at: "2025-06-01T14:00:00Z", delivered_at: null },
+      {
+        driver_id: "d1",
+        status: "ENTREGUE",
+        assigned_at: "2025-06-01T08:00:00Z",
+        delivered_at: "2025-06-01T08:20:00Z",
+      },
+      {
+        driver_id: "d1",
+        status: "ATRIBUIDO",
+        assigned_at: "2025-06-01T14:00:00Z",
+        delivered_at: null,
+      },
     ];
     expect(returnGapsMinutes(a)).toEqual([]);
   });
   it("separa por motoboy", () => {
     const a: AssignmentLite[] = [
-      { driver_id: "d1", status: "ENTREGUE", assigned_at: "2025-06-01T10:00:00Z", delivered_at: "2025-06-01T10:20:00Z" },
-      { driver_id: "d2", status: "ATRIBUIDO", assigned_at: "2025-06-01T10:25:00Z", delivered_at: null },
+      {
+        driver_id: "d1",
+        status: "ENTREGUE",
+        assigned_at: "2025-06-01T10:00:00Z",
+        delivered_at: "2025-06-01T10:20:00Z",
+      },
+      {
+        driver_id: "d2",
+        status: "ATRIBUIDO",
+        assigned_at: "2025-06-01T10:25:00Z",
+        delivered_at: null,
+      },
     ];
     expect(returnGapsMinutes(a)).toEqual([]);
   });

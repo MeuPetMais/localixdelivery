@@ -1,11 +1,6 @@
 // Customer Communication Center — types
 
-export type CommunicationChannel =
-  | "EMAIL"
-  | "PUSH"
-  | "SMS"
-  | "WHATSAPP"
-  | "IN_APP";
+export type CommunicationChannel = "EMAIL" | "PUSH" | "SMS" | "WHATSAPP" | "IN_APP";
 
 export type CommunicationStatus =
   | "logged"
@@ -50,11 +45,28 @@ export interface CommunicationHistoryFilter {
 }
 
 export type CommunicationEvent =
-  | { type: "CommunicationPreferenceChanged"; customerId: string; changes: Partial<CommunicationPreferences>; at: string }
+  | {
+      type: "CommunicationPreferenceChanged";
+      customerId: string;
+      changes: Partial<CommunicationPreferences>;
+      at: string;
+    }
   | { type: "CustomerOptedIn"; customerId: string; channel: CommunicationChannel; at: string }
   | { type: "CustomerOptedOut"; customerId: string; channel: CommunicationChannel; at: string }
-  | { type: "CampaignAudienceGenerated"; campaignId: string; size: number; segment?: string; at: string }
-  | { type: "CommunicationLogged"; customerId: string; channel: CommunicationChannel; event_type: string; at: string };
+  | {
+      type: "CampaignAudienceGenerated";
+      campaignId: string;
+      size: number;
+      segment?: string;
+      at: string;
+    }
+  | {
+      type: "CommunicationLogged";
+      customerId: string;
+      channel: CommunicationChannel;
+      event_type: string;
+      at: string;
+    };
 
 export interface CampaignAudienceInput {
   restaurant_id: string;

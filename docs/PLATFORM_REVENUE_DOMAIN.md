@@ -5,6 +5,7 @@ plataforma Localix (service fee). Nenhum outro módulo pode calcular ou
 hardcodar taxa — devem consumir `PlatformRevenueService`.
 
 ## Estrutura
+
 - `PlatformRevenueService` — fachada pública.
 - `ServiceFeeService` — cálculo puro (FIXED / PERCENTAGE / TIERED).
 - `RevenuePolicyService` — validação de vigência (`effective_from/until`).
@@ -14,6 +15,7 @@ hardcodar taxa — devem consumir `PlatformRevenueService`.
   `ServiceFeeCalculated`, `ServiceFeeApplied`, `ServiceFeeDisabled`.
 
 ## Política
+
 ```
 service_fee_enabled: boolean
 service_fee_type: FIXED | PERCENTAGE | TIERED
@@ -25,21 +27,25 @@ active: boolean
 ```
 
 Default vigente:
+
 - TIERED: até R$30 → R$0,99 · acima → R$1,49
 - Currency: BRL
 
 ## API pública
+
 - `getCurrentServiceFee(subtotal): Promise<number>`
 - `calculate({ subtotal }): Promise<{ amount, type, currency }>`
 - `isActive(): Promise<boolean>`
 - `getPolicy(): Promise<RevenuePolicy>`
 
 ## Integração
+
 - `PricingEngine.calculateOrderPricing` consulta o domínio para obter a
   taxa vigente; **não há valores hardcoded no runtime**.
 - Alterar taxa = `UPDATE public.platform_settings` (nunca no código).
 
 ## Campanhas futuras (desativado)
+
 Estrutura suporta taxa zero em datas específicas via
 `effective_from/until` e políticas alternativas — sem alterar a API.
 

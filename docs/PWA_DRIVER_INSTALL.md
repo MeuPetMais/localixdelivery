@@ -17,18 +17,18 @@ Escopo: apenas o domínio `Driver`. Não afeta Restaurante, Cliente ou Admin.
 
 ## Requisitos atendidos
 
-| Requisito              | Status |
-| ---------------------- | ------ |
-| `manifest.webmanifest` | `public/manifest.webmanifest` |
-| Service Worker         | `public/driver-sw.js` (fetch passthrough) |
-| HTTPS                  | Domínio Lovable / custom domain com HTTPS |
-| `display: standalone`  | Sim |
-| `start_url` / `scope`  | `/entregador` / `/` |
-| `theme_color`          | `#0f172a` |
-| `background_color`     | `#0f172a` |
+| Requisito              | Status                                                |
+| ---------------------- | ----------------------------------------------------- |
+| `manifest.webmanifest` | `public/manifest.webmanifest`                         |
+| Service Worker         | `public/driver-sw.js` (fetch passthrough)             |
+| HTTPS                  | Domínio Lovable / custom domain com HTTPS             |
+| `display: standalone`  | Sim                                                   |
+| `start_url` / `scope`  | `/entregador` / `/`                                   |
+| `theme_color`          | `#0f172a`                                             |
+| `background_color`     | `#0f172a`                                             |
 | Ícone 192×192          | `public/icons/icon-192.png` (`purpose: any maskable`) |
 | Ícone 512×512          | `public/icons/icon-512.png` (`purpose: any maskable`) |
-| Apple touch icon       | `public/icons/apple-touch-icon.png` |
+| Apple touch icon       | `public/icons/apple-touch-icon.png`                   |
 
 ## `beforeinstallprompt`
 
@@ -53,15 +53,15 @@ desregistrado, para evitar cache preso durante desenvolvimento.
 
 ## Compatibilidade
 
-| Navegador           | Comportamento |
-| ------------------- | ------------- |
-| Chrome Android      | Prompt nativo via `beforeinstallprompt` |
-| Samsung Internet    | Prompt nativo (comportamento equivalente ao Chrome) |
-| Edge Mobile/Desktop | Prompt nativo |
-| Chrome Desktop      | Prompt nativo |
-| Safari iOS          | Instruções manuais: Compartilhar → Adicionar à Tela Inicial |
+| Navegador           | Comportamento                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Chrome Android      | Prompt nativo via `beforeinstallprompt`                                                     |
+| Samsung Internet    | Prompt nativo (comportamento equivalente ao Chrome)                                         |
+| Edge Mobile/Desktop | Prompt nativo                                                                               |
+| Chrome Desktop      | Prompt nativo                                                                               |
+| Safari iOS          | Instruções manuais: Compartilhar → Adicionar à Tela Inicial                                 |
 | Firefox Desktop     | Sem suporte a instalação — botão “Instalar aplicativo” fica oculto e o modal exibe fallback |
-| Outros              | Mensagem: “Seu navegador não suporta instalação do aplicativo.” |
+| Outros              | Mensagem: “Seu navegador não suporta instalação do aplicativo.”                             |
 
 ## Fallback
 

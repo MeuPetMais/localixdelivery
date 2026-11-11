@@ -7,11 +7,7 @@ import {
   type DriverLocationTrackerContext,
 } from "./driver-location-tracker";
 
-export type DriverLocationUiStatus =
-  | "idle"
-  | "tracking"
-  | "permission_denied"
-  | "unsupported";
+export type DriverLocationUiStatus = "idle" | "tracking" | "permission_denied" | "unsupported";
 
 export function useDriverLocationTracking(context: DriverLocationTrackerContext | null) {
   const ingest = useServerFn(ingestDriverLocations);
@@ -19,10 +15,7 @@ export function useDriverLocationTracking(context: DriverLocationTrackerContext 
   const tracker = useMemo(
     () =>
       new DriverLocationTracker({
-        geolocation:
-          typeof navigator === "undefined"
-            ? null
-            : navigator.geolocation,
+        geolocation: typeof navigator === "undefined" ? null : navigator.geolocation,
         upload: async (sample) => {
           await ingest({ data: { samples: [sample] } });
         },

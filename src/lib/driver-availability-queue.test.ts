@@ -48,7 +48,10 @@ describe("driver availability queue integration", () => {
   });
 
   it("keeps automatic assignment coupled to queue enqueue", () => {
-    const sql = readFileSync("supabase/migrations/20260803124500_auto_assign_delivery_from_queue.sql", "utf8");
+    const sql = readFileSync(
+      "supabase/migrations/20260803124500_auto_assign_delivery_from_queue.sql",
+      "utf8",
+    );
 
     expect(sql).toContain("CREATE OR REPLACE FUNCTION public.queue_enqueue");
     expect(sql).toContain("delivery_auto_assign_pending_for_restaurant");

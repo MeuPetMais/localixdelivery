@@ -9,14 +9,17 @@ import { PaymentService } from "./PaymentService";
 import { supabase } from "@/integrations/supabase/client";
 const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
 
-
 beforeEach(() => {
   from.mockReset();
 });
 
-
-function chain(result: any) {
-  const q: any = {
+function chain(result: { data: { payment_provider?: string } | null; error?: unknown }) {
+  const q: {
+    select: () => typeof q;
+    eq: () => typeof q;
+    maybeSingle: () => Promise<typeof result>;
+    update: () => typeof q;
+  } = {
     select: () => q,
     eq: () => q,
     maybeSingle: async () => result,

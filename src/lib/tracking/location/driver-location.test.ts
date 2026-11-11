@@ -7,7 +7,9 @@ import { DEFAULT_HEARTBEAT_INTERVALS } from "./driver-presence.types";
 
 const DRIVER = "00000000-0000-0000-0000-000000000001";
 
-function sample(over: Partial<Parameters<ReturnType<typeof createDriverLocationService>["ingest"]>[0]> = {}) {
+function sample(
+  over: Partial<Parameters<ReturnType<typeof createDriverLocationService>["ingest"]>[0]> = {},
+) {
   return {
     driver_id: DRIVER,
     assignment_id: "a1",
@@ -60,10 +62,13 @@ describe("DriverLocationService", () => {
     const t0 = Date.now();
     await svc.ingest(sample({ captured_at: new Date(t0).toISOString() }));
     // 1 segundo depois, salto de ~10km → impossível.
-    const r = await svc.ingest(sample({
-      lat: -23.65, lng: -46.63,
-      captured_at: new Date(t0 + 1000).toISOString(),
-    }));
+    const r = await svc.ingest(
+      sample({
+        lat: -23.65,
+        lng: -46.63,
+        captured_at: new Date(t0 + 1000).toISOString(),
+      }),
+    );
     expect(r.confidence).toBe("LOW");
     expect(r.reasons).toContain("teleport_detected");
     expect(r.spoof_score).toBeGreaterThanOrEqual(60);
@@ -82,7 +87,9 @@ describe("DriverLocationService", () => {
     const svc = createDriverLocationService({
       isOnline: () => false,
       now: () => new Date(t),
-      uploader: async (batch) => { uploaded.push(batch); },
+      uploader: async (batch) => {
+        uploaded.push(batch);
+      },
     });
     await svc.ingest(sample({ captured_at: new Date(t).toISOString() }));
     t += 5000;
@@ -93,7 +100,9 @@ describe("DriverLocationService", () => {
   it("deduplicates identical samples and rate-limits rapid bursts", async () => {
     const svc = createDriverLocationService();
     const rejects: string[] = [];
-    driverLocationBus.subscribe((e) => { if (e.type === "DriverLocationRejected") rejects.push(e.reason ?? ""); });
+    driverLocationBus.subscribe((e) => {
+      if (e.type === "DriverLocationRejected") rejects.push(e.reason ?? "");
+    });
     const s = sample();
     await svc.ingest(s);
     await svc.ingest(s); // duplicate

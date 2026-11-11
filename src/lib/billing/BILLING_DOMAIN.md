@@ -21,15 +21,15 @@ de Payments, Checkout, Loyalty e PricingEngine.
 
 ## Serviços
 
-| Serviço | Papel |
-|---|---|
-| `BillingService` | Fachada única de acesso |
-| `EligibilityService` | Avalia critérios de entrada |
-| `RestaurantLifecycleService` | Máquina de estados |
-| `RestaurantStatusService` | Status operacional derivado |
-| `OnboardingService` | Checklist e próximos passos |
-| `ServiceFeeService` | Política oficial da taxa |
-| `BillingEvents` | Event bus in-process |
+| Serviço                      | Papel                       |
+| ---------------------------- | --------------------------- |
+| `BillingService`             | Fachada única de acesso     |
+| `EligibilityService`         | Avalia critérios de entrada |
+| `RestaurantLifecycleService` | Máquina de estados          |
+| `RestaurantStatusService`    | Status operacional derivado |
+| `OnboardingService`          | Checklist e próximos passos |
+| `ServiceFeeService`          | Política oficial da taxa    |
+| `BillingEvents`              | Event bus in-process        |
 
 ## Entrada única
 

@@ -19,13 +19,18 @@ export const AnalyticsAudit = {
     if (log.length > MAX) log.splice(0, log.length - MAX);
     return full;
   },
-  list(filter?: Partial<Pick<AnalyticsAuditEntry, "scope" | "action" | "restaurantId">>): AnalyticsAuditEntry[] {
+  list(
+    filter?: Partial<Pick<AnalyticsAuditEntry, "scope" | "action" | "restaurantId">>,
+  ): AnalyticsAuditEntry[] {
     if (!filter) return [...log];
-    return log.filter(e =>
-      (!filter.scope || e.scope === filter.scope) &&
-      (!filter.action || e.action === filter.action) &&
-      (!filter.restaurantId || e.restaurantId === filter.restaurantId)
+    return log.filter(
+      (e) =>
+        (!filter.scope || e.scope === filter.scope) &&
+        (!filter.action || e.action === filter.action) &&
+        (!filter.restaurantId || e.restaurantId === filter.restaurantId),
     );
   },
-  _reset() { log.length = 0; },
+  _reset() {
+    log.length = 0;
+  },
 };

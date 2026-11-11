@@ -231,9 +231,9 @@ RFC → Auditoria → Implementação → Certificação → Homologação → P
 
 ## Histórico de Revisões
 
-| Versão | Data       | Autor    | Mudanças                                                |
-|--------|------------|----------|---------------------------------------------------------|
-| 1.0.0  | 2026-07-10 | Localix  | Criação do documento; ADR-001 a ADR-015 consolidados.   |
+| Versão | Data       | Autor   | Mudanças                                              |
+| ------ | ---------- | ------- | ----------------------------------------------------- |
+| 1.0.0  | 2026-07-10 | Localix | Criação do documento; ADR-001 a ADR-015 consolidados. |
 
 ---
 

@@ -12,13 +12,19 @@ export const CUSTOMER_STEPS = [
 ] as const;
 
 // ETA window (customer-safe): 0.85–1.20 do valor central.
-export function etaWindowMinutes(etaSeconds: number | null): { min: number | null; max: number | null } {
+export function etaWindowMinutes(etaSeconds: number | null): {
+  min: number | null;
+  max: number | null;
+} {
   if (etaSeconds == null || etaSeconds <= 0) return { min: null, max: null };
   const mins = etaSeconds / 60;
   return { min: mins * 0.85, max: mins * 1.2 };
 }
 
-export function buildCustomerView(orderId: string, input: CustomerTrackingInput): CustomerTrackingView {
+export function buildCustomerView(
+  orderId: string,
+  input: CustomerTrackingInput,
+): CustomerTrackingView {
   const step = CustomerTrackingMessageService.stepFrom(input.order_status, input.tracking_status);
   const { min, max } = etaWindowMinutes(input.eta_seconds);
   const isCancelled = step === "cancelado";
@@ -36,6 +42,6 @@ export function buildCustomerView(orderId: string, input: CustomerTrackingInput)
     message: CustomerTrackingMessageService.messageFor(step, { driver_name: input.driver_name }),
     updated_at: input.updated_at ?? new Date().toISOString(),
     has_tracking: input.tracking_status !== null,
-    driver_location: showEta ? input.driver_location ?? null : null,
+    driver_location: showEta ? (input.driver_location ?? null) : null,
   };
 }

@@ -84,7 +84,8 @@ export function CustomerTrackingView({ orderId, className }: CustomerTrackingVie
             loading="lazy"
           />
           <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-            Localizacao aproximada do entregador. Atualizado em {new Date(view.driver_location.updated_at).toLocaleTimeString()}.
+            Localizacao aproximada do entregador. Atualizado em{" "}
+            {new Date(view.driver_location.updated_at).toLocaleTimeString()}.
           </p>
         </div>
       )}

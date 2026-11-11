@@ -9,7 +9,12 @@ export const RULE_CUSTOMER_ACTIVE: BusinessRule = {
   category: "CUSTOMER",
   evaluate(ctx) {
     if (ctx.customer?.active === false) {
-      return { allowed: false, rule_code: "CUSTOMER_INACTIVE", severity: "error", reason: "Conta inativa." };
+      return {
+        allowed: false,
+        rule_code: "CUSTOMER_INACTIVE",
+        severity: "error",
+        reason: "Conta inativa.",
+      };
     }
     return { allowed: true, rule_code: "CUSTOMER_ACTIVE", severity: "info" };
   },
@@ -24,7 +29,12 @@ export const RULE_CUSTOMER_PHONE_CONFIRMED: BusinessRule = {
   category: "CUSTOMER",
   evaluate(ctx) {
     if (ctx.customer && ctx.customer.phone_confirmed === false) {
-      return { allowed: false, rule_code: "CUSTOMER_PHONE_UNCONFIRMED", severity: "warning", reason: "Telefone não confirmado." };
+      return {
+        allowed: false,
+        rule_code: "CUSTOMER_PHONE_UNCONFIRMED",
+        severity: "warning",
+        reason: "Telefone não confirmado.",
+      };
     }
     return { allowed: true, rule_code: "CUSTOMER_PHONE_CONFIRMED", severity: "info" };
   },
@@ -39,7 +49,12 @@ export const RULE_CUSTOMER_EMAIL_CONFIRMED: BusinessRule = {
   category: "CUSTOMER",
   evaluate(ctx) {
     if (ctx.customer && ctx.customer.email_confirmed === false) {
-      return { allowed: false, rule_code: "CUSTOMER_EMAIL_UNCONFIRMED", severity: "warning", reason: "Email não confirmado." };
+      return {
+        allowed: false,
+        rule_code: "CUSTOMER_EMAIL_UNCONFIRMED",
+        severity: "warning",
+        reason: "Email não confirmado.",
+      };
     }
     return { allowed: true, rule_code: "CUSTOMER_EMAIL_CONFIRMED", severity: "info" };
   },
@@ -55,7 +70,12 @@ export const RULE_CUSTOMER_DAILY_LIMIT: BusinessRule = {
   evaluate(ctx) {
     const limit = 20;
     if ((ctx.customer?.daily_orders ?? 0) >= limit) {
-      return { allowed: false, rule_code: "CUSTOMER_DAILY_LIMIT", severity: "warning", reason: "Limite diário de pedidos atingido." };
+      return {
+        allowed: false,
+        rule_code: "CUSTOMER_DAILY_LIMIT",
+        severity: "warning",
+        reason: "Limite diário de pedidos atingido.",
+      };
     }
     return { allowed: true, rule_code: "CUSTOMER_DAILY_LIMIT", severity: "info" };
   },

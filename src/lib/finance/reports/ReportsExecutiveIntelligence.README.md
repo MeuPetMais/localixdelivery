@@ -27,13 +27,13 @@ financial_reports · scheduled_reports
 
 ## Serviços
 
-| Serviço                    | Responsabilidade                                          |
-| -------------------------- | --------------------------------------------------------- |
-| `ReportEngine`             | Construção de resultados por tipo + comparativos          |
-| `ExportEngine`             | Serialização em PDF/XLSX/CSV/JSON                         |
-| `ScheduleEngine`           | Regras de recorrência (`daily`/`weekly`/`monthly`)        |
-| `FinancialReportService`   | Orquestração + publicação de eventos                      |
-| `ReportsDomain`            | Factory pública (wiring por padrão)                       |
+| Serviço                  | Responsabilidade                                   |
+| ------------------------ | -------------------------------------------------- |
+| `ReportEngine`           | Construção de resultados por tipo + comparativos   |
+| `ExportEngine`           | Serialização em PDF/XLSX/CSV/JSON                  |
+| `ScheduleEngine`         | Regras de recorrência (`daily`/`weekly`/`monthly`) |
+| `FinancialReportService` | Orquestração + publicação de eventos               |
+| `ReportsDomain`          | Factory pública (wiring por padrão)                |
 
 ## Tabelas
 

@@ -4,7 +4,10 @@ import { EmployeeService } from "./EmployeeService";
 import { FeatureFlagService } from "./FeatureFlagService";
 import { AdminAuditService } from "./AdminAuditService";
 import { PermissionRegistry } from "./PermissionRegistry";
-import { RestaurantSettingsEventBus, restaurantSettingsEventBus } from "./RestaurantSettingsEventBus";
+import {
+  RestaurantSettingsEventBus,
+  restaurantSettingsEventBus,
+} from "./RestaurantSettingsEventBus";
 import type { EmployeeRole, Permission } from "./types";
 
 export interface RestaurantSettingsDeps {
@@ -43,25 +46,37 @@ export class RestaurantSettingsService {
   }
 
   async updateGroup<G extends ConfigGroup>(
-    restaurantId: string, group: G, value: GroupPayload<G>, changedBy?: string,
+    restaurantId: string,
+    group: G,
+    value: GroupPayload<G>,
+    changedBy?: string,
   ) {
     const result = await this.tenant.update(restaurantId, group, value, changedBy);
     if (result.ok) {
       this.bus.publish({
-        type: "SettingsUpdated", restaurant_id: restaurantId,
-        group, version: result.version, changed_by: changedBy,
+        type: "SettingsUpdated",
+        restaurant_id: restaurantId,
+        group,
+        version: result.version,
+        changed_by: changedBy,
       });
     }
     return result;
   }
 
   async rollback<G extends ConfigGroup>(
-    restaurantId: string, group: G, targetVersion: number, changedBy?: string,
+    restaurantId: string,
+    group: G,
+    targetVersion: number,
+    changedBy?: string,
   ) {
     const result = await this.tenant.rollback(restaurantId, group, targetVersion, changedBy);
     this.bus.publish({
-      type: "SettingsRolledBack", restaurant_id: restaurantId,
-      group, version: result.version, changed_by: changedBy,
+      type: "SettingsRolledBack",
+      restaurant_id: restaurantId,
+      group,
+      version: result.version,
+      changed_by: changedBy,
     });
     return result;
   }

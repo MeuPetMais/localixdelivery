@@ -65,7 +65,6 @@
 - Observability e EventBus permanecem in-process em v1.0; persistência
   durável fica formalmente registrada como pré-requisito de v1.1.
 
-
 ## 2026-09-24 — DEC-013 — Customer 360 como fonte partner-scoped
 
 - `public.customers` é a raiz comportamental do Customer 360 por restaurante.

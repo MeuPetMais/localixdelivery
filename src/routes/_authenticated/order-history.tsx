@@ -138,7 +138,9 @@ function OrderHistoryPage() {
       </Card>
 
       {isLoading ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">Carregando historico...</Card>
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          Carregando historico...
+        </Card>
       ) : filtered.length === 0 ? (
         <Card className="p-8 text-center">
           <Archive className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
@@ -164,12 +166,15 @@ function OrderHistoryPage() {
                     {order.customer_phone ? ` • ${order.customer_phone}` : ""}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Encerrado em {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
+                    Encerrado em{" "}
+                    {new Date(order.updated_at ?? order.created_at).toLocaleString("pt-BR")}
                   </p>
                 </div>
                 <div className="text-left md:text-right">
                   <p className="font-semibold">{brl(Number(order.total || 0))}</p>
-                  <p className="text-xs text-muted-foreground">{order.payment_method ?? "Pagamento nao informado"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {order.payment_method ?? "Pagamento nao informado"}
+                  </p>
                 </div>
               </div>
             </Card>
@@ -178,7 +183,8 @@ function OrderHistoryPage() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        A janela de 90 dias afeta apenas a consulta operacional. Nenhum registro financeiro ou de auditoria e apagado por esta tela.
+        A janela de 90 dias afeta apenas a consulta operacional. Nenhum registro financeiro ou de
+        auditoria e apagado por esta tela.
       </p>
     </div>
   );

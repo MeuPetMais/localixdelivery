@@ -35,10 +35,20 @@ export const RULE_RESTAURANT_ACTIVE: BusinessRule = {
   category: "ORDER",
   evaluate(ctx) {
     if (ctx.restaurant?.blocked) {
-      return { allowed: false, rule_code: "ORDER_RESTAURANT_BLOCKED", severity: "critical", reason: "Restaurante bloqueado." };
+      return {
+        allowed: false,
+        rule_code: "ORDER_RESTAURANT_BLOCKED",
+        severity: "critical",
+        reason: "Restaurante bloqueado.",
+      };
     }
     if (ctx.restaurant?.active === false) {
-      return { allowed: false, rule_code: "ORDER_RESTAURANT_INACTIVE", severity: "error", reason: "Restaurante inativo." };
+      return {
+        allowed: false,
+        rule_code: "ORDER_RESTAURANT_INACTIVE",
+        severity: "error",
+        reason: "Restaurante inativo.",
+      };
     }
     return { allowed: true, rule_code: "ORDER_RESTAURANT_ACTIVE", severity: "info" };
   },
@@ -71,7 +81,12 @@ export const RULE_RESTAURANT_OPEN: BusinessRule = {
       };
     }
     if (ctx.restaurant?.accepting_orders === false) {
-      return { allowed: false, rule_code: "ORDER_NOT_ACCEPTING", severity: "error", reason: "Restaurante não está aceitando pedidos." };
+      return {
+        allowed: false,
+        rule_code: "ORDER_NOT_ACCEPTING",
+        severity: "error",
+        reason: "Restaurante não está aceitando pedidos.",
+      };
     }
     return { allowed: true, rule_code: "ORDER_RESTAURANT_OPEN", severity: "info" };
   },
@@ -86,7 +101,12 @@ export const RULE_CUSTOMER_NOT_BLOCKED: BusinessRule = {
   category: "ORDER",
   evaluate(ctx) {
     if (ctx.customer?.blocked) {
-      return { allowed: false, rule_code: "ORDER_CUSTOMER_BLOCKED", severity: "critical", reason: "Cliente bloqueado." };
+      return {
+        allowed: false,
+        rule_code: "ORDER_CUSTOMER_BLOCKED",
+        severity: "critical",
+        reason: "Cliente bloqueado.",
+      };
     }
     return { allowed: true, rule_code: "ORDER_CUSTOMER_NOT_BLOCKED", severity: "info" };
   },
@@ -124,7 +144,13 @@ export const RULE_PAYMENT_MAX_WAIT: BusinessRule = {
     const s = ctx.payment?.seconds_since_created ?? 0;
     const max = ctx.payment?.max_wait_seconds ?? 30 * 60;
     if (s > max) {
-      return { allowed: false, rule_code: "ORDER_PAYMENT_MAX_WAIT", severity: "warning", reason: "Tempo de pagamento expirado.", metadata: { s, max } };
+      return {
+        allowed: false,
+        rule_code: "ORDER_PAYMENT_MAX_WAIT",
+        severity: "warning",
+        reason: "Tempo de pagamento expirado.",
+        metadata: { s, max },
+      };
     }
     return { allowed: true, rule_code: "ORDER_PAYMENT_MAX_WAIT", severity: "info" };
   },

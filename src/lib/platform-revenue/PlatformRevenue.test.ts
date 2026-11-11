@@ -15,11 +15,19 @@ describe("PlatformRevenue Domain", () => {
     expect(r.amount).toBe(1.49);
   });
   it("FIXED aplica valor bruto", () => {
-    const p: RevenuePolicy = { ...DEFAULT_POLICY, service_fee_type: "FIXED", service_fee_value: 2.5 };
+    const p: RevenuePolicy = {
+      ...DEFAULT_POLICY,
+      service_fee_type: "FIXED",
+      service_fee_value: 2.5,
+    };
     expect(ServiceFeeService.compute(p, { subtotal: 100 }).amount).toBe(2.5);
   });
   it("PERCENTAGE aplica sobre subtotal", () => {
-    const p: RevenuePolicy = { ...DEFAULT_POLICY, service_fee_type: "PERCENTAGE", service_fee_value: 5 };
+    const p: RevenuePolicy = {
+      ...DEFAULT_POLICY,
+      service_fee_type: "PERCENTAGE",
+      service_fee_value: 5,
+    };
     expect(ServiceFeeService.compute(p, { subtotal: 100 }).amount).toBe(5);
   });
   it("Desativada retorna zero", () => {

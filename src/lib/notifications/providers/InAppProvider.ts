@@ -9,7 +9,10 @@ export class InAppProvider implements NotificationProvider {
   readonly channel = "IN_APP" as const;
   readonly name = "in-app";
 
-  async send(_r: NotificationRecord, rendered: NotificationRenderResult): Promise<ProviderSendResult> {
+  async send(
+    _r: NotificationRecord,
+    rendered: NotificationRenderResult,
+  ): Promise<ProviderSendResult> {
     const start = Date.now();
     return {
       ok: true,

@@ -7,11 +7,16 @@ export const RULE_DELIVERY_MAX_WEIGHT: BusinessRule = {
   priority: 30,
   enabled: true,
   category: "DELIVERY",
-  evaluate(ctx: any) {
+  evaluate(ctx) {
     const w = ctx?.delivery?.weight_kg;
     const max = ctx?.delivery?.max_weight_kg;
     if (w != null && max != null && w > max) {
-      return { allowed: false, rule_code: "DELIVERY_WEIGHT_EXCEEDED", severity: "error", reason: `Peso ${w}kg > máximo ${max}kg.` };
+      return {
+        allowed: false,
+        rule_code: "DELIVERY_WEIGHT_EXCEEDED",
+        severity: "error",
+        reason: `Peso ${w}kg > máximo ${max}kg.`,
+      };
     }
     return { allowed: true, rule_code: "DELIVERY_MAX_WEIGHT", severity: "info" };
   },
@@ -24,11 +29,16 @@ export const RULE_DELIVERY_CAPACITY: BusinessRule = {
   priority: 40,
   enabled: true,
   category: "DELIVERY",
-  evaluate(ctx: any) {
+  evaluate(ctx) {
     const strategy = ctx?.delivery?.strategy;
     const available = ctx?.delivery?.available_drivers ?? 1;
     if ((strategy === "LOCALIX" || strategy === "AUTO") && available <= 0) {
-      return { allowed: false, rule_code: "DELIVERY_NO_DRIVERS", severity: "error", reason: "Nenhum motorista disponível." };
+      return {
+        allowed: false,
+        rule_code: "DELIVERY_NO_DRIVERS",
+        severity: "error",
+        reason: "Nenhum motorista disponível.",
+      };
     }
     return { allowed: true, rule_code: "DELIVERY_CAPACITY", severity: "info" };
   },

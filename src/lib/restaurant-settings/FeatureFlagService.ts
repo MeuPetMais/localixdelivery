@@ -22,7 +22,12 @@ export class FeatureFlagService {
     const next: FeatureFlags = { ...current, [flag]: enabled };
     const result = await this.tenant.update(restaurantId, "features", next, changedBy);
     if (result.ok) {
-      this.bus?.publish({ type: "FeatureFlagChanged", restaurant_id: restaurantId, flag: String(flag), enabled });
+      this.bus?.publish({
+        type: "FeatureFlagChanged",
+        restaurant_id: restaurantId,
+        flag: String(flag),
+        enabled,
+      });
     }
     return result;
   }

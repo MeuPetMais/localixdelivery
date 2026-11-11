@@ -11,7 +11,8 @@ import {
 } from "./support-operations";
 
 const migration = "supabase/migrations/20260805150000_support_operations_sla_notifications.sql";
-const finalMigration = "supabase/migrations/20260805160000_support_knowledge_category_scope_and_sla_cron.sql";
+const finalMigration =
+  "supabase/migrations/20260805160000_support_knowledge_category_scope_and_sla_cron.sql";
 const adminRpcMigration = "supabase/migrations/20260805170000_support_admin_controlled_rpcs.sql";
 const adminKnowledgeRoute = "src/routes/admin.knowledge.tsx";
 const internalBell = "src/components/admin/InternalNotificationsBell.tsx";
@@ -56,11 +57,14 @@ describe("support operations domain", () => {
   });
 
   it("renders quick replies with safe variables", () => {
-    const rendered = renderQuickReply("Ola {{restaurant_name}}, chamado #{{ticket_number}} - {{agent_name}}", {
-      restaurantName: "Padaria Central",
-      ticketNumber: 1020,
-      agentName: "Ana",
-    });
+    const rendered = renderQuickReply(
+      "Ola {{restaurant_name}}, chamado #{{ticket_number}} - {{agent_name}}",
+      {
+        restaurantName: "Padaria Central",
+        ticketNumber: 1020,
+        agentName: "Ana",
+      },
+    );
     expect(rendered).toBe("Ola Padaria Central, chamado #1020 - Ana");
   });
 
@@ -70,8 +74,20 @@ describe("support operations domain", () => {
 
   it("suggests only published knowledge articles", () => {
     const result = suggestKnowledgeArticles("impressora pedido", [
-      { id: "draft", title: "Impressora interna", content: "pedido", category: "impressao", published: false },
-      { id: "published", title: "Configurar impressora", content: "pedidos nao imprimem", category: "impressao", published: true },
+      {
+        id: "draft",
+        title: "Impressora interna",
+        content: "pedido",
+        category: "impressao",
+        published: false,
+      },
+      {
+        id: "published",
+        title: "Configurar impressora",
+        content: "pedidos nao imprimem",
+        category: "impressao",
+        published: true,
+      },
     ]);
     expect(result.map((article) => article.id)).toEqual(["published"]);
   });
@@ -139,7 +155,9 @@ describe("support final hardening migration contract", () => {
   const sql = readFileSync(finalMigration, "utf8");
 
   it("enforces category-scoped RLS for direct URL and manual calls", () => {
-    expect(sql).toContain("public.can_access_support_category(auth.uid(), support_tickets.category)");
+    expect(sql).toContain(
+      "public.can_access_support_category(auth.uid(), support_tickets.category)",
+    );
     expect(sql).toContain("public.can_access_support_category(auth.uid(), t.category)");
     expect(sql).toContain("AND _category = ANY(stm.allowed_categories)");
   });
@@ -179,7 +197,7 @@ describe("support knowledge and internal notifications UI contract", () => {
   const bell = readFileSync(internalBell, "utf8");
 
   it("implements administrative CRUD for knowledge articles", () => {
-    expect(route).toContain("createFileRoute(\"/admin/knowledge\")");
+    expect(route).toContain('createFileRoute("/admin/knowledge")');
     expect(route).toContain("listKnowledgeArticlesAdmin");
     expect(route).toContain("saveKnowledgeArticleAdmin");
     expect(route).toContain("updateKnowledgeArticleStatusAdmin");
@@ -190,7 +208,7 @@ describe("support knowledge and internal notifications UI contract", () => {
     expect(bell).toContain("listInternalNotifications");
     expect(bell).toContain("markInternalNotificationRead");
     expect(bell).toContain("payload_json?.ticket_id");
-    expect(bell).toContain("to=\"/admin/support/$ticketId\"");
+    expect(bell).toContain('to="/admin/support/$ticketId"');
   });
 });
 
@@ -231,7 +249,9 @@ describe("support operations migration contract", () => {
 
   it("keeps SLA notifications scheduled by a service-role function", () => {
     expect(sql).toContain("enqueue_support_sla_notifications");
-    expect(sql).toContain("GRANT EXECUTE ON FUNCTION public.enqueue_support_sla_notifications(timestamptz) TO service_role");
+    expect(sql).toContain(
+      "GRANT EXECUTE ON FUNCTION public.enqueue_support_sla_notifications(timestamptz) TO service_role",
+    );
   });
 });
 
@@ -258,7 +278,9 @@ describe("controlled support admin RPC contract", () => {
   });
 
   it("supports internal notes without bypassing actor validation", () => {
-    expect(sql).toContain("_action := CASE WHEN _internal_note THEN 'internal_note' ELSE 'reply' END");
+    expect(sql).toContain(
+      "_action := CASE WHEN _internal_note THEN 'internal_note' ELSE 'reply' END",
+    );
     expect(sql).toContain("COALESCE(_internal_note, false)");
     expect(sql).toContain("'ticket.internal_note.created'");
   });
@@ -294,7 +316,9 @@ describe("controlled support admin RPC contract", () => {
     expect(sql).not.toContain("auth.role() = 'service_role'");
     expect(sql).toContain("current_setting('localix.support_admin_actor', true)");
     expect(sql).toContain("public.support_admin_context_is_valid()");
-    expect(sql).toContain("PERFORM set_config('localix.support_admin_actor', _actor_user_id::text, true)");
+    expect(sql).toContain(
+      "PERFORM set_config('localix.support_admin_actor', _actor_user_id::text, true)",
+    );
   });
 
   it("keeps resolver and reopen status rules in the controlled RPC", () => {
@@ -315,6 +339,8 @@ describe("controlled support admin RPC contract", () => {
   it("routes take and assign server functions through controlled RPCs", () => {
     expect(functionsSource).toContain('rpc("support_admin_take_ticket"');
     expect(functionsSource).toContain('rpc("support_admin_assign_ticket"');
-    expect(functionsSource).not.toContain('.update({ assigned_to: context.userId, status: "em_analise" })');
+    expect(functionsSource).not.toContain(
+      '.update({ assigned_to: context.userId, status: "em_analise" })',
+    );
   });
 });

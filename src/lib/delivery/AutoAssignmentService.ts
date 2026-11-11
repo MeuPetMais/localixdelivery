@@ -48,7 +48,12 @@ export interface AutoAssignState {
 
 export interface AutoAssignResult {
   ok: boolean;
-  reason: "ASSIGNED" | "ALREADY_ASSIGNED" | "ORDER_NOT_ELIGIBLE" | "NO_DRIVER_AVAILABLE" | "ORDER_NOT_FOUND";
+  reason:
+    | "ASSIGNED"
+    | "ALREADY_ASSIGNED"
+    | "ORDER_NOT_ELIGIBLE"
+    | "NO_DRIVER_AVAILABLE"
+    | "ORDER_NOT_FOUND";
   assignment?: AutoAssignAssignment;
 }
 
@@ -153,7 +158,10 @@ export function createAutoAssignmentService(state: AutoAssignState) {
     const driver = state.drivers.find((d) => d.id === assignment.driverId);
     if (driver) driver.returning = true;
     const queueRow = state.queue.find(
-      (q) => q.restaurantId === assignment.restaurantId && q.driverId === assignment.driverId && q.status === "EM_ENTREGA",
+      (q) =>
+        q.restaurantId === assignment.restaurantId &&
+        q.driverId === assignment.driverId &&
+        q.status === "EM_ENTREGA",
     );
     if (queueRow) queueRow.status = "RETORNANDO";
   }
@@ -162,7 +170,9 @@ export function createAutoAssignmentService(state: AutoAssignState) {
     const driver = state.drivers.find((d) => d.id === driverId);
     if (driver) driver.returning = false;
     state.queue
-      .filter((q) => q.restaurantId === restaurantId && q.driverId === driverId && q.status !== "INATIVO")
+      .filter(
+        (q) => q.restaurantId === restaurantId && q.driverId === driverId && q.status !== "INATIVO",
+      )
       .forEach((q) => {
         q.status = "INATIVO";
         q.position = 0;

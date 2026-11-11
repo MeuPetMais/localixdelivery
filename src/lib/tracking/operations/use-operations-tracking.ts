@@ -16,16 +16,21 @@ export function useOperationsTracking(restaurantId: string | undefined) {
   const query = useQuery({
     queryKey,
     enabled: !!restaurantId,
-    queryFn: async (): Promise<OperationsDashboardData> => fn({ data: { restaurantId: restaurantId! } }),
+    queryFn: async (): Promise<OperationsDashboardData> =>
+      fn({ data: { restaurantId: restaurantId! } }),
     staleTime: 15_000,
   });
 
   useEffect(() => {
     if (!restaurantId) return;
     const off = subscribeRestaurantTracking(restaurantId, {
-      onUpdate: () => { void qc.invalidateQueries({ queryKey }); },
+      onUpdate: () => {
+        void qc.invalidateQueries({ queryKey });
+      },
     });
-    return () => { off(); };
+    return () => {
+      off();
+    };
   }, [restaurantId, qc]);
 
   return query;

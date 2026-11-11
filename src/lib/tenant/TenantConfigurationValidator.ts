@@ -14,7 +14,10 @@ const HHMM = /^\d{2}:\d{2}$/;
 const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const ALLOWED_GATEWAYS = new Set(["mercado_pago", "stripe", "manual"]);
 
-export function validateGroup<G extends ConfigGroup>(group: G, value: GroupPayload<G>): ValidationResult {
+export function validateGroup<G extends ConfigGroup>(
+  group: G,
+  value: GroupPayload<G>,
+): ValidationResult {
   const issues: ValidationIssue[] = [];
   const v = value as any;
 
@@ -28,14 +31,22 @@ export function validateGroup<G extends ConfigGroup>(group: G, value: GroupPaylo
       if (!ALLOWED_GATEWAYS.has(v.default_gateway))
         issues.push({ field: "default_gateway", message: "Gateway inválido" });
       if (v.delivery_fee < 0) issues.push({ field: "delivery_fee", message: "Deve ser ≥ 0" });
-      if (v.free_delivery_enabled && (v.free_delivery_minimum == null || v.free_delivery_minimum <= 0))
-        issues.push({ field: "free_delivery_minimum", message: "Obrigatório quando frete grátis está ativo" });
+      if (
+        v.free_delivery_enabled &&
+        (v.free_delivery_minimum == null || v.free_delivery_minimum <= 0)
+      )
+        issues.push({
+          field: "free_delivery_minimum",
+          message: "Obrigatório quando frete grátis está ativo",
+        });
       break;
     case "delivery":
       if (v.delivery_radius_km <= 0 || v.delivery_radius_km > 100)
         issues.push({ field: "delivery_radius_km", message: "Entre 0.1 e 100" });
-      if (v.estimated_preparation_time < 0) issues.push({ field: "estimated_preparation_time", message: "≥ 0" });
-      if (v.estimated_delivery_time < 0) issues.push({ field: "estimated_delivery_time", message: "≥ 0" });
+      if (v.estimated_preparation_time < 0)
+        issues.push({ field: "estimated_preparation_time", message: "≥ 0" });
+      if (v.estimated_delivery_time < 0)
+        issues.push({ field: "estimated_delivery_time", message: "≥ 0" });
       if (v.maximum_simultaneous_orders < 1)
         issues.push({ field: "maximum_simultaneous_orders", message: "≥ 1" });
       break;

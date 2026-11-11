@@ -1,7 +1,7 @@
 export type AddressSuggestion = {
   id: string;
-  label: string;      // linha principal ex.: "Avenida Paulista, 1578"
-  secondary: string;  // "Bela Vista - São Paulo/SP"
+  label: string; // linha principal ex.: "Avenida Paulista, 1578"
+  secondary: string; // "Bela Vista - São Paulo/SP"
   raw?: unknown;
 };
 

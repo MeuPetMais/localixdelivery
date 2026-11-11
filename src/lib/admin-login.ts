@@ -10,14 +10,23 @@ export type AdminLoginSupabase = {
       };
       error?: unknown;
     }>;
-    setSession: (session: { access_token: string; refresh_token: string }) => Promise<{ error?: unknown }>;
+    setSession: (session: {
+      access_token: string;
+      refresh_token: string;
+    }) => Promise<{ error?: unknown }>;
     signOut: () => Promise<unknown>;
   };
   from: (table: "user_roles") => {
     select: (columns: "role") => {
-      eq: (column: string, value: string) => {
-        eq: (column: string, value: "admin") => {
-          maybeSingle: () => Promise<{ data?: { role: string } | null; error?: unknown }>;
+      eq: (
+        column: string,
+        value: string,
+      ) => {
+        eq: (
+          column: string,
+          value: "admin",
+        ) => {
+          maybeSingle: () => PromiseLike<{ data?: { role: string } | null; error?: unknown }>;
         };
       };
     };
@@ -26,7 +35,10 @@ export type AdminLoginSupabase = {
 
 export type AdminLoginResult =
   | { ok: true; userId: string }
-  | { ok: false; reason: "invalid_credentials" | "invalid_session" | "authorization_error" | "forbidden" };
+  | {
+      ok: false;
+      reason: "invalid_credentials" | "invalid_session" | "authorization_error" | "forbidden";
+    };
 
 export async function validateAdminLogin(
   supabaseClient: AdminLoginSupabase,

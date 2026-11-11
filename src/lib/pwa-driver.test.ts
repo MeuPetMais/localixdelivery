@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  isChromeAndroid,
-  isInstallSupported,
-  isStandaloneDisplay,
-} from "./pwa-driver";
+import { isChromeAndroid, isInstallSupported, isStandaloneDisplay } from "./pwa-driver";
 
 const originalWindow = globalThis.window;
 
@@ -13,7 +9,11 @@ function setWindow(input: {
   navigatorStandalone?: boolean;
   beforeInstallPromptProperty?: boolean;
 }) {
-  const win: any = {
+  const win: {
+    navigator: { userAgent: string; standalone?: boolean };
+    matchMedia: () => { matches: boolean };
+    onbeforeinstallprompt?: null;
+  } = {
     navigator: {
       userAgent: input.userAgent,
       standalone: input.navigatorStandalone,

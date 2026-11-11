@@ -247,7 +247,8 @@ type EditorGroup = Omit<Group, "min_select" | "max_select" | "builder_options"> 
   max_select: number | string;
   builder_options: EditorOption[];
 };
-type EditorBuilder = Omit<Builder, "base_price" | "builder_groups"> & {
+type EditorBuilder = Omit<Builder, "base_price" | "builder_groups" | "restaurant_id"> & {
+  restaurant_id: string;
   base_price: number | string;
   is_active?: boolean | null;
   position?: number | null;
@@ -306,7 +307,7 @@ function BuildersPage() {
       const { data: menuItems, error: menuError } = await supabase
         .from("menu_items")
         .select(
-          "id,name,price,promo_price,promo_starts_at,promo_ends_at,recurrence_days,recurrence_start_time,recurrence_end_time,is_active,is_available,is_paused",
+          "id,restaurant_id,name,price,promo_price,promo_starts_at,promo_ends_at,recurrence_days,recurrence_start_time,recurrence_end_time,is_active,is_available,is_paused",
         )
         .in("id", menuItemIds);
       if (menuError) throw menuError;
@@ -411,7 +412,7 @@ function BuildersPage() {
         emoji: b.emoji,
         description: b.description,
         image_url: b.image_url,
-        base_price: b.base_price,
+        base_price: parseBuilderCurrencyInput(b.base_price),
         position: (builders?.length ?? 0) + 1,
       })
       .select("id")
@@ -423,8 +424,8 @@ function BuildersPage() {
         .insert({
           builder_id: nb.id,
           name: g.name,
-          min_select: g.min_select,
-          max_select: g.max_select,
+          min_select: Number(g.min_select),
+          max_select: Number(g.max_select),
           is_required: g.is_required,
           position: g.position,
           source_type: g.source_type ?? "MANUAL",
@@ -436,8 +437,8 @@ function BuildersPage() {
       const opts = (g.builder_options ?? []).map((o) => ({
         group_id: ng.id,
         name: o.name,
-        price_delta: o.price_delta,
-        max_qty: o.max_qty,
+        price_delta: parseBuilderCurrencyInput(o.price_delta),
+        max_qty: Number(o.max_qty),
         position: o.position,
         menu_item_id: o.menu_item_id ?? null,
       }));
@@ -661,6 +662,7 @@ function BuilderEditor({
   };
 
   function validate(): string | null {
+    if (!form) return "Modelo não carregado.";
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
       return "O Preço Inicial não pode ser negativo.";
@@ -683,13 +685,13 @@ function BuilderEditor({
         return `Na etapa "${g.name}", o mínimo (${min}) não pode ser maior que o máximo (${max}).`;
       if (g.is_required && savedOptions.length === 0)
         return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
-      if (g.is_required && min < 1)
-        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
 
   function validateAllForConclude(): string | null {
+    if (!form) return "Modelo não carregado.";
     if (!form.name?.trim()) return "Informe um nome para o modelo.";
     if (parseBuilderCurrencyInput(form.base_price) < 0)
       return "O Preço Inicial não pode ser negativo.";
@@ -714,13 +716,13 @@ function BuilderEditor({
       }
       if (g.is_required && options.length === 0)
         return `A etapa obrigatória "${g.name}" precisa ter ao menos uma opção.`;
-      if (g.is_required && min < 1)
-        return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
+      if (g.is_required && min < 1) return `A etapa obrigatória "${g.name}" precisa de mínimo ≥ 1.`;
     }
     return null;
   }
 
   async function saveMeta() {
+    if (!form || !builder) return;
     const err = validate();
     if (err) return toast.error(err);
     const { error } = await supabase
@@ -738,6 +740,7 @@ function BuilderEditor({
   }
 
   async function addGroup() {
+    if (!builder) return;
     const { data } = await supabase
       .from("builder_groups")
       .insert({
@@ -750,7 +753,18 @@ function BuilderEditor({
       })
       .select("*")
       .single();
-    if (data) setGroups((g) => [...g, { ...data, builder_options: [] }]);
+    if (data)
+      setGroups((g) => [
+        ...g,
+        {
+          ...data,
+          source_type:
+            data.source_type === "MENU_ITEMS" ? ("MENU_ITEMS" as const) : ("MANUAL" as const),
+          price_strategy:
+            data.price_strategy === "MAX_MENU_ITEM" ? ("MAX_MENU_ITEM" as const) : ("SUM" as const),
+          builder_options: [],
+        },
+      ]);
   }
 
   async function saveGroup(g: EditorGroup) {
@@ -796,9 +810,7 @@ function BuilderEditor({
   async function saveOption(gid: string, o: EditorOption) {
     const group = groups.find((g) => g.id === gid);
     if (isCatalogGroup(group))
-      return toast.error(
-        "Sabores vinculados ao cardápio não podem ser editados manualmente aqui.",
-      );
+      return toast.error("Sabores vinculados ao cardápio não podem ser editados manualmente aqui.");
 
     const name = String(o.name ?? "").trim();
     if (!name || name.toLowerCase() === "nova opção")
@@ -820,8 +832,7 @@ function BuilderEditor({
         })
         .select("*")
         .single();
-      if (error || !data)
-        return toast.error(error?.message ?? "Não foi possível salvar a opção.");
+      if (error || !data) return toast.error(error?.message ?? "Não foi possível salvar a opção.");
       setGroups((gs) =>
         gs.map((g) =>
           g.id === gid
@@ -872,7 +883,7 @@ function BuilderEditor({
   }
 
   async function concludeAndSave() {
-    if (savingAll) return;
+    if (!form || !builder || savingAll) return;
     const validationError = validateAllForConclude();
     if (validationError) return toast.error(validationError);
 
@@ -915,8 +926,7 @@ function BuilderEditor({
               })
               .select("*")
               .single();
-            if (error || !data)
-              throw error ?? new Error("Não foi possível salvar uma das opções.");
+            if (error || !data) throw error ?? new Error("Não foi possível salvar uma das opções.");
             setGroups((gs) =>
               gs.map((group) =>
                 group.id === g.id
@@ -1018,8 +1028,8 @@ function BuilderEditor({
           ) : (
             <>
               <p className="text-muted-foreground">
-                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente
-                + diferenças de preço entre opções (quando existirem).
+                <strong>Preço Final = Preço Inicial</strong> + adicionais escolhidos pelo cliente +
+                diferenças de preço entre opções (quando existirem).
               </p>
               <div className="mt-3 rounded-lg bg-card p-3 font-mono text-xs leading-6">
                 <div className="flex justify-between">
@@ -1142,9 +1152,7 @@ function BuilderEditor({
                       </div>
                       <div className="grid gap-3 sm:grid-cols-[1fr_110px_110px]">
                         <div className="rounded-lg border bg-muted/30 p-2">
-                          <p className="mb-1 text-xs font-bold">
-                            O cliente é obrigado a escolher?
-                          </p>
+                          <p className="mb-1 text-xs font-bold">O cliente é obrigado a escolher?</p>
                           <div className="flex gap-1">
                             <button
                               type="button"
@@ -1245,8 +1253,7 @@ function BuilderEditor({
                           ) : (
                             <p>
                               Cada opção poderá: <strong>✔ não alterar o preço</strong> ou{" "}
-                              <strong>✔ acrescentar um valor ao preço inicial do produto</strong>
-                              .
+                              <strong>✔ acrescentar um valor ao preço inicial do produto</strong>.
                             </p>
                           )}
                         </div>

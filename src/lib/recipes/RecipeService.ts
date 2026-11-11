@@ -1,4 +1,10 @@
-import type { Recipe, RecipeItem, RecipeInput, RecipeItemInput, RecipeVersionSnapshot } from "./types";
+import type {
+  Recipe,
+  RecipeItem,
+  RecipeInput,
+  RecipeItemInput,
+  RecipeVersionSnapshot,
+} from "./types";
 import { validateRecipe } from "./RecipeValidator";
 import { RecipeEventBus } from "./RecipeEventBus";
 import { RecipeCostEngine } from "./RecipeCostEngine";
@@ -9,7 +15,10 @@ export interface RecipeRepository {
   createRecipe(r: Omit<Recipe, "id" | "created_at" | "updated_at">): Promise<Recipe>;
   updateRecipe(id: string, patch: Partial<Recipe>): Promise<Recipe>;
   getRecipe(id: string): Promise<Recipe | null>;
-  listRecipes(restaurantId: string, filter?: { productId?: string; status?: Recipe["status"] }): Promise<Recipe[]>;
+  listRecipes(
+    restaurantId: string,
+    filter?: { productId?: string; status?: Recipe["status"] },
+  ): Promise<Recipe[]>;
   replaceItems(recipeId: string, items: RecipeItemInput[]): Promise<RecipeItem[]>;
   listItems(recipeId: string): Promise<RecipeItem[]>;
   saveVersion(v: Omit<RecipeVersionSnapshot, "id" | "created_at">): Promise<RecipeVersionSnapshot>;
@@ -25,7 +34,9 @@ export interface CreateRecipeDeps {
   inventory?: InventoryService;
 }
 
-function nowIso() { return new Date().toISOString(); }
+function nowIso() {
+  return new Date().toISOString();
+}
 
 export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
   async function snapshot(recipe: Recipe, changedBy?: string, reason?: string) {
@@ -76,7 +87,11 @@ export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
       RecipeEventBus.emit({ name: "RecipeCreated", recipeId: recipe.id, at: nowIso() });
       return recipe;
     },
-    async update(id: string, patch: Partial<RecipeInput>, opts: { performedBy?: string; reason?: string } = {}) {
+    async update(
+      id: string,
+      patch: Partial<RecipeInput>,
+      opts: { performedBy?: string; reason?: string } = {},
+    ) {
       const current = await repo.getRecipe(id);
       if (!current) throw new Error("Recipe not found");
       if (patch.items) {
@@ -91,7 +106,9 @@ export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
         ...(patch.product_id !== undefined ? { product_id: patch.product_id } : {}),
         ...(patch.yield_quantity !== undefined ? { yield_quantity: patch.yield_quantity } : {}),
         ...(patch.yield_unit !== undefined ? { yield_unit: patch.yield_unit } : {}),
-        ...(patch.preparation_time !== undefined ? { preparation_time: patch.preparation_time } : {}),
+        ...(patch.preparation_time !== undefined
+          ? { preparation_time: patch.preparation_time }
+          : {}),
         ...(patch.variation_key !== undefined ? { variation_key: patch.variation_key } : {}),
         ...(patch.metadata !== undefined ? { metadata: patch.metadata } : {}),
         version: nextVersion,
@@ -103,35 +120,52 @@ export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
       RecipeEventBus.emit({ name: "RecipeCostChanged", recipeId: id, at: nowIso() });
       return updated;
     },
-    async duplicate(id: string, overrides: Partial<RecipeInput> = {}, opts: { performedBy?: string } = {}) {
+    async duplicate(
+      id: string,
+      overrides: Partial<RecipeInput> = {},
+      opts: { performedBy?: string } = {},
+    ) {
       const cur = await repo.getRecipe(id);
       if (!cur) throw new Error("Recipe not found");
       const items = await repo.listItems(id);
-      return this.create({
-        restaurant_id: cur.restaurant_id,
-        product_id: overrides.product_id ?? cur.product_id,
-        name: overrides.name ?? `${cur.name} (cópia)`,
-        description: overrides.description ?? cur.description,
-        yield_quantity: overrides.yield_quantity ?? cur.yield_quantity,
-        yield_unit: overrides.yield_unit ?? cur.yield_unit,
-        preparation_time: overrides.preparation_time ?? cur.preparation_time,
-        variation_key: overrides.variation_key ?? cur.variation_key,
-        metadata: overrides.metadata ?? cur.metadata,
-        items: overrides.items ?? items.map((i) => ({
-          ingredient_id: i.ingredient_id, quantity: Number(i.quantity), unit: i.unit,
-          loss_percentage: Number(i.loss_percentage), optional: i.optional,
-          substitute_of: i.substitute_of, display_order: i.display_order,
-        })),
-      }, opts);
+      return this.create(
+        {
+          restaurant_id: cur.restaurant_id,
+          product_id: overrides.product_id ?? cur.product_id,
+          name: overrides.name ?? `${cur.name} (cópia)`,
+          description: overrides.description ?? cur.description,
+          yield_quantity: overrides.yield_quantity ?? cur.yield_quantity,
+          yield_unit: overrides.yield_unit ?? cur.yield_unit,
+          preparation_time: overrides.preparation_time ?? cur.preparation_time,
+          variation_key: overrides.variation_key ?? cur.variation_key,
+          metadata: overrides.metadata ?? cur.metadata,
+          items:
+            overrides.items ??
+            items.map((i) => ({
+              ingredient_id: i.ingredient_id,
+              quantity: Number(i.quantity),
+              unit: i.unit,
+              loss_percentage: Number(i.loss_percentage),
+              optional: i.optional,
+              substitute_of: i.substitute_of,
+              display_order: i.display_order,
+            })),
+        },
+        opts,
+      );
     },
     async setStatus(id: string, status: Recipe["status"]) {
       const updated = await repo.updateRecipe(id, { status });
       cache.delete(id);
-      if (status === "ACTIVE") RecipeEventBus.emit({ name: "RecipeActivated", recipeId: id, at: nowIso() });
-      if (status === "ARCHIVED") RecipeEventBus.emit({ name: "RecipeArchived", recipeId: id, at: nowIso() });
+      if (status === "ACTIVE")
+        RecipeEventBus.emit({ name: "RecipeActivated", recipeId: id, at: nowIso() });
+      if (status === "ARCHIVED")
+        RecipeEventBus.emit({ name: "RecipeArchived", recipeId: id, at: nowIso() });
       return updated;
     },
-    async versions(id: string) { return repo.listVersions(id); },
+    async versions(id: string) {
+      return repo.listVersions(id);
+    },
     async cost(id: string, price = 0) {
       const c = await this.get(id);
       if (!c) throw new Error("Recipe not found");
@@ -139,7 +173,10 @@ export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
       return RecipeCostEngine.compute(c.recipe, c.items, ings, price);
     },
     /** Consume ingredients via InventoryService when an order is completed. */
-    async consumeForOrder(id: string, opts: { multiplier?: number; orderId?: string; performedBy?: string } = {}) {
+    async consumeForOrder(
+      id: string,
+      opts: { multiplier?: number; orderId?: string; performedBy?: string } = {},
+    ) {
       if (!inventory) throw new Error("InventoryService not wired");
       const c = await this.get(id);
       if (!c) throw new Error("Recipe not found");
@@ -149,18 +186,22 @@ export function createRecipeService({ repo, inventory }: CreateRecipeDeps) {
         const q = Number(it.quantity) * mult;
         const loss = Number(it.loss_percentage ?? 0) / 100;
         const effective = loss > 0 && loss < 1 ? q / (1 - loss) : q;
-        await inventory.decreaseStock({
-          ingredientId: it.ingredient_id,
-          quantity: effective,
-          referenceType: "recipe",
-          referenceId: opts.orderId,
-          performedBy: opts.performedBy,
-          metadata: { recipe_id: id },
-        }, "PRODUCTION");
+        await inventory.decreaseStock(
+          {
+            ingredientId: it.ingredient_id,
+            quantity: effective,
+            referenceType: "recipe",
+            referenceId: opts.orderId,
+            performedBy: opts.performedBy,
+            metadata: { recipe_id: id },
+          },
+          "PRODUCTION",
+        );
       }
     },
     invalidateCache(id?: string) {
-      if (id) cache.delete(id); else cache.clear();
+      if (id) cache.delete(id);
+      else cache.clear();
     },
   };
 }

@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const checkoutSource = readFileSync(
-  resolve(process.cwd(), "src/routes/$slug.index.tsx"),
-  "utf8",
-);
+const checkoutSource = readFileSync(resolve(process.cwd(), "src/routes/$slug.index.tsx"), "utf8");
 
 describe("checkout transparent card phase 1 guards", () => {
   it("botao final fica bloqueado sem token ou durante tokenizacao", () => {

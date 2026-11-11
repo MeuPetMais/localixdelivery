@@ -21,7 +21,10 @@ export interface SimulationResult {
 export const PriceSimulation = {
   run(promotions: Promotion[], ctx: PricingContext, costs: CostLookup): SimulationResult {
     const pricing = DynamicPricingService.apply(promotions, ctx);
-    const totalCost = ctx.lines.reduce((s, l) => s + costs.productCost(l.product_id) * l.quantity, 0);
+    const totalCost = ctx.lines.reduce(
+      (s, l) => s + costs.productCost(l.product_id) * l.quantity,
+      0,
+    );
     const m = MarginEngine.compute(totalCost, pricing.subtotal);
     return {
       original_subtotal: pricing.original_subtotal,

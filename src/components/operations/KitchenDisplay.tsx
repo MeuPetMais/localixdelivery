@@ -15,9 +15,7 @@ export function KitchenDisplay({ cards, onStart, onFinish }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  const active = cards.filter((c) =>
-    ["aceito", "em_preparo", "pronto"].includes(c.status),
-  );
+  const active = cards.filter((c) => ["aceito", "em_preparo", "pronto"].includes(c.status));
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -32,33 +30,49 @@ export function KitchenDisplay({ cards, onStart, onFinish }: Props) {
             <ul className="mt-2 space-y-1 text-sm">
               {(c.items ?? []).map((it) => (
                 <li key={it.id} className="flex justify-between gap-2">
-                  <span>{it.qty}× {it.name}</span>
-                  {it.note && <span className="text-xs italic text-muted-foreground">{it.note}</span>}
+                  <span>
+                    {it.qty}× {it.name}
+                  </span>
+                  {it.note && (
+                    <span className="text-xs italic text-muted-foreground">{it.note}</span>
+                  )}
                 </li>
               ))}
-              {!c.items?.length && <li className="text-xs text-muted-foreground">{c.itemsSummary}</li>}
+              {!c.items?.length && (
+                <li className="text-xs text-muted-foreground">{c.itemsSummary}</li>
+              )}
             </ul>
             {c.observations && (
               <p className="mt-2 rounded-md bg-muted p-2 text-xs">{c.observations}</p>
             )}
             <div className="mt-3 flex gap-2">
               {c.status !== "em_preparo" && c.status !== "pronto" && (
-                <button onClick={() => onStart?.(c)} className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                <button
+                  onClick={() => onStart?.(c)}
+                  className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+                >
                   Iniciar preparo
                 </button>
               )}
               {c.status === "em_preparo" && (
-                <button onClick={() => onFinish?.(c)} className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                <button
+                  onClick={() => onFinish?.(c)}
+                  className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+                >
                   Finalizar preparo
                 </button>
               )}
-              {c.status === "pronto" && <span className="text-xs font-medium text-primary">Pronto</span>}
+              {c.status === "pronto" && (
+                <span className="text-xs font-medium text-primary">Pronto</span>
+              )}
             </div>
           </div>
         );
       })}
       {active.length === 0 && (
-        <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Sem pedidos ativos.</p>
+        <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+          Sem pedidos ativos.
+        </p>
       )}
     </div>
   );

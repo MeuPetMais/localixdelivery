@@ -70,6 +70,10 @@ export interface BusinessRuleContext {
   } | null;
   delivery?: {
     distance_km?: number;
+    weight_kg?: number;
+    max_weight_kg?: number;
+    strategy?: "LOCALIX" | "AUTO" | "RESTAURANT" | "EXTERNAL" | "HYBRID";
+    available_drivers?: number;
     inside_service_area?: boolean;
     available?: boolean;
     fee?: number;

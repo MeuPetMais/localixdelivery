@@ -10,15 +10,15 @@ Supplier → Quotation → PurchaseRequest → PurchaseOrder → Receiving → I
 
 ## Componentes
 
-| Módulo | Responsabilidade |
-|---|---|
-| `PurchasingService` | CRUD fornecedores, requisições (OPEN/APPROVED/REJECTED/ORDERED), cotações |
-| `ReceivingService` | Recebe mercadorias, delega para `InventoryService.increaseStock` e `CostEngine.calculateIngredientCost` (registra lote/validade) |
-| `QuotationEngine` | `best()` (menor preço) e `compare()` (score preço + prazo + qualidade) |
-| `ReplenishmentEngine` | Estoque de segurança, ponto de reposição, quantidade sugerida, pack size |
-| `PurchaseSuggestionEngine` | Lista de compras automática priorizando urgentes |
-| `SupplierRanking` | Preço, entrega no prazo, qualidade, volume |
-| `PurchaseEventBus` | `SupplierCreated`, `SupplierChanged`, `PurchaseRequested`, `PurchaseApproved`, `PurchaseReceived`, `CostUpdated` |
+| Módulo                     | Responsabilidade                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `PurchasingService`        | CRUD fornecedores, requisições (OPEN/APPROVED/REJECTED/ORDERED), cotações                                                        |
+| `ReceivingService`         | Recebe mercadorias, delega para `InventoryService.increaseStock` e `CostEngine.calculateIngredientCost` (registra lote/validade) |
+| `QuotationEngine`          | `best()` (menor preço) e `compare()` (score preço + prazo + qualidade)                                                           |
+| `ReplenishmentEngine`      | Estoque de segurança, ponto de reposição, quantidade sugerida, pack size                                                         |
+| `PurchaseSuggestionEngine` | Lista de compras automática priorizando urgentes                                                                                 |
+| `SupplierRanking`          | Preço, entrega no prazo, qualidade, volume                                                                                       |
+| `PurchaseEventBus`         | `SupplierCreated`, `SupplierChanged`, `PurchaseRequested`, `PurchaseApproved`, `PurchaseReceived`, `CostUpdated`                 |
 
 ## Tabelas
 

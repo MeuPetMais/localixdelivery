@@ -72,7 +72,12 @@ describe("StripeCapabilitiesService", () => {
 
 describe("StripeBalanceService.format", () => {
   it("formata em BRL", () => {
-    const s = StripeBalanceService.format({ available: 12345, pending: 0, reserved: 0, currency: "brl" });
+    const s = StripeBalanceService.format({
+      available: 12345,
+      pending: 0,
+      reserved: 0,
+      currency: "brl",
+    });
     expect(s).toContain("123,45");
   });
 });

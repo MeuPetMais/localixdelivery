@@ -13,11 +13,18 @@ const PHONE_RE = /^\+?\d{8,15}$/;
  * Reused by CustomerService, CustomerAddressService and PreferencesService.
  */
 export const CustomerValidator = {
-  validateProfile(input: Partial<CustomerProfile>, opts?: { requireContact?: boolean }): CustomerValidationResult {
+  validateProfile(
+    input: Partial<CustomerProfile>,
+    opts?: { requireContact?: boolean },
+  ): CustomerValidationResult {
     const issues: CustomerValidationIssue[] = [];
     const requireContact = opts?.requireContact ?? false;
 
-    if (input.full_name !== undefined && input.full_name !== null && String(input.full_name).trim().length < 2) {
+    if (
+      input.full_name !== undefined &&
+      input.full_name !== null &&
+      String(input.full_name).trim().length < 2
+    ) {
       issues.push({ field: "full_name", message: "Nome deve ter ao menos 2 caracteres." });
     }
     if (input.email) {
@@ -38,11 +45,16 @@ export const CustomerValidator = {
   },
 
   validateAddress(input: {
-    label?: string; street?: string; neighborhood?: string; cep?: string | null;
+    label?: string;
+    street?: string;
+    neighborhood?: string;
+    cep?: string | null;
   }): CustomerValidationResult {
     const issues: CustomerValidationIssue[] = [];
-    if (!input.label || input.label.trim().length < 1) issues.push({ field: "label", message: "Rótulo é obrigatório." });
-    if (!input.street || input.street.trim().length < 2) issues.push({ field: "street", message: "Rua é obrigatória." });
+    if (!input.label || input.label.trim().length < 1)
+      issues.push({ field: "label", message: "Rótulo é obrigatório." });
+    if (!input.street || input.street.trim().length < 2)
+      issues.push({ field: "street", message: "Rua é obrigatória." });
     if (!input.neighborhood || input.neighborhood.trim().length < 2) {
       issues.push({ field: "neighborhood", message: "Bairro é obrigatório." });
     }

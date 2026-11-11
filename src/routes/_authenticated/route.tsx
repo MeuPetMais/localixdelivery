@@ -20,13 +20,12 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      throw redirect({ to: "/auth", search: { mode: undefined } as { mode: string | undefined } });
+      throw redirect({ to: "/auth", search: { mode: undefined } });
     }
     // RC2-SEC-001: parceiros/admins só podem acessar via e-mail/senha.
     // Usuários autenticados por Google/Apple (área do cliente) são bloqueados
     // no painel do parceiro e devolvidos à área do cliente.
-    const provider =
-      (data.user.app_metadata?.provider as string | undefined) ?? "email";
+    const provider = (data.user.app_metadata?.provider as string | undefined) ?? "email";
     if (provider !== "email") {
       await supabase.auth.signOut();
       throw redirect({ to: "/entrar" });
@@ -72,7 +71,7 @@ function AuthShell({ userId, userEmail }: { userId: string; userEmail?: string }
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true, search: { mode: undefined } as { mode: string | undefined } });
+    navigate({ to: "/auth", replace: true, search: { mode: undefined } });
   }
 
   return (

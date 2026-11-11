@@ -38,7 +38,7 @@ export async function fetchFavoriteIdsForRestaurant(restaurantId: string) {
     .eq("restaurant_id", restaurantId);
   const items = new Set<string>();
   const builders = new Set<string>();
-  (data ?? []).forEach((r: any) => {
+  (data ?? []).forEach((r) => {
     if (r.item_kind === "menu_item") items.add(r.item_id);
     else builders.add(r.item_id);
   });
@@ -91,35 +91,41 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
   const builderIds = favs.filter((f) => f.item_kind === "builder").map((f) => f.item_id);
 
   const [restRes, itemRes, builderRes] = await Promise.all([
-    (supabase as any)
-      .from("restaurants_public")
-      .select("id, name, slug, logo_url")
-      .in("id", restaurantIds),
+    supabase.from("restaurants_public").select("id, name, slug, logo_url").in("id", restaurantIds),
     menuIds.length
       ? supabase
           .from("menu_items")
-          .select("id, name, description, image_url, price, promo_price, is_available, is_active, category_id")
+          .select(
+            "id, name, description, image_url, price, promo_price, is_available, is_active, category_id",
+          )
           .in("id", menuIds)
-      : Promise.resolve({ data: [] as any[] }),
+      : Promise.resolve({ data: [], error: null }),
     builderIds.length
-      ? (supabase as any)
+      ? supabase
           .from("builders")
           .select("id, name, description, image_url, base_price, is_active")
           .in("id", builderIds)
-      : Promise.resolve({ data: [] as any[] }),
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
+  if (restRes.error) throw restRes.error;
+  if (itemRes.error) throw itemRes.error;
+  if (builderRes.error) throw builderRes.error;
+
   const categoryIds = [
-    ...new Set(((itemRes as any).data ?? []).map((i: any) => i.category_id).filter(Boolean)),
-  ] as string[];
+    ...new Set(
+      (itemRes.data ?? []).map((item) => item.category_id).filter((id): id is string => !!id),
+    ),
+  ];
   const catRes = categoryIds.length
     ? await supabase.from("menu_categories").select("id, name").in("id", categoryIds)
-    : { data: [] as any[] };
+    : { data: [] as Array<{ id: string; name: string }>, error: null };
+  if (catRes.error) throw catRes.error;
 
-  const restMap = new Map<string, any>(((restRes as any).data ?? []).map((r: any) => [r.id, r]));
-  const itemMap = new Map<string, any>(((itemRes as any).data ?? []).map((r: any) => [r.id, r]));
-  const builderMap = new Map<string, any>(((builderRes as any).data ?? []).map((r: any) => [r.id, r]));
-  const catMap = new Map<string, any>(((catRes as any).data ?? []).map((r: any) => [r.id, r]));
+  const restMap = new Map((restRes.data ?? []).map((row) => [row.id, row] as const));
+  const itemMap = new Map((itemRes.data ?? []).map((row) => [row.id, row] as const));
+  const builderMap = new Map((builderRes.data ?? []).map((row) => [row.id, row] as const));
+  const catMap = new Map((catRes.data ?? []).map((row) => [row.id, row] as const));
 
   return favs
     .map((f) => {
@@ -139,7 +145,7 @@ export async function listMyFavoritesEnriched(): Promise<EnrichedFavorite[]> {
           imageUrl: it?.image_url ?? null,
           price: it ? Number(it.price) : null,
           promoPrice: it?.promo_price != null ? Number(it.promo_price) : null,
-          categoryName: it?.category_id ? catMap.get(it.category_id)?.name ?? null : null,
+          categoryName: it?.category_id ? (catMap.get(it.category_id)?.name ?? null) : null,
           restaurantId: rest.id,
           restaurantName: rest.name,
           restaurantSlug: rest.slug,

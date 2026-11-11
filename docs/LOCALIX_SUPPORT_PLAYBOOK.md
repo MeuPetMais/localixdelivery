@@ -163,26 +163,26 @@ v1.0**. Registro de incidentes usa `IncidentCenter`
 
 **Cliente**
 
-- *"Meu pedido não aparece."* Verificar `/meus-pedidos` e confirmar
+- _"Meu pedido não aparece."_ Verificar `/meus-pedidos` e confirmar
   pagamento aprovado. Pedidos sem webhook confirmado não avançam.
-- *"Não consigo fazer login."* Usar `/esqueci-senha` ou trocar de
+- _"Não consigo fazer login."_ Usar `/esqueci-senha` ou trocar de
   provedor (Google/Apple/e-mail).
-- *"Meus pontos não creditaram."* EARN acontece em `pago`/`entregue`.
+- _"Meus pontos não creditaram."_ EARN acontece em `pago`/`entregue`.
   Confirmar o status do pedido.
 
 **Parceiro**
 
-- *"Não consigo entrar com Google/Apple."* Comportamento esperado —
+- _"Não consigo entrar com Google/Apple."_ Comportamento esperado —
   parceiros usam **exclusivamente e-mail/senha**. Orientar `/auth`.
-- *"Stripe não aceita pagamentos."* Verificar
+- _"Stripe não aceita pagamentos."_ Verificar
   `_authenticated/pagamentos` — `charges_enabled` e `payouts_enabled`
   devem estar `true`. Reexecutar sync se necessário.
-- *"Pedido pago não entrou na cozinha."* Verificar
+- _"Pedido pago não entrou na cozinha."_ Verificar
   `payment_webhook_events` para o `event.id` correspondente.
 
 **Administrador**
 
-- *"Preciso remover um parceiro criado por OAuth (legado)."* Seguir
+- _"Preciso remover um parceiro criado por OAuth (legado)."_ Seguir
   procedimento em `docs/RC2_SEC_001_REPORT.md` (transferência de
   `owner_id`).
 
@@ -207,6 +207,7 @@ v1.0**. Registro de incidentes usa `IncidentCenter`
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/LOCALIX_ONBOARDING_PLAYBOOK.md`
 - `docs/LOCALIX_INCIDENT_RUNBOOK.md`
@@ -226,6 +227,7 @@ Consistência conferida contra:
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - Chat/atendimento síncrono in-app com o cliente.
 - Ferramenta externa de ticketing integrada.
 - Conciliação financeira automatizada.

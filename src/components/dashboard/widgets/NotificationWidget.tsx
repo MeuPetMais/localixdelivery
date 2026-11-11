@@ -8,7 +8,13 @@ export interface NotificationSummary {
   at: string;
 }
 
-export function NotificationWidget({ items, unread }: { items: NotificationSummary[]; unread: number }) {
+export function NotificationWidget({
+  items,
+  unread,
+}: {
+  items: NotificationSummary[];
+  unread: number;
+}) {
   return (
     <WidgetCard>
       <WidgetHeader title={`Notificações (${unread} não lidas)`} />

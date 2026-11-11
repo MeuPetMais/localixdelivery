@@ -18,22 +18,22 @@ sempre delegam para `PricingEngine.calculateOrderPricing()`.
    com code `ORDER_BELOW_MINIMUM`).
 3. Escolhe `platformFee`:
    - `subtotal <= 30` → `platform_fee_until_30` (padrão R$ 0,99)
-   - `subtotal > 30`  → `platform_fee_above_30` (padrão R$ 1,49)
+   - `subtotal > 30` → `platform_fee_above_30` (padrão R$ 1,49)
 4. Escolhe `GatewayFeeCalculator` pelo provider informado
    (fallback: `default_gateway`). No Prompt atual, todos retornam 0.
 5. Monta `PricingResult`.
 
 ## Entradas — `PricingInput`
 
-| Campo            | Tipo                            | Obrigatório | Descrição                            |
-| ---------------- | ------------------------------- | ----------- | ------------------------------------ |
-| `subtotal`       | number                          | sim         | Soma dos itens do pedido             |
-| `deliveryFee`    | number                          | não         | Frete                                |
-| `couponDiscount` | number                          | não         | Desconto de cupom                    |
-| `cashback`       | number                          | não         | Cashback aplicado                    |
-| `paymentMethod`  | pix/credit_card/debit_card/cash | não         | Método (usado por gateway calc)      |
-| `provider`       | mercado_pago/pagarme/asaas/stripe | não       | Gateway alvo                         |
-| `restaurantId`   | string                          | não         | Reservado para taxas por parceiro    |
+| Campo            | Tipo                              | Obrigatório | Descrição                         |
+| ---------------- | --------------------------------- | ----------- | --------------------------------- |
+| `subtotal`       | number                            | sim         | Soma dos itens do pedido          |
+| `deliveryFee`    | number                            | não         | Frete                             |
+| `couponDiscount` | number                            | não         | Desconto de cupom                 |
+| `cashback`       | number                            | não         | Cashback aplicado                 |
+| `paymentMethod`  | pix/credit_card/debit_card/cash   | não         | Método (usado por gateway calc)   |
+| `provider`       | mercado_pago/pagarme/asaas/stripe | não         | Gateway alvo                      |
+| `restaurantId`   | string                            | não         | Reservado para taxas por parceiro |
 
 ## Saídas — `PricingResult`
 

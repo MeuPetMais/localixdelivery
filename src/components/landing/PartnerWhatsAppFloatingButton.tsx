@@ -22,7 +22,7 @@ export function buildPartnerWhatsAppUrl(value: unknown): string | null {
 export function PartnerWhatsAppFloatingButton() {
   const href = buildPartnerWhatsAppUrl(import.meta.env[PARTNER_WHATSAPP_ENV]);
   const [isHiddenOnMobileScroll, setIsHiddenOnMobileScroll] = useState(false);
-  const scrollIdleTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const scrollIdleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("matchMedia" in window)) return undefined;
@@ -45,7 +45,10 @@ export function PartnerWhatsAppFloatingButton() {
 
       setIsHiddenOnMobileScroll(true);
       clearScrollIdleTimer();
-      scrollIdleTimerRef.current = window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS);
+      scrollIdleTimerRef.current = window.setTimeout(
+        showButton,
+        PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS,
+      );
     };
     const handleMobileQueryChange = () => {
       if (!mobileQuery.matches) showButton();

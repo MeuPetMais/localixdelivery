@@ -75,20 +75,29 @@ describe("StripeConnectService", () => {
 
   it("propaga erro da edge", async () => {
     invoke.mockResolvedValue({ data: null, error: { message: "boom" } });
-    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow("boom");
+    await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow(
+      "Não foi possível concluir a operação com a Stripe.",
+    );
   });
 
   it("propaga erro semântico do payload", async () => {
     invoke.mockResolvedValue({ data: { error: "restaurant_not_found" }, error: null });
     await expect(StripeConnectService.refreshAccount("r1")).rejects.toThrow(
-      "restaurant_not_found",
+      "Restaurante não encontrado.",
     );
   });
 });
 
 describe("PaymentsReadinessService", () => {
-  function mockRestaurant(row: any) {
-    (supabase.from as any).mockReturnValue({
+  function mockRestaurant(row: {
+    stripe_account_id?: string | null;
+    stripe_account_status?: string | null;
+    stripe_charges_enabled?: boolean;
+    stripe_payouts_enabled?: boolean;
+    stripe_details_submitted?: boolean;
+    [key: string]: unknown;
+  }) {
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       select: () => ({
         eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }),
       }),

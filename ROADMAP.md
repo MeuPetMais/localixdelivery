@@ -18,7 +18,6 @@
 - Fluxo de refund via UI
 - Tracking Retention Policy (RC5.3.x.3): preview implementado, executor administrativo pendente
 
-
 ## 🔵 Médio prazo
 
 - App mobile do parceiro (React Native)

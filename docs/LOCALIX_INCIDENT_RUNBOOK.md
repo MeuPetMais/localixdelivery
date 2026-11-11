@@ -69,10 +69,11 @@ na v1.0**.
   Guard em `admin.tsx` bloqueia OAuth.
 
 Sintomas comuns e ação:
-- *Parceiro logou via Google/Apple.* Guard esperado — redireciona para
+
+- _Parceiro logou via Google/Apple._ Guard esperado — redireciona para
   `/entrar`. Ver `docs/RC2_SEC_001_REPORT.md` para procedimento de
   transferência de `owner_id` quando houver conta invalida legada.
-- *Sessão expira em rota autenticada.* Revalidação por `restaurant_id`
+- _Sessão expira em rota autenticada._ Revalidação por `restaurant_id`
   no `RestaurantSessionContext` (não limpar contexto).
 
 MFA para administradores: **Não implementado na v1.0** (v1.1).
@@ -97,6 +98,7 @@ MFA para administradores: **Não implementado na v1.0** (v1.1).
   implementado na v1.0**).
 
 Fluxo padrão:
+
 1. Verificar `stripe-webhook` logs para o `event.id`.
 2. Consultar `payment_webhook_events` (status, tentativas).
 3. Se dedupe travando: identificar `event.id` e revalidar assinatura.
@@ -131,9 +133,10 @@ Regra invariante: pedido **nunca** regressa para `novo`.
 - **Expiração.** Job `loyalty_expire_points`.
 
 Sintomas:
-- *EARN duplicado.* Verificar dedupe key; consultar tabela de
+
+- _EARN duplicado._ Verificar dedupe key; consultar tabela de
   transações loyalty.
-- *REDEEM sem reversão.* Confirmar transição do pedido para
+- _REDEEM sem reversão._ Confirmar transição do pedido para
   `cancelado`; job de rollback é acionado pelo orchestrator.
 
 ---
@@ -221,6 +224,7 @@ transacional dedicado a incidentes): **Não implementado na v1.0**.
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/LOCALIX_ONBOARDING_PLAYBOOK.md`
 - `docs/ARCHITECTURE_BASELINE.md`
@@ -241,6 +245,7 @@ migrations recentes.
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - SLA externo publicado.
 - Ferramenta de paging externa (PagerDuty/Opsgenie).
 - Alertas proativos externos.

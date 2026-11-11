@@ -3,13 +3,13 @@
 Este módulo será o único ponto de integração com gateways de pagamento
 (Mercado Pago no primeiro momento). Está sendo construído em etapas:
 
-| Prompt | Escopo |
-|--------|--------|
+| Prompt                | Escopo                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------- |
 | **1 — Infra (atual)** | Migrations, tipos, repositórios e `PaymentService` vazio. Nada é chamado pelo checkout ainda. |
-| 2 | Conexão OAuth do restaurante com o Mercado Pago. |
-| 3 | Painel administrativo de taxas (`platform_fees`). |
-| 4 | UI de checkout com resumo financeiro (Pix / Cartão). |
-| 5 | Criação real de pagamentos no Mercado Pago (Payment Intent, QR Code). |
+| 2                     | Conexão OAuth do restaurante com o Mercado Pago.                                              |
+| 3                     | Painel administrativo de taxas (`platform_fees`).                                             |
+| 4                     | UI de checkout com resumo financeiro (Pix / Cartão).                                          |
+| 5                     | Criação real de pagamentos no Mercado Pago (Payment Intent, QR Code).                         |
 
 ## Tabelas
 

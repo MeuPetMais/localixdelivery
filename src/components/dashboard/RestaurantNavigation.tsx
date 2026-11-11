@@ -37,8 +37,7 @@ export function RestaurantNavigation({ role, workspace, collapsed, onNavigate }:
   );
 
   const activeGroupId = useMemo(
-    () =>
-      sections.find((s) => s.children?.some((c) => isActive(c.to)))?.id ?? null,
+    () => sections.find((s) => s.children?.some((c) => isActive(c.to)))?.id ?? null,
     [sections, isActive],
   );
 
@@ -144,9 +143,7 @@ function AccordionGroup({
         className={cn(
           "group flex items-center justify-between rounded-lg px-3 py-3 text-xs font-semibold uppercase tracking-wide transition-colors",
           "hover:bg-muted",
-          isOpen || hasActiveChild
-            ? "bg-muted/60 text-foreground"
-            : "text-muted-foreground",
+          isOpen || hasActiveChild ? "bg-muted/60 text-foreground" : "text-muted-foreground",
         )}
       >
         <span className="truncate">{section.label}</span>
@@ -205,9 +202,7 @@ function Leaf({
       className={cn(
         "flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm transition-colors",
         "hover:bg-muted",
-        active
-          ? "bg-primary/10 font-medium text-primary"
-          : "text-foreground/80",
+        active ? "bg-primary/10 font-medium text-primary" : "text-foreground/80",
       )}
     >
       {!collapsed && <span className="truncate">{item.label}</span>}

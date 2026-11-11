@@ -8,13 +8,13 @@ Workers). Pagamentos via **Stripe Connect Express** com split automático.
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| UI | React 19, TanStack Router/Query, Tailwind v4, shadcn/ui |
-| Server | TanStack Start server functions (Cloudflare Workers) |
-| Backend | Lovable Cloud (Postgres + Auth + Storage + Edge Functions) |
-| Pagamentos | Stripe Connect Express (split), Mercado Pago (legado) |
-| IA | Lovable AI Gateway |
+| Camada     | Tecnologia                                                 |
+| ---------- | ---------------------------------------------------------- |
+| UI         | React 19, TanStack Router/Query, Tailwind v4, shadcn/ui    |
+| Server     | TanStack Start server functions (Cloudflare Workers)       |
+| Backend    | Lovable Cloud (Postgres + Auth + Storage + Edge Functions) |
+| Pagamentos | Stripe Connect Express (split), Mercado Pago (legado)      |
+| IA         | Lovable AI Gateway                                         |
 
 ## Como rodar
 
@@ -30,11 +30,11 @@ bun run lint           # ESLint
 Ver [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) e
 [`docs/OPERATIONS_MANUAL.md`](docs/OPERATIONS_MANUAL.md).
 
-| Ambiente | URL |
-|---|---|
-| DEV | preview Lovable (`id-preview--*.lovable.app`) |
-| STAGING | `project--<id>-dev.lovable.app` |
-| PROD | `localixdelivery.lovable.app` (+ domínio custom) |
+| Ambiente | URL                                              |
+| -------- | ------------------------------------------------ |
+| DEV      | preview Lovable (`id-preview--*.lovable.app`)    |
+| STAGING  | `project--<id>-dev.lovable.app`                  |
+| PROD     | `localixdelivery.lovable.app` (+ domínio custom) |
 
 ## Documentação
 

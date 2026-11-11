@@ -16,10 +16,12 @@ export const getAdminMetrics = createServerFn({ method: "GET" })
     if (roleError) throw new Error(roleError.message);
     if (!adminRow) throw new Error("Forbidden");
 
-
     const [restaurantsTotal, restaurantsActive, ordersAll] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("restaurants").select("id", { count: "exact", head: true }).eq("is_open", true),
+      supabaseAdmin
+        .from("restaurants")
+        .select("id", { count: "exact", head: true })
+        .eq("is_open", true),
       supabaseAdmin.from("orders").select("total, status, created_at, restaurant_id"),
     ]);
 

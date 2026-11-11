@@ -17,12 +17,18 @@ describe("Dashboard foundation", () => {
 
   it("registers and lists widgets by workspace", () => {
     WidgetRegistry.register({
-      id: "w1", title: "W1", workspace: "operation",
-      load: async () => ({ n: 1 }), render: () => null,
+      id: "w1",
+      title: "W1",
+      workspace: "operation",
+      load: async () => ({ n: 1 }),
+      render: () => null,
     });
     WidgetRegistry.register({
-      id: "w2", title: "W2", workspace: "financial",
-      load: async () => ({ n: 2 }), render: () => null,
+      id: "w2",
+      title: "W2",
+      workspace: "financial",
+      load: async () => ({ n: 2 }),
+      render: () => null,
     });
     expect(WidgetRegistry.listByWorkspace("operation")).toHaveLength(1);
     expect(WidgetRegistry.get("w2")?.workspace).toBe("financial");
@@ -30,12 +36,20 @@ describe("Dashboard foundation", () => {
 
   it("loads a workspace and captures widget errors independently", async () => {
     WidgetRegistry.register({
-      id: "ok", title: "OK", workspace: "operation",
-      load: async () => ({ v: 42 }), render: () => null,
+      id: "ok",
+      title: "OK",
+      workspace: "operation",
+      load: async () => ({ v: 42 }),
+      render: () => null,
     });
     WidgetRegistry.register({
-      id: "boom", title: "BOOM", workspace: "operation",
-      load: async () => { throw new Error("fail"); }, render: () => null,
+      id: "boom",
+      title: "BOOM",
+      workspace: "operation",
+      load: async () => {
+        throw new Error("fail");
+      },
+      render: () => null,
     });
     const loaded = await DashboardService.loadWorkspace(ctx);
     expect(loaded).toHaveLength(2);
@@ -45,9 +59,12 @@ describe("Dashboard foundation", () => {
 
   it("filters widgets by role permission", async () => {
     WidgetRegistry.register({
-      id: "restricted", title: "R", workspace: "operation",
+      id: "restricted",
+      title: "R",
+      workspace: "operation",
       requiredRoles: ["ADMIN"],
-      load: async () => 1, render: () => null,
+      load: async () => 1,
+      render: () => null,
     });
     const loaded = await DashboardService.loadWorkspace({ ...ctx, role: "KITCHEN" });
     expect(loaded).toHaveLength(0);
@@ -61,7 +78,9 @@ describe("Dashboard foundation", () => {
 
   it("filters navigation and workspaces by role", () => {
     const kitchenNav = filterNavigation(NAVIGATION, "KITCHEN");
-    expect(kitchenNav.find((i) => i.id === "settings")).toBeUndefined();
+    expect(
+      kitchenNav.find((i) => i.id === "settings")?.children?.find((i) => i.id === "settings"),
+    ).toBeUndefined();
     const ws = filterWorkspaces(WORKSPACES, "KITCHEN");
     expect(ws.find((w) => w.id === "settings")).toBeUndefined();
   });

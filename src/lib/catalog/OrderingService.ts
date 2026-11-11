@@ -27,7 +27,9 @@ export const OrderingService = {
       case "most_profitable":
         return arr.sort((a, b) => (b.profitAmount ?? 0) - (a.profitAmount ?? 0));
       case "recent":
-        return arr.sort((a, b) => (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0));
+        return arr.sort(
+          (a, b) => (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0),
+        );
       case "ai":
         return arr.sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0));
       case "manual":

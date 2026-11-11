@@ -25,23 +25,36 @@ export function buildAlerts(
 
     if (!c.paymentApproved && c.status === "aguardando_pagamento" && ageMin > 10) {
       alerts.push({
-        id: `pay-${c.id}`, type: "PAYMENT_PENDING",
+        id: `pay-${c.id}`,
+        type: "PAYMENT_PENDING",
         message: `Pagamento pendente • pedido ${c.number}`,
-        severity: "warn", orderId: c.id, at: new Date(now).toISOString(),
+        severity: "warn",
+        orderId: c.id,
+        at: new Date(now).toISOString(),
       });
     }
     if (ageMin > LATE_THRESHOLD_MIN && !["entregue", "concluido", "cancelado"].includes(c.status)) {
       alerts.push({
-        id: `late-${c.id}`, type: "LATE_ORDER",
+        id: `late-${c.id}`,
+        type: "LATE_ORDER",
         message: `Pedido ${c.number} atrasado (${Math.round(ageMin)}min)`,
-        severity: "critical", orderId: c.id, at: new Date(now).toISOString(),
+        severity: "critical",
+        orderId: c.id,
+        at: new Date(now).toISOString(),
       });
     }
-    if (c.status === "saiu_para_entrega" && c.etaMinutes && ageMin > c.etaMinutes + DRIVER_LATE_MIN) {
+    if (
+      c.status === "saiu_para_entrega" &&
+      c.etaMinutes &&
+      ageMin > c.etaMinutes + DRIVER_LATE_MIN
+    ) {
       alerts.push({
-        id: `drv-${c.id}`, type: "DRIVER_LATE",
+        id: `drv-${c.id}`,
+        type: "DRIVER_LATE",
         message: `Entregador atrasado • pedido ${c.number}`,
-        severity: "warn", orderId: c.id, at: new Date(now).toISOString(),
+        severity: "warn",
+        orderId: c.id,
+        at: new Date(now).toISOString(),
       });
     }
   }

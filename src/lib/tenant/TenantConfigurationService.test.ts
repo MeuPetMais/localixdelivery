@@ -1,17 +1,27 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  createTenantConfigurationService, DEFAULT_CONFIG,
-  TenantConfigurationCache, validateGroup,
-  type TenantConfigRepository, type ConfigGroup, type GroupPayload,
+  createTenantConfigurationService,
+  DEFAULT_CONFIG,
+  TenantConfigurationCache,
+  validateGroup,
+  type TenantConfigRepository,
+  type ConfigGroup,
+  type GroupPayload,
 } from "./index";
 import type { VersionRow, VersioningRepository } from "./TenantConfigurationVersioning";
 import type { AuditEntry, AuditRepository } from "./TenantAudit";
 
-function makeRepo(): TenantConfigRepository & { data: Map<string, any>; version: number } {
-  const data = new Map<string, any>();
+function makeRepo(): TenantConfigRepository & {
+  data: Map<string, Partial<import("./types").TenantConfiguration>>;
+  version: number;
+} {
+  const data = new Map<string, Partial<import("./types").TenantConfiguration>>();
   return {
-    data, version: 1,
-    async loadAll(id) { return data.get(id) ?? {}; },
+    data,
+    version: 1,
+    async loadAll(id) {
+      return data.get(id) ?? {};
+    },
     async saveGroup(id, group, value) {
       const prev = data.get(id) ?? {};
       data.set(id, { ...prev, [group]: value });
@@ -39,17 +49,28 @@ function makeVersioningRepo(): VersioningRepository & { rows: VersionRow[] } {
       return (filtered[filtered.length - 1] as any) ?? null;
     },
     async history(rid, group, limit = 20) {
-      return rows.filter((r) => r.restaurant_id === rid && r.group_name === group).slice(-limit) as any;
+      return rows
+        .filter((r) => r.restaurant_id === rid && r.group_name === group)
+        .slice(-limit) as any;
     },
     async at(rid, group, version) {
-      return (rows.find((r) => r.restaurant_id === rid && r.group_name === group && r.version === version) as any) ?? null;
+      return (
+        (rows.find(
+          (r) => r.restaurant_id === rid && r.group_name === group && r.version === version,
+        ) as any) ?? null
+      );
     },
   };
 }
 
 function makeAuditRepo(): AuditRepository & { entries: AuditEntry[] } {
   const entries: AuditEntry[] = [];
-  return { entries, async insert(e) { entries.push(e); } };
+  return {
+    entries,
+    async insert(e) {
+      entries.push(e);
+    },
+  };
 }
 
 const RID = "r-1";
@@ -65,7 +86,11 @@ describe("TenantConfigurationValidator", () => {
     expect(r.issues[0].field).toBe("default_gateway");
   });
   it("free delivery requires minimum", () => {
-    const r = validateGroup("payment", { ...DEFAULT_CONFIG.payment, free_delivery_enabled: true, free_delivery_minimum: null });
+    const r = validateGroup("payment", {
+      ...DEFAULT_CONFIG.payment,
+      free_delivery_enabled: true,
+      free_delivery_minimum: null,
+    });
     expect(r.valid).toBe(false);
   });
   it("delivery radius must be positive", () => {
@@ -73,7 +98,10 @@ describe("TenantConfigurationValidator", () => {
     expect(r.valid).toBe(false);
   });
   it("working hours must be HH:MM", () => {
-    const r = validateGroup("business", { ...DEFAULT_CONFIG.business, working_hours_json: { mon: { open: "9", close: "18:00" } } as any });
+    const r = validateGroup("business", {
+      ...DEFAULT_CONFIG.business,
+      working_hours_json: { mon: { open: "9", close: "18:00" } } as any,
+    });
     expect(r.valid).toBe(false);
   });
   it("branding rejects invalid hex", () => {
@@ -81,7 +109,10 @@ describe("TenantConfigurationValidator", () => {
     expect(r.valid).toBe(false);
   });
   it("notifications require channels", () => {
-    const r = validateGroup("notifications", { ...DEFAULT_CONFIG.notifications, preferred_channels_json: [] });
+    const r = validateGroup("notifications", {
+      ...DEFAULT_CONFIG.notifications,
+      preferred_channels_json: [],
+    });
     expect(r.valid).toBe(false);
   });
 });
@@ -89,14 +120,14 @@ describe("TenantConfigurationValidator", () => {
 describe("TenantConfigurationCache", () => {
   it("caches within TTL and invalidates on demand", () => {
     const cache = new TenantConfigurationCache(50);
-    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG } as any);
+    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG });
     expect(cache.get(RID)).not.toBeNull();
     cache.invalidate(RID);
     expect(cache.get(RID)).toBeNull();
   });
   it("expires after TTL", async () => {
     const cache = new TenantConfigurationCache(5);
-    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG } as any);
+    cache.set(RID, { restaurant_id: RID, ...DEFAULT_CONFIG });
     await new Promise((r) => setTimeout(r, 15));
     expect(cache.get(RID)).toBeNull();
   });
@@ -123,7 +154,11 @@ describe("TenantConfigurationService", () => {
   });
 
   it("update validates, saves, versions, and audits", async () => {
-    const svc = createTenantConfigurationService(repo, { versioningRepo: vRepo, auditRepo: aRepo, cache });
+    const svc = createTenantConfigurationService(repo, {
+      versioningRepo: vRepo,
+      auditRepo: aRepo,
+      cache,
+    });
     const next: GroupPayload<"payment"> = { ...DEFAULT_CONFIG.payment, minimum_order: 25 };
     const r = await svc.update(RID, "payment", next, "user-1");
     expect(r.ok).toBe(true);
@@ -133,13 +168,20 @@ describe("TenantConfigurationService", () => {
 
   it("rejects invalid update", async () => {
     const svc = createTenantConfigurationService(repo, { cache });
-    const r = await svc.update(RID, "delivery", { ...DEFAULT_CONFIG.delivery, delivery_radius_km: -1 });
+    const r = await svc.update(RID, "delivery", {
+      ...DEFAULT_CONFIG.delivery,
+      delivery_radius_km: -1,
+    });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.issues.length).toBeGreaterThan(0);
   });
 
   it("rollback restores previous snapshot", async () => {
-    const svc = createTenantConfigurationService(repo, { versioningRepo: vRepo, auditRepo: aRepo, cache });
+    const svc = createTenantConfigurationService(repo, {
+      versioningRepo: vRepo,
+      auditRepo: aRepo,
+      cache,
+    });
     await svc.update(RID, "payment", { ...DEFAULT_CONFIG.payment, minimum_order: 10 });
     await svc.update(RID, "payment", { ...DEFAULT_CONFIG.payment, minimum_order: 40 });
     const r = await svc.rollback(RID, "payment", 1);

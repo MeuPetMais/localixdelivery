@@ -13,8 +13,8 @@
 export interface CheckoutSessionInput {
   restaurantId: string;
   orderId: string;
-  amount: number;          // centavos
-  currency?: string;       // default "brl"
+  amount: number; // centavos
+  currency?: string; // default "brl"
   customerEmail?: string;
   successUrl: string;
   cancelUrl: string;
@@ -24,8 +24,8 @@ export interface CheckoutSessionInput {
 export interface PaymentIntentInput {
   restaurantId: string;
   orderId: string;
-  amount: number;          // centavos
-  currency?: string;       // default "brl"
+  amount: number; // centavos
+  currency?: string; // default "brl"
   customerId?: string;
   paymentMethodTypes?: Array<"card" | "pix" | "boleto">;
   metadata?: Record<string, string>;
@@ -80,12 +80,16 @@ export const StripeCheckoutService = {
     if (!input.successUrl || !input.cancelUrl) {
       throw new Error("StripeCheckoutService: successUrl e cancelUrl são obrigatórios.");
     }
-    throw new Error("StripeCheckoutService.createCheckoutSession não implementado (milestone futuro).");
+    throw new Error(
+      "StripeCheckoutService.createCheckoutSession não implementado (milestone futuro).",
+    );
   },
 
   async createPaymentIntent(input: PaymentIntentInput): Promise<PaymentIntent> {
     validateAmount(input.amount);
-    throw new Error("StripeCheckoutService.createPaymentIntent não implementado (milestone futuro).");
+    throw new Error(
+      "StripeCheckoutService.createPaymentIntent não implementado (milestone futuro).",
+    );
   },
 
   async retrievePaymentIntent(_id: string): Promise<PaymentIntent | null> {
@@ -93,7 +97,9 @@ export const StripeCheckoutService = {
   },
 
   async cancelPaymentIntent(_id: string, _reason?: string): Promise<void> {
-    throw new Error("StripeCheckoutService.cancelPaymentIntent não implementado (milestone futuro).");
+    throw new Error(
+      "StripeCheckoutService.cancelPaymentIntent não implementado (milestone futuro).",
+    );
   },
 
   async createCustomer(input: CustomerInput): Promise<Customer> {

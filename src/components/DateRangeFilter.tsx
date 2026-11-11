@@ -95,7 +95,9 @@ export function DateRangeFilter({
           ))}
         </div>
         <div className="mt-2 rounded-md border p-2">
-          <div className="mb-1 text-xs font-medium text-muted-foreground">Intervalo personalizado</div>
+          <div className="mb-1 text-xs font-medium text-muted-foreground">
+            Intervalo personalizado
+          </div>
           <div className="flex items-center gap-1">
             <Input
               type="date"

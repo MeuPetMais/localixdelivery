@@ -11,8 +11,7 @@ export type OperationsColumnId =
   | "COMPLETED"
   | "CANCELLED";
 
-export type OperationsRole =
-  | "ADMIN" | "MANAGER" | "ATTENDANT" | "CASHIER" | "KITCHEN";
+export type OperationsRole = "ADMIN" | "MANAGER" | "ATTENDANT" | "CASHIER" | "KITCHEN";
 
 export type OperationsPriority = "URGENT" | "NORMAL" | "LOW";
 export type DeliveryMode = "DELIVERY" | "PICKUP";

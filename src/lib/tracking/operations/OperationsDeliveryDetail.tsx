@@ -16,10 +16,13 @@ export function OperationsDeliveryDetail({ detail }: { detail: OperationsDetail 
     <div className="space-y-3">
       <div className="rounded-lg border bg-card p-3 text-sm">
         <p className="font-medium">
-          Pedido {detail.order?.order_number ? `#${detail.order.order_number}` : s.order_id.slice(0, 8)}
+          Pedido{" "}
+          {detail.order?.order_number ? `#${detail.order.order_number}` : s.order_id.slice(0, 8)}
         </p>
         <p className="text-xs text-muted-foreground">
-          Status: {s.status} | ETA: {s.eta_seconds != null ? Math.round(s.eta_seconds / 60) + "min" : "-"} | Confianca: {s.confidence}
+          Status: {s.status} | ETA:{" "}
+          {s.eta_seconds != null ? Math.round(s.eta_seconds / 60) + "min" : "-"} | Confianca:{" "}
+          {s.confidence}
         </p>
         <p className="text-xs text-muted-foreground">
           Ultima atualizacao: {s.last_seen_at ? new Date(s.last_seen_at).toLocaleTimeString() : "-"}
@@ -43,7 +46,9 @@ export function OperationsDeliveryDetail({ detail }: { detail: OperationsDetail 
           </div>
         )}
         <div className="grid gap-1 border-t p-3 text-xs text-muted-foreground">
-          <span>Restaurante: {detail.restaurant?.address ?? detail.restaurant?.name ?? "Nao informado"}</span>
+          <span>
+            Restaurante: {detail.restaurant?.address ?? detail.restaurant?.name ?? "Nao informado"}
+          </span>
           <span>Destino: {detail.order?.address ?? "Nao informado"}</span>
           <span>Motoboy: {hasDriverPoint ? "localizacao recebida" : "sem sinal recente"}</span>
         </div>

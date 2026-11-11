@@ -46,8 +46,8 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
           ];
           onChange([...acc]);
           toast.success("Foto enviada");
-        } catch (e: any) {
-          toast.error(e?.message ?? "Falha no upload");
+        } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : "Falha no upload");
         } finally {
           setProgress(null);
         }
@@ -74,7 +74,9 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
       deleteProductImage(target.storage_path).catch(() => {});
       next = images.filter((_, i) => i !== idx);
     } else {
-      next = images.map((img, i) => (i === idx ? { ...img, _delete: true, is_primary: false } : img));
+      next = images.map((img, i) =>
+        i === idx ? { ...img, _delete: true, is_primary: false } : img,
+      );
     }
     // ensure at least one primary among visible
     const stillVisible = next.filter((i) => !i._delete);
@@ -86,7 +88,10 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
   }
 
   function move(idx: number, dir: -1 | 1) {
-    const visibleIdxs = images.map((i, ix) => ({ i, ix })).filter(({ i }) => !i._delete).map(({ ix }) => ix);
+    const visibleIdxs = images
+      .map((i, ix) => ({ i, ix }))
+      .filter(({ i }) => !i._delete)
+      .map(({ ix }) => ix);
     const pos = visibleIdxs.indexOf(idx);
     const swap = visibleIdxs[pos + dir];
     if (swap === undefined) return;
@@ -116,7 +121,10 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
 
       {visible.length === 0 ? (
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           className={cn(
@@ -130,10 +138,21 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
           <p className="mt-3 font-semibold">📷 Adicionar foto do produto</p>
           <p className="text-xs text-muted-foreground">ou arraste uma imagem aqui</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button type="button" size="sm" onClick={() => fileRef.current?.click()} disabled={progress !== null}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => fileRef.current?.click()}
+              disabled={progress !== null}
+            >
               <ImagePlus className="mr-2 h-4 w-4" /> Escolher arquivo
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => cameraRef.current?.click()} disabled={progress !== null}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => cameraRef.current?.click()}
+              disabled={progress !== null}
+            >
               <Camera className="mr-2 h-4 w-4" /> Tirar foto
             </Button>
           </div>
@@ -146,7 +165,10 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
               if (img._delete) return null;
               const visIdx = visible.findIndex((v) => v === img);
               return (
-                <div key={img.storage_path} className="group relative aspect-square overflow-hidden rounded-xl border bg-muted">
+                <div
+                  key={img.storage_path}
+                  className="group relative aspect-square overflow-hidden rounded-xl border bg-muted"
+                >
                   <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
                   {img.is_primary && (
                     <span className="absolute left-1 top-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
@@ -154,17 +176,41 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
                     </span>
                   )}
                   <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1 opacity-0 transition group-hover:opacity-100">
-                    <button type="button" title="Definir principal" onClick={() => setPrimary(idx)} className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white">
-                      <Star className={cn("h-3.5 w-3.5", img.is_primary && "fill-primary text-primary")} />
+                    <button
+                      type="button"
+                      title="Definir principal"
+                      onClick={() => setPrimary(idx)}
+                      className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white"
+                    >
+                      <Star
+                        className={cn("h-3.5 w-3.5", img.is_primary && "fill-primary text-primary")}
+                      />
                     </button>
                     <div className="flex gap-1">
-                      <button type="button" title="Mover ←" onClick={() => move(idx, -1)} disabled={visIdx === 0} className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white disabled:opacity-40">
+                      <button
+                        type="button"
+                        title="Mover ←"
+                        onClick={() => move(idx, -1)}
+                        disabled={visIdx === 0}
+                        className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white disabled:opacity-40"
+                      >
                         <ArrowLeft className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" title="Mover →" onClick={() => move(idx, 1)} disabled={visIdx === visible.length - 1} className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white disabled:opacity-40">
+                      <button
+                        type="button"
+                        title="Mover →"
+                        onClick={() => move(idx, 1)}
+                        disabled={visIdx === visible.length - 1}
+                        className="rounded-md bg-white/90 p-1 text-foreground hover:bg-white disabled:opacity-40"
+                      >
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" title="Remover" onClick={() => remove(idx)} className="rounded-md bg-destructive p-1 text-destructive-foreground">
+                      <button
+                        type="button"
+                        title="Remover"
+                        onClick={() => remove(idx)}
+                        className="rounded-md bg-destructive p-1 text-destructive-foreground"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -185,10 +231,22 @@ export function ProductImageUploader({ restaurantId, images, onChange }: Props) 
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={progress !== null}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => fileRef.current?.click()}
+              disabled={progress !== null}
+            >
               <ImagePlus className="mr-2 h-4 w-4" /> Adicionar mais
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => cameraRef.current?.click()} disabled={progress !== null}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => cameraRef.current?.click()}
+              disabled={progress !== null}
+            >
               <Camera className="mr-2 h-4 w-4" /> Câmera
             </Button>
           </div>

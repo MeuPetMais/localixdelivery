@@ -8,9 +8,14 @@ import { TrackingService } from "./TrackingService";
 import { dispatchEngine } from "./DispatchEngine";
 import type { DeliveryOrder, Driver } from "./types";
 
-function makeRepo(): DeliveryRepository & { store: Map<string, DeliveryOrder>; timeline: any[] } {
+type TimelineEntry = Parameters<DeliveryRepository["appendTimeline"]>[1] & { id: string };
+
+function makeRepo(): DeliveryRepository & {
+  store: Map<string, DeliveryOrder>;
+  timeline: TimelineEntry[];
+} {
   const store = new Map<string, DeliveryOrder>();
-  const timeline: any[] = [];
+  const timeline: TimelineEntry[] = [];
   return {
     store,
     timeline,
@@ -39,9 +44,16 @@ const origin = { latitude: -23.55, longitude: -46.63 };
 const destination = { latitude: -23.56, longitude: -46.64 };
 
 const driverAvailable: Driver = {
-  id: "drv1", user_id: "u1", provider: "LOCALIX", vehicle_type: "moto",
-  license_plate: "AAA-0000", phone: null, status: "AVAILABLE", rating: 5,
-  current_latitude: -23.551, current_longitude: -46.631,
+  id: "drv1",
+  user_id: "u1",
+  provider: "LOCALIX",
+  vehicle_type: "moto",
+  license_plate: "AAA-0000",
+  phone: null,
+  status: "AVAILABLE",
+  rating: 5,
+  current_latitude: -23.551,
+  current_longitude: -46.631,
 };
 
 describe("DeliveryStateMachine", () => {
@@ -59,7 +71,9 @@ describe("ETAEngine", () => {
   });
   it("calculateETA sums components", () => {
     const eta = calculateETA({ distance_km: 5, avg_speed_kmh: 30 });
-    expect(eta.total_minutes).toBe(eta.prep_minutes + eta.travel_minutes + eta.wait_minutes + eta.delivery_minutes);
+    expect(eta.total_minutes).toBe(
+      eta.prep_minutes + eta.travel_minutes + eta.wait_minutes + eta.delivery_minutes,
+    );
   });
 });
 
@@ -104,12 +118,17 @@ describe("DeliveryEngine", () => {
     const repo = makeRepo();
     const engine = new DeliveryEngine(repo);
     const seen: DeliveryEvent[] = [];
-    deliveryEventBus.on("DriverAssigned", (e) => { seen.push(e); });
+    deliveryEventBus.on("DriverAssigned", (e) => {
+      seen.push(e);
+    });
 
     const order = await engine.createDelivery({
-      order_id: "o1", restaurant_id: "r1", strategy: "AUTO",
+      order_id: "o1",
+      restaurant_id: "r1",
+      strategy: "AUTO",
       context: { restaurant_id: "r1", order_id: "o1", origin, destination, distance_km: 2 },
-      restaurantHasOwnFleet: false, drivers: [driverAvailable],
+      restaurantHasOwnFleet: false,
+      drivers: [driverAvailable],
     });
 
     expect(order.provider).toBe("LOCALIX");
@@ -121,9 +140,12 @@ describe("DeliveryEngine", () => {
     const repo = makeRepo();
     const engine = new DeliveryEngine(repo);
     const order = await engine.createDelivery({
-      order_id: "o2", restaurant_id: "r1", strategy: "LOCALIX",
+      order_id: "o2",
+      restaurant_id: "r1",
+      strategy: "LOCALIX",
       context: { restaurant_id: "r1", order_id: "o2", origin, destination, distance_km: 2 },
-      restaurantHasOwnFleet: false, drivers: [driverAvailable],
+      restaurantHasOwnFleet: false,
+      drivers: [driverAvailable],
     });
     await engine.transition(order.id, "GOING_TO_RESTAURANT");
     await engine.transition(order.id, "WAITING_PICKUP");
@@ -139,7 +161,9 @@ describe("DeliveryEngine", () => {
     const repo = makeRepo();
     const engine = new DeliveryEngine(repo);
     const order = await engine.createDelivery({
-      order_id: "o3", restaurant_id: "r1", strategy: "RESTAURANT",
+      order_id: "o3",
+      restaurant_id: "r1",
+      strategy: "RESTAURANT",
       context: { restaurant_id: "r1", order_id: "o3", origin, destination, distance_km: 2 },
       restaurantHasOwnFleet: true,
     });
@@ -150,9 +174,13 @@ describe("DeliveryEngine", () => {
     const repo = makeRepo();
     const engine = new DeliveryEngine(repo);
     const seen: DeliveryEvent[] = [];
-    deliveryEventBus.on("DeliveryCancelled", (e) => { seen.push(e); });
+    deliveryEventBus.on("DeliveryCancelled", (e) => {
+      seen.push(e);
+    });
     const order = await engine.createDelivery({
-      order_id: "o4", restaurant_id: "r1", strategy: "RESTAURANT",
+      order_id: "o4",
+      restaurant_id: "r1",
+      strategy: "RESTAURANT",
       context: { restaurant_id: "r1", order_id: "o4", origin, destination, distance_km: 2 },
       restaurantHasOwnFleet: true,
     });
@@ -164,9 +192,12 @@ describe("DeliveryEngine", () => {
     const repo = makeRepo();
     const engine = new DeliveryEngine(repo);
     const order = await engine.createDelivery({
-      order_id: "o5", restaurant_id: "r1", strategy: "LOCALIX",
+      order_id: "o5",
+      restaurant_id: "r1",
+      strategy: "LOCALIX",
       context: { restaurant_id: "r1", order_id: "o5", origin, destination, distance_km: 2 },
-      restaurantHasOwnFleet: false, drivers: [driverAvailable],
+      restaurantHasOwnFleet: false,
+      drivers: [driverAvailable],
     });
     const updated = await engine.assignDriver(order.id, "drv2");
     expect(updated.driver_id).toBe("drv2");
@@ -176,7 +207,11 @@ describe("DeliveryEngine", () => {
 describe("TrackingService", () => {
   it("records history and computes ETA to destination", () => {
     const t = new TrackingService();
-    t.updateLocation("drv1", { latitude: -23.551, longitude: -46.631, captured_at: new Date().toISOString() });
+    t.updateLocation("drv1", {
+      latitude: -23.551,
+      longitude: -46.631,
+      captured_at: new Date().toISOString(),
+    });
     expect(t.getHistory("drv1")).toHaveLength(1);
     expect(t.distanceToDestination("drv1", destination)).toBeGreaterThan(0);
     expect(t.etaMinutes("drv1", destination)).toBeGreaterThan(0);

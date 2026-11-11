@@ -12,7 +12,9 @@ interface ModuleSpec {
 const modules = new Map<string, ModuleSpec>();
 
 export const DiagnosticsCenter = {
-  registerModule(spec: ModuleSpec) { modules.set(spec.key, spec); },
+  registerModule(spec: ModuleSpec) {
+    modules.set(spec.key, spec);
+  },
   markSync(key: string, at: string = new Date().toISOString()) {
     const m = modules.get(key);
     if (m) m.last_sync_at = at;
@@ -33,5 +35,7 @@ export const DiagnosticsCenter = {
       event_bus_ok: statusOf("event_bus") !== "down",
     };
   },
-  _reset() { modules.clear(); },
+  _reset() {
+    modules.clear();
+  },
 } as const;

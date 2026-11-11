@@ -19,11 +19,13 @@ pedidos, pagamentos (Stripe Connect Express + Mercado Pago legado),
 fidelidade, financeiro, analytics e administração global.
 
 **Ambientes.**
+
 - Preview: `https://id-preview--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app`
 - Produção: `https://localixdelivery.lovable.app`
 - Backend (edge/API estável): `https://project--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app`
 
 **Componentes.**
+
 - Frontend TanStack Start v1 (React 19 + Vite 7).
 - Backend Lovable Cloud (Postgres + Auth + Storage + Edge Functions).
 - Pagamentos: Stripe (Checkout + Connect Express + Split) e Mercado Pago
@@ -41,6 +43,7 @@ Perfis existentes (definidos em `app_role` + `user_roles`, aplicados via
 `has_role`):
 
 ### 2.1 Cliente
+
 - **Objetivo:** consumir catálogo, fazer pedidos, acumular fidelidade.
 - **Login:** e-mail/senha, Google, Apple.
 - **Telas:** `/{slug}`, `/{slug}/checkout`, `/{slug}/montar`, `/{slug}/sobre`,
@@ -49,6 +52,7 @@ Perfis existentes (definidos em `app_role` + `user_roles`, aplicados via
 - **Limitações:** não acessa `_authenticated/*` nem `/admin/*`.
 
 ### 2.2 Parceiro (owner do restaurante)
+
 - **Objetivo:** operar o próprio restaurante.
 - **Login:** **exclusivamente e-mail/senha** (bloqueio OAuth via trigger
   `enforce_partner_email_only` + guard `_authenticated/route.tsx`).
@@ -60,6 +64,7 @@ Perfis existentes (definidos em `app_role` + `user_roles`, aplicados via
 - **Limitações:** escopado ao próprio `restaurant_id` via RLS.
 
 ### 2.3 Administrador da plataforma
+
 - **Objetivo:** governança global.
 - **Login:** **exclusivamente e-mail/senha** via `/admin_/login` (bloqueio
   OAuth em `admin.tsx`).
@@ -145,6 +150,7 @@ Nenhum outro perfil existe na v1.0.
 ## Capítulo 7 — Operação diária
 
 Baseado em `OPERATIONS_MANUAL.md` §2:
+
 - Conferir `OperationsDashboard` (saúde + incidentes).
 - Revisar alertas do `AlertCenter` (24h).
 - Conferir p95 (`response_ms`, `edge_function_ms`) e taxa de erro.
@@ -187,12 +193,14 @@ Mensal: rotação de secrets (`MP_WEBHOOK_SECRET`,
 ## Capítulo 10 — Procedimentos de suporte
 
 ### 10.1 Restaurante
+
 - Canal: `_authenticated/support` (`KnowledgeBase`) + `HelpFab`.
 - Incidentes de pagamento: consultar `_authenticated/pagamentos` →
   reconectar Stripe se necessário.
 - Suporte administrativo: `/admin/suporte`.
 
 ### 10.2 Cliente
+
 - Canal: dentro do próprio pedido (`/pedido/$id`) e via notificações
   (`NotificationsBell`).
 - Reembolso: back-end operacional via Stripe; UI parcial (ver
@@ -205,17 +213,20 @@ Novos processos: nenhum criado.
 ## Capítulo 11 — Checklist operacional
 
 ### 11.1 Abertura
+
 - [ ] `OperationsDashboard` verde.
 - [ ] `AlertCenter` sem alertas P1 abertos.
 - [ ] Edge Functions respondendo (`stripe-*`, `mp-*`).
 - [ ] Fila `payment_webhook_events` sem itens travados.
 
 ### 11.2 Encerramento
+
 - [ ] Pedidos do dia em estado final (`entregue`/`cancelado`).
 - [ ] Ledger reconcilia com Stripe (spot check).
 - [ ] Notificações operacionais enviadas.
 
 ### 11.3 Validação diária
+
 - [ ] Smoke test: novo pedido em restaurante de referência.
 - [ ] Webhook Stripe processado sem erro.
 - [ ] `AuditCenter` sem eventos suspeitos em `admin`/`financial`.
@@ -250,6 +261,7 @@ Novos processos: nenhum criado.
 **Estrutura:** 12 capítulos conforme escopo solicitado.
 
 **Fontes utilizadas:**
+
 - `docs/GO_LIVE_AUDIT.md`, `docs/GO_LIVE_CHECKLIST.md`,
   `docs/GO_LIVE_SCORE.md`, `docs/PRODUCTION_READINESS.md`,
   `docs/OPERATIONS_MANUAL.md`, `docs/RC2_SEC_001_REPORT.md`,
@@ -262,6 +274,7 @@ Novos processos: nenhum criado.
 mapeados em `GO_LIVE_AUDIT.md`.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - Conciliação financeira automatizada.
 - Alertas proativos externos (paging).
 - PITR exposto ao operador.

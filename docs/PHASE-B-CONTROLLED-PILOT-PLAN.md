@@ -380,4 +380,3 @@ Nenhuma mudança de preço, split, taxa, benefício, crédito, refund, saldo ou 
 Correções críticas devem seguir:
 
 **causa raiz → correção mínima → testes → build → diff → commit → deploy controlado → validação → rollback disponível**
-

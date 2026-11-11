@@ -178,7 +178,9 @@ export function buildCustomer360ReadModel(
 
   const totalOrders = Number(customer.total_orders ?? realized.length);
   const totalSpent = roundMoney(Number(customer.total_spent ?? 0));
-  const avgTicket = roundMoney(Number(customer.avg_ticket ?? (totalOrders ? totalSpent / totalOrders : 0)));
+  const avgTicket = roundMoney(
+    Number(customer.avg_ticket ?? (totalOrders ? totalSpent / totalOrders : 0)),
+  );
 
   const tenureDays = firstOrderAt
     ? Math.max(1, (now.getTime() - new Date(firstOrderAt).getTime()) / DAY_MS)
@@ -192,9 +194,8 @@ export function buildCustomer360ReadModel(
     last_order_at: customer.last_order_at ?? lastOrderAt,
     days_since_last_order: daysSinceLastOrder,
     avg_days_between_orders: avgDaysBetweenOrders,
-    frequency_per_30d: tenureDays > 0
-      ? Math.round(((realized.length / tenureDays) * 30) * 100) / 100
-      : 0,
+    frequency_per_30d:
+      tenureDays > 0 ? Math.round((realized.length / tenureDays) * 30 * 100) / 100 : 0,
     favorite_products: [...productMap.entries()]
       .map(([product_id, value]) => ({ product_id, ...value }))
       .sort((a, b) => b.qty - a.qty)
@@ -207,10 +208,12 @@ export function buildCustomer360ReadModel(
     chargebacks: orders.filter((order) => order.status === "chargeback").length,
   };
 
-  const lastGapDays = realized.length >= 2
-    ? (new Date(realized[realized.length - 1].created_at).getTime() -
-        new Date(realized[realized.length - 2].created_at).getTime()) / DAY_MS
-    : 0;
+  const lastGapDays =
+    realized.length >= 2
+      ? (new Date(realized[realized.length - 1].created_at).getTime() -
+          new Date(realized[realized.length - 2].created_at).getTime()) /
+        DAY_MS
+      : 0;
 
   const lifecycle =
     lastGapDays >= CUSTOMER360_THRESHOLDS.inactiveDays &&
@@ -230,7 +233,6 @@ export function buildCustomer360ReadModel(
 export function normalizeCustomerPhone(value: string | null | undefined): string {
   return String(value ?? "").replace(/\D/g, "");
 }
-
 
 export function resolveCustomer360LifecycleFromProjection(input: {
   totalOrders: number;

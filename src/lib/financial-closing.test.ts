@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
-  aggregateByDriver, earn, periodBounds, toCsv, totals,
+  aggregateByDriver,
+  earn,
+  periodBounds,
+  toCsv,
+  totals,
   type DeliveredRow,
 } from "./financial-closing";
 
@@ -11,21 +15,41 @@ const drivers = [
 ];
 
 const rows: DeliveredRow[] = [
-  { driver_id: "d1", delivered_at: "2026-07-11T10:00:00Z", distance_km: 2, driver_earning_amount: 11, driver_earning_calculated_at: "2026-07-11T10:00:00Z" },
-  { driver_id: "d1", delivered_at: "2026-07-11T11:00:00Z", distance_km: 4, driver_earning_amount: 14, driver_earning_calculated_at: "2026-07-11T11:00:00Z" },
-  { driver_id: "d2", delivered_at: "2026-07-11T10:00:00Z", distance_km: 0, driver_earning_amount: 8, driver_earning_calculated_at: "2026-07-11T10:00:00Z" },
+  {
+    driver_id: "d1",
+    delivered_at: "2026-07-11T10:00:00Z",
+    distance_km: 2,
+    driver_earning_amount: 11,
+    driver_earning_calculated_at: "2026-07-11T10:00:00Z",
+  },
+  {
+    driver_id: "d1",
+    delivered_at: "2026-07-11T11:00:00Z",
+    distance_km: 4,
+    driver_earning_amount: 14,
+    driver_earning_calculated_at: "2026-07-11T11:00:00Z",
+  },
+  {
+    driver_id: "d2",
+    delivered_at: "2026-07-11T10:00:00Z",
+    distance_km: 0,
+    driver_earning_amount: 8,
+    driver_earning_calculated_at: "2026-07-11T10:00:00Z",
+  },
   { driver_id: null, delivered_at: "2026-07-11T10:00:00Z", distance_km: 5 },
 ];
 
 describe("financial-closing", () => {
   it("earn usa snapshot persistido", () => {
-    expect(earn({
-      driver_id: "x",
-      delivered_at: null,
-      distance_km: 4,
-      driver_earning_amount: 99,
-      driver_earning_calculated_at: "2026-07-11T10:00:00Z",
-    })).toBe(99);
+    expect(
+      earn({
+        driver_id: "x",
+        delivered_at: null,
+        distance_km: 4,
+        driver_earning_amount: 99,
+        driver_earning_calculated_at: "2026-07-11T10:00:00Z",
+      }),
+    ).toBe(99);
   });
 
   it("assignment legado usa fallback controlado", () => {
@@ -72,7 +96,8 @@ describe("financial-closing", () => {
 
   it("periodBounds custom usa from/to", () => {
     const { from, to } = periodBounds("custom", {
-      from: "2026-01-01", to: "2026-02-01",
+      from: "2026-01-01",
+      to: "2026-02-01",
     });
     expect(from.toISOString().slice(0, 10)).toBe("2026-01-01");
     expect(to.toISOString().slice(0, 10)).toBe("2026-02-01");

@@ -14,8 +14,9 @@ function makeInMemoryRpc(drivers: Record<string, DriverState> = {}): QueueRpc {
   const state: QueueEntry[] = [];
   let seq = 0;
   const nextPos = (rid: string) =>
-    (state.filter((e) => e.restaurant_id === rid && e.status === "AGUARDANDO")
-      .reduce((m, e) => Math.max(m, e.position), 0)) + 1;
+    state
+      .filter((e) => e.restaurant_id === rid && e.status === "AGUARDANDO")
+      .reduce((m, e) => Math.max(m, e.position), 0) + 1;
 
   const assertCanWait = (rid: string, did: string) => {
     const d = drivers[did] ?? { restaurant_id: rid, status: "ativo", online: true };
@@ -51,7 +52,9 @@ function makeInMemoryRpc(drivers: Record<string, DriverState> = {}): QueueRpc {
       return entry.id;
     },
     async dequeue(rid, did) {
-      const e = state.find((x) => x.restaurant_id === rid && x.driver_id === did && x.status === "AGUARDANDO");
+      const e = state.find(
+        (x) => x.restaurant_id === rid && x.driver_id === did && x.status === "AGUARDANDO",
+      );
       if (!e) return false;
       const pos = e.position;
       e.status = "EM_ENTREGA";
@@ -72,7 +75,12 @@ function makeInMemoryRpc(drivers: Record<string, DriverState> = {}): QueueRpc {
       }
       assertCanWait(rid, did);
       state
-        .filter((x) => x.restaurant_id === rid && x.driver_id === did && (x.status === "EM_ENTREGA" || x.status === "RETORNANDO"))
+        .filter(
+          (x) =>
+            x.restaurant_id === rid &&
+            x.driver_id === did &&
+            (x.status === "EM_ENTREGA" || x.status === "RETORNANDO"),
+        )
         .forEach((x) => {
           x.status = "INATIVO";
           x.left_at ??= new Date().toISOString();
@@ -90,7 +98,9 @@ function makeInMemoryRpc(drivers: Record<string, DriverState> = {}): QueueRpc {
       return entry.id;
     },
     async remove(rid, did) {
-      const e = state.find((x) => x.restaurant_id === rid && x.driver_id === did && x.status === "AGUARDANDO");
+      const e = state.find(
+        (x) => x.restaurant_id === rid && x.driver_id === did && x.status === "AGUARDANDO",
+      );
       if (!e) return false;
       const pos = e.position;
       e.status = "INATIVO";

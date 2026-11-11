@@ -3,9 +3,17 @@
 // NUNCA muta Orders/Delivery/Driver. Apenas observa.
 
 import type {
-  TrackingSnapshot, TrackingSnapshotInput, TrackingSnapshotPatch, TrackingStatus, TrackingActor,
+  TrackingSnapshot,
+  TrackingSnapshotInput,
+  TrackingSnapshotPatch,
+  TrackingStatus,
+  TrackingActor,
 } from "./tracking.types";
-import { createTrackingService, trackingService as defaultService, type TrackingService } from "./tracking.service";
+import {
+  createTrackingService,
+  trackingService as defaultService,
+  type TrackingService,
+} from "./tracking.service";
 import { trackingEventBus, envelopeFromSnapshot } from "./tracking.events";
 import { recordTrackingAudit } from "./tracking.audit";
 
@@ -24,7 +32,11 @@ export interface RegisterEventInput {
 export function createTrackingOrchestrator(deps: OrchestratorDeps = {}) {
   const service = deps.service ?? defaultService;
 
-  function publish(type: Parameters<typeof envelopeFromSnapshot>[0], snap: TrackingSnapshot, payload: Record<string, unknown> = {}) {
+  function publish(
+    type: Parameters<typeof envelopeFromSnapshot>[0],
+    snap: TrackingSnapshot,
+    payload: Record<string, unknown> = {},
+  ) {
     trackingEventBus.publish(envelopeFromSnapshot(type, snap, payload));
   }
 
@@ -44,15 +56,22 @@ export function createTrackingOrchestrator(deps: OrchestratorDeps = {}) {
       publish("TrackingCreated", snap, { status: snap.status });
       publish("TrackingSnapshotUpdated", snap, { status: snap.status });
       await recordTrackingAudit({
-        action: "snapshot_created", correlation_id: snap.correlation_id,
-        assignment_id: snap.assignment_id, restaurant_id: snap.restaurant_id,
-        order_id: snap.order_id, driver_id: snap.driver_id, at: snap.updated_at,
+        action: "snapshot_created",
+        correlation_id: snap.correlation_id,
+        assignment_id: snap.assignment_id,
+        restaurant_id: snap.restaurant_id,
+        order_id: snap.order_id,
+        driver_id: snap.driver_id,
+        at: snap.updated_at,
         detail: { status: snap.status },
       });
       return snap;
     },
 
-    async updateSnapshot(assignmentId: string, patch: TrackingSnapshotPatch): Promise<TrackingSnapshot | null> {
+    async updateSnapshot(
+      assignmentId: string,
+      patch: TrackingSnapshotPatch,
+    ): Promise<TrackingSnapshot | null> {
       const prev = service.getSnapshot(assignmentId);
       if (!prev) return null;
       const next = service.updateSnapshot(assignmentId, patch);
@@ -73,16 +92,24 @@ export function createTrackingOrchestrator(deps: OrchestratorDeps = {}) {
         });
         publish("TrackingStatusChanged", next, { previous: prev.status, current: next.status });
         await recordTrackingAudit({
-          action: "status_changed", correlation_id: next.correlation_id,
-          assignment_id: next.assignment_id, restaurant_id: next.restaurant_id,
-          order_id: next.order_id, driver_id: next.driver_id, at: next.updated_at,
+          action: "status_changed",
+          correlation_id: next.correlation_id,
+          assignment_id: next.assignment_id,
+          restaurant_id: next.restaurant_id,
+          order_id: next.order_id,
+          driver_id: next.driver_id,
+          at: next.updated_at,
           detail: { previous: prev.status, current: next.status },
         });
       }
       await recordTrackingAudit({
-        action: "snapshot_updated", correlation_id: next.correlation_id,
-        assignment_id: next.assignment_id, restaurant_id: next.restaurant_id,
-        order_id: next.order_id, driver_id: next.driver_id, at: next.updated_at,
+        action: "snapshot_updated",
+        correlation_id: next.correlation_id,
+        assignment_id: next.assignment_id,
+        restaurant_id: next.restaurant_id,
+        order_id: next.order_id,
+        driver_id: next.driver_id,
+        at: next.updated_at,
         detail: patch as Record<string, unknown>,
       });
       return next;
@@ -105,9 +132,13 @@ export function createTrackingOrchestrator(deps: OrchestratorDeps = {}) {
       });
       publish("TrackingTimelineUpdated", snap, { event: input.event });
       await recordTrackingAudit({
-        action: "timeline_appended", correlation_id: entry.correlation_id,
-        assignment_id: entry.assignment_id, restaurant_id: entry.restaurant_id,
-        order_id: entry.order_id, driver_id: entry.driver_id, at: entry.created_at,
+        action: "timeline_appended",
+        correlation_id: entry.correlation_id,
+        assignment_id: entry.assignment_id,
+        restaurant_id: entry.restaurant_id,
+        order_id: entry.order_id,
+        driver_id: entry.driver_id,
+        at: entry.created_at,
         detail: { event: entry.event },
       });
       return entry;

@@ -4,10 +4,28 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ArrowRight, Award, Bike, CheckCircle2, Circle, Clock, Home, LineChart,
-  LogOut, MapPin, Package, PlayCircle, Sparkles, Target, Trophy,
-  TrendingDown, TrendingUp, User, Wallet, History as HistoryIcon,
-  ChevronRight, Save,
+  ArrowRight,
+  Award,
+  Bike,
+  CheckCircle2,
+  Circle,
+  Clock,
+  Home,
+  LineChart,
+  LogOut,
+  MapPin,
+  Package,
+  PlayCircle,
+  Sparkles,
+  Target,
+  Trophy,
+  TrendingDown,
+  TrendingUp,
+  User,
+  Wallet,
+  History as HistoryIcon,
+  ChevronRight,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,13 +36,25 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getDriverDashboard, enterQueue, leaveQueue, finishReturnToQueue, setDriverAvailability,
+  getDriverDashboard,
+  enterQueue,
+  leaveQueue,
+  finishReturnToQueue,
+  setDriverAvailability,
 } from "@/lib/driver-dashboard.functions";
 import {
-  collectDelivery, departDelivery, deliverDelivery,
+  collectDelivery,
+  departDelivery,
+  deliverDelivery,
 } from "@/lib/delivery-assignment.functions";
 import {
-  BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals,
+  BRL,
+  DEFAULT_GOALS,
+  delta,
+  formatMinutes,
+  loadGoals,
+  pct,
+  saveGoals,
   type DriverGoals,
 } from "@/lib/driver-wallet";
 import { resolveDriverEarning } from "@/lib/driver-earnings";
@@ -41,10 +71,12 @@ import { useDriverLocationTracking } from "@/lib/tracking/location/use-driver-lo
 
 export const Route = createFileRoute("/motoboy")({
   ssr: false,
-  head: () => ({ meta: [
-    { title: "Carteira do Motoboy — Localix" },
-    { name: "description", content: "Ganhos, meta diária e entrega atual." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Carteira do Motoboy — Localix" },
+      { name: "description", content: "Ganhos, meta diária e entrega atual." },
+    ],
+  }),
   component: DriverWallet,
 });
 
@@ -97,14 +129,30 @@ function DriverWallet() {
     if (!restaurantId || !driver?.id) return;
     const ch = supabase
       .channel(`driver-wallet-${driver.id}`)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_queue", filter: `restaurant_id=eq.${restaurantId}` },
-        () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }))
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "delivery_assignments", filter: `driver_id=eq.${driver.id}` },
-        () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }))
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_queue",
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_assignments",
+          filter: `driver_id=eq.${driver.id}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["driver-wallet"] }),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [restaurantId, driver?.id, qc]);
 
   const locationCtx = useMemo(() => {
@@ -122,17 +170,26 @@ function DriverWallet() {
 
   const enterMut = useMutation({
     mutationFn: () => enter({}),
-    onSuccess: () => { toast.success("Você entrou na fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onSuccess: () => {
+      toast.success("Você entrou na fila");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const leaveMut = useMutation({
     mutationFn: () => leave({}),
-    onSuccess: () => { toast.success("Você saiu da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onSuccess: () => {
+      toast.success("Você saiu da fila");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const finishReturnMut = useMutation({
     mutationFn: () => finishReturn({}),
-    onSuccess: () => { toast.success("Retorno concluído — você voltou ao fim da fila"); qc.invalidateQueries({ queryKey: ["driver-wallet"] }); },
+    onSuccess: () => {
+      toast.success("Retorno concluído — você voltou ao fim da fila");
+      qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   // RC6.6 — "Retirar pedido" = coletar + partir (tracking iniciado) em uma ação só.
@@ -185,7 +242,6 @@ function DriverWallet() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
       <PwaInstallModal auto />
       <div className="mx-auto max-w-md px-4 pt-6">
-
         <TopBar
           name={driver.name}
           photo={driver.photo_url}
@@ -206,10 +262,19 @@ function DriverWallet() {
             onFinishReturn={() => finishReturnMut.mutate()}
             onPickup={(id, status) => pickupMut.mutate({ id, status })}
             onDeliver={(id) => deliverMut.mutate(id)}
-            busy={pickupMut.isPending || deliverMut.isPending || enterMut.isPending || leaveMut.isPending || finishReturnMut.isPending || availabilityMut.isPending}
+            busy={
+              pickupMut.isPending ||
+              deliverMut.isPending ||
+              enterMut.isPending ||
+              leaveMut.isPending ||
+              finishReturnMut.isPending ||
+              availabilityMut.isPending
+            }
           />
         )}
-        {tab === "ganhos" && <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />}
+        {tab === "ganhos" && (
+          <DriverWalletTab earnings={dash.earnings as any} history={dash.history as any} />
+        )}
         {tab === "historico" && <HistoryTab dash={dash} />}
         {tab === "estatisticas" && <StatsTab dash={dash} />}
         {tab === "ranking" && <RankingTab dash={dash} />}
@@ -237,7 +302,11 @@ function DriverWallet() {
 /* ---------- Top ---------- */
 
 function TopBar(props: {
-  name: string; photo: string | null; online: boolean; onToggle: () => void; busy?: boolean;
+  name: string;
+  photo: string | null;
+  online: boolean;
+  onToggle: () => void;
+  busy?: boolean;
 }) {
   return (
     <div className="mb-6 flex items-center gap-3">
@@ -249,13 +318,23 @@ function TopBar(props: {
             {props.name.slice(0, 1).toUpperCase()}
           </div>
         )}
-        <Circle className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background ${props.online ? "fill-emerald-500 text-emerald-500" : "fill-muted-foreground/40 text-muted-foreground/40"}`} />
+        <Circle
+          className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background ${props.online ? "fill-emerald-500 text-emerald-500" : "fill-muted-foreground/40 text-muted-foreground/40"}`}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground">Olá,</p>
-        <p className="truncate font-display text-lg font-extrabold leading-tight">{props.name.split(" ")[0]}</p>
+        <p className="truncate font-display text-lg font-extrabold leading-tight">
+          {props.name.split(" ")[0]}
+        </p>
       </div>
-      <Button size="sm" variant={props.online ? "outline" : "default"} className="rounded-full" onClick={props.onToggle} disabled={props.busy}>
+      <Button
+        size="sm"
+        variant={props.online ? "outline" : "default"}
+        className="rounded-full"
+        onClick={props.onToggle}
+        disabled={props.busy}
+      >
         {props.online ? "Online" : "Ficar online"}
       </Button>
     </div>
@@ -292,41 +371,80 @@ export function activeDeliveryEarning(assignment: any) {
   });
 }
 
-function LocationNotice(props: { status: "idle" | "tracking" | "permission_denied" | "unsupported"; online: boolean }) {
+function LocationNotice(props: {
+  status: "idle" | "tracking" | "permission_denied" | "unsupported";
+  online: boolean;
+}) {
   if (!props.online) return null;
   if (props.status === "permission_denied") {
     return (
       <Card className="mb-4 rounded-2xl border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-        Permissao de localizacao negada. Ative a localizacao do navegador para atualizar sua posicao operacional.
+        Permissao de localizacao negada. Ative a localizacao do navegador para atualizar sua posicao
+        operacional.
       </Card>
     );
   }
   if (props.status === "unsupported") {
     return (
       <Card className="mb-4 rounded-2xl border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-        Este navegador nao oferece localizacao em tempo real. O restante do app continua funcionando.
+        Este navegador nao oferece localizacao em tempo real. O restante do app continua
+        funcionando.
       </Card>
     );
   }
   return (
     <Card className="mb-4 rounded-2xl border-none bg-muted/50 p-3 text-xs text-muted-foreground">
-      A localizacao e usada durante sua disponibilidade e entregas para organizacao da operacao do restaurante.
+      A localizacao e usada durante sua disponibilidade e entregas para organizacao da operacao do
+      restaurante.
     </Card>
   );
 }
 
 function StatusPill(props: { status: DriverPresenceStatus }) {
-  const map: Record<DriverPresenceStatus, { label: string; dot: string; bg: string; fg: string }> = {
-    offline: { label: DRIVER_OPERATIONAL_STATUS_LABEL.offline, dot: "bg-muted-foreground", bg: "bg-muted", fg: "text-muted-foreground" },
-    disponivel: { label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel, dot: "bg-emerald-500", bg: "bg-emerald-500/10", fg: "text-emerald-700" },
-    na_fila: { label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila, dot: "bg-blue-500", bg: "bg-blue-500/10", fg: "text-blue-700" },
-    em_entrega: { label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega, dot: "bg-amber-500", bg: "bg-amber-500/10", fg: "text-amber-700" },
-    retornando: { label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando, dot: "bg-sky-500", bg: "bg-sky-500/10", fg: "text-sky-700" },
-    pausa: { label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa, dot: "bg-orange-500", bg: "bg-orange-500/10", fg: "text-orange-700" },
-  };
+  const map: Record<DriverPresenceStatus, { label: string; dot: string; bg: string; fg: string }> =
+    {
+      offline: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.offline,
+        dot: "bg-muted-foreground",
+        bg: "bg-muted",
+        fg: "text-muted-foreground",
+      },
+      disponivel: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.disponivel,
+        dot: "bg-emerald-500",
+        bg: "bg-emerald-500/10",
+        fg: "text-emerald-700",
+      },
+      na_fila: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.na_fila,
+        dot: "bg-blue-500",
+        bg: "bg-blue-500/10",
+        fg: "text-blue-700",
+      },
+      em_entrega: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.em_entrega,
+        dot: "bg-amber-500",
+        bg: "bg-amber-500/10",
+        fg: "text-amber-700",
+      },
+      retornando: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.retornando,
+        dot: "bg-sky-500",
+        bg: "bg-sky-500/10",
+        fg: "text-sky-700",
+      },
+      pausa: {
+        label: DRIVER_OPERATIONAL_STATUS_LABEL.pausa,
+        dot: "bg-orange-500",
+        bg: "bg-orange-500/10",
+        fg: "text-orange-700",
+      },
+    };
   const m = map[props.status];
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${m.bg} ${m.fg}`}>
+    <div
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${m.bg} ${m.fg}`}
+    >
       <span className={`inline-block h-2 w-2 rounded-full ${m.dot}`} />
       {m.label}
     </div>
@@ -350,8 +468,9 @@ function HomeTab(props: {
   const restaurantName = (dash as any).restaurant?.name as string | undefined;
   const firstName = driver.name.split(" ")[0];
   const hasActive = !!dash.active;
-  const presence = ((dash as any).operationalStatus as DriverPresenceStatus | undefined)
-    ?? derivePresenceStatus({
+  const presence =
+    ((dash as any).operationalStatus as DriverPresenceStatus | undefined) ??
+    derivePresenceStatus({
       online: !!driver.online,
       queueStatus: q.status,
       hasActive,
@@ -390,14 +509,20 @@ function HomeTab(props: {
         <div className="mt-3 grid grid-cols-3 gap-3">
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Posição</p>
-            <p className="font-display text-3xl font-extrabold">{q.position ? `#${q.position}` : "—"}</p>
+            <p className="font-display text-3xl font-extrabold">
+              {q.position ? `#${q.position}` : "—"}
+            </p>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Aguardando</p>
-            <p className="font-display text-3xl font-extrabold tabular-nums">{q.inQueue ? waitLabel : "—"}</p>
+            <p className="font-display text-3xl font-extrabold tabular-nums">
+              {q.inQueue ? waitLabel : "—"}
+            </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Próx. saída</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Próx. saída
+            </p>
             <p className="font-display text-3xl font-extrabold">
               {q.inQueue && nextMin ? `${nextMin}m` : "—"}
             </p>
@@ -467,7 +592,9 @@ function HomeTab(props: {
           </Button>
         ) : (
           <div className="rounded-2xl bg-muted/50 px-4 py-3 text-center text-sm text-muted-foreground">
-            {hasActive ? "Entrega ativa vinculada." : "Fique online para entrar automaticamente na fila."}
+            {hasActive
+              ? "Entrega ativa vinculada."
+              : "Fique online para entrar automaticamente na fila."}
           </div>
         )}
         {!driver.online && (
@@ -495,7 +622,6 @@ function HomeTab(props: {
   );
 }
 
-
 function ActiveDeliveryCard(props: {
   active: NonNullable<Dash["active"]>;
   onPickup: (id: string, status: string) => void;
@@ -516,14 +642,16 @@ function ActiveDeliveryCard(props: {
   const badge = isNew
     ? { label: "🆕 Novo pedido", cls: "bg-primary/10 text-primary" }
     : inRoute
-    ? { label: "Em entrega", cls: "bg-amber-500/10 text-amber-700" }
-    : { label: "Entrega em andamento", cls: "bg-emerald-500/10 text-emerald-600" };
+      ? { label: "Em entrega", cls: "bg-amber-500/10 text-amber-700" }
+      : { label: "Entrega em andamento", cls: "bg-emerald-500/10 text-emerald-600" };
 
   return (
     <Card className="animate-in slide-in-from-bottom-2 overflow-hidden rounded-3xl border-none bg-card p-5 shadow-md">
       <div className="mb-3 flex items-center justify-between">
         <Badge className={`rounded-full ${badge.cls} hover:${badge.cls}`}>{badge.label}</Badge>
-        {o?.order_number && <span className="text-xs text-muted-foreground">Pedido #{o.order_number}</span>}
+        {o?.order_number && (
+          <span className="text-xs text-muted-foreground">Pedido #{o.order_number}</span>
+        )}
       </div>
       <p className="font-display text-xl font-extrabold">{o?.customer_name ?? "Cliente"}</p>
       {o?.address && (
@@ -598,7 +726,9 @@ function EarningsTab(props: { dash: Dash; goals: DriverGoals; onOpenGoals: () =>
     <div className="animate-in fade-in space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-2xl font-extrabold">Ganhos</h2>
-        <button onClick={props.onOpenGoals} className="text-xs text-primary font-semibold">Ajustar metas</button>
+        <button onClick={props.onOpenGoals} className="text-xs text-primary font-semibold">
+          Ajustar metas
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -614,17 +744,38 @@ function EarningsTab(props: { dash: Dash; goals: DriverGoals; onOpenGoals: () =>
       <Card className="rounded-2xl border-none p-4 shadow-sm">
         <p className="text-sm font-semibold">Média por entrega</p>
         <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-          <div><p className="text-muted-foreground">Hoje</p><p className="font-display text-xl font-extrabold">{BRL(e.ticketToday)}</p></div>
-          <div><p className="text-muted-foreground">Mês</p><p className="font-display text-xl font-extrabold">{BRL(e.ticketMonth)}</p></div>
+          <div>
+            <p className="text-muted-foreground">Hoje</p>
+            <p className="font-display text-xl font-extrabold">{BRL(e.ticketToday)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Mês</p>
+            <p className="font-display text-xl font-extrabold">{BRL(e.ticketMonth)}</p>
+          </div>
         </div>
       </Card>
 
       <Card className="rounded-2xl border-none p-4 shadow-sm">
         <p className="text-sm font-semibold">Recordes</p>
         <div className="mt-3 space-y-2 text-sm">
-          <RecordLine label="Maior dia" v={e.bestDay.value} sub={`${e.bestDay.count} entregas`} when={e.bestDay.key} />
-          <RecordLine label="Maior semana" v={e.bestWeek.value} sub={`${e.bestWeek.count} entregas`} when={e.bestWeek.key} />
-          <RecordLine label="Maior mês" v={e.bestMonth.value} sub={`${e.bestMonth.count} entregas`} when={e.bestMonth.key} />
+          <RecordLine
+            label="Maior dia"
+            v={e.bestDay.value}
+            sub={`${e.bestDay.count} entregas`}
+            when={e.bestDay.key}
+          />
+          <RecordLine
+            label="Maior semana"
+            v={e.bestWeek.value}
+            sub={`${e.bestWeek.count} entregas`}
+            when={e.bestWeek.key}
+          />
+          <RecordLine
+            label="Maior mês"
+            v={e.bestMonth.value}
+            sub={`${e.bestMonth.count} entregas`}
+            when={e.bestMonth.key}
+          />
         </div>
       </Card>
 
@@ -661,7 +812,9 @@ function GoalLine(props: { label: string; current: number; goal: number; unit: s
     <div className="mt-3">
       <div className="flex items-center justify-between text-xs">
         <span className="font-semibold">{props.label}</span>
-        <span className="text-muted-foreground">{props.current}/{props.goal} {props.unit}</span>
+        <span className="text-muted-foreground">
+          {props.current}/{props.goal} {props.unit}
+        </span>
       </div>
       <Progress value={p} className="mt-1 h-1.5" />
     </div>
@@ -676,8 +829,10 @@ function HistoryTab(props: { dash: Dash }) {
     for (const h of props.dash.history) {
       const ts = h.delivered_at ?? h.created_at;
       const d = new Date(ts!);
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const yst = new Date(today); yst.setDate(today.getDate() - 1);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yst = new Date(today);
+      yst.setDate(today.getDate() - 1);
       let key: string;
       if (d >= today) key = "Hoje";
       else if (d >= yst) key = "Ontem";
@@ -699,25 +854,36 @@ function HistoryTab(props: { dash: Dash }) {
       )}
       {grouped.map(([day, items]) => (
         <div key={day}>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{day}</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {day}
+          </p>
           <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
             {items.map((h: any) => (
               <div key={h.id} className="flex items-center gap-3 p-4">
-                <div className={`rounded-full p-2 ${h.status === "ENTREGUE" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>
-                  {h.status === "ENTREGUE" ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                <div
+                  className={`rounded-full p-2 ${h.status === "ENTREGUE" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                >
+                  {h.status === "ENTREGUE" ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <Circle className="h-4 w-4" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">
                     Pedido {h.order?.order_number ? `#${h.order.order_number}` : ""}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {h.order?.customer_name ?? "—"} · {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
+                    {h.order?.customer_name ?? "—"} ·{" "}
+                    {h.status === "ENTREGUE" ? "Entregue" : "Cancelada"}
                   </p>
                   {h.earningsSource === "legacy_fallback" && (
                     <p className="text-[10px] text-muted-foreground">Cálculo legado</p>
                   )}
                 </div>
-                <p className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}>
+                <p
+                  className={`font-display text-sm font-extrabold ${h.status === "ENTREGUE" ? "text-emerald-600" : "text-muted-foreground"}`}
+                >
                   {h.status === "ENTREGUE" ? `+ ${BRL(h.earnings)}` : "—"}
                 </p>
               </div>
@@ -791,19 +957,32 @@ function RankingTab(props: { dash: Dash }) {
       <p className="text-xs text-muted-foreground">Motoboys deste restaurante — hoje.</p>
       <Card className="divide-y divide-border/40 rounded-2xl border-none shadow-sm">
         {list.length === 0 && (
-          <div className="p-6 text-center text-sm text-muted-foreground">Sem entregas hoje ainda.</div>
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            Sem entregas hoje ainda.
+          </div>
         )}
         {list.map((r, i) => {
           const me = r.id === myId;
           return (
             <div key={r.id} className={`flex items-center gap-3 p-4 ${me ? "bg-primary/5" : ""}`}>
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${i < 3 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{i + 1}</div>
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${i < 3 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+              >
+                {i + 1}
+              </div>
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
-                {r.photo_url ? <img src={r.photo_url} alt={r.name} className="h-full w-full object-cover" /> : null}
+                {r.photo_url ? (
+                  <img src={r.photo_url} alt={r.name} className="h-full w-full object-cover" />
+                ) : null}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-semibold">{r.name}{me ? " (você)" : ""}</p>
-                <p className="text-xs text-muted-foreground">{r.deliveries} entregas · {formatMinutes(r.avgMinutes)}</p>
+                <p className="truncate text-sm font-semibold">
+                  {r.name}
+                  {me ? " (você)" : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {r.deliveries} entregas · {formatMinutes(r.avgMinutes)}
+                </p>
               </div>
               <p className="font-display text-sm font-extrabold">{BRL(r.earnings)}</p>
             </div>
@@ -825,7 +1004,10 @@ function AchievementsCard(props: { dash: Dash }) {
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {props.dash.achievements.map((a) => (
-          <div key={a.id} className={`rounded-xl p-3 text-xs ${a.achieved ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"}`}>
+          <div
+            key={a.id}
+            className={`rounded-xl p-3 text-xs ${a.achieved ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"}`}
+          >
             <Sparkles className={`h-3.5 w-3.5 ${a.achieved ? "" : "opacity-40"}`} />
             <p className="mt-1 font-semibold">{a.label}</p>
             <p className="text-[10px] opacity-80">{a.achieved ? "Desbloqueada" : "Bloqueada"}</p>
@@ -840,13 +1022,23 @@ function AchievementsCard(props: { dash: Dash }) {
 
 /* ---------- Goals sheet ---------- */
 
-function GoalsSheet(props: { initial: DriverGoals; onClose: () => void; onSave: (g: DriverGoals) => void }) {
+function GoalsSheet(props: {
+  initial: DriverGoals;
+  onClose: () => void;
+  onSave: (g: DriverGoals) => void;
+}) {
   const [daily, setDaily] = useState(String(props.initial.daily));
   const [weekly, setWeekly] = useState(String(props.initial.weekly));
   const [monthly, setMonthly] = useState(String(props.initial.monthly));
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={props.onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-background p-6 shadow-2xl animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+      onClick={props.onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl bg-background p-6 shadow-2xl animate-in slide-in-from-bottom"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
         <h3 className="font-display text-xl font-extrabold">Configurar metas</h3>
         <p className="text-xs text-muted-foreground">Metas de entregas por período.</p>
@@ -857,20 +1049,32 @@ function GoalsSheet(props: { initial: DriverGoals; onClose: () => void; onSave: 
           </div>
           <div>
             <Label>Meta semanal</Label>
-            <Input type="number" min={1} value={weekly} onChange={(e) => setWeekly(e.target.value)} />
+            <Input
+              type="number"
+              min={1}
+              value={weekly}
+              onChange={(e) => setWeekly(e.target.value)}
+            />
           </div>
           <div>
             <Label>Meta mensal</Label>
-            <Input type="number" min={1} value={monthly} onChange={(e) => setMonthly(e.target.value)} />
+            <Input
+              type="number"
+              min={1}
+              value={monthly}
+              onChange={(e) => setMonthly(e.target.value)}
+            />
           </div>
         </div>
         <Button
           className="mt-5 h-12 w-full rounded-2xl"
-          onClick={() => props.onSave({
-            daily: Math.max(1, Number(daily) || 1),
-            weekly: Math.max(1, Number(weekly) || 1),
-            monthly: Math.max(1, Number(monthly) || 1),
-          })}
+          onClick={() =>
+            props.onSave({
+              daily: Math.max(1, Number(daily) || 1),
+              weekly: Math.max(1, Number(weekly) || 1),
+              monthly: Math.max(1, Number(monthly) || 1),
+            })
+          }
         >
           <Save className="mr-2 h-4 w-4" /> Salvar metas
         </Button>
@@ -901,8 +1105,16 @@ function BottomNav(props: { tab: Tab; onChange: (t: Tab) => void }) {
               onClick={() => props.onChange(it.id)}
               className={`flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1 transition-all ${active ? "text-primary" : "text-muted-foreground"}`}
             >
-              <div className={`rounded-full p-1.5 transition-all ${active ? "bg-primary/10 scale-110" : ""}`}>{it.icon}</div>
-              <span className={`text-[10px] font-semibold ${active ? "opacity-100" : "opacity-70"}`}>{it.label}</span>
+              <div
+                className={`rounded-full p-1.5 transition-all ${active ? "bg-primary/10 scale-110" : ""}`}
+              >
+                {it.icon}
+              </div>
+              <span
+                className={`text-[10px] font-semibold ${active ? "opacity-100" : "opacity-70"}`}
+              >
+                {it.label}
+              </span>
             </button>
           );
         })}
@@ -926,9 +1138,7 @@ function LoginPrompt() {
   return (
     <div className="mx-auto max-w-md space-y-4 px-4 py-20 text-center">
       <h1 className="font-display text-3xl font-extrabold">Carteira do Motoboy</h1>
-      <p className="text-sm text-muted-foreground">
-        Acesse com seu CPF ou telefone cadastrado.
-      </p>
+      <p className="text-sm text-muted-foreground">Acesse com seu CPF ou telefone cadastrado.</p>
       <Button asChild size="lg" className="rounded-2xl">
         <Link to="/entregador/entrar">Entrar como Entregador</Link>
       </Button>
@@ -954,4 +1164,3 @@ function UnauthorizedPrompt() {
     </div>
   );
 }
-

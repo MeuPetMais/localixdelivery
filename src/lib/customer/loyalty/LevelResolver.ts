@@ -6,7 +6,9 @@ import type { LoyaltyLevel, LoyaltyLevelName } from "./types";
  */
 export const LevelResolver = {
   resolve(lifetimePoints: number, levels: LoyaltyLevel[]): LoyaltyLevelName {
-    const active = levels.filter((l) => l.active).sort((a, b) => b.minimum_points - a.minimum_points);
+    const active = levels
+      .filter((l) => l.active)
+      .sort((a, b) => b.minimum_points - a.minimum_points);
     for (const lvl of active) {
       if (lifetimePoints >= lvl.minimum_points) return lvl.name;
     }
@@ -14,6 +16,9 @@ export const LevelResolver = {
   },
 
   didLevelUp(previousLifetime: number, nextLifetime: number, levels: LoyaltyLevel[]): boolean {
-    return LevelResolver.resolve(previousLifetime, levels) !== LevelResolver.resolve(nextLifetime, levels);
+    return (
+      LevelResolver.resolve(previousLifetime, levels) !==
+      LevelResolver.resolve(nextLifetime, levels)
+    );
   },
 } as const;

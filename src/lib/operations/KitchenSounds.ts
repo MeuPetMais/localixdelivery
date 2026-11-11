@@ -7,12 +7,27 @@ const handlers = new Set<Handler>();
 let enabled = false;
 
 export const KitchenSounds = {
-  enable(): void { enabled = true; },
-  disable(): void { enabled = false; },
-  isEnabled(): boolean { return enabled; },
-  onPlay(h: Handler): () => void { handlers.add(h); return () => handlers.delete(h); },
+  enable(): void {
+    enabled = true;
+  },
+  disable(): void {
+    enabled = false;
+  },
+  isEnabled(): boolean {
+    return enabled;
+  },
+  onPlay(h: Handler): () => void {
+    handlers.add(h);
+    return () => handlers.delete(h);
+  },
   play(event: KitchenSoundEvent, meta?: Record<string, unknown>): void {
     if (!enabled) return;
-    handlers.forEach((h) => { try { h(event, meta); } catch { /* noop */ } });
+    handlers.forEach((h) => {
+      try {
+        h(event, meta);
+      } catch {
+        /* noop */
+      }
+    });
   },
 };

@@ -38,7 +38,16 @@ import {
   updateSupportTicketMeta,
   updateSupportTicketStatus,
 } from "@/lib/support-admin.functions";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, SUPPORT_CATEGORIES, SUPPORT_PRIORITIES, type LegacySupportStatus, type SupportCategory, type SupportPriority } from "@/lib/support-admin";
+import {
+  CATEGORY_LABEL,
+  PRIORITY_LABEL,
+  STATUS_LABEL,
+  SUPPORT_CATEGORIES,
+  SUPPORT_PRIORITIES,
+  type LegacySupportStatus,
+  type SupportCategory,
+  type SupportPriority,
+} from "@/lib/support-admin";
 import { renderQuickReply, sanitizeSupportText } from "@/lib/support-operations";
 import type { ReactNode } from "react";
 
@@ -67,8 +76,16 @@ function SupportTicketDetailPage() {
     queryKey: ["admin-support-ticket", ticketId],
     queryFn: () => detailFn({ data: { ticketId } }),
   });
-  const team = useQuery({ queryKey: ["admin-support-team"], queryFn: () => teamFn(), retry: false });
-  const quickReplies = useQuery({ queryKey: ["support-quick-replies"], queryFn: () => quickRepliesFn(), retry: false });
+  const team = useQuery({
+    queryKey: ["admin-support-team"],
+    queryFn: () => teamFn(),
+    retry: false,
+  });
+  const quickReplies = useQuery({
+    queryKey: ["support-quick-replies"],
+    queryFn: () => quickRepliesFn(),
+    retry: false,
+  });
 
   useEffect(() => {
     const invalidate = () => {
@@ -77,8 +94,21 @@ function SupportTicketDetailPage() {
     };
     const channel = supabase
       .channel(`admin-support-ticket-${ticketId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets", filter: `id=eq.${ticketId}` }, invalidate)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages", filter: `ticket_id=eq.${ticketId}` }, invalidate)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "support_tickets", filter: `id=eq.${ticketId}` },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "support_messages",
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        invalidate,
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -96,7 +126,8 @@ function SupportTicketDetailPage() {
       toast.success("Chamado assumido");
       invalidate();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao assumir"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao assumir"),
   });
   const assign = useMutation({
     mutationFn: (assigneeId: string | null) => assignFn({ data: { ticketId, assigneeId } }),
@@ -104,17 +135,21 @@ function SupportTicketDetailPage() {
       toast.success("Responsavel atualizado");
       invalidate();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao atribuir"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atribuir"),
   });
   const updateMeta = useMutation({
-    mutationFn: (data: { priority?: SupportPriority; category?: SupportCategory }) => metaFn({ data: { ticketId, ...data } }),
+    mutationFn: (data: { priority?: SupportPriority; category?: SupportCategory }) =>
+      metaFn({ data: { ticketId, ...data } }),
     onSuccess: invalidate,
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao atualizar"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao atualizar"),
   });
   const updateStatus = useMutation({
     mutationFn: (status: LegacySupportStatus) => statusFn({ data: { ticketId, status } }),
     onSuccess: invalidate,
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao mudar status"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao mudar status"),
   });
   const sendReply = useMutation({
     mutationFn: (body: string) => sendFn({ data: { ticketId, body } }),
@@ -123,7 +158,8 @@ function SupportTicketDetailPage() {
       toast.success("Resposta enviada");
       invalidate();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao enviar resposta"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao enviar resposta"),
   });
   const sendNote = useMutation({
     mutationFn: (body: string) => sendFn({ data: { ticketId, body, internalNote: true } }),
@@ -132,13 +168,25 @@ function SupportTicketDetailPage() {
       toast.success("Nota interna registrada");
       invalidate();
     },
-    onError: (error: any) => toast.error(error?.message ?? "Falha ao registrar nota"),
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao registrar nota"),
   });
 
   const ticket = detail.data?.ticket;
-  const messages = detail.data?.messages ?? [];
+  type SupportConversationMessage = {
+    id: string;
+    internal_note: boolean;
+    body: string | null;
+    author_type: string;
+    created_at: string;
+    attachments: unknown[];
+  };
+  const messages: SupportConversationMessage[] = detail.data?.messages ?? [];
   const articleQueryText = useMemo(
-    () => [ticket?.subject, messages.filter((message) => !message.internal_note).at(-1)?.body].filter(Boolean).join(" "),
+    () =>
+      [ticket?.subject, messages.filter((message) => !message.internal_note).at(-1)?.body]
+        .filter(Boolean)
+        .join(" "),
     [messages, ticket?.subject],
   );
   const articleSuggestions = useQuery({
@@ -147,8 +195,18 @@ function SupportTicketDetailPage() {
     queryFn: () => suggestArticlesFn({ data: { query: articleQueryText, limit: 4 } }),
     retry: false,
   });
-  const firstResponse = useMemo(() => durationLabel(ticket?.created_at, ticket?.first_response_at), [ticket]);
-  const totalTime = useMemo(() => durationLabel(ticket?.created_at, ticket?.resolved_at ?? ticket?.closed_at ?? new Date().toISOString()), [ticket]);
+  const firstResponse = useMemo(
+    () => durationLabel(ticket?.created_at, ticket?.first_response_at),
+    [ticket],
+  );
+  const totalTime = useMemo(
+    () =>
+      durationLabel(
+        ticket?.created_at,
+        ticket?.resolved_at ?? ticket?.closed_at ?? new Date().toISOString(),
+      ),
+    [ticket],
+  );
 
   if (detail.isLoading || !ticket) {
     return <div className="p-8 text-center text-sm text-slate-400">Carregando chamado...</div>;
@@ -158,7 +216,10 @@ function SupportTicketDetailPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/admin/support" className="mb-2 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100">
+          <Link
+            to="/admin/support"
+            className="mb-2 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100"
+          >
             <ArrowLeft className="h-4 w-4" />
             Voltar para fila
           </Link>
@@ -168,15 +229,28 @@ function SupportTicketDetailPage() {
           <p className="text-sm text-slate-400">{ticket.restaurant_name}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" className="gap-2" onClick={() => take.mutate()} disabled={take.isPending}>
+          <Button
+            variant="secondary"
+            className="gap-2"
+            onClick={() => take.mutate()}
+            disabled={take.isPending}
+          >
             <UserPlus className="h-4 w-4" />
             Assumir
           </Button>
-          <Button variant="outline" className="gap-2 border-slate-700 text-slate-200" onClick={() => updateStatus.mutate("respondido")}>
+          <Button
+            variant="outline"
+            className="gap-2 border-slate-700 text-slate-200"
+            onClick={() => updateStatus.mutate("respondido")}
+          >
             <Clock className="h-4 w-4" />
             Aguardando cliente
           </Button>
-          <Button variant="outline" className="gap-2 border-slate-700 text-slate-200" onClick={() => updateStatus.mutate("em_analise")}>
+          <Button
+            variant="outline"
+            className="gap-2 border-slate-700 text-slate-200"
+            onClick={() => updateStatus.mutate("em_analise")}
+          >
             <RefreshCcw className="h-4 w-4" />
             Aguardando suporte
           </Button>
@@ -210,8 +284,12 @@ function SupportTicketDetailPage() {
                     }`}
                   >
                     <div className="mb-1 text-xs font-medium text-slate-400">
-                      {message.internal_note ? "Nota interna" : message.author_type === "suporte" ? "Equipe Localix" : "Estabelecimento"} -{" "}
-                      {new Date(message.created_at).toLocaleString("pt-BR")}
+                      {message.internal_note
+                        ? "Nota interna"
+                        : message.author_type === "suporte"
+                          ? "Equipe Localix"
+                          : "Estabelecimento"}{" "}
+                      - {new Date(message.created_at).toLocaleString("pt-BR")}
                     </div>
                     <div className="whitespace-pre-wrap break-words">{message.body}</div>
                     {message.attachments.length > 0 && (
@@ -227,12 +305,14 @@ function SupportTicketDetailPage() {
           </Card>
 
           <Card className="border-slate-800 bg-slate-900 p-4">
-            <div className="mb-2 text-sm font-semibold text-slate-100">Responder ao estabelecimento</div>
+            <div className="mb-2 text-sm font-semibold text-slate-100">
+              Responder ao estabelecimento
+            </div>
             {(quickReplies.data ?? []).length > 0 && (
               <div className="mb-3 flex flex-wrap gap-2">
                 {(quickReplies.data ?? [])
-                  .filter((item: any) => !item.category || item.category === ticket.category)
-                  .map((item: any) => (
+                  .filter((item) => !item.category || item.category === ticket.category)
+                  .map((item) => (
                     <Button
                       key={item.id}
                       type="button"
@@ -262,7 +342,12 @@ function SupportTicketDetailPage() {
                 placeholder="Escreva a resposta..."
                 className="border-slate-700 bg-slate-950 text-slate-100"
               />
-              <Button size="icon" className="h-auto w-12" disabled={!reply.trim() || sendReply.isPending} onClick={() => sendReply.mutate(reply)}>
+              <Button
+                size="icon"
+                className="h-auto w-12"
+                disabled={!reply.trim() || sendReply.isPending}
+                onClick={() => sendReply.mutate(reply)}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -281,7 +366,13 @@ function SupportTicketDetailPage() {
                 placeholder="Visivel somente para equipe Localix"
                 className="border-amber-500/30 bg-slate-950 text-slate-100"
               />
-              <Button variant="secondary" size="icon" className="h-auto w-12" disabled={!note.trim() || sendNote.isPending} onClick={() => sendNote.mutate(note)}>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-auto w-12"
+                disabled={!note.trim() || sendNote.isPending}
+                onClick={() => sendNote.mutate(note)}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -298,7 +389,12 @@ function SupportTicketDetailPage() {
             <Info label="Abertura" value={new Date(ticket.created_at).toLocaleString("pt-BR")} />
             <Info label="Primeira resposta" value={firstResponse} />
             <Info label="Tempo total" value={totalTime} />
-            <Info label="SLA" value={ticket.sla_due_at ? new Date(ticket.sla_due_at).toLocaleString("pt-BR") : "Sem SLA"} />
+            <Info
+              label="SLA"
+              value={
+                ticket.sla_due_at ? new Date(ticket.sla_due_at).toLocaleString("pt-BR") : "Sem SLA"
+              }
+            />
           </Card>
 
           <Card className="border-slate-800 bg-slate-900 p-4">
@@ -308,17 +404,28 @@ function SupportTicketDetailPage() {
             </div>
             <div className="space-y-2">
               {(articleSuggestions.data ?? []).length === 0 ? (
-                <div className="text-sm text-slate-400">Sem sugestoes publicadas para este assunto.</div>
+                <div className="text-sm text-slate-400">
+                  Sem sugestoes publicadas para este assunto.
+                </div>
               ) : (
-                (articleSuggestions.data ?? []).map((article: any) => (
-                  <div key={article.id} className="rounded-md border border-slate-800 bg-slate-950 p-3">
+                (articleSuggestions.data ?? []).map((article) => (
+                  <div
+                    key={article.id}
+                    className="rounded-md border border-slate-800 bg-slate-950 p-3"
+                  >
                     <div className="text-sm font-medium text-slate-100">{article.title}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-slate-400">{sanitizeSupportText(article.content, 180)}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-slate-400">
+                      {sanitizeSupportText(article.content, 180)}
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
                       className="mt-2 border-slate-700 text-slate-200"
-                      onClick={() => sendReply.mutate(`Artigo recomendado: ${article.title}\n\n${sanitizeSupportText(article.content, 700)}`)}
+                      onClick={() =>
+                        sendReply.mutate(
+                          `Artigo recomendado: ${article.title}\n\n${sanitizeSupportText(article.content, 700)}`,
+                        )
+                      }
                     >
                       Compartilhar
                     </Button>
@@ -332,13 +439,16 @@ function SupportTicketDetailPage() {
             <div className="mb-3 text-sm font-semibold text-slate-100">Acoes</div>
             <div className="space-y-3">
               <Field label="Atribuir atendente">
-                <Select value={ticket.assigned_to ?? "none"} onValueChange={(value) => assign.mutate(value === "none" ? null : value)}>
+                <Select
+                  value={ticket.assigned_to ?? "none"}
+                  onValueChange={(value) => assign.mutate(value === "none" ? null : value)}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-950 text-slate-100">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nao atribuido</SelectItem>
-                    {(team.data ?? []).map((member) => (
+                    {(team.data ?? []).map((member: { user_id: string; label: string }) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.label}
                       </SelectItem>
@@ -347,32 +457,58 @@ function SupportTicketDetailPage() {
                 </Select>
               </Field>
               <Field label="Prioridade">
-                <Select value={ticket.priority} onValueChange={(value) => updateMeta.mutate({ priority: value as SupportPriority })}>
+                <Select
+                  value={ticket.priority}
+                  onValueChange={(value) =>
+                    updateMeta.mutate({ priority: value as SupportPriority })
+                  }
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-950 text-slate-100">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {SUPPORT_PRIORITIES.map((priority) => (
-                      <SelectItem key={priority} value={priority}>{PRIORITY_LABEL[priority]}</SelectItem>
+                      <SelectItem key={priority} value={priority}>
+                        {PRIORITY_LABEL[priority]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
               <Field label="Categoria">
-                <Select value={ticket.category} onValueChange={(value) => updateMeta.mutate({ category: value as SupportCategory })}>
+                <Select
+                  value={ticket.category}
+                  onValueChange={(value) =>
+                    updateMeta.mutate({ category: value as SupportCategory })
+                  }
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-950 text-slate-100">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {SUPPORT_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>{CATEGORY_LABEL[category]}</SelectItem>
+                      <SelectItem key={category} value={category}>
+                        {CATEGORY_LABEL[category]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="border-slate-700 text-slate-200" onClick={() => updateStatus.mutate("aberto")}>Reabrir</Button>
-                <Button variant="outline" className="border-slate-700 text-slate-200" onClick={() => updateStatus.mutate("fechado")}>Fechar</Button>
+                <Button
+                  variant="outline"
+                  className="border-slate-700 text-slate-200"
+                  onClick={() => updateStatus.mutate("aberto")}
+                >
+                  Reabrir
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-slate-700 text-slate-200"
+                  onClick={() => updateStatus.mutate("fechado")}
+                >
+                  Fechar
+                </Button>
               </div>
             </div>
           </Card>
@@ -402,7 +538,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function durationLabel(from?: string | null, to?: string | null) {
   if (!from || !to) return "Pendente";
-  const minutes = Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60_000));
+  const minutes = Math.max(
+    0,
+    Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60_000),
+  );
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;

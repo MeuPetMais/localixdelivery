@@ -98,9 +98,9 @@ function GrowthPage() {
             <h1 className="font-display text-3xl font-extrabold">Localix Growth</h1>
           </div>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Transforme comportamento de compra em oportunidades de segunda compra,
-            recorrência e reativação. Dados financeiros continuam autoritativos nos
-            domínios de pedidos e pagamentos.
+            Transforme comportamento de compra em oportunidades de segunda compra, recorrência e
+            reativação. Dados financeiros continuam autoritativos nos domínios de pedidos e
+            pagamentos.
           </p>
         </div>
         <Button
@@ -143,22 +143,14 @@ function GrowthPage() {
         />
       )}
 
-      {tab === "opportunities" && (
-        <Opportunities rows={data.customers.opportunities} />
-      )}
+      {tab === "opportunities" && <Opportunities rows={data.customers.opportunities} />}
 
       {tab === "campaigns" && (
-        <Campaigns
-          consent={data.consent}
-          providers={data.automation.providers}
-        />
+        <Campaigns consent={data.consent} providers={data.automation.providers} />
       )}
 
       {tab === "automation" && (
-        <Automation
-          counts={data.automation.status_counts}
-          jobs={data.automation.recent_jobs}
-        />
+        <Automation counts={data.automation.status_counts} jobs={data.automation.recent_jobs} />
       )}
 
       {tab === "results" && <Results measurement={data.measurement} />}
@@ -213,9 +205,7 @@ function Overview({
             <h2 className="font-semibold">Canais ativos</h2>
           </div>
           <p className="mt-4 text-3xl font-extrabold">{providerCount}</p>
-          <p className="text-sm text-muted-foreground">
-            providers habilitados no ambiente atual.
-          </p>
+          <p className="text-sm text-muted-foreground">providers habilitados no ambiente atual.</p>
         </Card>
       </div>
 
@@ -269,22 +259,28 @@ function Opportunities({ rows }: { rows: any[] }) {
                   Nenhuma oportunidade identificada neste momento.
                 </td>
               </tr>
-            ) : rows.map((row) => (
-              <tr key={row.id} className="border-t">
-                <td className="px-4 py-3">
-                  <p className="font-medium">{row.name || "Cliente sem nome"}</p>
-                  <p className="text-xs text-muted-foreground">{row.phone}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant="outline">{LIFECYCLE_LABEL[row.lifecycle] ?? row.lifecycle}</Badge>
-                </td>
-                <td className="px-4 py-3">{row.total_orders}</td>
-                <td className="px-4 py-3 font-medium">{brl(row.total_spent)}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {row.last_order_at ? new Date(row.last_order_at).toLocaleDateString("pt-BR") : "—"}
-                </td>
-              </tr>
-            ))}
+            ) : (
+              rows.map((row) => (
+                <tr key={row.id} className="border-t">
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{row.name || "Cliente sem nome"}</p>
+                    <p className="text-xs text-muted-foreground">{row.phone}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline">
+                      {LIFECYCLE_LABEL[row.lifecycle] ?? row.lifecycle}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">{row.total_orders}</td>
+                  <td className="px-4 py-3 font-medium">{brl(row.total_spent)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {row.last_order_at
+                      ? new Date(row.last_order_at).toLocaleDateString("pt-BR")
+                      : "—"}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -301,9 +297,9 @@ function Campaigns({ consent, providers }: any) {
           <div>
             <h2 className="font-semibold">Campanhas ainda em modo controlado</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              O Localix não dispara campanhas automaticamente nesta fase. Um canal somente
-              pode avançar quando houver consentimento explícito, provider comprovado,
-              frequência permitida e sender idempotente.
+              O Localix não dispara campanhas automaticamente nesta fase. Um canal somente pode
+              avançar quando houver consentimento explícito, provider comprovado, frequência
+              permitida e sender idempotente.
             </p>
           </div>
         </div>
@@ -368,19 +364,23 @@ function Automation({ counts, jobs }: { counts: Record<string, number>; jobs: an
                     Nenhum job de automação criado ainda.
                   </td>
                 </tr>
-              ) : jobs.map((job) => (
-                <tr key={job.id} className="border-t">
-                  <td className="px-4 py-3 font-medium">{job.trigger_type}</td>
-                  <td className="px-4 py-3">{job.channel}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline">{JOB_STATUS_LABEL[job.status] ?? job.status}</Badge>
-                  </td>
-                  <td className="max-w-md px-4 py-3 text-muted-foreground">{job.reason || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(job.created_at).toLocaleString("pt-BR")}
-                  </td>
-                </tr>
-              ))}
+              ) : (
+                jobs.map((job) => (
+                  <tr key={job.id} className="border-t">
+                    <td className="px-4 py-3 font-medium">{job.trigger_type}</td>
+                    <td className="px-4 py-3">{job.channel}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline">{JOB_STATUS_LABEL[job.status] ?? job.status}</Badge>
+                    </td>
+                    <td className="max-w-md px-4 py-3 text-muted-foreground">
+                      {job.reason || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {new Date(job.created_at).toLocaleString("pt-BR")}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -393,10 +393,26 @@ function Results({ measurement }: { measurement: any }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={BarChart3} label="Oportunidades vistas" value={String(measurement.opportunity_views)} />
-        <MetricCard icon={Activity} label="Ações selecionadas" value={String(measurement.actions_selected)} />
-        <MetricCard icon={CheckCircle2} label="Ações executadas" value={String(measurement.actions_executed)} />
-        <MetricCard icon={Users} label="Clientes convertidos" value={String(measurement.customers_with_attributed_order)} />
+        <MetricCard
+          icon={BarChart3}
+          label="Oportunidades vistas"
+          value={String(measurement.opportunity_views)}
+        />
+        <MetricCard
+          icon={Activity}
+          label="Ações selecionadas"
+          value={String(measurement.actions_selected)}
+        />
+        <MetricCard
+          icon={CheckCircle2}
+          label="Ações executadas"
+          value={String(measurement.actions_executed)}
+        />
+        <MetricCard
+          icon={Users}
+          label="Clientes convertidos"
+          value={String(measurement.customers_with_attributed_order)}
+        />
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5">
@@ -410,7 +426,9 @@ function Results({ measurement }: { measurement: any }) {
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">Action → Order</p>
           <p className="mt-1 text-3xl font-extrabold">
-            {measurement.action_to_order_rate == null ? "—" : `${measurement.action_to_order_rate}%`}
+            {measurement.action_to_order_rate == null
+              ? "—"
+              : `${measurement.action_to_order_rate}%`}
           </p>
         </Card>
       </div>
@@ -424,7 +442,15 @@ function Results({ measurement }: { measurement: any }) {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between gap-3">

@@ -39,7 +39,9 @@ function FinancePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Financeiro da Plataforma</h1>
-        <p className="text-sm text-slate-400">Valores financeiros persistidos por estabelecimento.</p>
+        <p className="text-sm text-slate-400">
+          Valores financeiros persistidos por estabelecimento.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -47,9 +49,14 @@ function FinancePage() {
           {presets.map(({ k, l }) => (
             <button
               key={k}
-              onClick={() => { setRange(k); setCustom(null); }}
+              onClick={() => {
+                setRange(k);
+                setCustom(null);
+              }}
               className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                range === k && !custom ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"
+                range === k && !custom
+                  ? "bg-primary text-primary-foreground"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
               {l}
@@ -60,14 +67,24 @@ function FinancePage() {
           <input
             type="date"
             value={custom?.from ?? ""}
-            onChange={(event) => setCustom((current) => ({ from: event.target.value, to: current?.to ?? event.target.value }))}
+            onChange={(event) =>
+              setCustom((current) => ({
+                from: event.target.value,
+                to: current?.to ?? event.target.value,
+              }))
+            }
             className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1"
           />
           <span>ate</span>
           <input
             type="date"
             value={custom?.to ?? ""}
-            onChange={(event) => setCustom((current) => ({ from: current?.from ?? event.target.value, to: event.target.value }))}
+            onChange={(event) =>
+              setCustom((current) => ({
+                from: current?.from ?? event.target.value,
+                to: event.target.value,
+              }))
+            }
             className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1"
           />
         </div>
@@ -77,8 +94,15 @@ function FinancePage() {
         <TotalCard label="Pedidos" value={String(data?.totals.orders ?? 0)} />
         <TotalCard label="Total cliente" value={brl(data?.totals.customerTotal ?? 0)} />
         <TotalCard label="Taxa plataforma" value={brl(data?.totals.platformFee ?? 0)} />
-        <TotalCard label="Receita plataforma" value={brl(data?.totals.platformRevenue ?? 0)} highlight />
-        <TotalCard label="Receita realizada" value={brl(data?.totals.realizedPlatformRevenue ?? 0)} />
+        <TotalCard
+          label="Receita plataforma"
+          value={brl(data?.totals.platformRevenue ?? 0)}
+          highlight
+        />
+        <TotalCard
+          label="Receita realizada"
+          value={brl(data?.totals.realizedPlatformRevenue ?? 0)}
+        />
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
@@ -97,21 +121,35 @@ function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={9} className="p-6 text-center text-slate-400">Carregando...</td></tr>}
+            {isLoading && (
+              <tr>
+                <td colSpan={9} className="p-6 text-center text-slate-400">
+                  Carregando...
+                </td>
+              </tr>
+            )}
             {!isLoading && (data?.rows ?? []).length === 0 && (
-              <tr><td colSpan={9} className="p-6 text-center text-slate-400">Sem dados no periodo.</td></tr>
+              <tr>
+                <td colSpan={9} className="p-6 text-center text-slate-400">
+                  Sem dados no periodo.
+                </td>
+              </tr>
             )}
             {(data?.rows ?? []).map((row) => (
               <tr key={row.id} className="border-t border-slate-800 hover:bg-slate-800/30">
                 <td className="px-4 py-3">
                   <div className="font-medium">{row.name}</div>
-                  <div className="text-xs text-slate-400">{row.category ?? "-"} / {row.city ?? "-"}</div>
+                  <div className="text-xs text-slate-400">
+                    {row.category ?? "-"} / {row.city ?? "-"}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right">{row.orders}</td>
                 <td className="px-4 py-3 text-right">{brl(row.customerTotal)}</td>
                 <td className="px-4 py-3 text-right">{brl(row.restaurantGross)}</td>
                 <td className="px-4 py-3 text-right">{brl(row.platformFee)}</td>
-                <td className="px-4 py-3 text-right font-semibold text-primary">{brl(row.platformRevenue)}</td>
+                <td className="px-4 py-3 text-right font-semibold text-primary">
+                  {brl(row.platformRevenue)}
+                </td>
                 <td className="px-4 py-3 text-right">{brl(row.realizedPlatformRevenue)}</td>
                 <td className="px-4 py-3 text-right text-green-400">{brl(row.restaurantNet)}</td>
                 <td className="px-4 py-3 text-right text-amber-300">{row.missingSnapshotOrders}</td>
@@ -124,9 +162,19 @@ function FinancePage() {
   );
 }
 
-function TotalCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function TotalCard({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? "border-primary/50 bg-primary/10" : "border-slate-800 bg-slate-900"}`}>
+    <div
+      className={`rounded-xl border p-4 ${highlight ? "border-primary/50 bg-primary/10" : "border-slate-800 bg-slate-900"}`}
+    >
       <div className="text-xs text-slate-400">{label}</div>
       <div className={`mt-1 text-xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
     </div>

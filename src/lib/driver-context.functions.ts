@@ -23,16 +23,14 @@ export const getMyDriverContexts = createServerFn({ method: "GET" })
     const driverIds = rows.map((r) => r.driver_id);
     const restaurantIds = rows.map((r) => r.restaurant_id);
 
-    const [{ data: drivers, error: driversErr }, { data: restaurants, error: restaurantsErr }] = await Promise.all([
-      supabaseAdmin
-        .from("delivery_drivers")
-        .select("id, restaurant_id, owner_id, name, status, online")
-        .in("id", driverIds),
-      supabaseAdmin
-        .from("restaurants")
-        .select("id, name, logo_url")
-        .in("id", restaurantIds),
-    ]);
+    const [{ data: drivers, error: driversErr }, { data: restaurants, error: restaurantsErr }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("delivery_drivers")
+          .select("id, restaurant_id, owner_id, name, status, online")
+          .in("id", driverIds),
+        supabaseAdmin.from("restaurants").select("id, name, logo_url").in("id", restaurantIds),
+      ]);
     if (driversErr) throw new Error(driversErr.message);
     if (restaurantsErr) throw new Error(restaurantsErr.message);
 
@@ -71,11 +69,14 @@ export const switchMyDriverContext = createServerFn({ method: "POST" })
     if (!parsed?.ok) {
       const messages: Record<string, string> = {
         CURRENT_CONTEXT_ONLINE: "Fique offline antes de trocar de estabelecimento.",
-        CURRENT_CONTEXT_HAS_ACTIVE_ASSIGNMENT: "Finalize a entrega atual antes de trocar de estabelecimento.",
+        CURRENT_CONTEXT_HAS_ACTIVE_ASSIGNMENT:
+          "Finalize a entrega atual antes de trocar de estabelecimento.",
         CURRENT_CONTEXT_IN_QUEUE: "Saia da fila antes de trocar de estabelecimento.",
         MEMBERSHIP_NOT_FOUND: "Este estabelecimento não está vinculado à sua conta.",
       };
-      throw new Error(messages[parsed?.reason ?? ""] ?? "Não foi possível trocar de estabelecimento.");
+      throw new Error(
+        messages[parsed?.reason ?? ""] ?? "Não foi possível trocar de estabelecimento.",
+      );
     }
     return parsed;
   });

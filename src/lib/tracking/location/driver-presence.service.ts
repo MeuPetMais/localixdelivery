@@ -42,7 +42,11 @@ export function createDriverPresenceService(deps: PresenceServiceDeps = {}) {
         heartbeat_interval_ms: resolveInterval(input.state, input.approaching_destination),
       };
       store.set(input.driver_id, next);
-      if (!prev || prev.state !== next.state || prev.heartbeat_interval_ms !== next.heartbeat_interval_ms) {
+      if (
+        !prev ||
+        prev.state !== next.state ||
+        prev.heartbeat_interval_ms !== next.heartbeat_interval_ms
+      ) {
         driverPresenceBus.publish({
           type: "DriverPresenceChanged",
           driver_id: next.driver_id,
@@ -70,9 +74,15 @@ export function createDriverPresenceService(deps: PresenceServiceDeps = {}) {
       });
       return next;
     },
-    get(driverId: string): DriverPresence | null { return store.get(driverId) ?? null; },
-    intervalFor(state: DriverPresenceState, approaching?: boolean) { return resolveInterval(state, approaching); },
-    _reset() { store.clear(); },
+    get(driverId: string): DriverPresence | null {
+      return store.get(driverId) ?? null;
+    },
+    intervalFor(state: DriverPresenceState, approaching?: boolean) {
+      return resolveInterval(state, approaching);
+    },
+    _reset() {
+      store.clear();
+    },
   };
 }
 

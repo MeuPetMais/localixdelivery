@@ -92,10 +92,12 @@ describe("PartnerWhatsAppFloatingButton", () => {
   });
 
   it("collapses on mobile scroll and restores after a controlled debounce", () => {
-    expect(componentSource).toContain('window.addEventListener("scroll", handleScroll, { passive: true })');
-    expect(componentSource).toContain("setIsHiddenOnMobileScroll(true)");
     expect(componentSource).toContain(
-      "window.setTimeout(showButton, PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS)",
+      'window.addEventListener("scroll", handleScroll, { passive: true })',
+    );
+    expect(componentSource).toContain("setIsHiddenOnMobileScroll(true)");
+    expect(componentSource).toMatch(
+      /window\.setTimeout\(\s*showButton,\s*PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS,?\s*\)/,
     );
     expect(componentSource).toContain("setIsHiddenOnMobileScroll(false)");
     expect(PARTNER_WHATSAPP_SCROLL_IDLE_DELAY_MS).toBe(220);
@@ -104,9 +106,13 @@ describe("PartnerWhatsAppFloatingButton", () => {
   it("limits the scroll behavior to mobile and cleans listeners and timers", () => {
     expect(componentSource).toContain("window.matchMedia(PARTNER_WHATSAPP_MOBILE_QUERY)");
     expect(componentSource).toContain("if (!mobileQuery.matches)");
-    expect(componentSource).toContain('mobileQuery.addEventListener("change", handleMobileQueryChange)');
+    expect(componentSource).toContain(
+      'mobileQuery.addEventListener("change", handleMobileQueryChange)',
+    );
     expect(componentSource).toContain('window.removeEventListener("scroll", handleScroll)');
-    expect(componentSource).toContain('mobileQuery.removeEventListener("change", handleMobileQueryChange)');
+    expect(componentSource).toContain(
+      'mobileQuery.removeEventListener("change", handleMobileQueryChange)',
+    );
     expect(componentSource).toContain("window.clearTimeout(scrollIdleTimerRef.current)");
   });
 

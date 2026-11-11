@@ -10,11 +10,11 @@
  */
 
 export type EtaInputs = {
-  queueCount: number;        // "novo" + "aguardando_confirmacao"
-  preparingCount: number;    // "em_preparo"
-  cooks: number;             // configurável no perfil (default 1)
-  avgPrepMinutes: number;    // média histórica (default 20)
-  deliveryMinutes: number;   // média de entrega (default 15)
+  queueCount: number; // "novo" + "aguardando_confirmacao"
+  preparingCount: number; // "em_preparo"
+  cooks: number; // configurável no perfil (default 1)
+  avgPrepMinutes: number; // média histórica (default 20)
+  deliveryMinutes: number; // média de entrega (default 15)
 };
 
 export function computeEtaMinutes({

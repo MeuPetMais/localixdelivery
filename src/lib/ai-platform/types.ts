@@ -47,9 +47,9 @@ export interface AISkillDefinition {
   key: AISkillKey;
   name: string;
   description: string;
-  domains: string[];              // domains the skill may read from
-  default_prompt: string;         // template id
-  requires_permission: string;    // permission key
+  domains: string[]; // domains the skill may read from
+  default_prompt: string; // template id
+  requires_permission: string; // permission key
 }
 
 export interface AISkillContext {
@@ -80,7 +80,7 @@ export interface AIPromptTemplate {
   skill: AISkillKey;
   version: number;
   system: string;
-  user: string;                   // may contain {{variables}}
+  user: string; // may contain {{variables}}
   variables: string[];
   active: boolean;
   created_at: string;
@@ -124,7 +124,13 @@ export interface AIAuditEntry {
 
 export type AIDomainEvent =
   | { type: "AISkillInvoked"; restaurantId: string; skill: AISkillKey; at: string }
-  | { type: "AISkillCompleted"; restaurantId: string; skill: AISkillKey; latency_ms: number; at: string }
+  | {
+      type: "AISkillCompleted";
+      restaurantId: string;
+      skill: AISkillKey;
+      latency_ms: number;
+      at: string;
+    }
   | { type: "AISkillDenied"; restaurantId: string; skill: AISkillKey; reason: string; at: string }
   | { type: "AILimitExceeded"; restaurantId: string; kind: "requests" | "tokens"; at: string };
 

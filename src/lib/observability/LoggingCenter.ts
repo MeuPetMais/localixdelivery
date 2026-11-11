@@ -31,11 +31,19 @@ export const LoggingCenter = {
       request_id: input.request_id ?? null,
       tenant_id: input.tenant_id ?? null,
       user_id: input.user_id ?? null,
-      metadata: input.metadata ? (sanitizeLogPayload(input.metadata) as Record<string, unknown>) : undefined,
+      metadata: input.metadata
+        ? (sanitizeLogPayload(input.metadata) as Record<string, unknown>)
+        : undefined,
     };
     buffer.push(entry);
     if (buffer.length > MAX) buffer.splice(0, buffer.length - MAX);
-    for (const l of listeners) { try { l(entry); } catch { /* noop */ } }
+    for (const l of listeners) {
+      try {
+        l(entry);
+      } catch {
+        /* noop */
+      }
+    }
     return entry;
   },
   info(service: string, message: string, metadata?: Record<string, unknown>) {
@@ -50,7 +58,12 @@ export const LoggingCenter = {
   critical(service: string, message: string, metadata?: Record<string, unknown>) {
     return this.log({ level: "critical", service, message, metadata });
   },
-  list(filter?: { level?: LogLevel; service?: string; tenant_id?: string; limit?: number }): LogEntry[] {
+  list(filter?: {
+    level?: LogLevel;
+    service?: string;
+    tenant_id?: string;
+    limit?: number;
+  }): LogEntry[] {
     let out = buffer;
     if (filter?.level) out = out.filter((e) => e.level === filter.level);
     if (filter?.service) out = out.filter((e) => e.service === filter.service);
@@ -59,6 +72,13 @@ export const LoggingCenter = {
     if (filter?.limit) out = out.slice(0, filter.limit);
     return out;
   },
-  subscribe(l: Listener) { listeners.add(l); return () => listeners.delete(l); },
-  _reset() { buffer.length = 0; seq = 0; listeners.clear(); },
+  subscribe(l: Listener) {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+  _reset() {
+    buffer.length = 0;
+    seq = 0;
+    listeners.clear();
+  },
 } as const;

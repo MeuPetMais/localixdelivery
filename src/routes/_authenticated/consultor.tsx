@@ -51,9 +51,12 @@ function ConsultorPage() {
     try {
       const res = await chat({ data: { restaurantId: restaurant.id, messages: next.slice(-20) } });
       setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha no consultor");
-      setMessages((m) => [...m, { role: "assistant", content: "⚠️ Não consegui responder agora. Tente novamente." }]);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Falha no consultor");
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "⚠️ Não consegui responder agora. Tente novamente." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -84,8 +87,12 @@ function ConsultorPage() {
                   <Bot className="h-7 w-7" />
                 </div>
                 <div>
-                  <h2 className="font-display text-xl font-bold">Pergunte qualquer coisa sobre o seu negócio</h2>
-                  <p className="text-sm text-muted-foreground">Pedidos, CRM, fidelidade, estoque, financeiro e marketing — tudo conectado.</p>
+                  <h2 className="font-display text-xl font-bold">
+                    Pergunte qualquer coisa sobre o seu negócio
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Pedidos, CRM, fidelidade, estoque, financeiro e marketing — tudo conectado.
+                  </p>
                 </div>
                 <div className="grid gap-2 text-left sm:grid-cols-2">
                   {SUGGESTIONS.map((s) => (
@@ -104,10 +111,14 @@ function ConsultorPage() {
 
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-              <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-gradient-warm text-primary-foreground shadow-glow"}`}>
+              <div
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-gradient-warm text-primary-foreground shadow-glow"}`}
+              >
                 {m.role === "user" ? <UserIcon className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
               </div>
-              <div className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              <div
+                className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              >
                 {m.content}
               </div>
             </div>

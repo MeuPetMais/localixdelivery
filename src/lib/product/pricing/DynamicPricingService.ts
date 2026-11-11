@@ -3,12 +3,7 @@
 import { PromotionRuleEngine } from "./PromotionRuleEngine";
 import { DiscountCalculator } from "./DiscountCalculator";
 import { DynamicPricingStrategy, type PricingStrategy } from "./DynamicPricingStrategy";
-import type {
-  AppliedPromotion,
-  DynamicPricingResult,
-  PricingContext,
-  Promotion,
-} from "./types";
+import type { AppliedPromotion, DynamicPricingResult, PricingContext, Promotion } from "./types";
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
@@ -72,9 +67,7 @@ export const DynamicPricingService = {
     const applied = check.eligible
       ? DiscountCalculator.calculate(promotion, ctx.lines, ctx.delivery_fee ?? 0)
       : null;
-    const originalSubtotal = round2(
-      ctx.lines.reduce((s, l) => s + l.unit_price * l.quantity, 0),
-    );
+    const originalSubtotal = round2(ctx.lines.reduce((s, l) => s + l.unit_price * l.quantity, 0));
     const discount = applied?.discount_amount ?? 0;
     return {
       eligible: check.eligible,

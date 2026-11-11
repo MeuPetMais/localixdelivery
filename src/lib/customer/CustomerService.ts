@@ -24,14 +24,19 @@ export const CustomerService = {
     return (data ?? null) as CustomerProfile | null;
   },
 
-  async updateProfile(customerId: string, patch: Partial<CustomerProfile>): Promise<CustomerProfile> {
+  async updateProfile(
+    customerId: string,
+    patch: Partial<CustomerProfile>,
+  ): Promise<CustomerProfile> {
     const v = CustomerValidator.validateProfile(patch);
     if (!v.ok) throw new Error(v.issues.map((i) => i.message).join("; "));
     const { data, error } = await P().update(patch).eq("id", customerId).select().maybeSingle();
     if (error) throw error;
     CustomerAudit.record({ customerId, action: "profile.updated", data: patch });
     await CustomerEventBus.publish({
-      type: "CustomerUpdated", customerId, changes: patch as Record<string, unknown>,
+      type: "CustomerUpdated",
+      customerId,
+      changes: patch as Record<string, unknown>,
       at: new Date().toISOString(),
     });
     return data as CustomerProfile;
@@ -39,17 +44,24 @@ export const CustomerService = {
 
   // --- Consents (LGPD)
   async recordConsent(input: {
-    customerId: string; consentType: CustomerConsentType; granted: boolean;
-    source?: string; ip_address?: string; user_agent?: string;
+    customerId: string;
+    consentType: CustomerConsentType;
+    granted: boolean;
+    source?: string;
+    ip_address?: string;
+    user_agent?: string;
   }): Promise<CustomerConsent> {
-    const { data, error } = await C().insert({
-      customer_id: input.customerId,
-      consent_type: input.consentType,
-      granted: input.granted,
-      source: input.source ?? null,
-      ip_address: input.ip_address ?? null,
-      user_agent: input.user_agent ?? null,
-    }).select().maybeSingle();
+    const { data, error } = await C()
+      .insert({
+        customer_id: input.customerId,
+        consent_type: input.consentType,
+        granted: input.granted,
+        source: input.source ?? null,
+        ip_address: input.ip_address ?? null,
+        user_agent: input.user_agent ?? null,
+      })
+      .select()
+      .maybeSingle();
     if (error) throw error;
     CustomerAudit.record({
       customerId: input.customerId,
@@ -74,16 +86,24 @@ export const CustomerService = {
 
   async listConsents(customerId: string): Promise<CustomerConsent[]> {
     const { data, error } = await C()
-      .select("*").eq("customer_id", customerId).order("created_at", { ascending: false });
+      .select("*")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as CustomerConsent[];
   },
 
   // --- History (Order domain integration, read-only)
-  async listOrders(customerId: string, limit = 20): Promise<Array<{ id: string; total: number; status: string; created_at: string }>> {
+  async listOrders(
+    customerId: string,
+    limit = 20,
+  ): Promise<Array<{ id: string; total: number; status: string; created_at: string }>> {
     const { data, error } = await (supabase as any)
-      .from("orders").select("id,total,status,created_at")
-      .eq("customer_id", customerId).order("created_at", { ascending: false }).limit(limit);
+      .from("orders")
+      .select("id,total,status,created_at")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
     if (error) throw error;
     return data ?? [];
   },

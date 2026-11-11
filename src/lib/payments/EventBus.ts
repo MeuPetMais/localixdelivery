@@ -23,7 +23,7 @@ export interface PaymentEventPayload {
   paymentId: string | null;
   amount: number | null;
   currency: string;
-  raw?: Record<string, any>;
+  raw?: Record<string, unknown>;
 }
 
 export type PaymentEventHandler = (

@@ -74,7 +74,12 @@ export interface CampaignInput {
 }
 
 export interface ABTestConfig {
-  variants: Array<{ key: string; template_id?: string; weight: number; metadata?: Record<string, unknown> }>;
+  variants: Array<{
+    key: string;
+    template_id?: string;
+    weight: number;
+    metadata?: Record<string, unknown>;
+  }>;
 }
 
 export interface Automation {
@@ -161,5 +166,11 @@ export type MarketingDomainEvent =
   | { type: "CampaignLaunched"; campaignId: string; audienceSize: number; at: string }
   | { type: "CampaignPaused"; campaignId: string; at: string }
   | { type: "CampaignCompleted"; campaignId: string; at: string }
-  | { type: "AutomationTriggered"; automationId: string; trigger: AutomationTrigger; customerId: string; at: string }
+  | {
+      type: "AutomationTriggered";
+      automationId: string;
+      trigger: AutomationTrigger;
+      customerId: string;
+      at: string;
+    }
   | { type: "JourneyStarted"; journeyId: string; customerId: string; at: string };

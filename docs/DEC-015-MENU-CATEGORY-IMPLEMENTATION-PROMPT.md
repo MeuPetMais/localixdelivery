@@ -27,6 +27,7 @@ Implemente a DEC-015 — Hierarquia de Categorias no Cardápio em fases controla
 Audite antes de criar migration.
 
 Migration mínima:
+
 - `parent_category_id uuid null`;
 - `image_url text null`;
 - `description text null`;
@@ -35,6 +36,7 @@ Migration mínima:
 Use constraint ou trigger server-side para garantir os limites de hierarquia e tenant.
 
 Valide:
+
 - categorias existentes continuam `parent_category_id IS NULL`;
 - contagem antes/depois idêntica;
 - vínculos de `menu_items.category_id` inalterados.
@@ -42,6 +44,7 @@ Valide:
 ## CAT-2 — Painel
 
 Em `src/routes/_authenticated/menu.tsx`:
+
 - permitir imagem e descrição na categoria principal;
 - criar e gerenciar subcategorias;
 - seletor hierárquico no produto;
@@ -51,6 +54,7 @@ Em `src/routes/_authenticated/menu.tsx`:
 ## CAT-3 — Cardápio público
 
 Em `src/routes/$slug.index.tsx` e dependências:
+
 - renderizar categoria principal com foto/nome/descrição;
 - renderizar subcategorias quando existirem;
 - manter comportamento atual sem subcategorias.
@@ -58,6 +62,7 @@ Em `src/routes/$slug.index.tsx` e dependências:
 ## CAT-4 — Validação
 
 Testar:
+
 - categoria principal sem subcategoria;
 - categoria principal com 2 subcategorias;
 - produto direto na principal;

@@ -54,7 +54,6 @@ export const Route = createFileRoute("/fidelidade")({
   component: WalletPage,
 });
 
-
 type Filter = "all" | "earn" | "redeem" | "expire" | "bonus";
 
 // -------- Utils --------
@@ -81,7 +80,13 @@ function guessRewardIcon(name: string) {
   if (n.includes("frete")) return <Truck className="h-4 w-4" />;
   if (n.includes("cashback") || n.includes("desconto") || n.includes("cupom"))
     return <Ticket className="h-4 w-4" />;
-  if (n.includes("brinde") || n.includes("produto") || n.includes("hambúrguer") || n.includes("pizza") || n.includes("bebida"))
+  if (
+    n.includes("brinde") ||
+    n.includes("produto") ||
+    n.includes("hambúrguer") ||
+    n.includes("pizza") ||
+    n.includes("bebida")
+  )
     return <Package className="h-4 w-4" />;
   return <Gift className="h-4 w-4" />;
 }
@@ -137,7 +142,9 @@ function WalletPage() {
 
   // KPIs derivados do histórico
   const balanceStats = useMemo(() => {
-    let earned = 0, redeemed = 0, expired = 0;
+    let earned = 0,
+      redeemed = 0,
+      expired = 0;
     for (const t of allTxs) {
       if (t.type === "EARN" || t.type === "BONUS") earned += Math.max(0, t.points);
       else if (t.type === "REDEEM") redeemed += Math.max(0, -t.points);
@@ -158,7 +165,6 @@ function WalletPage() {
     [rewards, s],
   );
 
-
   if (loading || !user) {
     return (
       <div className="grid min-h-dvh place-items-center p-6 text-center">
@@ -175,7 +181,6 @@ function WalletPage() {
       </div>
     );
   }
-
 
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ||
@@ -237,26 +242,22 @@ function WalletPage() {
           <ProgressCard summary={s} nextReward={nextReward} />
 
           {/* Alerta de expiração */}
-          {expiringQ.data &&
-            expiringQ.data.totalExpiring > 0 &&
-            expiringQ.data.next && (
-              <Card className="animate-in fade-in slide-in-from-top-2 border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
-                <CardContent className="flex items-start gap-3 p-4">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-900 dark:text-amber-200">
-                      {expiringQ.data.next.points} pontos expiram em{" "}
-                      {expiringQ.data.next.days}{" "}
-                      {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
-                    </p>
-                    <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
-                      Total expirando em até 30 dias:{" "}
-                      {expiringQ.data.totalExpiring} pts.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          {expiringQ.data && expiringQ.data.totalExpiring > 0 && expiringQ.data.next && (
+            <Card className="animate-in fade-in slide-in-from-top-2 border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
+              <CardContent className="flex items-start gap-3 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-900 dark:text-amber-200">
+                    {expiringQ.data.next.points} pontos expiram em {expiringQ.data.next.days}{" "}
+                    {expiringQ.data.next.days === 1 ? "dia" : "dias"}.
+                  </p>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                    Total expirando em até 30 dias: {expiringQ.data.totalExpiring} pts.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* 4. PRÓXIMO PEDIDO */}
           <NextOrderCard
@@ -290,7 +291,12 @@ function WalletPage() {
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {availableRewards.map((r) => (
-                  <UnlockedRewardCard key={r.name} name={r.name} minimumPoints={r.minimum_points} slug={slug} />
+                  <UnlockedRewardCard
+                    key={r.name}
+                    name={r.name}
+                    minimumPoints={r.minimum_points}
+                    slug={slug}
+                  />
                 ))}
               </div>
             )}
@@ -377,8 +383,6 @@ function WalletPage() {
             )}
           </SectionCard>
 
-
-
           {/* 6. CUPONS */}
           <SectionCard
             icon={<Ticket className="h-5 w-5 text-primary" />}
@@ -407,10 +411,7 @@ function WalletPage() {
           </SectionCard>
 
           {/* 7. HISTÓRICO */}
-          <SectionCard
-            icon={<Clock className="h-5 w-5 text-muted-foreground" />}
-            title="Histórico"
-          >
+          <SectionCard icon={<Clock className="h-5 w-5 text-muted-foreground" />} title="Histórico">
             <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="all">Todos</TabsTrigger>
@@ -426,7 +427,11 @@ function WalletPage() {
             ) : (
               (() => {
                 const filterMap: Record<Filter, string | null> = {
-                  all: null, earn: "EARN", redeem: "REDEEM", expire: "EXPIRE", bonus: "BONUS",
+                  all: null,
+                  earn: "EARN",
+                  redeem: "REDEEM",
+                  expire: "EXPIRE",
+                  bonus: "BONUS",
                 };
                 const wanted = filterMap[filter];
                 const visible = allTxs
@@ -539,23 +544,17 @@ function ProgressCard({
   // Prioriza próxima recompensa cadastrada; fallback para próximo nível
   if (nextReward) {
     const remaining = Math.max(0, nextReward.minimum_points - summary.balance);
-    const pct = Math.min(
-      100,
-      Math.round((summary.balance / nextReward.minimum_points) * 100),
-    );
+    const pct = Math.min(100, Math.round((summary.balance / nextReward.minimum_points) * 100));
     return (
       <Card className="animate-fade-in">
         <CardContent className="space-y-2 p-4">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium tabular-nums">{summary.balance} pts</span>
-            <span className="text-muted-foreground">
-              {nextReward.minimum_points} pts
-            </span>
+            <span className="text-muted-foreground">{nextReward.minimum_points} pts</span>
           </div>
           <Progress value={pct} className="h-3" />
           <p className="text-sm">
-            Faltam <b className="text-primary tabular-nums">{remaining} pontos</b> para
-            desbloquear{" "}
+            Faltam <b className="text-primary tabular-nums">{remaining} pontos</b> para desbloquear{" "}
             <span className="inline-flex items-center gap-1 font-medium">
               <Gift className="h-4 w-4 text-primary" /> {nextReward.name}
             </span>
@@ -577,10 +576,7 @@ function ProgressCard({
           </div>
           <Progress value={Math.round(summary.progress * 100)} className="h-3" />
           <p className="text-sm">
-            Faltam{" "}
-            <b className="text-primary tabular-nums">
-              {summary.nextLevel.remaining} pontos
-            </b>{" "}
+            Faltam <b className="text-primary tabular-nums">{summary.nextLevel.remaining} pontos</b>{" "}
             para chegar ao nível <b>{summary.nextLevel.name}</b>.
           </p>
         </CardContent>
@@ -618,7 +614,7 @@ function NextOrderCard({
         const parsed = JSON.parse(raw);
         const items = Array.isArray(parsed) ? parsed : (parsed?.items ?? []);
         cartTotal = items.reduce(
-          (sum: number, it: any) =>
+          (sum: number, it: { price?: number; qty?: number; quantity?: number }) =>
             sum + Number(it.price ?? 0) * Number(it.qty ?? it.quantity ?? 1),
           0,
         );
@@ -638,9 +634,7 @@ function NextOrderCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">Faça um pedido</p>
-            <p className="text-xs text-muted-foreground">
-              e descubra quantos pontos irá ganhar.
-            </p>
+            <p className="text-xs text-muted-foreground">e descubra quantos pontos irá ganhar.</p>
           </div>
           <Button asChild size="sm" className="shrink-0">
             <Link to="/$slug" params={{ slug }}>
@@ -660,9 +654,7 @@ function NextOrderCard({
         </div>
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-semibold">Neste pedido você ganhará</p>
-          <p className="text-2xl font-bold tabular-nums text-primary">
-            +{estimatedPoints} pontos
-          </p>
+          <p className="text-2xl font-bold tabular-nums text-primary">+{estimatedPoints} pontos</p>
           <p className="text-xs text-muted-foreground">
             {earnOn === "delivered"
               ? "creditados assim que o pedido for entregue."
@@ -779,9 +771,7 @@ function EmptyState({
         {emoji}
       </div>
       <p className="text-sm font-medium">{title}</p>
-      {subtitle && (
-        <p className="max-w-sm text-xs text-muted-foreground">{subtitle}</p>
-      )}
+      {subtitle && <p className="max-w-sm text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }
@@ -834,9 +824,7 @@ function CouponRow({
   return (
     <div className="animate-fade-in flex items-center justify-between gap-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 transition-transform active:scale-[0.99]">
       <div className="min-w-0">
-        <p className="truncate font-mono text-sm font-semibold text-primary">
-          {code}
-        </p>
+        <p className="truncate font-mono text-sm font-semibold text-primary">{code}</p>
         <p className="text-xs text-muted-foreground">
           {discount}% de desconto{untilLabel ? ` · até ${untilLabel}` : ""}
         </p>
@@ -849,7 +837,8 @@ function CouponRow({
 }
 
 // -------- History --------
-const TECHNICAL_PATTERNS = /(backfill|migration|migração|customer_points|reference_id|adjustment|source|uuid|rpc|_id\b)/i;
+const TECHNICAL_PATTERNS =
+  /(backfill|migration|migração|customer_points|reference_id|adjustment|source|uuid|rpc|_id\b)/i;
 
 function isCustomerFacing(tx: LoyaltyTransaction): boolean {
   const source = (tx.source ?? "").toLowerCase();
@@ -939,9 +928,7 @@ function HistoryRow({ tx }: { tx: LoyaltyTransaction }) {
           {tx.points} pts
         </p>
         {tx.balance_after !== null && (
-          <p className="text-[10px] text-muted-foreground tabular-nums">
-            saldo {tx.balance_after}
-          </p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">saldo {tx.balance_after}</p>
         )}
       </div>
     </div>
@@ -1014,9 +1001,7 @@ function WalletHeader({
             </p>
             <div className="mt-1 flex items-center gap-1.5">
               <Trophy className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-xs font-semibold text-amber-600">
-                {level ?? "Sem nível"}
-              </span>
+              <span className="text-xs font-semibold text-amber-600">{level ?? "Sem nível"}</span>
             </div>
           </div>
         </div>
@@ -1028,9 +1013,8 @@ function WalletHeader({
             </div>
             <Progress value={pct} className="h-2.5" />
             <p className="text-xs text-muted-foreground">
-              Faltam{" "}
-              <b className="tabular-nums text-primary">{nextLevel.remaining} pontos</b>{" "}
-              para <b>{nextLevel.name}</b>.
+              Faltam <b className="tabular-nums text-primary">{nextLevel.remaining} pontos</b> para{" "}
+              <b>{nextLevel.name}</b>.
             </p>
           </div>
         ) : level ? (
@@ -1094,8 +1078,7 @@ function BalanceCard({
           <p className="mt-3 text-xs text-muted-foreground">
             Próxima expiração:{" "}
             <b className="text-foreground">
-              {nextExpiry.points} pts em {nextExpiry.days}{" "}
-              {nextExpiry.days === 1 ? "dia" : "dias"}
+              {nextExpiry.points} pts em {nextExpiry.days} {nextExpiry.days === 1 ? "dia" : "dias"}
             </b>
             {" · "}
             {new Date(nextExpiry.expireAt).toLocaleDateString("pt-BR", {
@@ -1215,7 +1198,9 @@ function InProgressBenefitRow({ b }: { b: InProgressBenefit }) {
           </p>
           <div className="mt-2 space-y-1">
             <Progress value={pct} className="h-2" />
-            <p className={`text-xs ${b.unlocked ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}>
+            <p
+              className={`text-xs ${b.unlocked ? "text-emerald-600 font-medium" : "text-muted-foreground"}`}
+            >
               {remainingLabel}
             </p>
           </div>
@@ -1224,4 +1209,3 @@ function InProgressBenefitRow({ b }: { b: InProgressBenefit }) {
     </div>
   );
 }
-

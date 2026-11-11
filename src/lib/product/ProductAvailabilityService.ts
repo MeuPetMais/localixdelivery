@@ -18,8 +18,10 @@ export const ProductAvailabilityService = {
     if (!product.is_available) reasons.push("flag:is_available=false");
 
     // Channel
-    if (ctx.channel === "delivery" && product.available_delivery === false) reasons.push("channel:delivery_disabled");
-    if (ctx.channel === "pickup" && product.available_pickup === false) reasons.push("channel:pickup_disabled");
+    if (ctx.channel === "delivery" && product.available_delivery === false)
+      reasons.push("channel:delivery_disabled");
+    if (ctx.channel === "pickup" && product.available_pickup === false)
+      reasons.push("channel:pickup_disabled");
 
     // Stock
     if (ctx.stockAvailable === false) reasons.push("stock:out");

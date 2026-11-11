@@ -3,14 +3,9 @@
 
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { requireOwner } from "../_shared/mp-auth.ts";
-import {
-  decryptToken,
-  pkceChallengeS256,
-  randomBase64Url,
-} from "../_shared/crypto.ts";
+import { decryptToken, pkceChallengeS256, randomBase64Url } from "../_shared/crypto.ts";
 
-const REDIRECT_URI =
-  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
+const REDIRECT_URI = "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
 Deno.serve(async (req) => {

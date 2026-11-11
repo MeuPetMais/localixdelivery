@@ -1,9 +1,4 @@
-import type {
-  ProductOptionGroup,
-  ProductOption,
-  SelectedOption,
-  ValidationResult,
-} from "./types";
+import type { ProductOptionGroup, ProductOption, SelectedOption, ValidationResult } from "./types";
 
 export const ConfigurationRuleEngine = {
   validate(
@@ -25,9 +20,7 @@ export const ConfigurationRuleEngine = {
 
       // Dependency: skip if parent option not selected
       if (g.depends_on_option_id) {
-        const parentSelected = selections.some(
-          (s) => s.option_id === g.depends_on_option_id,
-        );
+        const parentSelected = selections.some((s) => s.option_id === g.depends_on_option_id);
         if (!parentSelected) {
           if (sel.length > 0) errors.push(`${g.name}: dependência não atendida`);
           continue;

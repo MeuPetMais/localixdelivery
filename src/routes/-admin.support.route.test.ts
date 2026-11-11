@@ -44,7 +44,11 @@ describe("admin support child route rendering", () => {
   });
 
   it("does not render the queue simultaneously with child routes", () => {
-    for (const pathname of ["/admin/support/ticket-123", "/admin/support/team", "/admin/support/reports"]) {
+    for (const pathname of [
+      "/admin/support/ticket-123",
+      "/admin/support/team",
+      "/admin/support/reports",
+    ]) {
       expect(shouldRenderAdminSupportQueue(pathname)).toBe(false);
     }
   });

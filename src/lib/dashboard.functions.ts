@@ -5,8 +5,14 @@ import { isOrderRealizedSaleEligible } from "./orders/order-metrics-contract";
 const schema = z.object({
   restaurantId: z.string().uuid(),
   period: z.number().int().min(1).max(365).optional(),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -48,17 +54,20 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const fromDate = data.from
       ? new Date(`${data.from}T00:00:00`)
       : new Date(startToday.getTime() - ((data.period ?? 30) - 1) * DAY);
-    const toDate = data.to
-      ? new Date(`${data.to}T23:59:59.999`)
-      : now;
+    const toDate = data.to ? new Date(`${data.to}T23:59:59.999`) : now;
     const periodDays = Math.max(1, Math.round((toDate.getTime() - fromDate.getTime()) / DAY) + 1);
     const period = periodDays;
     const sincePeriod = fromDate;
     const lookback = Math.max(60, periodDays) * DAY;
     const sinceFetch = new Date(Math.min(fromDate.getTime(), now.getTime() - lookback));
 
-
-    const [{ data: orders }, { data: customers }, { data: items }, { data: movements }, { data: coupons }] = await Promise.all([
+    const [
+      { data: orders },
+      { data: customers },
+      { data: items },
+      { data: movements },
+      { data: coupons },
+    ] = await Promise.all([
       supabaseAdmin
         .from("orders")
         .select("id, total, items, status, created_at, customer_phone, customer_name, discount")
@@ -110,7 +119,9 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Active customers (30d) vs prev 30d
     const cust = customers ?? [];
-    const activeNow = cust.filter((c) => c.last_order_at && new Date(c.last_order_at) >= since30).length;
+    const activeNow = cust.filter(
+      (c) => c.last_order_at && new Date(c.last_order_at) >= since30,
+    ).length;
     const activePrev = cust.filter((c) => {
       if (!c.last_order_at) return false;
       const d = new Date(c.last_order_at);
@@ -136,13 +147,15 @@ export const getDashboardData = createServerFn({ method: "POST" })
       });
     }
 
-
     // Funnel (live counts on open orders today + recent)
-    const recent = (orders ?? []).filter((o) => new Date(o.created_at) >= new Date(now.getTime() - 3 * DAY));
+    const recent = (orders ?? []).filter(
+      (o) => new Date(o.created_at) >= new Date(now.getTime() - 3 * DAY),
+    );
     const funnel = {
       novo: recent.filter((o) => o.status === "novo" || o.status === "pendente").length,
       preparo: recent.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
-      entrega: recent.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega").length,
+      entrega: recent.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega")
+        .length,
       entregue: recent.filter((o) => o.status === "entregue" || o.status === "concluido").length,
     };
 
@@ -153,9 +166,12 @@ export const getDashboardData = createServerFn({ method: "POST" })
     });
     const statusBreakdown = {
       novo: periodOrders.filter((o) => o.status === "novo" || o.status === "pendente").length,
-      preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando").length,
-      entrega: periodOrders.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega").length,
-      entregue: periodOrders.filter((o) => o.status === "entregue" || o.status === "concluido").length,
+      preparo: periodOrders.filter((o) => o.status === "em_preparo" || o.status === "preparando")
+        .length,
+      entrega: periodOrders.filter((o) => o.status === "em_entrega" || o.status === "saiu_entrega")
+        .length,
+      entregue: periodOrders.filter((o) => o.status === "entregue" || o.status === "concluido")
+        .length,
       cancelado: periodOrders.filter((o) => o.status === "cancelado").length,
     };
 
@@ -167,7 +183,8 @@ export const getDashboardData = createServerFn({ method: "POST" })
     });
     const map = new Map<string, { name: string; qty: number; revenue: number }>();
     for (const o of periodForTop) {
-      const its = (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];
+      const its =
+        (o.items as unknown as Array<{ name?: string; quantity?: number; price?: number }>) ?? [];
       if (!Array.isArray(its)) continue;
       for (const it of its) {
         if (!it?.name) continue;
@@ -218,7 +235,9 @@ export const getDashboardData = createServerFn({ method: "POST" })
         Date.now() - new Date(c.last_order_at).getTime() >= 15 * DAY,
     ).length;
     if (vipInactive > 0) {
-      insights.push(`💎 ${vipInactive} cliente${vipInactive > 1 ? "s" : ""} VIP não compra${vipInactive > 1 ? "m" : ""} há 15+ dias. Considere uma campanha de recuperação.`);
+      insights.push(
+        `💎 ${vipInactive} cliente${vipInactive > 1 ? "s" : ""} VIP não compra${vipInactive > 1 ? "m" : ""} há 15+ dias. Considere uma campanha de recuperação.`,
+      );
     }
     if (top[0]) {
       insights.push(`🏆 Produto mais vendido: ${top[0].name} (${top[0].qty} un. em 30d).`);
@@ -227,7 +246,9 @@ export const getDashboardData = createServerFn({ method: "POST" })
       insights.push(`⏱️ Você tem ${funnel.novo} pedidos novos aguardando confirmação.`);
     }
     if (insights.length === 0) {
-      insights.push("✨ Cadastre seus produtos e compartilhe seu link para começar a receber pedidos.");
+      insights.push(
+        "✨ Cadastre seus produtos e compartilhe seu link para começar a receber pedidos.",
+      );
     }
 
     const productsActive = (items ?? []).length;
@@ -256,7 +277,10 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Loyalty summary
     const couponsUsed = (coupons ?? []).reduce((s, c) => s + Number(c.uses_count ?? 0), 0);
-    const discountDistributed = realizedPeriodOrders.reduce((s, o) => s + Number(o.discount ?? 0), 0);
+    const discountDistributed = realizedPeriodOrders.reduce(
+      (s, o) => s + Number(o.discount ?? 0),
+      0,
+    );
     const pointsIssued = Math.floor(grossRevenue); // 1 ponto por R$1
 
     // Recent activities (timeline)
@@ -304,18 +328,32 @@ export const getDashboardData = createServerFn({ method: "POST" })
 
     // Daily AI tip (rule-based, deterministic per day)
     const tips: string[] = [];
-    if (top[0]) tips.push(`🏆 Seu produto mais lucrativo é **${top[0].name}**. Destaque-o no topo do cardápio.`);
+    if (top[0])
+      tips.push(
+        `🏆 Seu produto mais lucrativo é **${top[0].name}**. Destaque-o no topo do cardápio.`,
+      );
     const hourBuckets = new Array(24).fill(0);
     for (const o of last30) hourBuckets[new Date(o.created_at).getHours()]++;
     const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
     if (Math.max(...hourBuckets) > 0)
-      tips.push(`⏰ Seu horário de pico é **${peakHour}h**. Programe uma campanha 1h antes para maximizar vendas.`);
-    const topVip = [...cust].sort((a, b) => Number(b.total_spent ?? 0) - Number(a.total_spent ?? 0))[0];
+      tips.push(
+        `⏰ Seu horário de pico é **${peakHour}h**. Programe uma campanha 1h antes para maximizar vendas.`,
+      );
+    const topVip = [...cust].sort(
+      (a, b) => Number(b.total_spent ?? 0) - Number(a.total_spent ?? 0),
+    )[0];
     if (topVip && Number(topVip.total_spent ?? 0) > 0)
-      tips.push(`💎 Seu cliente VIP é **${topVip.name ?? topVip.phone}** (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(topVip.total_spent))} em compras). Envie um agrado exclusivo.`);
+      tips.push(
+        `💎 Seu cliente VIP é **${topVip.name ?? topVip.phone}** (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(topVip.total_spent))} em compras). Envie um agrado exclusivo.`,
+      );
     if (vipInactive > 0)
-      tips.push(`🔔 ${vipInactive} VIPs sem comprar há 15+ dias. Sugira uma campanha "Sentimos sua falta" com 10% off.`);
-    if (tips.length === 0) tips.push("✨ Cadastre seus produtos e divulgue seu link para começar a receber dicas inteligentes.");
+      tips.push(
+        `🔔 ${vipInactive} VIPs sem comprar há 15+ dias. Sugira uma campanha "Sentimos sua falta" com 10% off.`,
+      );
+    if (tips.length === 0)
+      tips.push(
+        "✨ Cadastre seus produtos e divulgue seu link para começar a receber dicas inteligentes.",
+      );
     const dayIndex = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
     const dailyTip = tips[dayIndex % tips.length];
 

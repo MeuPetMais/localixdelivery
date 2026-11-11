@@ -5,18 +5,34 @@ const store = new Map<string, string>();
 (globalThis as any).window = globalThis;
 (globalThis as any).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => { store.set(k, v); },
-  removeItem: (k: string) => { store.delete(k); },
+  setItem: (k: string, v: string) => {
+    store.set(k, v);
+  },
+  removeItem: (k: string) => {
+    store.delete(k);
+  },
   clear: () => store.clear(),
 };
 beforeEach(() => store.clear());
 import type { AddressProvider, AddressSuggestion, AddressDetails } from "./types";
 
-const sample: AddressSuggestion = { id: "1", label: "Av. Paulista, 1578", secondary: "Bela Vista — São Paulo/SP" };
+const sample: AddressSuggestion = {
+  id: "1",
+  label: "Av. Paulista, 1578",
+  secondary: "Bela Vista — São Paulo/SP",
+};
 const details: AddressDetails = {
-  id: "1", street: "Av. Paulista", number: "1578", neighborhood: "Bela Vista",
-  city: "São Paulo", state: "SP", cep: "01310200", lat: -23.56, lng: -46.65,
-  label: sample.label, secondary: sample.secondary,
+  id: "1",
+  street: "Av. Paulista",
+  number: "1578",
+  neighborhood: "Bela Vista",
+  city: "São Paulo",
+  state: "SP",
+  cep: "01310200",
+  lat: -23.56,
+  lng: -46.65,
+  label: sample.label,
+  secondary: sample.secondary,
 };
 
 function makeProvider(overrides: Partial<AddressProvider> = {}): AddressProvider {

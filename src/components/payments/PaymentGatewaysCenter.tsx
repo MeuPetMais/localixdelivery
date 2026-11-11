@@ -37,7 +37,8 @@ export function PaymentGatewaysCenter({ restaurantId, stripeParam }: Props) {
       toast.success(`Gateway principal: ${p === "stripe" ? "Stripe" : "Mercado Pago"}`);
       qc.invalidateQueries({ queryKey: primaryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao definir gateway"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao definir gateway"),
     onSettled: () => setPending(null),
   });
 
@@ -72,11 +73,15 @@ export function PaymentGatewaysCenter({ restaurantId, stripeParam }: Props) {
         >
           <div className="flex items-center gap-2 rounded border p-3">
             <RadioGroupItem value="stripe" id="pp-stripe" />
-            <Label htmlFor="pp-stripe" className="cursor-pointer flex-1">Stripe Connect</Label>
+            <Label htmlFor="pp-stripe" className="cursor-pointer flex-1">
+              Stripe Connect
+            </Label>
           </div>
           <div className="flex items-center gap-2 rounded border p-3">
             <RadioGroupItem value="mercado_pago" id="pp-mp" />
-            <Label htmlFor="pp-mp" className="cursor-pointer flex-1">Mercado Pago</Label>
+            <Label htmlFor="pp-mp" className="cursor-pointer flex-1">
+              Mercado Pago
+            </Label>
           </div>
         </RadioGroup>
       </Card>

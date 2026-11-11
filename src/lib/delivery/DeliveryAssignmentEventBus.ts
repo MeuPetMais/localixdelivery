@@ -34,7 +34,10 @@ class DeliveryAssignmentEventBusImpl {
     return () => this.handlers.get(event)?.delete(handler);
   }
 
-  async publish(event: DeliveryAssignmentEventName, payload: DeliveryAssignmentEventPayload): Promise<void> {
+  async publish(
+    event: DeliveryAssignmentEventName,
+    payload: DeliveryAssignmentEventPayload,
+  ): Promise<void> {
     const set = this.handlers.get(event);
     if (!set) return;
     await Promise.all(Array.from(set).map((h) => Promise.resolve(h(payload))));

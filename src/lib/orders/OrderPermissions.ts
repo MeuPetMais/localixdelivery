@@ -2,13 +2,7 @@
 // Nunca conceder permissões extras sem revisar segurança.
 import type { OrderState } from "./OrderStateMachine";
 
-export type OrderActorType =
-  | "customer"
-  | "restaurant"
-  | "admin"
-  | "system"
-  | "webhook"
-  | "courier";
+export type OrderActorType = "customer" | "restaurant" | "admin" | "system" | "webhook" | "courier";
 
 // Estado alvo → atores permitidos.
 export const PERMISSIONS: Record<OrderState, OrderActorType[]> = {

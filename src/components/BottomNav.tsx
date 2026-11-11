@@ -15,11 +15,36 @@ type Item = {
 };
 
 const RESERVED_TOP = new Set([
-  "", "home", "beneficios", "favoritos", "meus-pedidos", "cliente", "pedido",
-  "pedido-sucesso", "auth", "entrar", "esqueci-senha", "redefinir-senha",
-  "admin", "dashboard", "menu", "orders", "settings", "ai", "consultor",
-  "customers", "finance", "finance-ai", "inventory", "loyalty", "promotions",
-  "reviews", "suppliers", "units", "builders", "r",
+  "",
+  "home",
+  "beneficios",
+  "favoritos",
+  "meus-pedidos",
+  "cliente",
+  "pedido",
+  "pedido-sucesso",
+  "auth",
+  "entrar",
+  "esqueci-senha",
+  "redefinir-senha",
+  "admin",
+  "dashboard",
+  "menu",
+  "orders",
+  "settings",
+  "ai",
+  "consultor",
+  "customers",
+  "finance",
+  "finance-ai",
+  "inventory",
+  "loyalty",
+  "promotions",
+  "reviews",
+  "suppliers",
+  "units",
+  "builders",
+  "r",
 ]);
 
 function isRestaurantPath(p: string) {
@@ -29,9 +54,19 @@ function isRestaurantPath(p: string) {
 
 const items: Item[] = [
   { key: "home", label: "Início", icon: Home, match: (p) => isRestaurantPath(p) },
-  { key: "carteira", label: "Carteira", icon: Wallet, match: (p) => p.startsWith("/fidelidade") || p.startsWith("/beneficios") },
+  {
+    key: "carteira",
+    label: "Carteira",
+    icon: Wallet,
+    match: (p) => p.startsWith("/fidelidade") || p.startsWith("/beneficios"),
+  },
   { key: "favoritos", label: "Favoritos", icon: Heart, match: (p) => p.startsWith("/favoritos") },
-  { key: "pedidos", label: "Pedidos", icon: Receipt, match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido") },
+  {
+    key: "pedidos",
+    label: "Pedidos",
+    icon: Receipt,
+    match: (p) => p.startsWith("/meus-pedidos") || p.startsWith("/pedido"),
+  },
   { key: "perfil", label: "Perfil", icon: User, match: (p) => p.startsWith("/cliente") },
 ];
 
@@ -96,12 +131,16 @@ export function BottomNav() {
               >
                 <span
                   className={`grid h-9 w-9 place-items-center rounded-full transition-all duration-300 ${
-                    active ? "bg-primary/10 text-primary scale-110" : "text-muted-foreground group-active:scale-95"
+                    active
+                      ? "bg-primary/10 text-primary scale-110"
+                      : "text-muted-foreground group-active:scale-95"
                   }`}
                 >
                   <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 2} />
                 </span>
-                <span className={`transition-colors ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                <span
+                  className={`transition-colors ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}
+                >
                   {label}
                 </span>
               </Link>
@@ -115,5 +154,11 @@ export function BottomNav() {
 
 /** Spacer so page content isn't covered by the fixed nav. */
 export function BottomNavSpacer() {
-  return <div aria-hidden className="h-[64px]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} />;
+  return (
+    <div
+      aria-hidden
+      className="h-[64px]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    />
+  );
 }

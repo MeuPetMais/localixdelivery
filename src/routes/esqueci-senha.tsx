@@ -22,12 +22,23 @@ function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     const redirectTo = `${window.location.origin}/redefinir-senha`;
-    if (import.meta.env.DEV) console.info("[auth-debug] resetPasswordForEmail:start", { ts: new Date().toISOString(), email, redirectTo, screen: "/esqueci-senha" });
+    if (import.meta.env.DEV)
+      console.info("[auth-debug] resetPasswordForEmail:start", {
+        ts: new Date().toISOString(),
+        email,
+        redirectTo,
+        screen: "/esqueci-senha",
+      });
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (import.meta.env.DEV) {
         const er = error as { code?: string; status?: number; message?: string } | null;
-        console.info("[auth-debug] resetPasswordForEmail:return", { ok: !error, errorCode: er?.code, errorStatus: er?.status, errorMessage: er?.message });
+        console.info("[auth-debug] resetPasswordForEmail:return", {
+          ok: !error,
+          errorCode: er?.code,
+          errorStatus: er?.status,
+          errorMessage: er?.message,
+        });
       }
       if (error) throw error;
       setSent(true);
@@ -43,7 +54,10 @@ function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
-        <Link to="/entrar" className="mb-4 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/entrar"
+          className="mb-4 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
 
@@ -54,7 +68,9 @@ function ForgotPasswordPage() {
             </div>
             <h1 className="font-display text-2xl font-extrabold">Esqueci minha senha</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {sent ? "Enviamos um link para redefinir sua senha." : "Informe seu e-mail e enviaremos um link de recuperação."}
+              {sent
+                ? "Enviamos um link para redefinir sua senha."
+                : "Informe seu e-mail e enviaremos um link de recuperação."}
             </p>
           </div>
 
@@ -62,7 +78,14 @@ function ForgotPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@email.com"
+                />
               </div>
               <Button type="submit" className="h-11 w-full" disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}

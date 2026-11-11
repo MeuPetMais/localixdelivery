@@ -6,11 +6,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 
 function admin() {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 async function stripeGet(path: string, secret: string) {
@@ -81,7 +79,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-
     const a = await stripeGet(`/accounts/${rest.stripe_account_id}`, secret);
 
     const status = statusOf(a);

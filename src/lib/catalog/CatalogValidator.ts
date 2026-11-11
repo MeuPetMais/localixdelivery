@@ -1,6 +1,14 @@
 import type { CatalogChannel, CatalogMenu, CatalogMenuStatus } from "./types";
 
-const CHANNELS: CatalogChannel[] = ["delivery", "pickup", "dine_in", "qr", "totem", "marketplace", "api"];
+const CHANNELS: CatalogChannel[] = [
+  "delivery",
+  "pickup",
+  "dine_in",
+  "qr",
+  "totem",
+  "marketplace",
+  "api",
+];
 const STATUSES: CatalogMenuStatus[] = ["draft", "published", "archived", "scheduled"];
 
 const STATUS_TRANSITIONS: Record<CatalogMenuStatus, CatalogMenuStatus[]> = {
@@ -10,8 +18,14 @@ const STATUS_TRANSITIONS: Record<CatalogMenuStatus, CatalogMenuStatus[]> = {
   archived: ["draft"],
 };
 
-export interface CatalogValidationIssue { field: string; message: string; }
-export interface CatalogValidationResult { ok: boolean; issues: CatalogValidationIssue[]; }
+export interface CatalogValidationIssue {
+  field: string;
+  message: string;
+}
+export interface CatalogValidationResult {
+  ok: boolean;
+  issues: CatalogValidationIssue[];
+}
 
 export const CatalogValidator = {
   validateMenu(input: Partial<CatalogMenu>): CatalogValidationResult {
@@ -25,12 +39,21 @@ export const CatalogValidator = {
     if (input.status && !STATUSES.includes(input.status)) {
       issues.push({ field: "status", message: `Status inválido.` });
     }
-    if (input.available_start_time && input.available_end_time
-        && input.available_end_time <= input.available_start_time) {
-      issues.push({ field: "available_end_time", message: "Horário final deve ser após o inicial." });
+    if (
+      input.available_start_time &&
+      input.available_end_time &&
+      input.available_end_time <= input.available_start_time
+    ) {
+      issues.push({
+        field: "available_end_time",
+        message: "Horário final deve ser após o inicial.",
+      });
     }
     if (input.available_days && input.available_days.some((d) => d < 0 || d > 6)) {
-      issues.push({ field: "available_days", message: "Dias devem estar entre 0 (dom) e 6 (sáb)." });
+      issues.push({
+        field: "available_days",
+        message: "Dias devem estar entre 0 (dom) e 6 (sáb).",
+      });
     }
     return { ok: issues.length === 0, issues };
   },

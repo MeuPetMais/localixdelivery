@@ -86,9 +86,7 @@ export function ProductOptionsCopyDialog({
 
   function toggleGroup(groupId: string, checked: boolean) {
     setSelectedGroupIds((current) =>
-      checked
-        ? Array.from(new Set([...current, groupId]))
-        : current.filter((id) => id !== groupId),
+      checked ? Array.from(new Set([...current, groupId])) : current.filter((id) => id !== groupId),
     );
   }
 

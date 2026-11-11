@@ -25,20 +25,20 @@ paridade com a arquitetura oficial.
 
 ## 2. Cenários Executados
 
-| # | Cenário | Status |
-|---|---|---|
-| 1 | Autenticação | 🟢 APROVADO |
-| 2 | Onboarding do Restaurante | 🟢 APROVADO |
-| 3 | Jornada do Cliente | 🟢 APROVADO |
-| 4 | Checkout (Stripe) | 🟡 AJUSTE NECESSÁRIO |
-| 5 | Ciclo de Pedidos | 🟢 APROVADO |
-| 6 | Fidelidade | 🟢 APROVADO |
-| 7 | Financeiro | 🟡 AJUSTE NECESSÁRIO |
-| 8 | Observabilidade | 🟢 APROVADO |
-| 9 | Responsividade | 🟢 APROVADO |
-| 10 | Performance | 🟢 APROVADO |
-| 11 | Segurança | 🟢 APROVADO |
-| 12 | Go Live | 🟢 APROVADO |
+| #   | Cenário                   | Status               |
+| --- | ------------------------- | -------------------- |
+| 1   | Autenticação              | 🟢 APROVADO          |
+| 2   | Onboarding do Restaurante | 🟢 APROVADO          |
+| 3   | Jornada do Cliente        | 🟢 APROVADO          |
+| 4   | Checkout (Stripe)         | 🟡 AJUSTE NECESSÁRIO |
+| 5   | Ciclo de Pedidos          | 🟢 APROVADO          |
+| 6   | Fidelidade                | 🟢 APROVADO          |
+| 7   | Financeiro                | 🟡 AJUSTE NECESSÁRIO |
+| 8   | Observabilidade           | 🟢 APROVADO          |
+| 9   | Responsividade            | 🟢 APROVADO          |
+| 10  | Performance               | 🟢 APROVADO          |
+| 11  | Segurança                 | 🟢 APROVADO          |
+| 12  | Go Live                   | 🟢 APROVADO          |
 
 ---
 
@@ -75,10 +75,11 @@ Pesquisa, carrinho, cupom (`coupons`), observações, fidelidade
 ### Cenário 5 — Pedidos 🟢
 
 Máquina de estados completa (`OrderStateMachine` + `TransitionValidator`
-+ `OrderOrchestrator`). Eventos publicados por `OrderEventBus`, timeline
-via `OrderTimelineService`, auditoria por `OrderAudit`. Notificações
-automáticas por trigger `tg_order_notify_customer`. Estorno de fidelidade
-via `tg_orders_loyalty_status` + `loyalty_rollback_reserve` validado.
+
+- `OrderOrchestrator`). Eventos publicados por `OrderEventBus`, timeline
+  via `OrderTimelineService`, auditoria por `OrderAudit`. Notificações
+  automáticas por trigger `tg_order_notify_customer`. Estorno de fidelidade
+  via `tg_orders_loyalty_status` + `loyalty_rollback_reserve` validado.
 
 ### Cenário 6 — Fidelidade 🟢
 
@@ -170,13 +171,13 @@ conforme `GO_LIVE_AUDIT.md` e `RC2_SEC_001_REPORT.md`.
 
 ## 7. Tempo Médio de Execução (referência `PERFORMANCE_REPORT.md`)
 
-| Operação | p50 | p95 |
-|---|---|---|
-| Carregamento vitrine `/{slug}` | 0.9s | 1.8s |
-| Checkout Stripe (submit → redirect) | 1.4s | 2.9s |
+| Operação                                    | p50   | p95   |
+| ------------------------------------------- | ----- | ----- |
+| Carregamento vitrine `/{slug}`              | 0.9s  | 1.8s  |
+| Checkout Stripe (submit → redirect)         | 1.4s  | 2.9s  |
 | Webhook Stripe (recebimento → persistência) | 180ms | 380ms |
-| Transição de pedido (Orchestrator) | 90ms | 210ms |
-| Dashboard parceiro | 0.7s | 1.4s |
+| Transição de pedido (Orchestrator)          | 90ms  | 210ms |
+| Dashboard parceiro                          | 0.7s  | 1.4s  |
 
 ---
 
@@ -215,18 +216,18 @@ Consistente com `SECURITY_AUDIT_REPORT.md` e `SECURITY_CHECKLIST.md`:
 
 **Nota geral: 92 / 100** (consistente com `GO_LIVE_SCORE.md`).
 
-| Dimensão | Nota |
-|---|---|
-| Arquitetura | 95 |
-| Pedidos E2E | 98 |
-| Stripe | 90 |
-| Financeiro | 88 |
-| Loyalty | 97 |
-| Marketplace | 95 |
-| Painéis | 85 |
-| Segurança | 96 |
-| Performance | 93 |
-| Produção / Ops | 86 |
+| Dimensão       | Nota |
+| -------------- | ---- |
+| Arquitetura    | 95   |
+| Pedidos E2E    | 98   |
+| Stripe         | 90   |
+| Financeiro     | 88   |
+| Loyalty        | 97   |
+| Marketplace    | 95   |
+| Painéis        | 85   |
+| Segurança      | 96   |
+| Performance    | 93   |
+| Produção / Ops | 86   |
 
 ---
 

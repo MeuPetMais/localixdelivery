@@ -41,29 +41,29 @@ provisionada (ver `TECHNICAL_DEBT.md`).
 
 ## Módulos
 
-| Arquivo | Responsabilidade |
-| --- | --- |
-| `types.ts` | Roles, permissões, planos, tenant status, eventos |
-| `PlatformPermissionRegistry.ts` | Matriz RBAC (6 papéis × permissões) |
-| `PlanCatalogService.ts` | Catálogo determinístico de planos |
-| `TenantAdministrationService.ts` | Diretório/summary de tenants + filtros |
-| `SubscriptionMonitorService` (mesmo arquivo) | Projeção de status de assinatura |
-| `PlatformDashboardService.ts` | Snapshot agregado do dashboard executivo |
-| `PlatformFeatureFlagService.ts` | Flags globais (defaults + overrides) |
-| `PlatformAuditService.ts` | Auditoria administrativa + diff |
-| `PlatformEventBus.ts` | Barramento de eventos administrativos |
-| `SupportCenterService.ts` | Suporte, moderação, incidentes, notificações globais |
+| Arquivo                                      | Responsabilidade                                     |
+| -------------------------------------------- | ---------------------------------------------------- |
+| `types.ts`                                   | Roles, permissões, planos, tenant status, eventos    |
+| `PlatformPermissionRegistry.ts`              | Matriz RBAC (6 papéis × permissões)                  |
+| `PlanCatalogService.ts`                      | Catálogo determinístico de planos                    |
+| `TenantAdministrationService.ts`             | Diretório/summary de tenants + filtros               |
+| `SubscriptionMonitorService` (mesmo arquivo) | Projeção de status de assinatura                     |
+| `PlatformDashboardService.ts`                | Snapshot agregado do dashboard executivo             |
+| `PlatformFeatureFlagService.ts`              | Flags globais (defaults + overrides)                 |
+| `PlatformAuditService.ts`                    | Auditoria administrativa + diff                      |
+| `PlatformEventBus.ts`                        | Barramento de eventos administrativos                |
+| `SupportCenterService.ts`                    | Suporte, moderação, incidentes, notificações globais |
 
 ## Permissões
 
-| Papel | Escopo |
-| --- | --- |
-| `super_admin` | Tudo |
-| `platform_admin` | Tenants, planos, config, notificações |
-| `finance_admin` | Financeiro, comissões, planos (leitura) |
-| `support_admin` | Suporte, moderação, incidentes, notificações |
-| `operations_admin` | Tenants, monitoramento, logs, auditoria |
-| `read_only` | Somente leitura |
+| Papel              | Escopo                                       |
+| ------------------ | -------------------------------------------- |
+| `super_admin`      | Tudo                                         |
+| `platform_admin`   | Tenants, planos, config, notificações        |
+| `finance_admin`    | Financeiro, comissões, planos (leitura)      |
+| `support_admin`    | Suporte, moderação, incidentes, notificações |
+| `operations_admin` | Tenants, monitoramento, logs, auditoria      |
+| `read_only`        | Somente leitura                              |
 
 ## Eventos
 

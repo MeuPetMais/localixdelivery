@@ -74,9 +74,17 @@ export interface OrderCostInput {
 
 export interface CostRepository {
   getLatestIngredientCost(ingredientId: string): Promise<IngredientCostRecord | null>;
-  insertIngredientCost(rec: Omit<IngredientCostRecord, "id" | "created_at">): Promise<IngredientCostRecord>;
-  insertRecipeSnapshot(rec: Omit<RecipeCostSnapshot, "id" | "created_at">): Promise<RecipeCostSnapshot>;
-  upsertProductProfitability(rec: Omit<ProductProfitability, "id" | "last_calculated_at">): Promise<ProductProfitability>;
-  insertOrderProfitability(rec: Omit<OrderProfitability, "id" | "created_at">): Promise<OrderProfitability>;
+  insertIngredientCost(
+    rec: Omit<IngredientCostRecord, "id" | "created_at">,
+  ): Promise<IngredientCostRecord>;
+  insertRecipeSnapshot(
+    rec: Omit<RecipeCostSnapshot, "id" | "created_at">,
+  ): Promise<RecipeCostSnapshot>;
+  upsertProductProfitability(
+    rec: Omit<ProductProfitability, "id" | "last_calculated_at">,
+  ): Promise<ProductProfitability>;
+  insertOrderProfitability(
+    rec: Omit<OrderProfitability, "id" | "created_at">,
+  ): Promise<OrderProfitability>;
   getOrderProfitability(orderId: string): Promise<OrderProfitability | null>;
 }

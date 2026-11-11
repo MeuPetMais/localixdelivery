@@ -34,7 +34,10 @@ export const StripeMapper = {
     if (raw?.requirements?.disabled_reason === "rejected.fraud") return "rejected";
     if (raw?.requirements?.disabled_reason) return "disabled";
     if (!raw?.details_submitted) return "onboarding_pending";
-    if (Array.isArray(raw?.requirements?.currently_due) && raw.requirements.currently_due.length > 0)
+    if (
+      Array.isArray(raw?.requirements?.currently_due) &&
+      raw.requirements.currently_due.length > 0
+    )
       return "onboarding_incomplete";
     if (raw?.charges_enabled && raw?.payouts_enabled) return "active";
     if (raw?.requirements?.pending_verification?.length) return "restricted";

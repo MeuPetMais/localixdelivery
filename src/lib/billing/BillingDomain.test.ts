@@ -28,22 +28,25 @@ describe("EligibilityService", () => {
 describe("RestaurantLifecycleService", () => {
   it("permite fluxo Draft -> Production", () => {
     const order = [
-      "Draft","PendingVerification","PendingStripe","PendingSetup","PendingApproval","Production",
+      "Draft",
+      "PendingVerification",
+      "PendingStripe",
+      "PendingSetup",
+      "PendingApproval",
+      "Production",
     ] as const;
     for (let i = 0; i < order.length - 1; i++) {
       expect(RestaurantLifecycleService.canTransition(order[i], order[i + 1])).toBe(true);
     }
   });
   it("bloqueia transições inválidas", () => {
-    expect(() =>
-      RestaurantLifecycleService.transition("r1", "Draft", "Production"),
-    ).toThrow();
+    expect(() => RestaurantLifecycleService.transition("r1", "Draft", "Production")).toThrow();
   });
   it("emite RestaurantApproved ao entrar em Production", () => {
     const events: BillingEvent[] = [];
-    BillingEvents.on(e => events.push(e));
+    BillingEvents.on((e) => events.push(e));
     RestaurantLifecycleService.transition("r1", "PendingApproval", "Production");
-    expect(events.some(e => e.type === "RestaurantApproved")).toBe(true);
+    expect(events.some((e) => e.type === "RestaurantApproved")).toBe(true);
   });
 });
 
@@ -67,7 +70,10 @@ describe("ServiceFeeService", () => {
 describe("OnboardingService", () => {
   it("calcula percentual do checklist", () => {
     const c = OnboardingService.buildChecklist("r1", {
-      verified: true, gatewayConnected: true, setupComplete: false, approved: false,
+      verified: true,
+      gatewayConnected: true,
+      setupComplete: false,
+      approved: false,
     });
     expect(c.completedPct).toBe(50);
   });

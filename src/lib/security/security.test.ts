@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { maskString, maskEmail, maskCard, sanitizeLogString, sanitizeLogPayload, toSafeError, timingSafeEqualStr } from "./index";
+import {
+  maskString,
+  maskEmail,
+  maskCard,
+  sanitizeLogString,
+  sanitizeLogPayload,
+  toSafeError,
+  timingSafeEqualStr,
+} from "./index";
 
 describe("security helpers", () => {
   it("masks strings preserving edges", () => {
@@ -12,7 +20,9 @@ describe("security helpers", () => {
     expect(maskCard("4111 1111 1111 1234")).toContain("****");
   });
   it("redacts tokens and PII in strings", () => {
-    const s = sanitizeLogString("token=eyJhbGciOi.aa.bb Bearer abcdef contact john@acme.com card 4111111111111234");
+    const s = sanitizeLogString(
+      "token=eyJhbGciOi.aa.bb Bearer abcdef contact john@acme.com card 4111111111111234",
+    );
     expect(s).not.toContain("eyJhbGciOi.aa.bb");
     expect(s).toContain("[jwt-redacted]");
     expect(s).toContain("Bearer [redacted]");
@@ -20,13 +30,16 @@ describe("security helpers", () => {
     expect(s).toContain("1234");
   });
   it("redacts sensitive keys deeply", () => {
-    const out = sanitizeLogPayload({ user: { email: "a@b.co", password: "x", nested: { api_key: "k", cpf: "123" } } }) as any;
+    const out = sanitizeLogPayload({
+      user: { email: "a@b.co", password: "x", nested: { api_key: "k", cpf: "123" } },
+    }) as { user: { password: string; nested: { api_key: string; cpf: string } } };
     expect(out.user.password).toBe("[redacted]");
     expect(out.user.nested.api_key).toBe("[redacted]");
     expect(out.user.nested.cpf).toBe("[redacted]");
   });
   it("survives cycles", () => {
-    const a: any = { name: "x" }; a.self = a;
+    const a: { name: string; self?: unknown } = { name: "x" };
+    a.self = a;
     expect(() => sanitizeLogPayload(a)).not.toThrow();
   });
   it("produces a safe error envelope", () => {

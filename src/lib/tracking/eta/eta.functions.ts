@@ -23,7 +23,9 @@ export const recalcEtaForAssignment = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: snap, error: snapErr } = await supabase
       .from("tracking_snapshots")
-      .select("assignment_id, restaurant_id, order_id, driver_id, last_lat, last_lng, last_seen_at, confidence, status, metadata, eta_seconds")
+      .select(
+        "assignment_id, restaurant_id, order_id, driver_id, last_lat, last_lng, last_seen_at, confidence, status, metadata, eta_seconds",
+      )
       .eq("assignment_id", data.assignment_id)
       .maybeSingle();
     if (snapErr || !snap) return { ok: false, reason: "SNAPSHOT_NOT_FOUND" };
@@ -49,8 +51,12 @@ export const recalcEtaForAssignment = createServerFn({ method: "POST" })
 
     if (!changed) return { ok: true, changed: false, eta_seconds: result.eta_seconds };
 
-    const meta = { ...(snap.metadata as Record<string, unknown> ?? {}),
-      eta_window: { min_seconds: result.window.min_seconds, max_seconds: result.window.max_seconds },
+    const meta = {
+      ...((snap.metadata as Record<string, unknown>) ?? {}),
+      eta_window: {
+        min_seconds: result.window.min_seconds,
+        max_seconds: result.window.max_seconds,
+      },
       eta_algorithm: result.algorithm,
       eta_updated_at: result.updated_at,
     };
@@ -76,10 +82,19 @@ export const recalcEtaForAssignment = createServerFn({ method: "POST" })
     });
     if (histErr) console.error("[recalcEtaForAssignment] history", histErr.message);
 
-    return { ok: true, changed: true, eta_seconds: result.eta_seconds, confidence: result.confidence, window: result.window };
+    return {
+      ok: true,
+      changed: true,
+      eta_seconds: result.eta_seconds,
+      confidence: result.confidence,
+      window: result.window,
+    };
   });
 
-const HistoryInput = z.object({ assignment_id: z.string().uuid(), limit: z.number().int().min(1).max(200).optional() });
+const HistoryInput = z.object({
+  assignment_id: z.string().uuid(),
+  limit: z.number().int().min(1).max(200).optional(),
+});
 
 export const listEtaHistory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -92,6 +107,6 @@ export const listEtaHistory = createServerFn({ method: "GET" })
       .eq("assignment_id", data.assignment_id)
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 50);
-    if (error) return { ok: false, reason: error.message, rows: [] as any[] };
+    if (error) return { ok: false, reason: error.message, rows: [] as NonNullable<typeof rows> };
     return { ok: true, rows: rows ?? [] };
   });

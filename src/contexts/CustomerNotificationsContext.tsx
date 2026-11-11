@@ -27,7 +27,7 @@ export type CustomerNotification = {
   type: string;
   title: string;
   body: string | null;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   read_at: string | null;
   created_at: string;
 };
@@ -188,9 +188,7 @@ export function CustomerNotificationsProvider({ children }: { children: ReactNod
     [notifications, unreadCount, markRead, markAllRead, loading],
   );
 
-  return (
-    <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>
-  );
+  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
 
 export function useCustomerNotifications(): Ctx {

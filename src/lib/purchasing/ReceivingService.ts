@@ -38,7 +38,10 @@ export class ReceivingService {
     private restaurantId: string,
   ) {}
 
-  async receive(lines: ReceivingLine[], meta: { performedBy?: string; purchaseOrderId?: string } = {}) {
+  async receive(
+    lines: ReceivingLine[],
+    meta: { performedBy?: string; purchaseOrderId?: string } = {},
+  ) {
     for (const line of lines) {
       await this.inventory.increaseStock({
         ingredientId: line.ingredient_id,

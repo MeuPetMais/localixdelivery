@@ -1,12 +1,7 @@
 export type SupportRole = "admin" | "support_manager" | "support_agent";
 export type ManagedSupportRole = "support_manager" | "support_agent";
 
-export type LegacySupportStatus =
-  | "aberto"
-  | "em_analise"
-  | "respondido"
-  | "resolvido"
-  | "fechado";
+export type LegacySupportStatus = "aberto" | "em_analise" | "respondido" | "resolvido" | "fechado";
 
 export type CanonicalSupportStatus =
   | "OPEN"
@@ -183,20 +178,34 @@ export function canManageSupportTeam(roles: string[]): boolean {
   return roles.includes("admin");
 }
 
-export function assertSupportInviteNotExpired(invite: { expires_at: string; status: string }, now = new Date()) {
+export function assertSupportInviteNotExpired(
+  invite: { expires_at: string; status: string },
+  now = new Date(),
+) {
   if (invite.status !== "pending") throw new Error("Invite is not pending");
   if (new Date(invite.expires_at).getTime() <= now.getTime()) throw new Error("Invite expired");
 }
 
-export function canChangeSupportMemberRole(input: { actorUserId: string; targetUserId: string; actorRoles: string[] }) {
+export function canChangeSupportMemberRole(input: {
+  actorUserId: string;
+  targetUserId: string;
+  actorRoles: string[];
+}) {
   return input.actorRoles.includes("admin") && input.actorUserId !== input.targetUserId;
 }
 
-export function canSetSupportMemberActive(input: { actorUserId: string; targetUserId: string; actorRoles: string[] }) {
+export function canSetSupportMemberActive(input: {
+  actorUserId: string;
+  targetUserId: string;
+  actorRoles: string[];
+}) {
   return input.actorRoles.includes("admin") && input.actorUserId !== input.targetUserId;
 }
 
-export function supportMemberDisplayName(member: Pick<SupportTeamMember, "name" | "email"> | null | undefined, fallback: string) {
+export function supportMemberDisplayName(
+  member: Pick<SupportTeamMember, "name" | "email"> | null | undefined,
+  fallback: string,
+) {
   return member?.name?.trim() || member?.email?.trim() || fallback;
 }
 
@@ -227,18 +236,28 @@ export function canSupport(role: SupportRole, action: SupportAction): boolean {
   return ROLE_PERMISSIONS[role].includes(action);
 }
 
-export function canAccessSupportCategory(role: SupportRole, allowedCategories: SupportCategory[], category: SupportCategory): boolean {
+export function canAccessSupportCategory(
+  role: SupportRole,
+  allowedCategories: SupportCategory[],
+  category: SupportCategory,
+): boolean {
   if (role === "admin" || role === "support_manager") return true;
   return allowedCategories.includes(category);
 }
 
-export function canResolveTicket(role: SupportRole, assignedTo: string | null, actorId: string): boolean {
+export function canResolveTicket(
+  role: SupportRole,
+  assignedTo: string | null,
+  actorId: string,
+): boolean {
   if (role === "admin" || role === "support_manager") return true;
   return assignedTo === actorId;
 }
 
 export function canViewAdminSupport(roles: string[]): boolean {
-  return roles.some((role) => role === "admin" || role === "support_manager" || role === "support_agent");
+  return roles.some(
+    (role) => role === "admin" || role === "support_manager" || role === "support_agent",
+  );
 }
 
 export function visibleMessagesForRestaurant(messages: SupportMessage[]): SupportMessage[] {
@@ -257,14 +276,19 @@ export function calculateSlaDueAt(ticket: {
     media: 12,
     baixa: 24,
   };
-  return new Date(new Date(ticket.created_at).getTime() + hoursByPriority[ticket.priority] * 3_600_000).toISOString();
+  return new Date(
+    new Date(ticket.created_at).getTime() + hoursByPriority[ticket.priority] * 3_600_000,
+  ).toISOString();
 }
 
 export function isSlaBreached(ticket: { sla_due_at?: string | null }, now = new Date()): boolean {
   return Boolean(ticket.sla_due_at && new Date(ticket.sla_due_at).getTime() < now.getTime());
 }
 
-export function sortSupportTickets<T extends SupportTicketListItem>(tickets: T[], now = new Date()): T[] {
+export function sortSupportTickets<T extends SupportTicketListItem>(
+  tickets: T[],
+  now = new Date(),
+): T[] {
   const priorityWeight: Record<SupportPriority, number> = {
     urgente: 0,
     alta: 1,
@@ -297,20 +321,35 @@ export function buildSupportMetrics(tickets: SupportTicketListItem[], now = new 
   const today = now.toISOString().slice(0, 10);
   const firstResponseDurations = tickets
     .filter((ticket) => ticket.first_response_at)
-    .map((ticket) => new Date(ticket.first_response_at!).getTime() - new Date(ticket.created_at).getTime());
+    .map(
+      (ticket) =>
+        new Date(ticket.first_response_at!).getTime() - new Date(ticket.created_at).getTime(),
+    );
   const resolutionDurations = tickets
     .filter((ticket) => ticket.resolved_at)
-    .map((ticket) => new Date(ticket.resolved_at!).getTime() - new Date(ticket.created_at).getTime());
+    .map(
+      (ticket) => new Date(ticket.resolved_at!).getTime() - new Date(ticket.created_at).getTime(),
+    );
 
   const average = (values: number[]) =>
-    values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length / 60_000) : 0;
+    values.length
+      ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length / 60_000)
+      : 0;
 
   return {
-    totalOpen: tickets.filter((ticket) => ["aberto", "em_analise", "respondido"].includes(ticket.status)).length,
-    urgent: tickets.filter((ticket) => ticket.priority === "urgente" && !["resolvido", "fechado"].includes(ticket.status)).length,
-    inProgress: tickets.filter((ticket) => ticket.assigned_to && !["resolvido", "fechado"].includes(ticket.status)).length,
+    totalOpen: tickets.filter((ticket) =>
+      ["aberto", "em_analise", "respondido"].includes(ticket.status),
+    ).length,
+    urgent: tickets.filter(
+      (ticket) =>
+        ticket.priority === "urgente" && !["resolvido", "fechado"].includes(ticket.status),
+    ).length,
+    inProgress: tickets.filter(
+      (ticket) => ticket.assigned_to && !["resolvido", "fechado"].includes(ticket.status),
+    ).length,
     waitingCustomer: tickets.filter((ticket) => ticket.status === "respondido").length,
-    waitingSupport: tickets.filter((ticket) => ["aberto", "em_analise"].includes(ticket.status)).length,
+    waitingSupport: tickets.filter((ticket) => ["aberto", "em_analise"].includes(ticket.status))
+      .length,
     resolvedToday: tickets.filter((ticket) => ticket.resolved_at?.startsWith(today)).length,
     avgFirstResponseMinutes: average(firstResponseDurations),
     avgResolutionMinutes: average(resolutionDurations),

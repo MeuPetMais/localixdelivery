@@ -6,51 +6,64 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  quality:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      # TanStack Router generates routeTree.gen.ts through the Vite plugin.
+      # Regenerate it before checking route typings in this isolated job.
+      - run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+      - run: bunx tsc --noEmit
 
-      - name: Lint changed files
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          changed_files=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.js' '*.jsx' '*.ts' '*.tsx')
-          if [ -z "$changed_files" ]; then
-            echo "No lintable files changed."
-            exit 0
-          fi
-          bunx eslint $changed_files
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx vitest run --passWithNoTests
 
-      - name: Lint
-        if: github.event_name != 'pull_request'
-        run: bun run lint
-
-      - name: Typecheck
-        run: bunx tsgo --noEmit
-        continue-on-error: true
-
-      - name: Test hotfix
-        if: github.event_name == 'pull_request'
-        run: bunx vitest run src/lib/checkout/OrderService.test.ts src/lib/payments/PricingEngine.test.ts src/lib/payments/service-fee-settings.test.ts supabase/functions/mp-webhook/ledger-idempotency.test.ts src/lib/payments/mp-webhook-payment-failed-idempotency-source.test.ts src/lib/payments/payment-failed-ledger-idempotency-migration.test.ts src/lib/security/gate-d-truncate-privileges-migration.test.ts src/lib/security/gate-d-delivery-security-definer-migration.test.ts src/lib/security/gate-d-trigger-function-execute-migration.test.ts src/lib/security/gate-d-loyalty-security-definer-migration.test.ts src/lib/security/gate-d-support-internal-rpcs-migration.test.ts src/lib/security/gate-d-financial-table-grants-migration.test.ts src/lib/security/gate-d-driver-location-auth-context.test.ts
-
-      - name: Test
-        if: github.event_name != 'pull_request'
-        run: bunx vitest run --passWithNoTests
-
-      - name: Build
-        run: bun run build
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}

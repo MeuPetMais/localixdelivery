@@ -30,7 +30,12 @@ const TABS = ["orders", "kitchen", "delivery", "timeline"] as const;
 type Tab = (typeof TABS)[number];
 
 export function OperationsCenter({
-  role, cards, timeline = [], orchestrator, onRefresh, fullscreenMode = "off",
+  role,
+  cards,
+  timeline = [],
+  orchestrator,
+  onRefresh,
+  fullscreenMode = "off",
 }: Props) {
   const [tab, setTab] = useState<Tab>(fullscreenMode === "kitchen" ? "kitchen" : "orders");
   const [selected, setSelected] = useState<OperationsOrderCard | null>(null);
@@ -61,7 +66,16 @@ export function OperationsCenter({
               (tab === t ? "bg-primary text-primary-foreground" : "hover:bg-muted")
             }
           >
-            {({ orders: "Pedidos", kitchen: "Cozinha", delivery: "Entrega", timeline: "Timeline" } as const)[t]}
+            {
+              (
+                {
+                  orders: "Pedidos",
+                  kitchen: "Cozinha",
+                  delivery: "Entrega",
+                  timeline: "Timeline",
+                } as const
+              )[t]
+            }
           </button>
         ))}
         <div className="ml-auto">
@@ -69,12 +83,20 @@ export function OperationsCenter({
         </div>
       </div>
 
-      {tab === "orders" && <OrdersBoard cards={board.columns.flatMap((c) => c.cards)} onCardClick={setSelected} />}
+      {tab === "orders" && (
+        <OrdersBoard cards={board.columns.flatMap((c) => c.cards)} onCardClick={setSelected} />
+      )}
       {tab === "kitchen" && (
         <KitchenDisplay
           cards={cards}
-          onStart={(c) => { setSelected(c); void service.perform({ action: "START_PREP", orderId: c.id, role }).then(onRefresh); }}
-          onFinish={(c) => { setSelected(c); void service.perform({ action: "FINISH_PREP", orderId: c.id, role }).then(onRefresh); }}
+          onStart={(c) => {
+            setSelected(c);
+            void service.perform({ action: "START_PREP", orderId: c.id, role }).then(onRefresh);
+          }}
+          onFinish={(c) => {
+            setSelected(c);
+            void service.perform({ action: "FINISH_PREP", orderId: c.id, role }).then(onRefresh);
+          }}
         />
       )}
       {tab === "delivery" && <DeliveryPanel cards={cards} />}

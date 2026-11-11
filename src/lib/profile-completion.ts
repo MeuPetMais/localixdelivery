@@ -27,12 +27,14 @@ function hasAnyPayment(pm: unknown): boolean {
 
 function hasAnyEnabledHour(oh: unknown): boolean {
   if (!oh || typeof oh !== "object") return false;
-  return Object.values(oh as Record<string, any>).some(
-    (h) => h && typeof h === "object" && h.enabled === true,
+  return Object.values(oh as Record<string, unknown>).some(
+    (h) => h !== null && typeof h === "object" && "enabled" in h && h.enabled === true,
   );
 }
 
-export function getProfileCompletion(restaurant: any | null | undefined): ProfileCompletion {
+export function getProfileCompletion(
+  restaurant: (Record<string, unknown> & { id?: string }) | null | undefined,
+): ProfileCompletion {
   const r = restaurant ?? {};
 
   const checks: ProfileCheck[] = [

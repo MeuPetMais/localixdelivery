@@ -14,7 +14,11 @@ export function WidgetCard({
   children,
   className,
   span = 1,
-}: { children: ReactNode; className?: string; span?: 1 | 2 | 3 | 4 }) {
+}: {
+  children: ReactNode;
+  className?: string;
+  span?: 1 | 2 | 3 | 4;
+}) {
   const spanCls = { 1: "", 2: "sm:col-span-2", 3: "lg:col-span-3", 4: "lg:col-span-4" }[span];
   return (
     <div className={cn("rounded-2xl border bg-card p-4 shadow-sm", spanCls, className)}>
@@ -50,13 +54,21 @@ export function WidgetError({ message, onRetry }: { message: string; onRetry?: (
     <div className="text-sm text-destructive">
       <p>Falha ao carregar: {message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="mt-2 text-xs underline">Tentar novamente</button>
+        <button onClick={onRetry} className="mt-2 text-xs underline">
+          Tentar novamente
+        </button>
       )}
     </div>
   );
 }
 
-export function WidgetEmpty({ title = "Sem dados", description }: { title?: string; description?: string }) {
+export function WidgetEmpty({
+  title = "Sem dados",
+  description,
+}: {
+  title?: string;
+  description?: string;
+}) {
   return (
     <div className="py-6 text-center text-sm text-muted-foreground">
       <p className="font-medium">{title}</p>
@@ -65,10 +77,17 @@ export function WidgetEmpty({ title = "Sem dados", description }: { title?: stri
   );
 }
 
-interface EBState { error?: Error }
-export class WidgetErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, EBState> {
+interface EBState {
+  error?: Error;
+}
+export class WidgetErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  EBState
+> {
   state: EBState = {};
-  static getDerivedStateFromError(error: Error) { return { error }; }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
   render() {
     if (this.state.error) {
       return this.props.fallback ?? <WidgetError message={this.state.error.message} />;

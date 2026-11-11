@@ -59,7 +59,11 @@ type Article = {
   commonErrors?: string[];
 };
 
-const CATEGORIES: { id: CategoryId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const CATEGORIES: {
+  id: CategoryId;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { id: "primeiros-passos", label: "🚀 Primeiros Passos", icon: Rocket },
   { id: "cardapio", label: "🍔 Cardápio", icon: Sandwich },
   { id: "builder", label: "🍕 Builder", icon: Pizza },
@@ -442,20 +446,23 @@ export function KnowledgeBase() {
   const articlesQuery = useQuery({
     queryKey: ["support-knowledge-published"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("support_articles") as any)
+      const { data, error } = await supabase
+        .from("support_articles")
         .select("id, category, title, content, video_url, position, published, archived")
         .eq("published", true)
         .eq("archived", false)
         .order("position", { ascending: true });
       if (error) throw error;
-      return (data ?? []).map((row: any): Article => ({
-        id: row.id,
-        category: normalizeCategory(row.category),
-        title: row.title,
-        summary: row.content,
-        tags: [row.category],
-        sections: [{ heading: row.category, items: [row.content] }],
-      }));
+      return (data ?? []).map(
+        (row): Article => ({
+          id: row.id,
+          category: normalizeCategory(row.category),
+          title: row.title,
+          summary: row.content,
+          tags: [row.category],
+          sections: [{ heading: row.category, items: [row.content] }],
+        }),
+      );
     },
   });
   const articles = articlesQuery.data ?? [];
@@ -489,7 +496,9 @@ export function KnowledgeBase() {
       <div className="mb-3 flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-primary" />
         <h2 className="font-semibold">Base de Conhecimento</h2>
-        <Badge variant="secondary" className="ml-auto">{articles.length} artigos</Badge>
+        <Badge variant="secondary" className="ml-auto">
+          {articles.length} artigos
+        </Badge>
       </div>
 
       <div className="relative mb-3">
@@ -553,7 +562,9 @@ export function KnowledgeBase() {
                           {s.heading}
                         </div>
                         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-                          {s.items.map((it, j) => <li key={j}>{it}</li>)}
+                          {s.items.map((it, j) => (
+                            <li key={j}>{it}</li>
+                          ))}
                         </ul>
                       </div>
                     ))}
@@ -564,7 +575,9 @@ export function KnowledgeBase() {
                           💡 Dicas importantes
                         </div>
                         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-                          {a.tips.map((t, i) => <li key={i}>{t}</li>)}
+                          {a.tips.map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -575,7 +588,9 @@ export function KnowledgeBase() {
                           ⚠️ Erros comuns
                         </div>
                         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-                          {a.commonErrors.map((t, i) => <li key={i}>{t}</li>)}
+                          {a.commonErrors.map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -607,7 +622,9 @@ export function KnowledgeBase() {
                             {a.route.label}
                           </Link>
                         </Button>
-                      ) : <span />}
+                      ) : (
+                        <span />
+                      )}
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>Este artigo resolveu?</span>

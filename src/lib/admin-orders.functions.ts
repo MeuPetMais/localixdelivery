@@ -85,7 +85,7 @@ export type AdminOrderDetail = {
   order_number: number | null;
   created_at: string;
   status: string;
-  items: unknown[];
+  items: import("@/integrations/supabase/types").Json[];
   restaurant: { id: string; name: string | null };
   customer: {
     name: string | null;
@@ -362,18 +362,32 @@ async function loadPageRelations(supabaseAdmin: any, orders: OrderRow[]) {
     await Promise.all([
       supabaseAdmin.from("restaurants").select("id, name").in("id", restaurantIds),
       supabaseAdmin.from("order_pricing_snapshot").select("*").in("order_id", orderIds),
-      supabaseAdmin.from("order_payment").select(
-        "order_id, provider, payment_method, status, payment_id, payment_intent, external_reference, created_at, updated_at",
-      ).in("order_id", orderIds),
-      supabaseAdmin.from("payments").select(
-        "order_id, id, provider, method, status, external_id, created_at, updated_at, paid_at",
-      ).in("order_id", orderIds),
-      supabaseAdmin.from("order_status_history").select(
-        "id, order_id, previous_status, current_status, reason, performed_by_type, created_at",
-      ).in("order_id", orderIds).order("created_at", { ascending: false }).order("id", { ascending: false }),
-      supabaseAdmin.from("delivery_assignments").select(
-        "order_id, driver_id, status, assigned_at, picked_up_at, departed_at, delivered_at, distance_km",
-      ).in("order_id", orderIds),
+      supabaseAdmin
+        .from("order_payment")
+        .select(
+          "order_id, provider, payment_method, status, payment_id, payment_intent, external_reference, created_at, updated_at",
+        )
+        .in("order_id", orderIds),
+      supabaseAdmin
+        .from("payments")
+        .select(
+          "order_id, id, provider, method, status, external_id, created_at, updated_at, paid_at",
+        )
+        .in("order_id", orderIds),
+      supabaseAdmin
+        .from("order_status_history")
+        .select(
+          "id, order_id, previous_status, current_status, reason, performed_by_type, created_at",
+        )
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false }),
+      supabaseAdmin
+        .from("delivery_assignments")
+        .select(
+          "order_id, driver_id, status, assigned_at, picked_up_at, departed_at, delivered_at, distance_km",
+        )
+        .in("order_id", orderIds),
     ]);
 
   for (const result of [restaurantsQ, snapshotsQ, orderPaymentsQ, paymentsQ, historyQ, deliveryQ]) {
@@ -395,7 +409,11 @@ async function loadPageRelations(supabaseAdmin: any, orders: OrderRow[]) {
   };
 }
 
-function paymentForOrder(orderId: string, orderPayments: Map<string, PaymentRow>, payments: Map<string, PaymentRow>) {
+function paymentForOrder(
+  orderId: string,
+  orderPayments: Map<string, PaymentRow>,
+  payments: Map<string, PaymentRow>,
+) {
   return orderPayments.get(orderId) ?? payments.get(orderId) ?? null;
 }
 
@@ -411,7 +429,7 @@ export const getAdminOrders = createServerFn({ method: "POST" })
     let paymentOrderIds: string[] | null = null;
     if (paymentStatus) {
       paymentOrderIds = await findOrderIdsByPaymentStatus(supabaseAdmin, paymentStatus);
-      if (paymentOrderIds.length === 0) return { page, pageSize, total: 0, rows: [] };
+      if (paymentOrderIds?.length === 0) return { page, pageSize, total: 0, rows: [] };
     }
 
     let query = supabaseAdmin
@@ -426,7 +444,8 @@ export const getAdminOrders = createServerFn({ method: "POST" })
     if (filters.from) query = query.gte("created_at", `${filters.from}T00:00:00.000Z`);
     if (filters.to) query = query.lte("created_at", `${filters.to}T23:59:59.999Z`);
     const status = cleanFilter(filters.status);
-    if (status && (ORDER_STATUSES as readonly string[]).includes(status)) query = query.eq("status", status);
+    if (status && (ORDER_STATUSES as readonly string[]).includes(status))
+      query = query.eq("status", status);
     if (filters.restaurantId) query = query.eq("restaurant_id", filters.restaurantId);
     const paymentMethod = cleanFilter(filters.paymentMethod);
     if (paymentMethod) query = query.eq("payment_method", paymentMethod);
@@ -445,7 +464,7 @@ export const getAdminOrders = createServerFn({ method: "POST" })
     const { data: orders, error, count } = await query;
     if (error) throw new Error(error.message);
 
-    const rows = ((orders ?? []) as OrderRow[]);
+    const rows = (orders ?? []) as OrderRow[];
     const relations = await loadPageRelations(supabaseAdmin, rows);
 
     return {
@@ -511,20 +530,46 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
 
     const [restaurantQ, snapshotQ, orderPaymentQ, paymentQ, timelineQ, deliveryQ] =
       await Promise.all([
-        supabaseAdmin.from("restaurants").select("id, name").eq("id", orderRow.restaurant_id).maybeSingle(),
-        supabaseAdmin.from("order_pricing_snapshot").select("*").eq("order_id", orderId).maybeSingle(),
-        supabaseAdmin.from("order_payment").select(
-          "order_id, provider, payment_method, status, payment_id, payment_intent, external_reference, created_at, updated_at",
-        ).eq("order_id", orderId).maybeSingle(),
-        supabaseAdmin.from("payments").select(
-          "order_id, id, provider, method, status, external_id, created_at, updated_at, paid_at",
-        ).eq("order_id", orderId).order("updated_at", { ascending: false }).limit(1),
-        supabaseAdmin.from("order_status_history").select(
-          "id, order_id, previous_status, current_status, reason, performed_by_type, created_at",
-        ).eq("order_id", orderId).order("created_at", { ascending: true }).order("id", { ascending: true }),
-        supabaseAdmin.from("delivery_assignments").select(
-          "order_id, driver_id, status, assigned_at, picked_up_at, departed_at, delivered_at, distance_km",
-        ).eq("order_id", orderId).maybeSingle(),
+        supabaseAdmin
+          .from("restaurants")
+          .select("id, name")
+          .eq("id", orderRow.restaurant_id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("order_pricing_snapshot")
+          .select("*")
+          .eq("order_id", orderId)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("order_payment")
+          .select(
+            "order_id, provider, payment_method, status, payment_id, payment_intent, external_reference, created_at, updated_at",
+          )
+          .eq("order_id", orderId)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("payments")
+          .select(
+            "order_id, id, provider, method, status, external_id, created_at, updated_at, paid_at",
+          )
+          .eq("order_id", orderId)
+          .order("updated_at", { ascending: false })
+          .limit(1),
+        supabaseAdmin
+          .from("order_status_history")
+          .select(
+            "id, order_id, previous_status, current_status, reason, performed_by_type, created_at",
+          )
+          .eq("order_id", orderId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true }),
+        supabaseAdmin
+          .from("delivery_assignments")
+          .select(
+            "order_id, driver_id, status, assigned_at, picked_up_at, departed_at, delivered_at, distance_km",
+          )
+          .eq("order_id", orderId)
+          .maybeSingle(),
       ]);
 
     for (const result of [restaurantQ, snapshotQ, orderPaymentQ, paymentQ, timelineQ, deliveryQ]) {
@@ -567,7 +612,9 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
       order_number: orderRow.order_number,
       created_at: orderRow.created_at,
       status: orderRow.status,
-      items: Array.isArray(orderRow.items) ? orderRow.items : [],
+      items: Array.isArray(orderRow.items)
+        ? (orderRow.items as import("@/integrations/supabase/types").Json[])
+        : [],
       restaurant: (restaurantQ.data as { id: string; name: string | null } | null) ?? {
         id: orderRow.restaurant_id,
         name: null,
@@ -606,7 +653,10 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
             status: payment.status ?? null,
             internal_payment_id: payment.id ?? null,
             provider_reference: maskProviderReference(
-              payment.payment_id ?? payment.external_id ?? payment.payment_intent ?? payment.external_reference,
+              payment.payment_id ??
+                payment.external_id ??
+                payment.payment_intent ??
+                payment.external_reference,
             ),
             created_at: payment.created_at ?? null,
             updated_at: payment.updated_at ?? null,

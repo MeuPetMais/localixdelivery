@@ -57,7 +57,9 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
     const { fromDate, toDate } = resolveRange(data.from, data.to);
 
     const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
     const todayEnd = new Date(todayStart.getTime() + DAY_MS - 1);
     const yesterdayStart = new Date(todayStart.getTime() - DAY_MS);
     const yesterdayEnd = new Date(todayStart.getTime() - 1);
@@ -74,18 +76,36 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
     ] = await Promise.all([
       sb.from("restaurants").select("id, active, is_open, created_at"),
       sb.from("customer_profiles").select("id, created_at"),
-      sb.from("orders").select("id, restaurant_id, status, created_at, payment_method, items")
-        .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString()),
-      sb.from("orders").select("id").gte("created_at", todayStart.toISOString()).lte("created_at", todayEnd.toISOString()),
-      sb.from("orders").select("id").gte("created_at", yesterdayStart.toISOString()).lte("created_at", yesterdayEnd.toISOString()),
-      sb.from("orders").select("id").gte("created_at", monthStart.toISOString()).lte("created_at", todayEnd.toISOString()),
+      sb
+        .from("orders")
+        .select("id, restaurant_id, status, created_at, payment_method, items")
+        .gte("created_at", fromDate.toISOString())
+        .lte("created_at", toDate.toISOString()),
+      sb
+        .from("orders")
+        .select("id")
+        .gte("created_at", todayStart.toISOString())
+        .lte("created_at", todayEnd.toISOString()),
+      sb
+        .from("orders")
+        .select("id")
+        .gte("created_at", yesterdayStart.toISOString())
+        .lte("created_at", yesterdayEnd.toISOString()),
+      sb
+        .from("orders")
+        .select("id")
+        .gte("created_at", monthStart.toISOString())
+        .lte("created_at", todayEnd.toISOString()),
       sb.from("customer_profiles").select("id").gte("created_at", fromDate.toISOString()),
     ]);
 
     if (ordersRange.error) throw new Error(ordersRange.error.message);
 
     const orders = (ordersRange.data ?? []) as AdminOrderMetricRow[];
-    const snapshots = await loadSnapshotsForOrders(sb, orders.map((order) => order.id));
+    const snapshots = await loadSnapshotsForOrders(
+      sb,
+      orders.map((order) => order.id),
+    );
     const snapshotsByOrder = snapshotByOrderId(snapshots);
     const snapshotTotals = sumSnapshots(snapshots);
 
@@ -121,7 +141,10 @@ export const getSuperadminOverview = createServerFn({ method: "POST" })
           const createdAt = new Date(order.created_at);
           return createdAt >= start && createdAt <= end;
         })
-        .reduce((sum, order) => sum + (money(snapshotsByOrder.get(order.id)?.customer_total) ?? 0), 0);
+        .reduce(
+          (sum, order) => sum + (money(snapshotsByOrder.get(order.id)?.customer_total) ?? 0),
+          0,
+        );
 
     const todayRev = sumCustomerTotalForWindow(todayStart, todayEnd);
     const ydayRev = sumCustomerTotalForWindow(yesterdayStart, yesterdayEnd);
@@ -166,40 +189,49 @@ export const getPlatformFinance = createServerFn({ method: "POST" })
 
     const [restaurantsQ, ordersQ] = await Promise.all([
       sb.from("restaurants").select("id, name, category, city"),
-      sb.from("orders").select("id, restaurant_id, status, created_at")
-        .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString()),
+      sb
+        .from("orders")
+        .select("id, restaurant_id, status, created_at")
+        .gte("created_at", fromDate.toISOString())
+        .lte("created_at", toDate.toISOString()),
     ]);
 
     if (ordersQ.error) throw new Error(ordersQ.error.message);
 
     const restaurants = (restaurantsQ.data ?? []) as AdminRestaurantMetricRow[];
     const orders = (ordersQ.data ?? []) as AdminOrderMetricRow[];
-    const snapshots = await loadSnapshotsForOrders(sb, orders.map((order) => order.id));
+    const snapshots = await loadSnapshotsForOrders(
+      sb,
+      orders.map((order) => order.id),
+    );
     const rows = buildAdminFinanceByRestaurant(restaurants, orders, snapshots);
 
-    const totals = rows.reduce((acc, row) => ({
-      orders: acc.orders + row.orders,
-      ordersWithSnapshot: acc.ordersWithSnapshot + row.ordersWithSnapshot,
-      customerTotal: acc.customerTotal + row.customerTotal,
-      restaurantGross: acc.restaurantGross + row.restaurantGross,
-      restaurantNet: acc.restaurantNet + row.restaurantNet,
-      platformFee: acc.platformFee + row.platformFee,
-      platformRevenue: acc.platformRevenue + row.platformRevenue,
-      realizedPlatformRevenue: acc.realizedPlatformRevenue + row.realizedPlatformRevenue,
-      gatewayFee: acc.gatewayFee + row.gatewayFee,
-      missingSnapshotOrders: acc.missingSnapshotOrders + row.missingSnapshotOrders,
-    }), {
-      orders: 0,
-      ordersWithSnapshot: 0,
-      customerTotal: 0,
-      restaurantGross: 0,
-      restaurantNet: 0,
-      platformFee: 0,
-      platformRevenue: 0,
-      realizedPlatformRevenue: 0,
-      gatewayFee: 0,
-      missingSnapshotOrders: 0,
-    });
+    const totals = rows.reduce(
+      (acc, row) => ({
+        orders: acc.orders + row.orders,
+        ordersWithSnapshot: acc.ordersWithSnapshot + row.ordersWithSnapshot,
+        customerTotal: acc.customerTotal + row.customerTotal,
+        restaurantGross: acc.restaurantGross + row.restaurantGross,
+        restaurantNet: acc.restaurantNet + row.restaurantNet,
+        platformFee: acc.platformFee + row.platformFee,
+        platformRevenue: acc.platformRevenue + row.platformRevenue,
+        realizedPlatformRevenue: acc.realizedPlatformRevenue + row.realizedPlatformRevenue,
+        gatewayFee: acc.gatewayFee + row.gatewayFee,
+        missingSnapshotOrders: acc.missingSnapshotOrders + row.missingSnapshotOrders,
+      }),
+      {
+        orders: 0,
+        ordersWithSnapshot: 0,
+        customerTotal: 0,
+        restaurantGross: 0,
+        restaurantNet: 0,
+        platformFee: 0,
+        platformRevenue: 0,
+        realizedPlatformRevenue: 0,
+        gatewayFee: 0,
+        missingSnapshotOrders: 0,
+      },
+    );
 
     return { rows, totals };
   });
@@ -208,7 +240,8 @@ export const listAdminPartners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = await assertAdmin(context.userId);
-    const { data } = await sb.from("restaurants")
+    const { data } = await sb
+      .from("restaurants")
       .select("id, name, category, city, whatsapp_phone, is_open, active, created_at")
       .order("created_at", { ascending: false });
     const { data: orders } = await sb.from("orders").select("restaurant_id, total");
@@ -235,12 +268,14 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = await assertAdmin(context.userId);
-    const { data } = await sb.from("customer_profiles")
+    const { data } = await sb
+      .from("customer_profiles")
       .select("id, full_name, email, phone, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
     const ids = (data ?? []).map((customer) => customer.id);
-    const { data: orders } = await sb.from("orders")
+    const { data: orders } = await sb
+      .from("orders")
       .select("customer_id, total, created_at")
       .in("customer_id", ids.length ? ids : [EMPTY_UUID]);
     const stats = new Map<string, { count: number; spent: number; last: string | null }>();
@@ -261,17 +296,23 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
 
 export const listAdminTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    payment: z.string().optional(),
-    from: z.string().optional(),
-    to: z.string().optional(),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        payment: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ context, data }) => {
     const sb = await assertAdmin(context.userId);
     const { fromDate, toDate } = resolveRange(data.from, data.to);
-    let query = sb.from("orders")
+    let query = sb
+      .from("orders")
       .select("id, order_number, payment_method, status, created_at, restaurant_id, customer_name")
-      .gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString())
+      .gte("created_at", fromDate.toISOString())
+      .lte("created_at", toDate.toISOString())
       .order("created_at", { ascending: false })
       .limit(500);
     if (data.payment && data.payment !== "all") query = query.eq("payment_method", data.payment);
@@ -279,17 +320,33 @@ export const listAdminTransactions = createServerFn({ method: "POST" })
     const { data: orders, error } = await query;
     if (error) throw new Error(error.message);
 
-    const orderRows = (orders ?? []) as Array<AdminOrderMetricRow & {
-      order_number: number | null;
-      customer_name: string | null;
-    }>;
-    const restIds = Array.from(new Set(orderRows.map((order) => order.restaurant_id).filter(Boolean)));
+    const orderRows = (orders ?? []) as Array<
+      AdminOrderMetricRow & {
+        order_number: number | null;
+        customer_name: string | null;
+      }
+    >;
+    const restIds = Array.from(
+      new Set(
+        orderRows
+          .map((order) => order.restaurant_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0),
+      ),
+    );
     const [restsQ, snapshots] = await Promise.all([
-      sb.from("restaurants").select("id, name").in("id", restIds.length ? restIds : [EMPTY_UUID]),
-      loadSnapshotsForOrders(sb, orderRows.map((order) => order.id)),
+      sb
+        .from("restaurants")
+        .select("id, name")
+        .in("id", restIds.length ? restIds : [EMPTY_UUID]),
+      loadSnapshotsForOrders(
+        sb,
+        orderRows.map((order) => order.id),
+      ),
     ]);
 
-    const restaurantNameById = new Map((restsQ.data ?? []).map((restaurant) => [restaurant.id, restaurant.name]));
+    const restaurantNameById = new Map(
+      (restsQ.data ?? []).map((restaurant) => [restaurant.id, restaurant.name]),
+    );
     const snapshotsByOrder = snapshotByOrderId(snapshots);
 
     return orderRows.map((order) => {
@@ -319,7 +376,10 @@ export const setPartnerActive = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(d))
   .handler(async ({ context, data }) => {
     const sb = await assertAdmin(context.userId);
-    const { error } = await sb.from("restaurants").update({ active: data.active }).eq("id", data.id);
+    const { error } = await sb
+      .from("restaurants")
+      .update({ active: data.active })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

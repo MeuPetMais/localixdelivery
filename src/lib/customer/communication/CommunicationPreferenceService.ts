@@ -32,29 +32,45 @@ export const CommunicationPreferenceService = {
     return (data ?? DEFAULTS(customerId)) as CommunicationPreferences;
   },
 
-  async upsert(customerId: string, patch: Partial<CommunicationPreferences>): Promise<CommunicationPreferences> {
+  async upsert(
+    customerId: string,
+    patch: Partial<CommunicationPreferences>,
+  ): Promise<CommunicationPreferences> {
     const current = await CommunicationPreferenceService.get(customerId);
     const next = { ...current, ...patch, customer_id: customerId };
-    const { data, error } = await T().upsert(next, { onConflict: "customer_id" }).select().maybeSingle();
+    const { data, error } = await T()
+      .upsert(next, { onConflict: "customer_id" })
+      .select()
+      .maybeSingle();
     if (error) throw error;
     await CommunicationEventBus.publish({
       type: "CommunicationPreferenceChanged",
-      customerId, changes: patch, at: new Date().toISOString(),
+      customerId,
+      changes: patch,
+      at: new Date().toISOString(),
     });
     return (data ?? next) as CommunicationPreferences;
   },
 
   async setChannel(customerId: string, channel: CommunicationChannel, enabled: boolean) {
     const field = CHANNEL_FIELD[channel];
-    const result = await CommunicationPreferenceService.upsert(customerId, { [field]: enabled } as Partial<CommunicationPreferences>);
+    const result = await CommunicationPreferenceService.upsert(customerId, {
+      [field]: enabled,
+    } as Partial<CommunicationPreferences>);
     await CommunicationEventBus.publish({
       type: enabled ? "CustomerOptedIn" : "CustomerOptedOut",
-      customerId, channel, at: new Date().toISOString(),
+      customerId,
+      channel,
+      at: new Date().toISOString(),
     });
     return result;
   },
 
-  isAllowed(prefs: CommunicationPreferences, channel: CommunicationChannel, opts?: { marketing?: boolean }) {
+  isAllowed(
+    prefs: CommunicationPreferences,
+    channel: CommunicationChannel,
+    opts?: { marketing?: boolean },
+  ) {
     if (opts?.marketing && !prefs.marketing_enabled) return false;
     return Boolean(prefs[CHANNEL_FIELD[channel]]);
   },

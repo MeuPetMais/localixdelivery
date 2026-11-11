@@ -1,4 +1,10 @@
-export type ProductionStatus = "PLANNED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "FAILED";
+export type ProductionStatus =
+  | "PLANNED"
+  | "IN_PROGRESS"
+  | "PAUSED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "FAILED";
 export type ProductionBatchStatus = "ACTIVE" | "CONSUMED" | "EXPIRED" | "DISCARDED";
 
 export interface ProductionOrder {

@@ -28,6 +28,7 @@ O lifecycle oficial do Customer 360 é:
 As regras de lifecycle devem permanecer centralizadas no domínio Customer 360 e não podem ser reimplementadas no frontend.
 
 A camada Customer Intelligence deriva oportunidades do Customer 360, incluindo:
+
 - segunda compra;
 - recorrência;
 - risco;
@@ -38,6 +39,7 @@ A camada Customer Intelligence deriva oportunidades do Customer 360, incluindo:
 - produto favorito quando comprovável pelo histórico.
 
 A mensuração de Growth usa `growth_measurement_events` para registrar:
+
 - oportunidade visualizada;
 - ação selecionada;
 - ação executada;
@@ -48,6 +50,7 @@ Esse ledger é exclusivamente analítico.
 As automações de campanha utilizam consentimento partner-scoped em `customer_growth_marketing_consents` e jobs em `growth_campaign_automation_jobs`.
 
 Nenhuma campanha pode ser considerada elegível para envio sem:
+
 1. consentimento explícito e vigente;
 2. provider comprovado para o canal;
 3. respeito ao limite de frequência;
@@ -59,6 +62,7 @@ Na data desta atualização, a infraestrutura de automação está implantada, m
 ### KPIs adicionais de Growth
 
 Adicionar aos KPIs oficiais:
+
 - taxa de segunda compra;
 - clientes recorrentes;
 - clientes em risco;
@@ -76,6 +80,7 @@ Adicionar aos KPIs oficiais:
 ### Próxima fase operacional
 
 A prioridade deixa de ser ampliar a arquitetura do Customer 360 e passa a ser:
+
 - captar consentimentos reais;
 - provar provider de comunicação;
 - executar campanhas controladas;

@@ -214,6 +214,7 @@ Uso interno da equipe antes de liberar o restaurante:
 ## Validação
 
 Consistência conferida contra:
+
 - `docs/LOCALIX_OPERATIONS_MANUAL.md`
 - `docs/ARCHITECTURE_BASELINE.md`
 - `docs/LOCALIX_BUSINESS_MODEL_V1.md`
@@ -234,6 +235,7 @@ Nenhum processo especulativo incluído.
 **Inconsistências encontradas:** 0.
 
 **Itens marcados como "Não implementado na v1.0":**
+
 - KYC próprio Localix fora do Stripe.
 - Payouts customizados / agenda de repasse gerida pela Localix.
 - Roteamento de entregadores / integração com apps de entrega.

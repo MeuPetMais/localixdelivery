@@ -16,13 +16,16 @@ export function createProductRecipeService(inventory: InventoryService) {
     ) {
       const mult = opts.multiplier ?? 1;
       for (const l of lines) {
-        await inventory.decreaseStock({
-          ingredientId: l.ingredient_id,
-          quantity: l.quantity * mult,
-          referenceType: "recipe",
-          referenceId: opts.referenceId,
-          performedBy: opts.performedBy,
-        }, "PRODUCTION");
+        await inventory.decreaseStock(
+          {
+            ingredientId: l.ingredient_id,
+            quantity: l.quantity * mult,
+            referenceType: "recipe",
+            referenceId: opts.referenceId,
+            performedBy: opts.performedBy,
+          },
+          "PRODUCTION",
+        );
       }
     },
   };

@@ -12,25 +12,43 @@ export interface KillSwitchRepository {
 
 export class InMemoryKillSwitchRepository implements KillSwitchRepository {
   private map = new Map<string, KillSwitchState>();
-  get(d: string) { return this.map.get(d); }
-  list() { return [...this.map.values()]; }
-  save(s: KillSwitchState) { this.map.set(s.domain, s); }
+  get(d: string) {
+    return this.map.get(d);
+  }
+  list() {
+    return [...this.map.values()];
+  }
+  save(s: KillSwitchState) {
+    this.map.set(s.domain, s);
+  }
 }
 
 export const KILL_SWITCH_DOMAINS: KillSwitchDomain[] = [
-  "payments", "delivery", "promotions", "marketplace", "ai", "analytics", "notifications",
+  "payments",
+  "delivery",
+  "promotions",
+  "marketplace",
+  "ai",
+  "analytics",
+  "notifications",
 ];
 
 export class KillSwitchService {
   constructor(private readonly repo: KillSwitchRepository = new InMemoryKillSwitchRepository()) {}
 
-  list(): KillSwitchState[] { return this.repo.list(); }
-  isActive(domain: string): boolean { return Boolean(this.repo.get(domain)?.active); }
+  list(): KillSwitchState[] {
+    return this.repo.list();
+  }
+  isActive(domain: string): boolean {
+    return Boolean(this.repo.get(domain)?.active);
+  }
 
   activate(domain: string, actorId: string, reason?: string): KillSwitchState {
     const state: KillSwitchState = {
-      domain, active: true,
-      activated_at: new Date().toISOString(), activated_by: actorId,
+      domain,
+      active: true,
+      activated_at: new Date().toISOString(),
+      activated_by: actorId,
       reason: reason ?? null,
     };
     this.repo.save(state);
@@ -39,8 +57,11 @@ export class KillSwitchService {
 
   deactivate(domain: string, actorId: string): KillSwitchState {
     const state: KillSwitchState = {
-      domain, active: false,
-      activated_at: null, activated_by: actorId, reason: null,
+      domain,
+      active: false,
+      activated_at: null,
+      activated_by: actorId,
+      reason: null,
     };
     this.repo.save(state);
     return state;

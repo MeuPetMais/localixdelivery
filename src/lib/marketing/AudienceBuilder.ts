@@ -27,18 +27,43 @@ export const AudienceBuilder = {
     campaign: Pick<Campaign, "id" | "audience" | "channels">,
     candidates: AudienceCandidate[],
   ): AudienceResolution {
-    const reasons: Record<string, number> = { segment: 0, consent: 0, channel: 0, orders: 0, spent: 0, explicit: 0 };
+    const reasons: Record<string, number> = {
+      segment: 0,
+      consent: 0,
+      channel: 0,
+      orders: 0,
+      spent: 0,
+      explicit: 0,
+    };
     const { audience, channels } = campaign;
     const explicit = audience.customer_ids ? new Set(audience.customer_ids) : null;
     const out: string[] = [];
 
     for (const c of candidates) {
-      if (explicit && !explicit.has(c.customer_id)) { reasons.explicit++; continue; }
-      if (audience.segment && c.segment !== audience.segment) { reasons.segment++; continue; }
-      if (audience.require_marketing_consent !== false && c.marketing_consent === false) { reasons.consent++; continue; }
-      if (audience.min_orders != null && (c.total_orders ?? 0) < audience.min_orders) { reasons.orders++; continue; }
-      if (audience.min_spent != null && (c.total_spent ?? 0) < audience.min_spent) { reasons.spent++; continue; }
-      if (c.channels && !channels.some((ch) => c.channels?.[ch])) { reasons.channel++; continue; }
+      if (explicit && !explicit.has(c.customer_id)) {
+        reasons.explicit++;
+        continue;
+      }
+      if (audience.segment && c.segment !== audience.segment) {
+        reasons.segment++;
+        continue;
+      }
+      if (audience.require_marketing_consent !== false && c.marketing_consent === false) {
+        reasons.consent++;
+        continue;
+      }
+      if (audience.min_orders != null && (c.total_orders ?? 0) < audience.min_orders) {
+        reasons.orders++;
+        continue;
+      }
+      if (audience.min_spent != null && (c.total_spent ?? 0) < audience.min_spent) {
+        reasons.spent++;
+        continue;
+      }
+      if (c.channels && !channels.some((ch) => c.channels?.[ch])) {
+        reasons.channel++;
+        continue;
+      }
       out.push(c.customer_id);
     }
 

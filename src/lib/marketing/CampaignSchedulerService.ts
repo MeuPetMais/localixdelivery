@@ -12,7 +12,9 @@ export const CampaignSchedulerService = {
   schedule(c: Pick<Campaign, "id" | "restaurant_id" | "scheduled_at">): ScheduledCampaignJob {
     if (!c.scheduled_at) throw new Error("scheduled_at required");
     const job: ScheduledCampaignJob = {
-      campaign_id: c.id, restaurant_id: c.restaurant_id, run_at: c.scheduled_at,
+      campaign_id: c.id,
+      restaurant_id: c.restaurant_id,
+      run_at: c.scheduled_at,
     };
     queue.push(job);
     return job;
@@ -20,7 +22,10 @@ export const CampaignSchedulerService = {
   cancel(campaignId: string): number {
     let n = 0;
     for (let i = queue.length - 1; i >= 0; i--) {
-      if (queue[i].campaign_id === campaignId) { queue.splice(i, 1); n++; }
+      if (queue[i].campaign_id === campaignId) {
+        queue.splice(i, 1);
+        n++;
+      }
     }
     return n;
   },
@@ -31,5 +36,7 @@ export const CampaignSchedulerService = {
   list(restaurantId?: string): ScheduledCampaignJob[] {
     return restaurantId ? queue.filter((j) => j.restaurant_id === restaurantId) : [...queue];
   },
-  clear(): void { queue.length = 0; },
+  clear(): void {
+    queue.length = 0;
+  },
 } as const;

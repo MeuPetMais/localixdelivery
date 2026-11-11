@@ -42,8 +42,16 @@ function newCorrelationId(): string {
 }
 
 export interface RetentionQueryClient {
-  countBetween(table: string, fromExclusiveIso: string | null, toInclusiveIso: string | null): Promise<number>;
-  boundsBetween(table: string, fromExclusiveIso: string | null, toInclusiveIso: string | null): Promise<{ oldest: string | null; newest: string | null }>;
+  countBetween(
+    table: string,
+    fromExclusiveIso: string | null,
+    toInclusiveIso: string | null,
+  ): Promise<number>;
+  boundsBetween(
+    table: string,
+    fromExclusiveIso: string | null,
+    toInclusiveIso: string | null,
+  ): Promise<{ oldest: string | null; newest: string | null }>;
 }
 
 // Cliente Supabase padrão (produção). Substituível em testes.
@@ -60,8 +68,14 @@ export const supabaseRetentionClient: RetentionQueryClient = {
     const base = (supabase as any).from(table).select("created_at");
     let qOld = base;
     let qNew = base;
-    if (fromExclusiveIso) { qOld = qOld.gt("created_at", fromExclusiveIso); qNew = qNew.gt("created_at", fromExclusiveIso); }
-    if (toInclusiveIso)   { qOld = qOld.lte("created_at", toInclusiveIso); qNew = qNew.lte("created_at", toInclusiveIso); }
+    if (fromExclusiveIso) {
+      qOld = qOld.gt("created_at", fromExclusiveIso);
+      qNew = qNew.gt("created_at", fromExclusiveIso);
+    }
+    if (toInclusiveIso) {
+      qOld = qOld.lte("created_at", toInclusiveIso);
+      qNew = qNew.lte("created_at", toInclusiveIso);
+    }
     const [{ data: o }, { data: n }] = await Promise.all([
       qOld.order("created_at", { ascending: true }).limit(1),
       qNew.order("created_at", { ascending: false }).limit(1),
@@ -76,20 +90,33 @@ export const supabaseRetentionClient: RetentionQueryClient = {
 export interface RetentionServiceOptions {
   client?: RetentionQueryClient;
   now?: () => Date;
-  logger?: (event: { level: "info" | "warn"; msg: string; correlation_id: string; data?: Record<string, unknown> }) => void;
+  logger?: (event: {
+    level: "info" | "warn";
+    msg: string;
+    correlation_id: string;
+    data?: Record<string, unknown>;
+  }) => void;
 }
 
 export interface TrackingRetentionService {
-  preview(table: keyof typeof TRACKING_RETENTION_POLICIES, correlationId?: string): Promise<RetentionTableReport>;
+  preview(
+    table: keyof typeof TRACKING_RETENTION_POLICIES,
+    correlationId?: string,
+  ): Promise<RetentionTableReport>;
   previewAll(correlationId?: string): Promise<RetentionTableReport[]>;
 }
 
-export function createTrackingRetentionService(opts: RetentionServiceOptions = {}): TrackingRetentionService {
+export function createTrackingRetentionService(
+  opts: RetentionServiceOptions = {},
+): TrackingRetentionService {
   const client = opts.client ?? supabaseRetentionClient;
   const nowFn = opts.now ?? (() => new Date());
   const log = opts.logger ?? ((e) => console.info("[tracking-retention]", JSON.stringify(e)));
 
-  async function preview(tableKey: keyof typeof TRACKING_RETENTION_POLICIES, correlationId?: string): Promise<RetentionTableReport> {
+  async function preview(
+    tableKey: keyof typeof TRACKING_RETENTION_POLICIES,
+    correlationId?: string,
+  ): Promise<RetentionTableReport> {
     const policy = TRACKING_RETENTION_POLICIES[tableKey];
     if (!policy) throw new Error(`Unknown tracking table: ${tableKey}`);
     const cid = correlationId ?? newCorrelationId();
@@ -100,21 +127,45 @@ export function createTrackingRetentionService(opts: RetentionServiceOptions = {
     const archiveFromIso = daysAgoIso(policy.archiveDays, now); // (archiveFromIso, onlineFromIso] = ARCHIVE
     // PURGE = <= archiveFromIso
 
-    log({ level: "info", msg: "retention.preview.start", correlation_id: cid, data: { table: policy.table } });
+    log({
+      level: "info",
+      msg: "retention.preview.start",
+      correlation_id: cid,
+      data: { table: policy.table },
+    });
 
-    const [onlineCount, archiveCount, purgeCount, onlineBounds, archiveBounds, purgeBounds] = await Promise.all([
-      client.countBetween(policy.table, onlineFromIso, null),
-      client.countBetween(policy.table, archiveFromIso, onlineFromIso),
-      client.countBetween(policy.table, null, archiveFromIso),
-      client.boundsBetween(policy.table, onlineFromIso, null),
-      client.boundsBetween(policy.table, archiveFromIso, onlineFromIso),
-      client.boundsBetween(policy.table, null, archiveFromIso),
-    ]);
+    const [onlineCount, archiveCount, purgeCount, onlineBounds, archiveBounds, purgeBounds] =
+      await Promise.all([
+        client.countBetween(policy.table, onlineFromIso, null),
+        client.countBetween(policy.table, archiveFromIso, onlineFromIso),
+        client.countBetween(policy.table, null, archiveFromIso),
+        client.boundsBetween(policy.table, onlineFromIso, null),
+        client.boundsBetween(policy.table, archiveFromIso, onlineFromIso),
+        client.boundsBetween(policy.table, null, archiveFromIso),
+      ]);
 
     const tiers: RetentionTierReport[] = [
-      { tier: "ONLINE",  count: onlineCount,  oldest_at: onlineBounds.oldest,  newest_at: onlineBounds.newest,  approx_bytes: onlineCount * avgBytes },
-      { tier: "ARCHIVE", count: archiveCount, oldest_at: archiveBounds.oldest, newest_at: archiveBounds.newest, approx_bytes: archiveCount * avgBytes },
-      { tier: "PURGE",   count: purgeCount,   oldest_at: purgeBounds.oldest,   newest_at: purgeBounds.newest,   approx_bytes: purgeCount * avgBytes },
+      {
+        tier: "ONLINE",
+        count: onlineCount,
+        oldest_at: onlineBounds.oldest,
+        newest_at: onlineBounds.newest,
+        approx_bytes: onlineCount * avgBytes,
+      },
+      {
+        tier: "ARCHIVE",
+        count: archiveCount,
+        oldest_at: archiveBounds.oldest,
+        newest_at: archiveBounds.newest,
+        approx_bytes: archiveCount * avgBytes,
+      },
+      {
+        tier: "PURGE",
+        count: purgeCount,
+        oldest_at: purgeBounds.oldest,
+        newest_at: purgeBounds.newest,
+        approx_bytes: purgeCount * avgBytes,
+      },
     ];
     const total = onlineCount + archiveCount + purgeCount;
 
@@ -131,18 +182,29 @@ export function createTrackingRetentionService(opts: RetentionServiceOptions = {
       level: "info",
       msg: "retention.preview.done",
       correlation_id: cid,
-      data: { table: policy.table, total, tiers: tiers.map((t) => ({ tier: t.tier, count: t.count })) },
+      data: {
+        table: policy.table,
+        total,
+        tiers: tiers.map((t) => ({ tier: t.tier, count: t.count })),
+      },
     });
 
     if (purgeCount > 0) {
-      log({ level: "warn", msg: "retention.purge_eligible", correlation_id: cid, data: { table: policy.table, count: purgeCount } });
+      log({
+        level: "warn",
+        msg: "retention.purge_eligible",
+        correlation_id: cid,
+        data: { table: policy.table, count: purgeCount },
+      });
     }
     return report;
   }
 
   async function previewAll(correlationId?: string): Promise<RetentionTableReport[]> {
     const cid = correlationId ?? newCorrelationId();
-    const tables = Object.keys(TRACKING_RETENTION_POLICIES) as Array<keyof typeof TRACKING_RETENTION_POLICIES>;
+    const tables = Object.keys(TRACKING_RETENTION_POLICIES) as Array<
+      keyof typeof TRACKING_RETENTION_POLICIES
+    >;
     return Promise.all(tables.map((t) => preview(t, cid)));
   }
 

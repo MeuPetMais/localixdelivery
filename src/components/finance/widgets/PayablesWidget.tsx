@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { FinanceDomain, normalizeFilters, type FinanceFilters } from "@/lib/finance";
-import { WidgetCard, WidgetHeader, WidgetLoading, WidgetEmpty } from "@/components/dashboard/WidgetPrimitives";
+import {
+  WidgetCard,
+  WidgetHeader,
+  WidgetLoading,
+  WidgetEmpty,
+} from "@/components/dashboard/WidgetPrimitives";
 import { brl } from "@/lib/format";
 
 const service = FinanceDomain.createPayablesService();
@@ -20,8 +25,20 @@ export function PayablesWidget({
     staleTime: 30_000,
   });
 
-  if (q.isLoading) return <WidgetCard span={4}><WidgetHeader title="Pagamentos" /><WidgetLoading /></WidgetCard>;
-  if (!q.data) return <WidgetCard span={4}><WidgetHeader title="Pagamentos" /><WidgetEmpty /></WidgetCard>;
+  if (q.isLoading)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Pagamentos" />
+        <WidgetLoading />
+      </WidgetCard>
+    );
+  if (!q.data)
+    return (
+      <WidgetCard span={4}>
+        <WidgetHeader title="Pagamentos" />
+        <WidgetEmpty />
+      </WidgetCard>
+    );
 
   const d = q.data;
   const cards: Array<[string, string]> = [
@@ -44,12 +61,20 @@ export function PayablesWidget({
         ))}
       </div>
       {d.items.length === 0 ? (
-        <div className="mt-4"><WidgetEmpty description="Sem contas a pagar no período." /></div>
+        <div className="mt-4">
+          <WidgetEmpty description="Sem contas a pagar no período." />
+        </div>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-muted-foreground">
-              <tr><th className="py-2 text-left">Vencimento</th><th className="text-left">Descrição</th><th className="text-left">Categoria</th><th className="text-right">Valor</th><th className="text-left">Status</th></tr>
+              <tr>
+                <th className="py-2 text-left">Vencimento</th>
+                <th className="text-left">Descrição</th>
+                <th className="text-left">Categoria</th>
+                <th className="text-right">Valor</th>
+                <th className="text-left">Status</th>
+              </tr>
             </thead>
             <tbody>
               {d.items.slice(0, 10).map((p) => (

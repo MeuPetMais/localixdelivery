@@ -2,11 +2,7 @@
 // Consumidores (Checkout, OrderOrchestrator, Split, PaymentService) devem
 // consultar `BusinessRulesEngine.evaluate(...)` — nunca hardcodar regras.
 
-import type {
-  BusinessRuleCategory,
-  BusinessRuleContext,
-  BusinessRuleResult,
-} from "./types";
+import type { BusinessRuleCategory, BusinessRuleContext, BusinessRuleResult } from "./types";
 import { BusinessRuleRegistry, globalRuleRegistry } from "./BusinessRuleRegistry";
 import { BusinessRuleExecutor, type AggregatedResult } from "./BusinessRuleExecutor";
 import { registerDefaultRules } from "./rules";

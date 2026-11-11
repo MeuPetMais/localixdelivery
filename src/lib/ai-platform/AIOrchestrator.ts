@@ -1,5 +1,9 @@
 import type {
-  AICompletionResponse, AIProviderKey, AISkillContext, AISkillKey, AISkillResult,
+  AICompletionResponse,
+  AIProviderKey,
+  AISkillContext,
+  AISkillKey,
+  AISkillResult,
 } from "./types";
 import { AISettingsService } from "./AISettingsService";
 import { AISafetyLayer } from "./AISafetyLayer";
@@ -34,20 +38,32 @@ function cacheKey(promptId: string, system: string, user: string, model: string)
 export const AIOrchestrator = {
   async run(input: RunInput): Promise<AISkillResult> {
     const now = new Date().toISOString();
-    await AIEventBus.publish({ type: "AISkillInvoked", restaurantId: input.restaurant_id, skill: input.skill, at: now });
+    await AIEventBus.publish({
+      type: "AISkillInvoked",
+      restaurantId: input.restaurant_id,
+      skill: input.skill,
+      at: now,
+    });
 
     const safety = AISafetyLayer.check({
-      restaurant_id: input.restaurant_id, skill: input.skill, permissions: input.permissions,
+      restaurant_id: input.restaurant_id,
+      skill: input.skill,
+      permissions: input.permissions,
     });
     if (!safety.allowed) {
       await AIEventBus.publish({
-        type: "AISkillDenied", restaurantId: input.restaurant_id, skill: input.skill,
-        reason: safety.reason ?? "unknown", at: now,
+        type: "AISkillDenied",
+        restaurantId: input.restaurant_id,
+        skill: input.skill,
+        reason: safety.reason ?? "unknown",
+        at: now,
       });
       if (safety.reason === "requests_limit" || safety.reason === "tokens_limit") {
         await AIEventBus.publish({
-          type: "AILimitExceeded", restaurantId: input.restaurant_id,
-          kind: safety.reason === "tokens_limit" ? "tokens" : "requests", at: now,
+          type: "AILimitExceeded",
+          restaurantId: input.restaurant_id,
+          kind: safety.reason === "tokens_limit" ? "tokens" : "requests",
+          at: now,
         });
       }
       throw new Error(`AI denied: ${safety.reason}`);
@@ -62,9 +78,13 @@ export const AIOrchestrator = {
     if (!template) throw new Error(`No active prompt for skill ${input.skill}`);
 
     const ctx = ContextBuilder.build({
-      restaurant_id: input.restaurant_id, actor_id: input.actor_id, skill: input.skill,
-      question: input.question, domain_snapshot: input.domain_snapshot,
-      locale: input.locale ?? settings.language, metadata: input.metadata,
+      restaurant_id: input.restaurant_id,
+      actor_id: input.actor_id,
+      skill: input.skill,
+      question: input.question,
+      domain_snapshot: input.domain_snapshot,
+      locale: input.locale ?? settings.language,
+      metadata: input.metadata,
     });
 
     const vars: Record<string, unknown> = {
@@ -95,20 +115,31 @@ export const AIOrchestrator = {
     }
 
     AIUsageService.record({
-      restaurant_id: input.restaurant_id, skill: input.skill,
-      provider: response.provider, model: response.model,
-      tokens_in: response.tokens_in, tokens_out: response.tokens_out,
-      cost_estimate: response.cost_estimate, latency_ms: response.latency_ms,
+      restaurant_id: input.restaurant_id,
+      skill: input.skill,
+      provider: response.provider,
+      model: response.model,
+      tokens_in: response.tokens_in,
+      tokens_out: response.tokens_out,
+      cost_estimate: response.cost_estimate,
+      latency_ms: response.latency_ms,
     });
     AIAuditService.record({
-      restaurant_id: input.restaurant_id, actor_id: input.actor_id, skill: input.skill,
-      prompt_id: template.id, prompt: rendered.system + "\n" + rendered.user,
-      response: response.content, metadata: { model, provider: response.provider },
+      restaurant_id: input.restaurant_id,
+      actor_id: input.actor_id,
+      skill: input.skill,
+      prompt_id: template.id,
+      prompt: rendered.system + "\n" + rendered.user,
+      response: response.content,
+      metadata: { model, provider: response.provider },
     });
 
     await AIEventBus.publish({
-      type: "AISkillCompleted", restaurantId: input.restaurant_id, skill: input.skill,
-      latency_ms: response.latency_ms, at: new Date().toISOString(),
+      type: "AISkillCompleted",
+      restaurantId: input.restaurant_id,
+      skill: input.skill,
+      latency_ms: response.latency_ms,
+      at: new Date().toISOString(),
     });
 
     return {
@@ -125,5 +156,7 @@ export const AIOrchestrator = {
     };
   },
 
-  clearCache() { cache.clear(); },
+  clearCache() {
+    cache.clear();
+  },
 } as const;

@@ -10,18 +10,18 @@ Inventory → CostEngine → MarginEngine → ProfitabilityEngine → Analytics 
 
 ## Componentes
 
-| Módulo | Responsabilidade |
-|---|---|
-| `CostEngine` | Custo de ingrediente / receita / produto / pedido; custo médio ponderado |
-| `MarginEngine` | Margem bruta, líquida, markup, CMV %, lucro % |
-| `ProfitabilityEngine` | Ranking de produtos, categorias, pedidos, clientes, horários |
-| `WasteCostEngine` | Perdas e desperdício |
-| `PackagingCostEngine` | Custo de embalagens |
-| `LaborCostEngine` | Estrutura para custo de mão de obra |
-| `OverheadEngine` | Estrutura para custos fixos (energia, água, aluguel) |
-| `SimulationEngine` | Simulação what-if (preço, custo, fornecedor) |
-| `CostAlerts` | Margem baixa, prejuízo, ingrediente caro, CMV elevado |
-| `CostEventBus` | Eventos `IngredientCostUpdated`, `RecipeCostUpdated`, `ProductProfitUpdated`, `OrderProfitCalculated`, `MarginChanged` |
+| Módulo                | Responsabilidade                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `CostEngine`          | Custo de ingrediente / receita / produto / pedido; custo médio ponderado                                               |
+| `MarginEngine`        | Margem bruta, líquida, markup, CMV %, lucro %                                                                          |
+| `ProfitabilityEngine` | Ranking de produtos, categorias, pedidos, clientes, horários                                                           |
+| `WasteCostEngine`     | Perdas e desperdício                                                                                                   |
+| `PackagingCostEngine` | Custo de embalagens                                                                                                    |
+| `LaborCostEngine`     | Estrutura para custo de mão de obra                                                                                    |
+| `OverheadEngine`      | Estrutura para custos fixos (energia, água, aluguel)                                                                   |
+| `SimulationEngine`    | Simulação what-if (preço, custo, fornecedor)                                                                           |
+| `CostAlerts`          | Margem baixa, prejuízo, ingrediente caro, CMV elevado                                                                  |
+| `CostEventBus`        | Eventos `IngredientCostUpdated`, `RecipeCostUpdated`, `ProductProfitUpdated`, `OrderProfitCalculated`, `MarginChanged` |
 
 ## Snapshots (histórico imutável)
 

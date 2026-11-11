@@ -52,11 +52,13 @@ export const TenantAdministrationService = {
   },
 
   buildDirectory(rows: RawTenantRow[], orders: RawOrderRow[]): TenantSummary[] {
-    return rows.map((r) => this.buildSummary(r, orders))
-      .sort((a, b) => b.gmv - a.gmv);
+    return rows.map((r) => this.buildSummary(r, orders)).sort((a, b) => b.gmv - a.gmv);
   },
 
-  filter(rows: TenantSummary[], query?: { search?: string; status?: TenantStatus; plan?: PlanTier }): TenantSummary[] {
+  filter(
+    rows: TenantSummary[],
+    query?: { search?: string; status?: TenantStatus; plan?: PlanTier },
+  ): TenantSummary[] {
     const term = query?.search?.trim().toLowerCase();
     return rows.filter((r) => {
       if (term && !`${r.name} ${r.slug ?? ""}`.toLowerCase().includes(term)) return false;

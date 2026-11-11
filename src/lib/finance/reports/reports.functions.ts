@@ -4,7 +4,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
-import type { ExportFormat, ReportRecord, ReportStatus, ReportType, ScheduleFrequency, ScheduledReportRecord } from "./types";
+import type {
+  ExportFormat,
+  ReportRecord,
+  ReportStatus,
+  ReportType,
+  ScheduleFrequency,
+  ScheduledReportRecord,
+} from "./types";
 
 export const listReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -22,11 +29,18 @@ export const listReports = createServerFn({ method: "POST" })
 
 export const saveReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
-    restaurantId: string; type: ReportType; title: string;
-    filters: Json; format: ExportFormat; status?: ReportStatus;
-    fileUrl?: string | null; expiresAt?: string | null;
-  }) => d)
+  .inputValidator(
+    (d: {
+      restaurantId: string;
+      type: ReportType;
+      title: string;
+      filters: Json;
+      format: ExportFormat;
+      status?: ReportStatus;
+      fileUrl?: string | null;
+      expiresAt?: string | null;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("financial_reports")
@@ -42,7 +56,8 @@ export const saveReport = createServerFn({ method: "POST" })
         generated_at: new Date().toISOString(),
         expires_at: data.expiresAt ?? null,
       })
-      .select("*").single();
+      .select("*")
+      .single();
     if (error) throw error;
     return row as unknown as ReportRecord;
   });
@@ -61,7 +76,8 @@ export const listSchedules = createServerFn({ method: "POST" })
   .inputValidator((d: { restaurantId: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
-      .from("scheduled_reports").select("*")
+      .from("scheduled_reports")
+      .select("*")
       .eq("restaurant_id", data.restaurantId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -70,11 +86,19 @@ export const listSchedules = createServerFn({ method: "POST" })
 
 export const upsertSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
-    id?: string; restaurantId: string; name: string; frequency: ScheduleFrequency;
-    reportType: ReportType; filters: Json; exportFormat: ExportFormat;
-    enabled?: boolean; nextExecution?: string | null;
-  }) => d)
+  .inputValidator(
+    (d: {
+      id?: string;
+      restaurantId: string;
+      name: string;
+      frequency: ScheduleFrequency;
+      reportType: ReportType;
+      filters: Json;
+      exportFormat: ExportFormat;
+      enabled?: boolean;
+      nextExecution?: string | null;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     const payload = {
       restaurant_id: data.restaurantId,
@@ -87,7 +111,12 @@ export const upsertSchedule = createServerFn({ method: "POST" })
       next_execution: data.nextExecution ?? null,
     };
     const q = data.id
-      ? context.supabase.from("scheduled_reports").update(payload).eq("id", data.id).select("*").single()
+      ? context.supabase
+          .from("scheduled_reports")
+          .update(payload)
+          .eq("id", data.id)
+          .select("*")
+          .single()
       : context.supabase.from("scheduled_reports").insert(payload).select("*").single();
     const { data: row, error } = await q;
     if (error) throw error;

@@ -275,7 +275,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .map(([id, s]) => ({ id, avg: s.sum / s.count, count: s.count }))
         .sort((a, b) => b.avg - a.avg || b.count - a.count)
         .slice(0, 15)
-        .map(({ id }) => toItem(itemMap.get(id)));
+        .map(({ id }) => itemMap.get(id))
+        .filter((row): row is FeaturedItemRow => row != null)
+        .map(toItem);
       const rendered = config.top_rated_enabled && ranked.length > 0;
       if (rendered) {
         sections.push({
@@ -304,8 +306,10 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
     {
       const cutoff = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
       const news = items
-        .filter((i) => new Date(i.created_at).getTime() >= cutoff)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .filter((i) => new Date(i.created_at ?? 0).getTime() >= cutoff)
+        .sort(
+          (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+        )
         .slice(0, 15)
         .map(toItem);
       const rendered = config.new_items_enabled && news.length > 0;
@@ -342,7 +346,9 @@ export const getFeaturedSections = createServerFn({ method: "GET" })
         .filter(([id]) => itemMap.has(id))
         .sort((a, b) => b[1] - a[1])
         .slice(0, 15)
-        .map(([id]) => toItem(itemMap.get(id)));
+        .map(([id]) => itemMap.get(id))
+        .filter((row): row is FeaturedItemRow => row != null)
+        .map(toItem);
       const rendered = config.customer_favorites_enabled && favs.length > 0;
       if (rendered) {
         sections.push({

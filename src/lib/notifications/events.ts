@@ -1,7 +1,11 @@
 // Ponte com o EventBus (pagamentos) e OrderEventBus (pedidos).
 // Mapeia eventos de domínio → template code (IN_APP).
 import { EventBus, type PaymentEventName, type PaymentEventPayload } from "@/lib/payments/EventBus";
-import { OrderEventBus, type OrderDomainEventName, type OrderDomainEventPayload } from "@/lib/orders/domain-events";
+import {
+  OrderEventBus,
+  type OrderDomainEventName,
+  type OrderDomainEventPayload,
+} from "@/lib/orders/domain-events";
 import type { NotificationRequest } from "./types";
 
 const ORDER_EVENT_TO_TEMPLATE: Partial<Record<OrderDomainEventName, string>> = {

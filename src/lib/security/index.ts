@@ -1,7 +1,8 @@
 // Platform-wide security helpers. Pure functions only — no I/O, no side effects.
 // Reused by logs, edge functions, EventBus consumers and AI/Analytics adapters.
 
-const SENSITIVE_KEY = /(password|passwd|token|secret|api[_-]?key|authorization|cookie|session|cpf|cnpj|rg|card|cvv|cvc|pan|iban|ssn|pix[_-]?key|access[_-]?token|refresh[_-]?token|bearer)/i;
+const SENSITIVE_KEY =
+  /(password|passwd|token|secret|api[_-]?key|authorization|cookie|session|cpf|cnpj|rg|card|cvv|cvc|pan|iban|ssn|pix[_-]?key|access[_-]?token|refresh[_-]?token|bearer)/i;
 
 const CARD_LIKE = /\b(?:\d[ -]*?){13,19}\b/g;
 const EMAIL = /([a-z0-9._%+-]{1,64})@([a-z0-9.-]+\.[a-z]{2,})/gi;
@@ -37,10 +38,15 @@ export function sanitizeLogString(input: string): string {
 }
 
 /** Deep-sanitize an object for structured logs. Depth-limited, cycle-safe. */
-export function sanitizeLogPayload(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
+export function sanitizeLogPayload(
+  value: unknown,
+  depth = 0,
+  seen = new WeakSet<object>(),
+): unknown {
   if (depth > 6) return "[max-depth]";
   if (value == null) return value;
-  if (typeof value === "string") return sanitizeLogString(value.length > 2000 ? value.slice(0, 2000) + "…" : value);
+  if (typeof value === "string")
+    return sanitizeLogString(value.length > 2000 ? value.slice(0, 2000) + "…" : value);
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (Array.isArray(value)) {
     if (seen.has(value)) return "[cycle]";
@@ -52,7 +58,10 @@ export function sanitizeLogPayload(value: unknown, depth = 0, seen = new WeakSet
     seen.add(value as object);
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (SENSITIVE_KEY.test(k)) { out[k] = "[redacted]"; continue; }
+      if (SENSITIVE_KEY.test(k)) {
+        out[k] = "[redacted]";
+        continue;
+      }
       out[k] = sanitizeLogPayload(v, depth + 1, seen);
     }
     return out;
@@ -70,8 +79,10 @@ export interface SafeErrorEnvelope {
 
 export function toSafeError(err: unknown, request_id?: string): SafeErrorEnvelope {
   const known = err as { code?: string; message?: string } | null;
-  const code = known?.code && /^[A-Z0-9_.-]{2,64}$/.test(known.code) ? known.code : "internal_error";
-  const message = code === "internal_error" ? "Erro interno. Tente novamente." : (known?.message ?? "Erro");
+  const code =
+    known?.code && /^[A-Z0-9_.-]{2,64}$/.test(known.code) ? known.code : "internal_error";
+  const message =
+    code === "internal_error" ? "Erro interno. Tente novamente." : (known?.message ?? "Erro");
   return { ok: false, code, message, request_id };
 }
 

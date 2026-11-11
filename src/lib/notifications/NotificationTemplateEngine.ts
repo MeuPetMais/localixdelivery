@@ -2,7 +2,11 @@
 import type { NotificationChannel, NotificationRenderResult, NotificationTemplate } from "./types";
 
 export interface TemplateRepo {
-  find(code: string, channel: NotificationChannel, language: string): Promise<NotificationTemplate | null>;
+  find(
+    code: string,
+    channel: NotificationChannel,
+    language: string,
+  ): Promise<NotificationTemplate | null>;
 }
 
 const VAR_RE = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
@@ -12,7 +16,7 @@ export function renderString(tpl: string, vars: Record<string, unknown>): string
     const parts = key.split(".");
     let v: unknown = vars;
     for (const p of parts) {
-      if (v && typeof v === "object" && p in (v as any)) v = (v as any)[p];
+      if (v && typeof v === "object" && p in v) v = (v as Record<string, unknown>)[p];
       else return "";
     }
     return v == null ? "" : String(v);

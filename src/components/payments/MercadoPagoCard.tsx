@@ -34,7 +34,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
     onSuccess: ({ authorizeUrl }) => {
       window.location.href = authorizeUrl;
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao iniciar Mercado Pago"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar Mercado Pago"),
   });
 
   const refresh = useMutation({
@@ -46,7 +47,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
       toast.success("Sincronizado com Mercado Pago");
       qc.invalidateQueries({ queryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao sincronizar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao sincronizar"),
   });
 
   const disconnect = useMutation({
@@ -58,7 +60,8 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
       toast.success("Mercado Pago desconectado");
       qc.invalidateQueries({ queryKey });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao desconectar"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao desconectar"),
   });
 
   const status = statusQuery.data;
@@ -100,7 +103,11 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
       <div className="flex flex-wrap gap-2">
         {!connected ? (
           <Button onClick={() => connect.mutate()} disabled={connect.isPending || !restaurantId}>
-            {connect.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+            {connect.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <ExternalLink className="h-4 w-4 mr-2" />
+            )}
             Conectar
           </Button>
         ) : (
@@ -109,7 +116,11 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
               <RefreshCw className={`h-4 w-4 mr-2 ${refresh.isPending ? "animate-spin" : ""}`} />
               Sincronizar
             </Button>
-            <Button variant="outline" onClick={() => disconnect.mutate()} disabled={disconnect.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => disconnect.mutate()}
+              disabled={disconnect.isPending}
+            >
               Desconectar
             </Button>
             {!isPrimary && (
@@ -126,7 +137,9 @@ export function MercadoPagoCard({ restaurantId, isPrimary, onSetPrimary, setting
 
 function StatusChip({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
-    <div className={`rounded-md border px-2 py-1 ${ok ? "border-emerald-500/30" : "border-border"}`}>
+    <div
+      className={`rounded-md border px-2 py-1 ${ok ? "border-emerald-500/30" : "border-border"}`}
+    >
       <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
       <p className="text-xs font-medium truncate">{value}</p>
     </div>

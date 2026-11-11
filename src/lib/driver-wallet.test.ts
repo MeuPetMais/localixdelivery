@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { BRL, DEFAULT_GOALS, delta, formatMinutes, loadGoals, pct, saveGoals } from "./driver-wallet";
+import {
+  BRL,
+  DEFAULT_GOALS,
+  delta,
+  formatMinutes,
+  loadGoals,
+  pct,
+  saveGoals,
+} from "./driver-wallet";
 
 describe("driver-wallet helpers", () => {
   beforeEach(() => {

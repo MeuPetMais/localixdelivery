@@ -42,14 +42,24 @@ async function loadRestaurantData(restaurantId: string, userId: string) {
       .eq("restaurant_id", restaurantId),
   ]);
 
-  return { rest, orders: orders ?? [], customers: customers ?? [], items: items ?? [], now, since30, since60 };
+  return {
+    rest,
+    orders: orders ?? [],
+    customers: customers ?? [],
+    items: items ?? [],
+    now,
+    since30,
+    since60,
+  };
 }
 
 function computeMetrics(d: Awaited<ReturnType<typeof loadRestaurantData>>) {
   const cutoff30 = new Date(d.now - 30 * DAY);
   const cutoff60 = new Date(d.now - 60 * DAY);
 
-  const last30 = d.orders.filter((o) => new Date(o.created_at) >= cutoff30 && o.status !== "cancelado");
+  const last30 = d.orders.filter(
+    (o) => new Date(o.created_at) >= cutoff30 && o.status !== "cancelado",
+  );
   const prev30 = d.orders.filter((o) => {
     const t = new Date(o.created_at);
     return t < cutoff30 && t >= cutoff60 && o.status !== "cancelado";
@@ -62,8 +72,12 @@ function computeMetrics(d: Awaited<ReturnType<typeof loadRestaurantData>>) {
   const ticketDelta = ticketPrev ? ((ticket30 - ticketPrev) / ticketPrev) * 100 : 0;
   const revenueDelta = revenuePrev ? ((revenue30 - revenuePrev) / revenuePrev) * 100 : 0;
 
-  const activeCustomers = d.customers.filter((c) => c.last_order_at && new Date(c.last_order_at) >= cutoff30).length;
-  const inactiveCustomers = d.customers.filter((c) => !c.last_order_at || new Date(c.last_order_at) < cutoff30).length;
+  const activeCustomers = d.customers.filter(
+    (c) => c.last_order_at && new Date(c.last_order_at) >= cutoff30,
+  ).length;
+  const inactiveCustomers = d.customers.filter(
+    (c) => !c.last_order_at || new Date(c.last_order_at) < cutoff30,
+  ).length;
 
   // Product sales (current and previous)
   const sales30 = new Map<string, number>();
@@ -132,8 +146,10 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
     }),
   });
   if (!res.ok) {
-    if (res.status === 429) throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
-    if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
+    if (res.status === 429)
+      throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
+    if (res.status === 402)
+      throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
     throw new Error(`Falha na IA (${res.status})`);
   }
   const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -148,7 +164,11 @@ export const getAiInsights = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Ownership: require restaurant owner_id from authenticated context.
     // We don't have requireSupabaseAuth here to keep things simple; verify owner via service role and the user passed restaurantId they own — the page only calls with their own id (UI scoped).
-    const { data: rest } = await supabaseAdmin.from("restaurants").select("owner_id").eq("id", data.restaurantId).maybeSingle();
+    const { data: rest } = await supabaseAdmin
+      .from("restaurants")
+      .select("owner_id")
+      .eq("id", data.restaurantId)
+      .maybeSingle();
     if (!rest) throw new Error("Restaurante não encontrado");
     const ctx = await loadRestaurantData(data.restaurantId, rest.owner_id);
     const metrics = computeMetrics(ctx);
@@ -179,8 +199,8 @@ Responda APENAS com uma lista, um insight por linha, sem numeração nem título
         .map((l) => l.replace(/^[-•\d.\s]+/, "").trim())
         .filter((l) => l.length > 4)
         .slice(0, 6);
-    } catch (e: any) {
-      insights = [`⚠️ ${e?.message ?? "Falha ao gerar insights agora."}`];
+    } catch (e: unknown) {
+      insights = [`⚠️ ${e instanceof Error ? e.message : "Falha ao gerar insights agora."}`];
     }
 
     return { metrics, insights };
@@ -199,12 +219,19 @@ export const generateCampaign = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => campaignSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rest } = await supabaseAdmin.from("restaurants").select("owner_id, name").eq("id", data.restaurantId).maybeSingle();
+    const { data: rest } = await supabaseAdmin
+      .from("restaurants")
+      .select("owner_id, name")
+      .eq("id", data.restaurantId)
+      .maybeSingle();
     if (!rest) throw new Error("Restaurante não encontrado");
     const ctx = await loadRestaurantData(data.restaurantId, rest.owner_id);
     const metrics = computeMetrics(ctx);
 
-    const brief = data.type === "custom" ? data.customBrief ?? CAMPAIGN_BRIEFS.custom : CAMPAIGN_BRIEFS[data.type];
+    const brief =
+      data.type === "custom"
+        ? (data.customBrief ?? CAMPAIGN_BRIEFS.custom)
+        : CAMPAIGN_BRIEFS[data.type];
 
     const userPrompt = `Restaurante: ${rest.name}
 Objetivo da campanha: ${brief}

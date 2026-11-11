@@ -6,13 +6,7 @@ import type { RestaurantStatus } from "@/lib/restaurant-status";
 //   ADMIN     → OWNER
 //   ATTENDANT → STAFF
 //   DRIVER    → DELIVERY
-export type RestaurantRole =
-  | "OWNER"
-  | "MANAGER"
-  | "CASHIER"
-  | "KITCHEN"
-  | "DELIVERY"
-  | "STAFF";
+export type RestaurantRole = "OWNER" | "MANAGER" | "CASHIER" | "KITCHEN" | "DELIVERY" | "STAFF";
 
 export type LegacyRestaurantRole = "ADMIN" | "ATTENDANT" | "DRIVER";
 
@@ -21,10 +15,14 @@ export type DashboardRole = RestaurantRole | LegacyRestaurantRole;
 /** Normalize legacy role aliases to canonical RBAC v2 roles. */
 export function normalizeRestaurantRole(role: DashboardRole): RestaurantRole {
   switch (role) {
-    case "ADMIN": return "OWNER";
-    case "ATTENDANT": return "STAFF";
-    case "DRIVER": return "DELIVERY";
-    default: return role;
+    case "ADMIN":
+      return "OWNER";
+    case "ATTENDANT":
+      return "STAFF";
+    case "DRIVER":
+      return "DELIVERY";
+    default:
+      return role;
   }
 }
 
@@ -64,7 +62,7 @@ export interface DashboardBranding {
 
 export interface DashboardRestaurantStatus {
   isOpen: boolean;
-  reason?: RestaurantStatus["reason"];
+  reason: RestaurantStatus["reason"];
   acceptingOrders: boolean;
   vacationMode: boolean;
   maintenanceMode: boolean;
@@ -90,13 +88,7 @@ export interface WidgetDefinition<TData = unknown> {
 }
 
 export interface DashboardAuditEvent {
-  type:
-    | "LOGIN"
-    | "ACCESS"
-    | "WORKSPACE_CHANGE"
-    | "QUICK_ACTION"
-    | "SEARCH"
-    | "COMMAND";
+  type: "LOGIN" | "ACCESS" | "WORKSPACE_CHANGE" | "QUICK_ACTION" | "SEARCH" | "COMMAND";
   actorId?: string;
   restaurantId?: string;
   payload?: Record<string, unknown>;

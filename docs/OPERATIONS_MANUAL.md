@@ -6,13 +6,13 @@ Guia diário de operação da plataforma em produção. Complementa
 
 ## 1. Estrutura de responsabilidades
 
-| Área | Responsável | Ferramenta principal |
-| --- | --- | --- |
-| Frontend / Publish | Time Produto | Lovable Publish |
-| Backend / DB / Edge | Time Plataforma | Lovable Cloud |
-| Pagamentos | Time Pagamentos | Mercado Pago + `mp-*` functions |
-| Observability | On-call | `OperationsDashboard` |
-| Segurança | Time Segurança | `security--*` tools |
+| Área                | Responsável     | Ferramenta principal            |
+| ------------------- | --------------- | ------------------------------- |
+| Frontend / Publish  | Time Produto    | Lovable Publish                 |
+| Backend / DB / Edge | Time Plataforma | Lovable Cloud                   |
+| Pagamentos          | Time Pagamentos | Mercado Pago + `mp-*` functions |
+| Observability       | On-call         | `OperationsDashboard`           |
+| Segurança           | Time Segurança  | `security--*` tools             |
 
 ## 2. Rotinas diárias
 
@@ -51,12 +51,12 @@ Guia diário de operação da plataforma em produção. Complementa
 
 ## 7. Rate limits & Timeouts (configurações padrão)
 
-| Recurso | Limite | Ação em excesso |
-| --- | --- | --- |
-| Server Functions | 30 req/s por usuário | 429 + log |
-| Webhook `/api/public/mp/webhook` | 60 req/min por IP (planejado v1.1) | 429 |
-| Timeout HTTP externo (MP) | 15s | retry exponencial (3x) |
-| Cache tenant config | TTL 5min | invalidado por evento |
+| Recurso                          | Limite                             | Ação em excesso        |
+| -------------------------------- | ---------------------------------- | ---------------------- |
+| Server Functions                 | 30 req/s por usuário               | 429 + log              |
+| Webhook `/api/public/mp/webhook` | 60 req/min por IP (planejado v1.1) | 429                    |
+| Timeout HTTP externo (MP)        | 15s                                | retry exponencial (3x) |
+| Cache tenant config              | TTL 5min                           | invalidado por evento  |
 
 ## 8. On-call
 

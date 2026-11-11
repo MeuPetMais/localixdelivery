@@ -11,7 +11,12 @@ const DEFAULT_URL =
   "https://project--70a38eb3-fee3-4e1f-b87d-610ac1cf7faf.lovable.app/api/public/orders/transition";
 
 export type OrderTransitionActor =
-  | "customer" | "restaurant" | "admin" | "system" | "webhook" | "courier";
+  | "customer"
+  | "restaurant"
+  | "admin"
+  | "system"
+  | "webhook"
+  | "courier";
 
 export interface OrderTransitionRequest {
   orderId: string;
@@ -35,14 +40,24 @@ export interface OrderTransitionResponse {
 async function hmacHex(secret: string, body: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    "raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(body));
   return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 const IDEMPOTENT_APPROVED_STATES = new Set([
-  "pago", "aceito", "em_preparo", "pronto", "saiu_para_entrega", "entregue", "concluido",
+  "pago",
+  "aceito",
+  "em_preparo",
+  "pronto",
+  "saiu_para_entrega",
+  "entregue",
+  "concluido",
 ]);
 
 const DIRECT_ALLOWED: Record<string, string[]> = {
@@ -65,7 +80,10 @@ function shouldUseDirectFallback(res: OrderTransitionResponse): boolean {
   );
 }
 
-async function transitionOrderDirect(req: OrderTransitionRequest, fallbackReason: string): Promise<OrderTransitionResponse> {
+async function transitionOrderDirect(
+  req: OrderTransitionRequest,
+  fallbackReason: string,
+): Promise<OrderTransitionResponse> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) return { ok: false, error: "direct_transition_not_configured" };
@@ -107,12 +125,25 @@ async function transitionOrderDirect(req: OrderTransitionRequest, fallbackReason
     },
   });
   if (error) return { ok: false, error: `direct_rpc:${error.message}` };
-  const result = data as { ok?: boolean; reason?: string; previous?: string; current?: string } | null;
-  if (!result?.ok) return { ok: false, from: current, to: req.to, reason: result?.reason ?? "RPC_REJECTED" };
-  return { ok: true, from: result.previous ?? current, to: result.current ?? req.to, correlationId: req.correlationId ?? undefined };
+  const result = data as {
+    ok?: boolean;
+    reason?: string;
+    previous?: string;
+    current?: string;
+  } | null;
+  if (!result?.ok)
+    return { ok: false, from: current, to: req.to, reason: result?.reason ?? "RPC_REJECTED" };
+  return {
+    ok: true,
+    from: result.previous ?? current,
+    to: result.current ?? req.to,
+    correlationId: req.correlationId ?? undefined,
+  };
 }
 
-export async function transitionOrder(req: OrderTransitionRequest): Promise<OrderTransitionResponse> {
+export async function transitionOrder(
+  req: OrderTransitionRequest,
+): Promise<OrderTransitionResponse> {
   const url = Deno.env.get("INTERNAL_TRANSITION_URL") ?? DEFAULT_URL;
   const bearer = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const secret = Deno.env.get("INTERNAL_TRANSITION_HMAC_SECRET");
@@ -129,10 +160,7 @@ export async function transitionOrder(req: OrderTransitionRequest): Promise<Orde
       },
     );
 
-    return await transitionOrderDirect(
-      req,
-      "internal_transition_not_configured",
-    );
+    return await transitionOrderDirect(req, "internal_transition_not_configured");
   }
   const body = JSON.stringify(req);
   const signature = await hmacHex(secret, body);
@@ -141,14 +169,18 @@ export async function transitionOrder(req: OrderTransitionRequest): Promise<Orde
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "authorization": `Bearer ${bearer}`,
+        authorization: `Bearer ${bearer}`,
         "x-internal-signature": signature,
       },
       body,
     });
     const text = await res.text();
     let parsed: OrderTransitionResponse;
-    try { parsed = JSON.parse(text); } catch { parsed = { ok: false, error: `bad_response:${text.slice(0, 120)}` }; }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = { ok: false, error: `bad_response:${text.slice(0, 120)}` };
+    }
     if (!res.ok && parsed.ok === undefined) parsed.ok = false;
     if (!parsed.ok && shouldUseDirectFallback(parsed)) {
       console.warn("[order-transition] HTTP transition failed; using direct RPC fallback", {

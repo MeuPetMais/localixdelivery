@@ -15,9 +15,16 @@ export const Route = createFileRoute("/entregador/")({
   head: () => ({
     meta: [
       { title: "Localix Entregador — Acesse sua conta" },
-      { name: "description", content: "Acesse sua conta de entregador e opere nos estabelecimentos parceiros vinculados." },
+      {
+        name: "description",
+        content:
+          "Acesse sua conta de entregador e opere nos estabelecimentos parceiros vinculados.",
+      },
       { property: "og:title", content: "Localix Entregador" },
-      { property: "og:description", content: "Uma conta para trabalhar com os parceiros Localix vinculados a você." },
+      {
+        property: "og:description",
+        content: "Uma conta para trabalhar com os parceiros Localix vinculados a você.",
+      },
     ],
   }),
   component: DriverLanding,
@@ -52,8 +59,8 @@ function DriverLanding() {
             Bem-vindo ao Localix Entregador
           </h1>
           <p className="mt-3 max-w-md text-sm text-muted-foreground md:text-base">
-            Sua conta é única no Localix. Quando mais de um estabelecimento estiver vinculado a você,
-            escolha onde deseja trabalhar antes de entrar na fila.
+            Sua conta é única no Localix. Quando mais de um estabelecimento estiver vinculado a
+            você, escolha onde deseja trabalhar antes de entrar na fila.
           </p>
         </div>
 
@@ -69,7 +76,13 @@ function DriverLanding() {
                 ) : (
                   <Circle className="h-5 w-5 shrink-0 text-muted-foreground/40" />
                 )}
-                <span className={item.done ? "text-sm font-medium text-foreground" : "text-sm text-muted-foreground"}>
+                <span
+                  className={
+                    item.done
+                      ? "text-sm font-medium text-foreground"
+                      : "text-sm text-muted-foreground"
+                  }
+                >
                   {item.label}
                 </span>
               </li>
@@ -80,7 +93,11 @@ function DriverLanding() {
         <Card className="mt-6 w-full space-y-3 rounded-3xl border-none p-6 shadow-sm">
           {hasSession ? (
             <>
-              <Button size="lg" className="w-full rounded-2xl" onClick={() => nav({ to: "/motoboy-estabelecimentos" })}>
+              <Button
+                size="lg"
+                className="w-full rounded-2xl"
+                onClick={() => nav({ to: "/motoboy-estabelecimentos" })}
+              >
                 <LogIn className="mr-2 h-4 w-4" />
                 Continuar
               </Button>
@@ -108,8 +125,8 @@ function DriverLanding() {
 
         <div className="mt-10 max-w-md rounded-2xl bg-muted/60 p-4 text-center">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            O aplicativo Android será disponibilizado em breve. Durante o piloto
-            a ativação e o acesso são realizados pela versão web.
+            O aplicativo Android será disponibilizado em breve. Durante o piloto a ativação e o
+            acesso são realizados pela versão web.
           </p>
         </div>
 

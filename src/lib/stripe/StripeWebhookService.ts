@@ -5,7 +5,11 @@
 
 import StripeEventBus, { type StripeEventName } from "./StripeEventBus";
 import { StripeMapper } from "./StripeMapper";
-import { StripePaymentEventMapper, type DomainPaymentEvent, type DomainPaymentPayload } from "./StripePaymentEventMapper";
+import {
+  StripePaymentEventMapper,
+  type DomainPaymentEvent,
+  type DomainPaymentPayload,
+} from "./StripePaymentEventMapper";
 import type { StripeWebhookEvent } from "./types";
 
 const TYPE_TO_EVENT: Record<string, StripeEventName> = {
@@ -26,7 +30,7 @@ export type PaymentEventHandler = (
 const paymentHandlers = new Set<PaymentEventHandler>();
 
 export const StripeWebhookService = {
-  parse(raw: Record<string, any>): StripeWebhookEvent {
+  parse(raw: Parameters<typeof StripeMapper.webhookEvent>[0]): StripeWebhookEvent {
     return StripeMapper.webhookEvent(raw);
   },
 

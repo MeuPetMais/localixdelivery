@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type ProductInsightType =
-  | "BEST_SELLER" | "LOW_SELLER" | "HIGH_MARGIN" | "LOW_MARGIN"
-  | "OUT_OF_STOCK" | "PRICE_REVIEW" | "PROMOTION" | "CROSS_SELL" | "UPSELL";
+  | "BEST_SELLER"
+  | "LOW_SELLER"
+  | "HIGH_MARGIN"
+  | "LOW_MARGIN"
+  | "OUT_OF_STOCK"
+  | "PRICE_REVIEW"
+  | "PROMOTION"
+  | "CROSS_SELL"
+  | "UPSELL";
 
 export type ProductInsightSeverity = "info" | "warning" | "critical";
 
@@ -18,8 +25,13 @@ export interface ProductInsight {
 }
 
 export type RecommendationType =
-  | "FEATURED" | "HIDE" | "PRICE_REVIEW" | "RECIPE_REVIEW"
-  | "MARGIN_REVIEW" | "CROSS_SELL" | "UPSELL";
+  | "FEATURED"
+  | "HIDE"
+  | "PRICE_REVIEW"
+  | "RECIPE_REVIEW"
+  | "MARGIN_REVIEW"
+  | "CROSS_SELL"
+  | "UPSELL";
 
 export interface ProductRecommendation {
   id?: string;

@@ -37,11 +37,11 @@ export type CustomerAnalytics = {
 };
 
 export type CustomerScoreBreakdown = {
-  recency: number;      // 0-100
-  frequency: number;    // 0-100
-  monetary: number;     // 0-100
-  loyalty: number;      // 0-100
-  engagement: number;   // 0-100
+  recency: number; // 0-100
+  frequency: number; // 0-100
+  monetary: number; // 0-100
+  loyalty: number; // 0-100
+  engagement: number; // 0-100
 };
 
 export type CustomerScore = {

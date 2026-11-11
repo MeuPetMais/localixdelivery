@@ -20,7 +20,7 @@ export interface PurchaseSuggestion {
 export const PurchaseSuggestionEngine = {
   suggest(items: SuggestionInput[]): PurchaseSuggestion[] {
     return items
-      .map(it => {
+      .map((it) => {
         const r = ReplenishmentEngine.calculate(it);
         return {
           ingredient_id: it.ingredient_id,
@@ -32,7 +32,7 @@ export const PurchaseSuggestionEngine = {
           preferredSupplierId: it.preferredSupplierId,
         };
       })
-      .filter(s => s.quantity > 0)
+      .filter((s) => s.quantity > 0)
       .sort((a, b) => Number(b.urgent) - Number(a.urgent) || a.daysOfStock - b.daysOfStock);
   },
 };

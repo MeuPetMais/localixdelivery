@@ -42,7 +42,9 @@ export const LoyaltyRuleEngine = {
       case "POINTS_PER_PRODUCT": {
         const pid = cfg.product_id as string | undefined;
         const points = n(cfg.points);
-        const qty = (ctx.items ?? []).filter((i) => i.product_id === pid).reduce((s, i) => s + i.qty, 0);
+        const qty = (ctx.items ?? [])
+          .filter((i) => i.product_id === pid)
+          .reduce((s, i) => s + i.qty, 0);
         return { points: qty * points, cashback: 0 };
       }
 
@@ -92,7 +94,12 @@ export const LoyaltyRuleEngine = {
       if (r.points > 0 || r.cashback > 0) {
         points += r.points;
         cashback += r.cashback;
-        applied.push({ rule_id: rule.id, rule_type: rule.rule_type, points: r.points, cashback: r.cashback });
+        applied.push({
+          rule_id: rule.id,
+          rule_type: rule.rule_type,
+          points: r.points,
+          cashback: r.cashback,
+        });
       }
     }
     return { points, cashback: Math.round(cashback * 100) / 100, applied_rules: applied };

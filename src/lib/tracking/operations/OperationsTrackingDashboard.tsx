@@ -4,7 +4,9 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Bike, Clock, PackageCheck, Users, Search, Radio } from "lucide-react";
 import type {
-  OperationsActiveDelivery, OperationsDashboardData, OperationsFilters,
+  OperationsActiveDelivery,
+  OperationsDashboardData,
+  OperationsFilters,
 } from "./operations-tracking.types";
 import { applyFilters } from "./operations-filters";
 
@@ -21,7 +23,8 @@ function confidenceColor(c: string): string {
 }
 
 export function OperationsTrackingDashboard({
-  data, onSelect,
+  data,
+  onSelect,
 }: {
   data: OperationsDashboardData;
   onSelect?: (d: OperationsActiveDelivery) => void;
@@ -64,26 +67,41 @@ export function OperationsTrackingDashboard({
 
         <Card title="Indicadores" icon={<Clock className="h-4 w-4" />}>
           <ul className="space-y-1 text-xs">
-            <li>Entrega média: <strong>{data.metrics.avg_delivery_minutes ?? "—"}min</strong></li>
-            <li>Espera fila: <strong>{data.metrics.avg_wait_minutes ?? "—"}min</strong></li>
-            <li>Confiança ETA: <strong className={confidenceColor(data.metrics.avg_confidence)}>
-              {data.metrics.avg_confidence}
-            </strong></li>
+            <li>
+              Entrega média: <strong>{data.metrics.avg_delivery_minutes ?? "—"}min</strong>
+            </li>
+            <li>
+              Espera fila: <strong>{data.metrics.avg_wait_minutes ?? "—"}min</strong>
+            </li>
+            <li>
+              Confiança ETA:{" "}
+              <strong className={confidenceColor(data.metrics.avg_confidence)}>
+                {data.metrics.avg_confidence}
+              </strong>
+            </li>
           </ul>
         </Card>
       </div>
 
       {/* Alertas */}
       {data.alerts.length > 0 && (
-        <Card title={`Alertas (${data.alerts.length})`} icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
+        <Card
+          title={`Alertas (${data.alerts.length})`}
+          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+        >
           <ul className="space-y-1.5 max-h-56 overflow-auto">
             {data.alerts.map((a) => (
-              <li key={a.id} className={
-                "rounded-md border px-3 py-2 text-xs " +
-                (a.severity === "critical" ? "border-red-300 bg-red-50 dark:bg-red-950/20"
-                  : a.severity === "warn" ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
-                  : "border-border bg-muted/30")
-              }>
+              <li
+                key={a.id}
+                className={
+                  "rounded-md border px-3 py-2 text-xs " +
+                  (a.severity === "critical"
+                    ? "border-red-300 bg-red-50 dark:bg-red-950/20"
+                    : a.severity === "warn"
+                      ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+                      : "border-border bg-muted/30")
+                }
+              >
                 <p className="font-medium">{a.title}</p>
                 <p className="text-muted-foreground">{a.detail}</p>
               </li>
@@ -109,7 +127,11 @@ export function OperationsTrackingDashboard({
           onChange={(e) => setFilters((f) => ({ ...f, driverId: e.target.value || undefined }))}
         >
           <option value="">Todos motoboys</option>
-          {data.drivers.map((d) => (<option key={d.driver_id} value={d.driver_id}>{d.name}</option>))}
+          {data.drivers.map((d) => (
+            <option key={d.driver_id} value={d.driver_id}>
+              {d.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -156,7 +178,9 @@ export function OperationsTrackingDashboard({
             <ol className="space-y-1.5 text-sm">
               {data.queue.map((q) => (
                 <li key={q.driver_id} className="flex items-center justify-between">
-                  <span>{q.position}. {q.driver_name}</span>
+                  <span>
+                    {q.position}. {q.driver_name}
+                  </span>
                   <span className="text-xs text-muted-foreground">{q.waiting_minutes}min</span>
                 </li>
               ))}
@@ -184,11 +208,20 @@ export function OperationsTrackingDashboard({
   );
 }
 
-function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function Card({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border bg-card p-3 shadow-sm">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {icon}{title}
+        {icon}
+        {title}
       </div>
       {children}
     </div>

@@ -165,7 +165,13 @@ export function BuilderConfigurator({
       return calculateBuilderCatalogUnitPrice({
         restaurantId: builder.restaurant_id ?? "preview",
         basePrice: Number(builder.base_price ?? 0) || 0,
-        groups,
+        groups: groups.map((group) => ({
+          ...group,
+          builder_options: group.builder_options.map((option) => ({
+            ...option,
+            group_id: group.id,
+          })),
+        })),
         selections: groups.flatMap((group) =>
           Object.entries(sel[group.id] ?? {}).map(([optionId, quantity]) => ({
             group_id: group.id,
@@ -199,6 +205,7 @@ export function BuilderConfigurator({
   }
 
   function finish() {
+    if (!builder) return;
     for (const g of groups) {
       const t = totalForGroup(g.id);
       const minimumRequired = minimumRequiredFor(g);

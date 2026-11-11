@@ -41,14 +41,14 @@ Módulos internos ────┘                                │
 
 ## Providers
 
-| Canal      | Status         |
-|------------|----------------|
-| IN_APP     | ✅ implementado |
-| PUSH       | preparado      |
-| EMAIL      | preparado      |
-| SMS        | preparado      |
-| WHATSAPP   | preparado      |
-| WEBSOCKET  | preparado      |
+| Canal     | Status          |
+| --------- | --------------- |
+| IN_APP    | ✅ implementado |
+| PUSH      | preparado       |
+| EMAIL     | preparado       |
+| SMS       | preparado       |
+| WHATSAPP  | preparado       |
+| WEBSOCKET | preparado       |
 
 Todos implementam `NotificationProvider` (`send`, `validate`, `health`).
 

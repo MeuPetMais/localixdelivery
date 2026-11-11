@@ -8,7 +8,11 @@ export const FinanceAudit = {
   emit(event: Omit<FinanceAuditEvent, "at"> & { at?: string }) {
     const full: FinanceAuditEvent = { ...event, at: event.at ?? new Date().toISOString() };
     for (const s of sinks) {
-      try { s(full); } catch { /* ignore sink failures */ }
+      try {
+        s(full);
+      } catch {
+        /* ignore sink failures */
+      }
     }
     return full;
   },

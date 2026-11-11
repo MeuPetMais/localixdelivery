@@ -85,7 +85,9 @@ async function assertSupportRole(userId: string) {
   if (!role) throw new Error("Forbidden");
   let allowedCategories: SupportCategory[] = [];
   if (role !== "admin") {
-    const { data: member, error: memberError } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: member, error: memberError } = await (
+      supabaseAdmin.from("support_team_members") as any
+    )
       .select("active, role, allowed_categories")
       .eq("user_id", userId)
       .maybeSingle();
@@ -156,7 +158,11 @@ function pickRestaurantName(row: any): string {
   return restaurant?.name ?? "Estabelecimento";
 }
 
-function normalizeTicket(row: any, lastMessageBody: string | null, assigneeLabel: string | null): SupportTicketListItem {
+function normalizeTicket(
+  row: any,
+  lastMessageBody: string | null,
+  assigneeLabel: string | null,
+): SupportTicketListItem {
   return {
     id: row.id,
     ticket_number: row.ticket_number,
@@ -189,13 +195,21 @@ function normalizeSlaSettings(row: any): SupportSlaSettings {
   };
 }
 
-function assertCanAccessTicketCategory(input: { role: SupportRole; allowedCategories: SupportCategory[]; category: SupportCategory }) {
+function assertCanAccessTicketCategory(input: {
+  role: SupportRole;
+  allowedCategories: SupportCategory[];
+  category: SupportCategory;
+}) {
   if (!canAccessSupportCategory(input.role, input.allowedCategories, input.category)) {
     throw new Error("Forbidden");
   }
 }
 
-function applySupportCategoryScope(query: any, role: SupportRole, allowedCategories: SupportCategory[]) {
+function applySupportCategoryScope(
+  query: any,
+  role: SupportRole,
+  allowedCategories: SupportCategory[],
+) {
   if (role === "admin" || role === "support_manager") return query;
   return query.in("category", allowedCategories);
 }
@@ -213,10 +227,12 @@ async function loadAssigneeLabels(supabaseAdmin: any, userIds: string[]) {
   }
 
   const pairs = await Promise.all(
-    unique.filter((id) => !labels.has(id)).map(async (id) => {
-      const { data } = await supabaseAdmin.auth.admin.getUserById(id);
-      return [id, data?.user?.email ?? id.slice(0, 8)] as const;
-    }),
+    unique
+      .filter((id) => !labels.has(id))
+      .map(async (id) => {
+        const { data } = await supabaseAdmin.auth.admin.getUserById(id);
+        return [id, data?.user?.email ?? id.slice(0, 8)] as const;
+      }),
   );
   for (const [id, label] of pairs) labels.set(id, label);
   return labels;
@@ -227,7 +243,12 @@ function sha256(value: string) {
 }
 
 function appBaseUrl() {
-  return process.env.APP_BASE_URL ?? process.env.URL ?? process.env.VITE_APP_BASE_URL ?? "http://localhost:5173";
+  return (
+    process.env.APP_BASE_URL ??
+    process.env.URL ??
+    process.env.VITE_APP_BASE_URL ??
+    "http://localhost:5173"
+  );
 }
 
 export const getAdminSupportQueue = createServerFn({ method: "POST" })
@@ -235,7 +256,8 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => filterSchema.parse(d ?? {}))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role, allowedCategories } = await assertSupportRole(context.userId);
-    if (role === "support_agent" && allowedCategories.length === 0) return { tickets: [], metrics: buildSupportMetrics([]) };
+    if (role === "support_agent" && allowedCategories.length === 0)
+      return { tickets: [], metrics: buildSupportMetrics([]) };
 
     let query = (supabaseAdmin.from("support_tickets") as any)
       .select("*, restaurants(id, name, slug)")
@@ -275,13 +297,17 @@ export const getAdminSupportQueue = createServerFn({ method: "POST" })
     );
 
     let tickets = (rows ?? []).map((row: any) =>
-      normalizeTicket(row, lastMessageByTicket.get(row.id) ?? null, row.assigned_to ? assigneeLabels.get(row.assigned_to) ?? null : null),
+      normalizeTicket(
+        row,
+        lastMessageByTicket.get(row.id) ?? null,
+        row.assigned_to ? (assigneeLabels.get(row.assigned_to) ?? null) : null,
+      ),
     );
 
     if (data.search?.trim()) {
       const term = data.search.trim().toLowerCase();
       tickets = tickets.filter(
-        (ticket) =>
+        (ticket: SupportTicketListItem) =>
           String(ticket.ticket_number ?? "").includes(term) ||
           ticket.subject.toLowerCase().includes(term) ||
           ticket.restaurant_name.toLowerCase().includes(term),
@@ -340,7 +366,10 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       .in("ticket_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: true });
 
-    const waitingByTicket: Record<string, Array<{ started_at: string; ended_at?: string | null }>> = {};
+    const waitingByTicket: Record<
+      string,
+      Array<{ started_at: string; ended_at?: string | null }>
+    > = {};
     const openWait = new Map<string, string>();
     for (const audit of audits ?? []) {
       const beforeStatus = audit.before?.status;
@@ -351,13 +380,19 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       if (beforeStatus === "respondido" && afterStatus !== "respondido") {
         const started = openWait.get(audit.ticket_id);
         if (started) {
-          waitingByTicket[audit.ticket_id] = [...(waitingByTicket[audit.ticket_id] ?? []), { started_at: started, ended_at: audit.created_at }];
+          waitingByTicket[audit.ticket_id] = [
+            ...(waitingByTicket[audit.ticket_id] ?? []),
+            { started_at: started, ended_at: audit.created_at },
+          ];
           openWait.delete(audit.ticket_id);
         }
       }
     }
     for (const [ticketId, started] of openWait) {
-      waitingByTicket[ticketId] = [...(waitingByTicket[ticketId] ?? []), { started_at: started, ended_at: null }];
+      waitingByTicket[ticketId] = [
+        ...(waitingByTicket[ticketId] ?? []),
+        { started_at: started, ended_at: null },
+      ];
     }
 
     const tickets = (rows ?? []).map((row: any) => ({
@@ -370,7 +405,7 @@ export const getAdminSupportReports = createServerFn({ method: "POST" })
       priority: row.priority,
       status: row.status,
       assigned_to: row.assigned_to ?? null,
-      assignee_label: row.assigned_to ? assigneeLabels.get(row.assigned_to) ?? null : null,
+      assignee_label: row.assigned_to ? (assigneeLabels.get(row.assigned_to) ?? null) : null,
       created_at: row.created_at,
       first_response_at: row.first_response_at ?? null,
       resolved_at: row.resolved_at ?? null,
@@ -397,20 +432,29 @@ export const getAdminSupportTicket = createServerFn({ method: "POST" })
       .eq("id", data.ticketId)
       .single();
     if (error) throw new Error(error.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: ticket.category as SupportCategory });
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: ticket.category as SupportCategory,
+    });
 
-    const { data: messages, error: messagesError } = await (supabaseAdmin.from("support_messages") as any)
+    const { data: messages, error: messagesError } = await (
+      supabaseAdmin.from("support_messages") as any
+    )
       .select("*")
       .eq("ticket_id", data.ticketId)
       .order("created_at", { ascending: true });
     if (messagesError) throw new Error(messagesError.message);
 
-    const assigneeLabels = await loadAssigneeLabels(supabaseAdmin, [ticket.assigned_to].filter(Boolean));
+    const assigneeLabels = await loadAssigneeLabels(
+      supabaseAdmin,
+      [ticket.assigned_to].filter(Boolean),
+    );
     return {
       ticket: normalizeTicket(
         ticket,
         (messages ?? []).filter((message: any) => !message.internal_note).at(-1)?.body ?? null,
-        ticket.assigned_to ? assigneeLabels.get(ticket.assigned_to) ?? null : null,
+        ticket.assigned_to ? (assigneeLabels.get(ticket.assigned_to) ?? null) : null,
       ),
       messages: (messages ?? []).map((message: any) => ({
         ...message,
@@ -424,7 +468,8 @@ export const listSupportTeam = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin, role, allowedCategories } = await assertSupportRole(context.userId);
-    if (!canSupport(role, "manage_team") && role !== "support_manager") throw new Error("Forbidden");
+    if (!canSupport(role, "manage_team") && role !== "support_manager")
+      throw new Error("Forbidden");
 
     const { data, error } = await (supabaseAdmin.from("support_team_members") as any)
       .select("user_id, name, email, role, active, created_at")
@@ -432,12 +477,20 @@ export const listSupportTeam = createServerFn({ method: "GET" })
       .in("role", managedSupportRoles);
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row) => ({
-      user_id: row.user_id,
-      role: String(row.role) as ManagedSupportRole,
-      label: row.name || row.email || row.user_id,
-      created_at: row.created_at,
-    }));
+    return (data ?? []).map(
+      (row: {
+        user_id: string;
+        role: string;
+        name: string;
+        email: string;
+        created_at: string;
+      }) => ({
+        user_id: row.user_id,
+        role: String(row.role) as ManagedSupportRole,
+        label: row.name || row.email || row.user_id,
+        created_at: row.created_at,
+      }),
+    );
   });
 
 const assignSchema = ticketIdSchema.extend({ assigneeId: z.string().uuid().nullable() });
@@ -455,7 +508,11 @@ export const takeSupportTicket = createServerFn({ method: "POST" })
       .eq("id", data.ticketId)
       .single();
     if (beforeError) throw new Error(beforeError.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: before.category as SupportCategory,
+    });
 
     const { error } = await (supabaseAdmin as any).rpc("support_admin_take_ticket", {
       _actor_user_id: context.userId,
@@ -478,17 +535,26 @@ export const assignSupportTicket = createServerFn({ method: "POST" })
       .eq("id", data.ticketId)
       .single();
     if (beforeError) throw new Error(beforeError.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: before.category as SupportCategory,
+    });
     if (data.assigneeId) {
-      const { data: target, error: targetError } = await (supabaseAdmin.from("support_team_members") as any)
+      const { data: target, error: targetError } = await (
+        supabaseAdmin.from("support_team_members") as any
+      )
         .select("role, active, allowed_categories")
         .eq("user_id", data.assigneeId)
         .maybeSingle();
       if (targetError) throw new Error(targetError.message);
       if (!target?.active) throw new Error("Assignee is inactive");
       if (String(target.role) === "support_agent") {
-        const targetAllowed = Array.isArray(target.allowed_categories) ? target.allowed_categories : [];
-        if (!targetAllowed.includes(before.category)) throw new Error("Assignee cannot access ticket category");
+        const targetAllowed = Array.isArray(target.allowed_categories)
+          ? target.allowed_categories
+          : [];
+        if (!targetAllowed.includes(before.category))
+          throw new Error("Assignee cannot access ticket category");
       }
     }
 
@@ -515,14 +581,22 @@ export const updateSupportTicketMeta = createServerFn({ method: "POST" })
     if (data.priority && !canSupport(role, "change_priority")) throw new Error("Forbidden");
     if (data.category && !canSupport(role, "change_category")) throw new Error("Forbidden");
 
-    const patch: Record<string, unknown> = {};
+    const patch: { priority?: SupportPriority; category?: SupportCategory; tags?: string[] } = {};
     if (data.priority) patch.priority = data.priority;
     if (data.category) patch.category = data.category;
     if (data.tags) patch.tags = data.tags;
 
-    const { data: before, error: beforeError } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.ticketId).single();
+    const { data: before, error: beforeError } = await supabaseAdmin
+      .from("support_tickets")
+      .select("*")
+      .eq("id", data.ticketId)
+      .single();
     if (beforeError) throw new Error(beforeError.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: before.category as SupportCategory,
+    });
     const { error } = await (supabaseAdmin as any).rpc("support_admin_update_meta", {
       _actor_user_id: context.userId,
       _ticket_id: data.ticketId,
@@ -554,10 +628,19 @@ export const updateSupportTicketStatus = createServerFn({ method: "POST" })
 
     if (!canSupport(role, action)) throw new Error("Forbidden");
 
-    const { data: before, error: beforeError } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.ticketId).single();
+    const { data: before, error: beforeError } = await supabaseAdmin
+      .from("support_tickets")
+      .select("*")
+      .eq("id", data.ticketId)
+      .single();
     if (beforeError) throw new Error(beforeError.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: before.category as SupportCategory });
-    if (data.status === "resolvido" && !canResolveTicket(role, before.assigned_to, context.userId)) throw new Error("Forbidden");
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: before.category as SupportCategory,
+    });
+    if (data.status === "resolvido" && !canResolveTicket(role, before.assigned_to, context.userId))
+      throw new Error("Forbidden");
 
     const { error } = await (supabaseAdmin as any).rpc("support_admin_update_status", {
       _actor_user_id: context.userId,
@@ -578,7 +661,8 @@ export const sendSupportMessage = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => messageSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role, allowedCategories } = await assertSupportRole(context.userId);
-    if (!canSupport(role, data.internalNote ? "internal_note" : "reply")) throw new Error("Forbidden");
+    if (!canSupport(role, data.internalNote ? "internal_note" : "reply"))
+      throw new Error("Forbidden");
 
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from("support_tickets")
@@ -586,7 +670,11 @@ export const sendSupportMessage = createServerFn({ method: "POST" })
       .eq("id", data.ticketId)
       .single();
     if (ticketError) throw new Error(ticketError.message);
-    assertCanAccessTicketCategory({ role, allowedCategories, category: ticket.category as SupportCategory });
+    assertCanAccessTicketCategory({
+      role,
+      allowedCategories,
+      category: ticket.category as SupportCategory,
+    });
 
     const { error } = await (supabaseAdmin as any).rpc("support_admin_prepare_reply", {
       _actor_user_id: context.userId,
@@ -602,12 +690,13 @@ export const listSupportQuickReplies = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await assertSupportRole(context.userId);
-    const { data, error } = await (supabaseAdmin.from("support_quick_replies") as any)
+    const { data, error } = await supabaseAdmin
+      .from("support_quick_replies")
       .select("id, code, title, body, category, position")
       .eq("active", true)
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((reply: any) => ({
+    return (data ?? []).map((reply) => ({
       ...reply,
       body: sanitizeSupportText(reply.body ?? ""),
     }));
@@ -623,7 +712,8 @@ export const suggestSupportArticles = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => articleSuggestionSchema.parse(d ?? { query: "" }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await (supabaseAdmin.from("support_articles") as any)
+    const { data: rows, error } = await supabaseAdmin
+      .from("support_articles")
       .select("id, title, content, category, position, published, video_url")
       .eq("published", true)
       .eq("archived", false)
@@ -644,7 +734,10 @@ const knowledgeArticleSchema = z.object({
 });
 
 const articleIdSchema = z.object({ id: z.string().uuid() });
-const articleSearchSchema = z.object({ search: z.string().trim().max(200).optional(), includeArchived: z.boolean().optional() });
+const articleSearchSchema = z.object({
+  search: z.string().trim().max(200).optional(),
+  includeArchived: z.boolean().optional(),
+});
 
 export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -653,7 +746,8 @@ export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
     const { supabaseAdmin, role } = await assertSupportRole(context.userId);
     if (role === "support_agent") throw new Error("Forbidden");
 
-    let query = (supabaseAdmin.from("support_articles") as any)
+    let query = supabaseAdmin
+      .from("support_articles")
       .select("*")
       .order("position", { ascending: true })
       .order("updated_at", { ascending: false });
@@ -661,9 +755,12 @@ export const listKnowledgeArticlesAdmin = createServerFn({ method: "POST" })
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     const term = data.search?.toLowerCase();
-    return (rows ?? []).filter((article: any) => {
+    return (rows ?? []).filter((article) => {
       if (!term) return true;
-      return [article.title, article.content, article.category].join(" ").toLowerCase().includes(term);
+      return [article.title, article.content, article.category]
+        .join(" ")
+        .toLowerCase()
+        .includes(term);
     });
   });
 
@@ -683,8 +780,8 @@ export const saveKnowledgeArticleAdmin = createServerFn({ method: "POST" })
       archived: false,
     };
     const query = data.id
-      ? (supabaseAdmin.from("support_articles") as any).update(row).eq("id", data.id)
-      : (supabaseAdmin.from("support_articles") as any).insert(row);
+      ? supabaseAdmin.from("support_articles").update(row).eq("id", data.id)
+      : supabaseAdmin.from("support_articles").insert(row);
     const { data: article, error } = await query.select("*").single();
     if (error) throw new Error(error.message);
     await auditSupportTeam({
@@ -695,7 +792,10 @@ export const saveKnowledgeArticleAdmin = createServerFn({ method: "POST" })
     return article;
   });
 
-const articleStatusSchema = articleIdSchema.extend({ published: z.boolean().optional(), archived: z.boolean().optional() });
+const articleStatusSchema = articleIdSchema.extend({
+  published: z.boolean().optional(),
+  archived: z.boolean().optional(),
+});
 
 export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -703,14 +803,19 @@ export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST"
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, role } = await assertSupportRole(context.userId);
     if (role === "support_agent") throw new Error("Forbidden");
-    const patch: Record<string, unknown> = {};
+    const patch: { published?: boolean; archived?: boolean } = {};
     if (typeof data.published === "boolean") patch.published = data.published;
     if (typeof data.archived === "boolean") {
       patch.archived = data.archived;
       if (data.archived) patch.published = false;
     }
-    const { data: before } = await (supabaseAdmin.from("support_articles") as any).select("*").eq("id", data.id).single();
-    const { data: after, error } = await (supabaseAdmin.from("support_articles") as any)
+    const { data: before } = await supabaseAdmin
+      .from("support_articles")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    const { data: after, error } = await supabaseAdmin
+      .from("support_articles")
       .update(patch)
       .eq("id", data.id)
       .select("*")
@@ -718,7 +823,9 @@ export const updateKnowledgeArticleStatusAdmin = createServerFn({ method: "POST"
     if (error) throw new Error(error.message);
     await auditSupportTeam({
       actorId: context.userId,
-      action: data.archived ? "support_knowledge.article_archived" : "support_knowledge.article_status_changed",
+      action: data.archived
+        ? "support_knowledge.article_archived"
+        : "support_knowledge.article_status_changed",
       before,
       after,
     });
@@ -758,12 +865,28 @@ export const markInternalNotificationRead = createServerFn({ method: "POST" })
 const slaSettingsSchema = z.object({
   timezone: z.string().trim().min(1).max(80),
   pauseWhenWaitingCustomer: z.boolean(),
-  nearDueThresholdMinutes: z.number().int().min(5).max(24 * 60),
+  nearDueThresholdMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(24 * 60),
   priorities: z.object({
-    baixa: z.object({ firstResponseMinutes: z.number().int().min(5), resolutionMinutes: z.number().int().min(5) }),
-    media: z.object({ firstResponseMinutes: z.number().int().min(5), resolutionMinutes: z.number().int().min(5) }),
-    alta: z.object({ firstResponseMinutes: z.number().int().min(5), resolutionMinutes: z.number().int().min(5) }),
-    urgente: z.object({ firstResponseMinutes: z.number().int().min(5), resolutionMinutes: z.number().int().min(5) }),
+    baixa: z.object({
+      firstResponseMinutes: z.number().int().min(5),
+      resolutionMinutes: z.number().int().min(5),
+    }),
+    media: z.object({
+      firstResponseMinutes: z.number().int().min(5),
+      resolutionMinutes: z.number().int().min(5),
+    }),
+    alta: z.object({
+      firstResponseMinutes: z.number().int().min(5),
+      resolutionMinutes: z.number().int().min(5),
+    }),
+    urgente: z.object({
+      firstResponseMinutes: z.number().int().min(5),
+      resolutionMinutes: z.number().int().min(5),
+    }),
   }),
 });
 
@@ -830,12 +953,19 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
       const resolved = assigned.filter((ticket: any) => ticket.status === "resolvido");
       const firstResponseDurations = assigned
         .filter((ticket: any) => ticket.first_response_at)
-        .map((ticket: any) => new Date(ticket.first_response_at).getTime() - new Date(ticket.created_at).getTime());
-      const avgFirst =
-        firstResponseDurations.length
-          ? Math.round(firstResponseDurations.reduce((sum: number, value: number) => sum + value, 0) / firstResponseDurations.length / 60_000)
-          : 0;
-      const lastMessage = messages.find((message: any) => message.author_id === member.user_id)?.created_at ?? null;
+        .map(
+          (ticket: any) =>
+            new Date(ticket.first_response_at).getTime() - new Date(ticket.created_at).getTime(),
+        );
+      const avgFirst = firstResponseDurations.length
+        ? Math.round(
+            firstResponseDurations.reduce((sum: number, value: number) => sum + value, 0) /
+              firstResponseDurations.length /
+              60_000,
+          )
+        : 0;
+      const lastMessage =
+        messages.find((message: any) => message.author_id === member.user_id)?.created_at ?? null;
       return {
         user_id: member.user_id,
         name: member.name,
@@ -845,8 +975,11 @@ export const listSupportTeamManagement = createServerFn({ method: "GET" })
         allowed_categories: member.allowed_categories ?? [],
         invited_at: member.invited_at ?? null,
         accepted_at: member.accepted_at ?? null,
-        last_activity_at: member.last_activity_at ?? lastMessage ?? assigned[0]?.last_message_at ?? null,
-        active_tickets: assigned.filter((ticket: any) => !["resolvido", "fechado"].includes(ticket.status)).length,
+        last_activity_at:
+          member.last_activity_at ?? lastMessage ?? assigned[0]?.last_message_at ?? null,
+        active_tickets: assigned.filter(
+          (ticket: any) => !["resolvido", "fechado"].includes(ticket.status),
+        ).length,
         resolved_tickets: resolved.length,
         avg_first_response_minutes: avgFirst,
       };
@@ -917,7 +1050,10 @@ export const inviteSupportTeamMember = createServerFn({ method: "POST" })
       after: { ...invite, invite_url_created: true },
     });
 
-    return { invite: { ...invite, allowed_categories: invite.allowed_categories ?? [] }, inviteUrl };
+    return {
+      invite: { ...invite, allowed_categories: invite.allowed_categories ?? [] },
+      inviteUrl,
+    };
   });
 
 const acceptInviteSchema = z.object({ token: z.string().min(20).max(200) });
@@ -945,10 +1081,13 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
       throw inviteError;
     }
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+      context.userId,
+    );
     if (userError) throw new Error(userError.message);
     const userEmail = userData.user?.email?.toLowerCase();
-    if (!userEmail || userEmail !== String(invite.email).toLowerCase()) throw new Error("Invite belongs to another email");
+    if (!userEmail || userEmail !== String(invite.email).toLowerCase())
+      throw new Error("Invite belongs to another email");
     if (!isManagedSupportRole(invite.role)) throw new Error("Invalid invite role");
 
     const memberRow = {
@@ -963,11 +1102,17 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
       accepted_at: new Date().toISOString(),
     };
 
-    const { error: memberError } = await (supabaseAdmin.from("support_team_members") as any)
-      .upsert(memberRow, { onConflict: "user_id" });
+    const { error: memberError } = await (supabaseAdmin.from("support_team_members") as any).upsert(
+      memberRow,
+      { onConflict: "user_id" },
+    );
     if (memberError) throw new Error(memberError.message);
 
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", context.userId).in("role", managedSupportRoles as any);
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", context.userId)
+      .in("role", managedSupportRoles as any);
     const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({
       user_id: context.userId,
       role: invite.role,
@@ -975,7 +1120,11 @@ export const acceptSupportInvite = createServerFn({ method: "POST" })
     if (roleError) throw new Error(roleError.message);
 
     const { error: inviteUpdateError } = await (supabaseAdmin.from("support_team_invites") as any)
-      .update({ status: "accepted", accepted_by: context.userId, accepted_at: memberRow.accepted_at })
+      .update({
+        status: "accepted",
+        accepted_by: context.userId,
+        accepted_at: memberRow.accepted_at,
+      })
       .eq("id", invite.id);
     if (inviteUpdateError) throw new Error(inviteUpdateError.message);
 
@@ -1001,11 +1150,19 @@ export const updateSupportTeamMemberRole = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => updateMemberRoleSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, roles } = await assertAdmin(context.userId);
-    if (!canChangeSupportMemberRole({ actorUserId: context.userId, targetUserId: data.userId, actorRoles: roles })) {
+    if (
+      !canChangeSupportMemberRole({
+        actorUserId: context.userId,
+        targetUserId: data.userId,
+        actorRoles: roles,
+      })
+    ) {
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: before, error: beforeError } = await (
+      supabaseAdmin.from("support_team_members") as any
+    )
       .select("*")
       .eq("user_id", data.userId)
       .single();
@@ -1020,8 +1177,14 @@ export const updateSupportTeamMemberRole = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).in("role", managedSupportRoles as any);
-    const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({ user_id: data.userId, role: data.role } as any);
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .in("role", managedSupportRoles as any);
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: data.userId, role: data.role } as any);
     if (roleError) throw new Error(roleError.message);
 
     await auditSupportTeam({
@@ -1042,11 +1205,19 @@ export const setSupportTeamMemberActive = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => activeMemberSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, roles } = await assertAdmin(context.userId);
-    if (!canSetSupportMemberActive({ actorUserId: context.userId, targetUserId: data.userId, actorRoles: roles })) {
+    if (
+      !canSetSupportMemberActive({
+        actorUserId: context.userId,
+        targetUserId: data.userId,
+        actorRoles: roles,
+      })
+    ) {
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: before, error: beforeError } = await (
+      supabaseAdmin.from("support_team_members") as any
+    )
       .select("*")
       .eq("user_id", data.userId)
       .single();
@@ -1077,11 +1248,19 @@ export const removeSupportTeamAccess = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => removeAccessSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin, roles } = await assertAdmin(context.userId);
-    if (!canSetSupportMemberActive({ actorUserId: context.userId, targetUserId: data.userId, actorRoles: roles })) {
+    if (
+      !canSetSupportMemberActive({
+        actorUserId: context.userId,
+        targetUserId: data.userId,
+        actorRoles: roles,
+      })
+    ) {
       throw new Error("Forbidden");
     }
 
-    const { data: before, error: beforeError } = await (supabaseAdmin.from("support_team_members") as any)
+    const { data: before, error: beforeError } = await (
+      supabaseAdmin.from("support_team_members") as any
+    )
       .select("*")
       .eq("user_id", data.userId)
       .single();
@@ -1094,7 +1273,11 @@ export const removeSupportTeamAccess = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).in("role", managedSupportRoles as any);
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .in("role", managedSupportRoles as any);
     await auditSupportTeam({
       actorId: context.userId,
       action: "support_team.access_removed",

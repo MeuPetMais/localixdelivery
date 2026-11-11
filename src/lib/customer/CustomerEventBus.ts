@@ -6,10 +6,33 @@ export type CustomerDomainEvent =
   | { type: "AddressAdded"; customerId: string; addressId: string; at: string }
   | { type: "AddressChanged"; customerId: string; addressId: string; at: string }
   | { type: "PreferenceChanged"; customerId: string; changes: Record<string, unknown>; at: string }
-  | { type: "FavoriteAdded"; customerId: string; targetType: "product" | "restaurant" | "category"; targetId: string; at: string }
-  | { type: "FavoriteRemoved"; customerId: string; targetType: "product" | "restaurant" | "category"; targetId: string; at: string }
-  | { type: "ConsentUpdated"; customerId: string; consentType: string; granted: boolean; at: string }
-  | { type: "TimelineEventCreated"; customerId: string; eventType: CustomerTimelineEventType; at: string };
+  | {
+      type: "FavoriteAdded";
+      customerId: string;
+      targetType: "product" | "restaurant" | "category";
+      targetId: string;
+      at: string;
+    }
+  | {
+      type: "FavoriteRemoved";
+      customerId: string;
+      targetType: "product" | "restaurant" | "category";
+      targetId: string;
+      at: string;
+    }
+  | {
+      type: "ConsentUpdated";
+      customerId: string;
+      consentType: string;
+      granted: boolean;
+      at: string;
+    }
+  | {
+      type: "TimelineEventCreated";
+      customerId: string;
+      eventType: CustomerTimelineEventType;
+      at: string;
+    };
 
 export type CustomerEventListener = (event: CustomerDomainEvent) => void | Promise<void>;
 

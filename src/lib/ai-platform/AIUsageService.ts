@@ -13,8 +13,12 @@ export const AIUsageService = {
     return log.filter((e) => e.restaurant_id === restaurantId);
   },
   summary(restaurantId: string): {
-    requests: number; tokens_in: number; tokens_out: number; cost_estimate: number;
-    avg_latency_ms: number; by_skill: Record<string, number>;
+    requests: number;
+    tokens_in: number;
+    tokens_out: number;
+    cost_estimate: number;
+    avg_latency_ms: number;
+    by_skill: Record<string, number>;
     by_provider: Record<string, number>;
   } {
     const rows = AIUsageService.list(restaurantId);
@@ -32,22 +36,31 @@ export const AIUsageService = {
       tokens_out: rows.reduce((s, r) => s + r.tokens_out, 0),
       cost_estimate: Math.round(rows.reduce((s, r) => s + r.cost_estimate, 0) * 10000) / 10000,
       avg_latency_ms: rows.length ? Math.round(latSum / rows.length) : 0,
-      by_skill, by_provider,
+      by_skill,
+      by_provider,
     };
   },
   monthlyCount(restaurantId: string, kind: "requests" | "tokens"): number {
-    const start = new Date(); start.setDate(1); start.setHours(0, 0, 0, 0);
+    const start = new Date();
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
     const s = start.getTime();
-    const rows = log.filter((e) => e.restaurant_id === restaurantId && new Date(e.at).getTime() >= s);
+    const rows = log.filter(
+      (e) => e.restaurant_id === restaurantId && new Date(e.at).getTime() >= s,
+    );
     if (kind === "requests") return rows.length;
     return rows.reduce((sum, r) => sum + r.tokens_in + r.tokens_out, 0);
   },
   countBy(restaurantId: string, provider: AIProviderKey, skill?: AISkillKey): number {
-    return log.filter((e) =>
-      e.restaurant_id === restaurantId &&
-      e.provider === provider &&
-      (!skill || e.skill === skill),
+    return log.filter(
+      (e) =>
+        e.restaurant_id === restaurantId &&
+        e.provider === provider &&
+        (!skill || e.skill === skill),
     ).length;
   },
-  clear() { log.length = 0; seq = 0; },
+  clear() {
+    log.length = 0;
+    seq = 0;
+  },
 } as const;

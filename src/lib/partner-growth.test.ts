@@ -8,19 +8,15 @@ import {
   sortPartnerGrowthTasks,
   type PartnerGrowthTask,
 } from "./partner-growth";
-import {
-  resolvePartnerGrowthAccess,
-  type PartnerGrowthAssignment,
-} from "./partner-growth-access";
+import { resolvePartnerGrowthAccess, type PartnerGrowthAssignment } from "./partner-growth-access";
 
 const routeSource = readFileSync("src/routes/partner-growth.tsx", "utf8");
 const libSource = readFileSync("src/lib/partner-growth.ts", "utf8");
 const rootSource = readFileSync("src/routes/__root.tsx", "utf8");
 const normalizeLineEndings = (source: string) => source.replace(/\r\n/g, "\n");
-const dashboardMigration = normalizeLineEndings(readFileSync(
-  "supabase/migrations/20260824124834_partner_growth_dashboard_minimal.sql",
-  "utf8",
-));
+const dashboardMigration = normalizeLineEndings(
+  readFileSync("supabase/migrations/20260824124834_partner_growth_dashboard_minimal.sql", "utf8"),
+);
 const priorityAlertsMigration = readFileSync(
   "supabase/migrations/20260824152520_partner_growth_exception_alerts.sql",
   "utf8",
@@ -136,7 +132,9 @@ describe("PG-2A partner growth dashboard", () => {
   });
 
   it("creates a minimal SECURITY DEFINER aggregate RPC with safe grants", () => {
-    expect(dashboardMigration).toContain("CREATE OR REPLACE FUNCTION public.get_partner_growth_dashboard");
+    expect(dashboardMigration).toContain(
+      "CREATE OR REPLACE FUNCTION public.get_partner_growth_dashboard",
+    );
     expect(dashboardMigration).toContain("RETURNS jsonb");
     expect(dashboardMigration).toContain("SECURITY DEFINER");
     expect(dashboardMigration).toContain("SET search_path = pg_catalog, public");
@@ -162,7 +160,8 @@ describe("PG-2A partner growth dashboard", () => {
   });
 
   it("keeps the order metrics projection unambiguous", () => {
-    const orderMetricsSql = dashboardMigration.match(/order_metrics AS \([\s\S]*?\),\n  customer_metrics/)?.[0] ?? "";
+    const orderMetricsSql =
+      dashboardMigration.match(/order_metrics AS \([\s\S]*?\),\n {2}customer_metrics/)?.[0] ?? "";
     expect(orderMetricsSql.match(/AS last_realized_sale_at/g) ?? []).toHaveLength(1);
   });
 
@@ -198,14 +197,17 @@ describe("PG-2A partner growth dashboard", () => {
 
   it("implements recurring, inactive 30+, and no-sale 7d segmentation", () => {
     expect(dashboardMigration).toContain("WHERE cs.realized_sales >= 2");
-    expect(dashboardMigration).toContain("cs.last_realized_sale_at < (_as_of - interval '30 days')");
+    expect(dashboardMigration).toContain(
+      "cs.last_realized_sale_at < (_as_of - interval '30 days')",
+    );
     expect(dashboardMigration).toContain("last_realized_sale_at < (_as_of - interval '7 days')");
     expect(dashboardMigration).not.toContain("VIP");
     expect(dashboardMigration).not.toContain("risco");
   });
 
   it("returns only aggregate fields and no customer PII", () => {
-    const returnedJson = dashboardMigration.match(/SELECT jsonb_build_object\([\s\S]*?INTO v_dashboard;/)?.[0] ?? "";
+    const returnedJson =
+      dashboardMigration.match(/SELECT jsonb_build_object\([\s\S]*?INTO v_dashboard;/)?.[0] ?? "";
 
     expect(returnedJson).toContain("'summary'");
     expect(returnedJson).toContain("'restaurants'");
@@ -272,7 +274,9 @@ describe("PG-2A partner growth dashboard", () => {
 
 describe("PG-2C1 partner growth manual tasks", () => {
   it("creates only the manual task table with minimal non-financial fields", () => {
-    expect(manualTasksMigration).toContain("CREATE TABLE IF NOT EXISTS public.partner_growth_tasks");
+    expect(manualTasksMigration).toContain(
+      "CREATE TABLE IF NOT EXISTS public.partner_growth_tasks",
+    );
     for (const column of [
       "id uuid PRIMARY KEY DEFAULT gen_random_uuid()",
       "restaurant_id uuid NOT NULL REFERENCES public.restaurants(id)",
@@ -308,9 +312,7 @@ describe("PG-2C1 partner growth manual tasks", () => {
   });
 
   it("limits source signals, priorities, statuses, title, and notes", () => {
-    expect(manualTasksMigration).toContain(
-      "source_signal IS NULL OR source_signal IN",
-    );
+    expect(manualTasksMigration).toContain("source_signal IS NULL OR source_signal IN");
     expect(manualTasksMigration).toContain("'SEM_VENDA_7D'");
     expect(manualTasksMigration).toContain("'QUEDA_PEDIDOS'");
     expect(manualTasksMigration).toContain("'CLIENTES_INATIVOS_30D'");
@@ -328,7 +330,9 @@ describe("PG-2C1 partner growth manual tasks", () => {
     expect(manualTasksMigration).toContain("partner_growth_tasks_assigned_status_idx");
     expect(manualTasksMigration).toContain("ON public.partner_growth_tasks (assigned_to, status)");
     expect(manualTasksMigration).toContain("partner_growth_tasks_restaurant_status_idx");
-    expect(manualTasksMigration).toContain("ON public.partner_growth_tasks (restaurant_id, status)");
+    expect(manualTasksMigration).toContain(
+      "ON public.partner_growth_tasks (restaurant_id, status)",
+    );
     expect(manualTasksMigration).toContain("partner_growth_tasks_open_due_idx");
     expect(manualTasksMigration).toContain("WHERE status IN ('PENDENTE', 'EM_ANDAMENTO')");
   });
@@ -340,7 +344,9 @@ describe("PG-2C1 partner growth manual tasks", () => {
     expect(manualTasksMigration).toContain(
       "GRANT SELECT, INSERT, UPDATE, DELETE ON public.partner_growth_tasks TO authenticated",
     );
-    expect(manualTasksMigration).toContain("GRANT ALL ON public.partner_growth_tasks TO service_role");
+    expect(manualTasksMigration).toContain(
+      "GRANT ALL ON public.partner_growth_tasks TO service_role",
+    );
     expect(manualTasksMigration).toContain("assigned_to = auth.uid()");
     expect(manualTasksMigration).toContain("created_by = auth.uid()");
     expect(manualTasksMigration).toContain("private.has_partner_growth_restaurant(restaurant_id)");
@@ -351,14 +357,18 @@ describe("PG-2C1 partner growth manual tasks", () => {
   });
 
   it("blocks cross-tenant reassignment and invalid status reopening in the trigger", () => {
-    expect(manualTasksMigration).toContain("CREATE OR REPLACE FUNCTION public.partner_growth_tasks_guard");
+    expect(manualTasksMigration).toContain(
+      "CREATE OR REPLACE FUNCTION public.partner_growth_tasks_guard",
+    );
     expect(manualTasksMigration).toContain("SECURITY DEFINER");
     expect(manualTasksMigration).toContain("SET search_path = pg_catalog, public");
     expect(manualTasksMigration).toContain("NEW.assigned_to IS DISTINCT FROM OLD.assigned_to");
     expect(manualTasksMigration).toContain("NEW.created_by IS DISTINCT FROM OLD.created_by");
     expect(manualTasksMigration).toContain("RAISE EXCEPTION 'Forbidden identity change'");
     expect(manualTasksMigration).toContain("OLD.status = 'PENDENTE'");
-    expect(manualTasksMigration).toContain("NEW.status IN ('EM_ANDAMENTO', 'CONCLUIDA', 'DESCARTADA')");
+    expect(manualTasksMigration).toContain(
+      "NEW.status IN ('EM_ANDAMENTO', 'CONCLUIDA', 'DESCARTADA')",
+    );
     expect(manualTasksMigration).toContain("OLD.status = 'EM_ANDAMENTO'");
     expect(manualTasksMigration).toContain("NEW.status IN ('CONCLUIDA', 'DESCARTADA')");
     expect(manualTasksMigration).toContain("RAISE EXCEPTION 'Invalid task status transition'");
@@ -373,8 +383,8 @@ describe("PG-2C1 partner growth manual tasks", () => {
     expect(libSource).toContain("created_by: userId");
     expect(libSource).toContain('status: "PENDENTE"');
     expect(libSource).toContain(".update({ status })");
-    expect(libSource).not.toContain(".from(\"orders\")");
-    expect(libSource).not.toContain(".from(\"customers\")");
+    expect(libSource).not.toContain('.from("orders")');
+    expect(libSource).not.toContain('.from("customers")');
     expect(libSource).not.toContain("service_role");
   });
 
@@ -429,12 +439,7 @@ describe("PG-2C1 partner growth manual tasks", () => {
       new Date("2026-08-24T12:00:00.000Z"),
     );
 
-    expect(sorted.map((task) => task.id)).toEqual([
-      "overdue-high",
-      "overdue-low",
-      "later",
-      "done",
-    ]);
+    expect(sorted.map((task) => task.id)).toEqual(["overdue-high", "overdue-low", "later", "done"]);
   });
 });
 
@@ -443,7 +448,9 @@ describe("PG-2C1 partner growth tasks hardening", () => {
     expect(manualTasksHardeningMigration).toContain(
       "CREATE OR REPLACE FUNCTION public.partner_growth_tasks_guard()",
     );
-    expect(manualTasksHardeningMigration).toContain("REVOKE ALL ON TABLE public.partner_growth_tasks");
+    expect(manualTasksHardeningMigration).toContain(
+      "REVOKE ALL ON TABLE public.partner_growth_tasks",
+    );
     expect(manualTasksHardeningMigration).toContain(
       "REVOKE ALL ON FUNCTION public.partner_growth_tasks_guard()",
     );
@@ -599,7 +606,9 @@ describe("PG-2B partner growth priority alerts", () => {
 
   it("implements inactive 30d absolute thresholds and avoids fabricated low recurrence", () => {
     expect(priorityAlertsMigration).toContain("'CLIENTES_INATIVOS_30D'::text AS signal");
-    expect(priorityAlertsMigration).toContain("cs.last_realized_sale_at < (_as_of - interval '30 days')");
+    expect(priorityAlertsMigration).toContain(
+      "cs.last_realized_sale_at < (_as_of - interval '30 days')",
+    );
     expect(priorityAlertsMigration).toContain("WHEN rr.inactive_30d_customers >= 5 THEN 'MEDIA'");
     expect(priorityAlertsMigration).toContain("ELSE 'BAIXA'");
     expect(priorityAlertsMigration).toContain("WHERE rr.inactive_30d_customers >= 1");

@@ -16,7 +16,7 @@
 3. **Idempotência.** Consulta `payment_webhook_events`
    (`provider='stripe'`, `event_id=<evt.id>`). Se existir ⇒ retorna
    `{ ok, duplicated:true }`. Caso contrário insere. O `UNIQUE (provider,
-   event_id) WHERE event_id IS NOT NULL` garante segurança contra corrida.
+event_id) WHERE event_id IS NOT NULL` garante segurança contra corrida.
 4. **Roteamento por tipo.**
    - `checkout.session.completed` (paid) / `payment_intent.succeeded`
      ⇒ `payments.status='approved'`, `paid_at=now()`,
@@ -30,7 +30,7 @@
    `checkout.session.id` quanto o `payment_intent.id`. Isso permite
    receber os dois eventos sem duplicar linha.
 6. **Ledger idempotente.** Deduplicação por `(provider, reference_type,
-   reference_id)` onde `reference_id = payment_intent.id`.
+reference_id)` onde `reference_id = payment_intent.id`.
 7. **Marcação final.** `processed=true`, `processed_at=now()` em sucesso;
    `processed=false`, `error_message`, `processing_attempts=1` em falha.
 

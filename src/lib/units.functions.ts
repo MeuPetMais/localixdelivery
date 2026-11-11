@@ -24,23 +24,41 @@ export const listUnits = createServerFn({ method: "GET" })
 
     const { data: units, error } = await supabase
       .from("restaurants")
-      .select("id, name, slug, category, address, phone, whatsapp_phone, manager_name, active, is_open, created_at")
+      .select(
+        "id, name, slug, category, address, phone, whatsapp_phone, manager_name, active, is_open, created_at",
+      )
       .eq("owner_id", userId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
 
     const ids = (units ?? []).map((u) => u.id);
     if (ids.length === 0) {
-      return { units: [], consolidated: { revenue: 0, profit: 0, orders: 0, customers: 0 }, benchmark: null };
+      return {
+        units: [],
+        consolidated: { revenue: 0, profit: 0, orders: 0, customers: 0 },
+        benchmark: null,
+      };
     }
 
     const [{ data: orders }, { data: customers }, { data: moves }] = await Promise.all([
-      supabase.from("orders").select("restaurant_id, total, status, created_at").in("restaurant_id", ids).gte("created_at", since30).limit(5000),
+      supabase
+        .from("orders")
+        .select("restaurant_id, total, status, created_at")
+        .in("restaurant_id", ids)
+        .gte("created_at", since30)
+        .limit(5000),
       supabase.from("customers").select("restaurant_id, id").in("restaurant_id", ids),
-      supabase.from("financial_movements").select("restaurant_id, type, amount").in("restaurant_id", ids).gte("movement_date", since30.slice(0, 10)),
+      supabase
+        .from("financial_movements")
+        .select("restaurant_id, type, amount")
+        .in("restaurant_id", ids)
+        .gte("movement_date", since30.slice(0, 10)),
     ]);
 
-    const byUnit = new Map<string, { revenue: number; orders: number; profit: number; customers: number }>();
+    const byUnit = new Map<
+      string,
+      { revenue: number; orders: number; profit: number; customers: number }
+    >();
     for (const id of ids) byUnit.set(id, { revenue: 0, orders: 0, profit: 0, customers: 0 });
 
     for (const o of orders ?? []) {
@@ -68,7 +86,14 @@ export const listUnits = createServerFn({ method: "GET" })
     const enriched = (units ?? []).map((u) => {
       const k = byUnit.get(u.id)!;
       const ticket = k.orders > 0 ? k.revenue / k.orders : 0;
-      return { ...u, revenue: k.revenue, orders: k.orders, profit: k.profit, customers: k.customers, ticket };
+      return {
+        ...u,
+        revenue: k.revenue,
+        orders: k.orders,
+        profit: k.profit,
+        customers: k.customers,
+        ticket,
+      };
     });
 
     const consolidated = enriched.reduce(
@@ -122,7 +147,9 @@ export const listUnits = createServerFn({ method: "GET" })
         const productCount = new Map<string, number>();
         for (const o of valid30) {
           hourCount[new Date(o.created_at).getHours()] += 1;
-          const items = Array.isArray((o as { items?: unknown }).items) ? ((o as { items: Array<{ name?: string; quantity?: number }> }).items) : [];
+          const items = Array.isArray((o as { items?: unknown }).items)
+            ? (o as { items: Array<{ name?: string; quantity?: number }> }).items
+            : [];
           for (const it of items) {
             if (!it?.name) continue;
             productCount.set(it.name, (productCount.get(it.name) ?? 0) + Number(it.quantity ?? 1));
@@ -130,7 +157,14 @@ export const listUnits = createServerFn({ method: "GET" })
         }
         const peakHour = hourCount.indexOf(Math.max(...hourCount));
         const topProduct = [...productCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-        benchmark = { category, avgTicket, peakHour, topProduct, sectorGrowth, sampleSize: peerIds.length };
+        benchmark = {
+          category,
+          avgTicket,
+          peakHour,
+          topProduct,
+          sectorGrowth,
+          sampleSize: peerIds.length,
+        };
       }
     }
 
@@ -143,19 +177,38 @@ export const upsertUnit = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (data.id) {
-      const { error } = await supabase.from("restaurants").update({
-        name: data.name, slug: data.slug, category: data.category, address: data.address,
-        phone: data.phone, whatsapp_phone: data.whatsapp_phone, manager_name: data.manager_name,
-        active: data.active ?? true,
-      }).eq("id", data.id).eq("owner_id", userId);
+      const { error } = await supabase
+        .from("restaurants")
+        .update({
+          name: data.name,
+          slug: data.slug,
+          category: data.category,
+          address: data.address,
+          phone: data.phone,
+          whatsapp_phone: data.whatsapp_phone,
+          manager_name: data.manager_name,
+          active: data.active ?? true,
+        })
+        .eq("id", data.id)
+        .eq("owner_id", userId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: ins, error } = await supabase.from("restaurants").insert({
-      owner_id: userId, name: data.name, slug: data.slug, category: data.category,
-      address: data.address, phone: data.phone, whatsapp_phone: data.whatsapp_phone ?? "",
-      manager_name: data.manager_name, active: data.active ?? true,
-    }).select("id").single();
+    const { data: ins, error } = await supabase
+      .from("restaurants")
+      .insert({
+        owner_id: userId,
+        name: data.name,
+        slug: data.slug,
+        category: data.category,
+        address: data.address,
+        phone: data.phone,
+        whatsapp_phone: data.whatsapp_phone ?? "",
+        manager_name: data.manager_name,
+        active: data.active ?? true,
+      })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: ins.id };
   });
@@ -166,18 +219,30 @@ export const generateUnitsInsights = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const since30 = new Date(Date.now() - 30 * DAY).toISOString();
     const { data: units } = await supabase
-      .from("restaurants").select("id, name, category").eq("owner_id", userId);
+      .from("restaurants")
+      .select("id, name, category")
+      .eq("owner_id", userId);
     if (!units?.length) return { insights: "Cadastre suas unidades para gerar insights." };
 
     const ids = units.map((u) => u.id);
     const { data: orders } = await supabase
-      .from("orders").select("restaurant_id, total, status, created_at")
-      .in("restaurant_id", ids).gte("created_at", since30).limit(5000);
+      .from("orders")
+      .select("restaurant_id, total, status, created_at")
+      .in("restaurant_id", ids)
+      .gte("created_at", since30)
+      .limit(5000);
 
     const stats = units.map((u) => {
-      const valid = (orders ?? []).filter((o) => o.restaurant_id === u.id && o.status !== "cancelado");
+      const valid = (orders ?? []).filter(
+        (o) => o.restaurant_id === u.id && o.status !== "cancelado",
+      );
       const rev = valid.reduce((s, o) => s + Number(o.total ?? 0), 0);
-      return { name: u.name, revenue: rev, orders: valid.length, ticket: valid.length ? rev / valid.length : 0 };
+      return {
+        name: u.name,
+        revenue: rev,
+        orders: valid.length,
+        ticket: valid.length ? rev / valid.length : 0,
+      };
     });
     const avgRev = stats.reduce((s, u) => s + u.revenue, 0) / Math.max(stats.length, 1);
 

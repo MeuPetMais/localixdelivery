@@ -14,17 +14,32 @@ import { buildCustomer360Intelligence } from "@/lib/customer360-intelligence";
 const planSchema = z.object({
   restaurantId: z.string().uuid(),
   customerId: z.string().uuid(),
-  channel: z.enum(["EMAIL","SMS","WHATSAPP","PUSH","IN_APP"]),
+  channel: z.enum(["EMAIL", "SMS", "WHATSAPP", "PUSH", "IN_APP"]),
 });
 
 async function authorizeRestaurant(userId: string, restaurantId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [restaurantQ, adminRoleQ, growthRoleQ, assignmentQ] = await Promise.all([
     supabaseAdmin.from("restaurants").select("id,owner_id").eq("id", restaurantId).maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "partner_growth").maybeSingle(),
-    supabaseAdmin.from("partner_growth_assignments").select("id")
-      .eq("user_id", userId).eq("restaurant_id", restaurantId).eq("active", true).maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "partner_growth")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("partner_growth_assignments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("restaurant_id", restaurantId)
+      .eq("active", true)
+      .maybeSingle(),
   ]);
 
   if (restaurantQ.error) throw new Error(restaurantQ.error.message);
@@ -53,30 +68,35 @@ export const planAndQueueGrowthCampaign = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const sb = await authorizeRestaurant(context.userId, data.restaurantId);
 
-    const [{ data: consent, error: consentError }, { data: recentJobs, error: jobsError }] = await Promise.all([
-      sb.from("customer_growth_marketing_consents")
-        .select("id,channel,granted,captured_at,revoked_at")
-        .eq("restaurant_id", data.restaurantId)
-        .eq("customer_id", data.customerId)
-        .eq("channel", data.channel)
-        .order("captured_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      sb.from("growth_campaign_automation_jobs")
-        .select("trigger_type,channel,created_at,status")
-        .eq("restaurant_id", data.restaurantId)
-        .eq("customer_id", data.customerId)
-        .eq("channel", data.channel)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+    const [{ data: consent, error: consentError }, { data: recentJobs, error: jobsError }] =
+      await Promise.all([
+        sb
+          .from("customer_growth_marketing_consents")
+          .select("id,channel,granted,captured_at,revoked_at")
+          .eq("restaurant_id", data.restaurantId)
+          .eq("customer_id", data.customerId)
+          .eq("channel", data.channel)
+          .order("captured_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        sb
+          .from("growth_campaign_automation_jobs")
+          .select("trigger_type,channel,created_at,status")
+          .eq("restaurant_id", data.restaurantId)
+          .eq("customer_id", data.customerId)
+          .eq("channel", data.channel)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
 
     if (consentError) throw new Error(consentError.message);
     if (jobsError) throw new Error(jobsError.message);
 
     const { data: customer, error: customerError } = await sb
       .from("customers")
-      .select("id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at")
+      .select(
+        "id,restaurant_id,name,phone,email,total_orders,total_spent,avg_ticket,last_order_at,created_at,updated_at",
+      )
       .eq("id", data.customerId)
       .eq("restaurant_id", data.restaurantId)
       .gt("total_orders", 0)

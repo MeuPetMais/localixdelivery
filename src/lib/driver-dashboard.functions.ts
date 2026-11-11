@@ -37,7 +37,7 @@ type Row = {
   driver_earning_calculated_at?: string | null;
   driver_base_fee?: number | null;
   driver_per_km_fee?: number | null;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
   delivered_at: string | null;
   departed_at?: string | null;
   picked_up_at?: string | null;
@@ -71,10 +71,7 @@ function avgMinutes(rows: Row[], from: keyof Row, to: keyof Row): number {
   return diffs.reduce((s, x) => s + x, 0) / diffs.length;
 }
 
-function bucketize(
-  rows: Row[],
-  bucket: (d: Date) => string,
-): Map<string, Row[]> {
+function bucketize(rows: Row[], bucket: (d: Date) => string): Map<string, Row[]> {
   const m = new Map<string, Row[]>();
   for (const r of rows) {
     const ts = r.delivered_at ?? r.created_at ?? null;
@@ -135,7 +132,9 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Todos os entregues do ano (base do dashboard)
     const { data: yearRows } = await supabase
       .from("delivery_assignments")
-      .select("id, status, delivered_at, departed_at, picked_up_at, assigned_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at")
+      .select(
+        "id, status, delivered_at, departed_at, picked_up_at, assigned_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at",
+      )
       .eq("driver_id", driver.id)
       .eq("status", "ENTREGUE")
       .gte("delivered_at", yearStart)
@@ -143,14 +142,17 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
 
     const year: Row[] = (yearRows ?? []) as Row[];
     const today = year.filter((r) => r.delivered_at! >= dayStart);
-    const yesterday = year.filter((r) => r.delivered_at! >= yesterdayStart && r.delivered_at! < dayStart);
+    const yesterday = year.filter(
+      (r) => r.delivered_at! >= yesterdayStart && r.delivered_at! < dayStart,
+    );
     const week = year.filter((r) => r.delivered_at! >= weekStart);
     const month = year.filter((r) => r.delivered_at! >= monthStart);
 
     // Buckets: dia/semana/mês
     const byDay = bucketize(year, (d) => d.toISOString().slice(0, 10));
     const byWeek = bucketize(year, (d) => {
-      const w = new Date(d); w.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      const w = new Date(d);
+      w.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       w.setHours(0, 0, 0, 0);
       return w.toISOString().slice(0, 10);
     });
@@ -168,7 +170,9 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Histórico completo (30)
     const { data: history } = await supabase
       .from("delivery_assignments")
-      .select("id, status, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at")
+      .select(
+        "id, status, delivered_at, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, order_id, created_at",
+      )
       .eq("driver_id", driver.id)
       .in("status", ["ENTREGUE", "CANCELADO"])
       .order("created_at", { ascending: false })
@@ -176,7 +180,8 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
 
     // Ordens do histórico p/ mostrar número/cliente/bairro
     const orderIds = (history ?? []).map((h) => h.order_id).filter(Boolean) as string[];
-    const activeOrderIds = orderIds.length > 0 ? orderIds : ["00000000-0000-0000-0000-000000000000"];
+    const activeOrderIds =
+      orderIds.length > 0 ? orderIds : ["00000000-0000-0000-0000-000000000000"];
     const { data: orders } = await supabase
       .from("orders")
       .select("id, order_number, customer_name, address")
@@ -226,7 +231,12 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
 
     // Status fila derivado
     let queueStatus: "AGUARDANDO" | "EM_ENTREGA" | "RETORNANDO" | "OFFLINE" = "OFFLINE";
-    if (active && (active.status === "COLETANDO" || active.status === "EM_ROTA" || active.status === "ATRIBUIDO")) {
+    if (
+      active &&
+      (active.status === "COLETANDO" ||
+        active.status === "EM_ROTA" ||
+        active.status === "ATRIBUIDO")
+    ) {
       queueStatus = "EM_ENTREGA";
     } else if (myEntry?.status === "RETORNANDO") {
       queueStatus = "RETORNANDO";
@@ -239,7 +249,9 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
     // Ranking do restaurante — todos os motoboys, hoje
     const { data: allToday } = await supabase
       .from("delivery_assignments")
-      .select("driver_id, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, delivered_at, picked_up_at, departed_at, assigned_at, id, status")
+      .select(
+        "driver_id, distance_km, driver_distance_km, driver_earning_amount, driver_earning_calculated_at, driver_base_fee, driver_per_km_fee, metadata, delivered_at, picked_up_at, departed_at, assigned_at, id, status",
+      )
       .eq("restaurant_id", driver.restaurant_id)
       .eq("status", "ENTREGUE")
       .gte("delivered_at", dayStart);
@@ -279,7 +291,8 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       const key = day.toISOString().slice(0, 10);
       const arr = byDay.get(key) ?? [];
       if (arr.length >= defaultGoal) streak++;
-      else if (i === 0) continue; // hoje ainda em curso
+      else if (i === 0)
+        continue; // hoje ainda em curso
       else break;
     }
 
@@ -366,8 +379,9 @@ export const getDriverDashboard = createServerFn({ method: "GET" })
       history: (history ?? []).map((h) => ({
         ...h,
         earnings: h.status === "ENTREGUE" ? earn(h as Row) : 0,
-        earningsSource: h.status === "ENTREGUE" ? resolveDriverEarning(h as Row).source : "snapshot",
-        order: h.order_id ? orderMap.get(h.order_id) ?? null : null,
+        earningsSource:
+          h.status === "ENTREGUE" ? resolveDriverEarning(h as Row).source : "snapshot",
+        order: h.order_id ? (orderMap.get(h.order_id) ?? null) : null,
       })),
       ranking: {
         position: myRank,
@@ -390,7 +404,8 @@ export const enterQueue = createServerFn({ method: "POST" })
     if (driver.status !== "ativo") throw new Error("Cadastro não está ativo");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.rpc("queue_enqueue", {
-      _restaurant_id: driver.restaurant_id, _driver_id: driver.id,
+      _restaurant_id: driver.restaurant_id,
+      _driver_id: driver.id,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -399,16 +414,21 @@ export const enterQueue = createServerFn({ method: "POST" })
 export const setDriverAvailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      online: z.boolean(),
-    }).parse(d),
+    z
+      .object({
+        online: z.boolean(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await supabaseAdmin.rpc("driver_set_availability" as never, {
-      _owner_id: context.userId,
-      _online: data.online,
-    } as never);
+    const { data: result, error } = await supabaseAdmin.rpc(
+      "driver_set_availability" as never,
+      {
+        _owner_id: context.userId,
+        _online: data.online,
+      } as never,
+    );
     if (error) throw new Error(error.message);
     return result as {
       ok: boolean;
@@ -433,7 +453,8 @@ export const leaveQueue = createServerFn({ method: "POST" })
     if (!driver) throw new Error("Motoboy não encontrado");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.rpc("queue_remove", {
-      _restaurant_id: driver.restaurant_id, _driver_id: driver.id,
+      _restaurant_id: driver.restaurant_id,
+      _driver_id: driver.id,
     });
     if (error) throw new Error(error.message);
     return { ok: true };

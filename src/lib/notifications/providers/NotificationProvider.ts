@@ -1,4 +1,9 @@
-import type { NotificationChannel, NotificationRecord, NotificationRenderResult, ProviderSendResult } from "../types";
+import type {
+  NotificationChannel,
+  NotificationRecord,
+  NotificationRenderResult,
+  ProviderSendResult,
+} from "../types";
 
 export interface NotificationProvider {
   readonly channel: NotificationChannel;

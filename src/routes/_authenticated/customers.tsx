@@ -72,10 +72,7 @@ function growthActionLabel(action: unknown) {
   return ACTION_LABELS[key] ?? key.replaceAll("_", " ").toLowerCase();
 }
 
-const LIFECYCLE_META: Record<
-  Customer360Lifecycle,
-  { label: string; tone: string }
-> = {
+const LIFECYCLE_META: Record<Customer360Lifecycle, { label: string; tone: string }> = {
   NEW: {
     label: "Novo",
     tone: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30",
@@ -411,7 +408,9 @@ function Customer360Detail({ detail }: { detail: any }) {
         <Metric label="Ticket médio" value={brl(metrics.avg_ticket)} />
         <Metric
           label="Dias desde a última compra"
-          value={metrics.days_since_last_order == null ? "—" : String(metrics.days_since_last_order)}
+          value={
+            metrics.days_since_last_order == null ? "—" : String(metrics.days_since_last_order)
+          }
         />
       </div>
 
@@ -421,21 +420,37 @@ function Customer360Detail({ detail }: { detail: any }) {
           <dl className="mt-3 space-y-2 text-sm">
             <DetailRow
               label="Primeira compra"
-              value={metrics.first_order_at ? new Date(metrics.first_order_at).toLocaleDateString("pt-BR") : "—"}
+              value={
+                metrics.first_order_at
+                  ? new Date(metrics.first_order_at).toLocaleDateString("pt-BR")
+                  : "—"
+              }
             />
             <DetailRow
               label="Última compra"
-              value={metrics.last_order_at ? new Date(metrics.last_order_at).toLocaleDateString("pt-BR") : "—"}
+              value={
+                metrics.last_order_at
+                  ? new Date(metrics.last_order_at).toLocaleDateString("pt-BR")
+                  : "—"
+              }
             />
             <DetailRow
               label="Intervalo médio"
-              value={metrics.avg_days_between_orders == null ? "—" : `${metrics.avg_days_between_orders} dias`}
+              value={
+                metrics.avg_days_between_orders == null
+                  ? "—"
+                  : `${metrics.avg_days_between_orders} dias`
+              }
             />
             <DetailRow label="Frequência / 30d" value={String(metrics.frequency_per_30d)} />
             <DetailRow label="Dia predominante (UTC)" value={weekday} />
             <DetailRow
               label="Hora predominante (UTC)"
-              value={metrics.predominant_hour_utc == null ? "—" : `${String(metrics.predominant_hour_utc).padStart(2, "0")}:00`}
+              value={
+                metrics.predominant_hour_utc == null
+                  ? "—"
+                  : `${String(metrics.predominant_hour_utc).padStart(2, "0")}:00`
+              }
             />
           </dl>
         </Card>
@@ -455,7 +470,8 @@ function Customer360Detail({ detail }: { detail: any }) {
         <Card className="p-4">
           <h4 className="font-semibold">Oportunidades identificadas</h4>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sugestões baseadas no comportamento do Customer 360. Nenhuma ação é executada automaticamente.
+            Sugestões baseadas no comportamento do Customer 360. Nenhuma ação é executada
+            automaticamente.
           </p>
           <div className="mt-3 space-y-2">
             {detail.intelligence.map((insight: any) => (
@@ -477,11 +493,16 @@ function Customer360Detail({ detail }: { detail: any }) {
       <Card className="p-4">
         <h4 className="font-semibold">Produtos favoritos</h4>
         {metrics.favorite_products.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">Ainda não há produtos suficientes para exibir.</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Ainda não há produtos suficientes para exibir.
+          </p>
         ) : (
           <div className="mt-3 space-y-2">
             {metrics.favorite_products.map((product: any, index: number) => (
-              <div key={product.product_id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+              <div
+                key={product.product_id}
+                className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+              >
                 <div className="min-w-0">
                   <span className="mr-2 text-xs text-muted-foreground">#{index + 1}</span>
                   <span className="font-medium">{product.name || "Produto"}</span>

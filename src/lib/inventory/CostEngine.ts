@@ -1,6 +1,9 @@
 import type { Ingredient } from "./types";
 
-export interface RecipeLine { ingredient_id: string; quantity: number; }
+export interface RecipeLine {
+  ingredient_id: string;
+  quantity: number;
+}
 
 export const CostEngine = {
   ingredientCost(ing: Ingredient, quantity: number): number {

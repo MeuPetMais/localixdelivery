@@ -8,15 +8,15 @@ Camada central de orquestração do ciclo de vida dos pedidos do Localix.
 
 ## Módulos
 
-| Arquivo | Responsabilidade |
-| --- | --- |
-| `OrderStateMachine.ts` | Estados e mapa de transições permitidas |
-| `TransitionValidator.ts` | Valida transições (estado + ator) |
-| `OrderPermissions.ts` | Define quem pode disparar cada transição |
-| `OrderOrchestrator.ts` | Executa transições, grava histórico, publica eventos |
-| `OrderTimelineService.ts` | Monta linha do tempo legível |
-| `OrderAudit.ts` | Estrutura auditoria (IP, origem, usuário, serviço) |
-| `domain-events.ts` | `OrderEventBus` + nomes de eventos de domínio |
+| Arquivo                   | Responsabilidade                                     |
+| ------------------------- | ---------------------------------------------------- |
+| `OrderStateMachine.ts`    | Estados e mapa de transições permitidas              |
+| `TransitionValidator.ts`  | Valida transições (estado + ator)                    |
+| `OrderPermissions.ts`     | Define quem pode disparar cada transição             |
+| `OrderOrchestrator.ts`    | Executa transições, grava histórico, publica eventos |
+| `OrderTimelineService.ts` | Monta linha do tempo legível                         |
+| `OrderAudit.ts`           | Estrutura auditoria (IP, origem, usuário, serviço)   |
+| `domain-events.ts`        | `OrderEventBus` + nomes de eventos de domínio        |
 
 ## Estados
 
@@ -27,6 +27,7 @@ Estados terminais: `COMPLETED`, `CANCELLED`, `REFUNDED`, `CHARGEBACK`,
 `RESTAURANT_REJECTED`.
 
 Transições bloqueadas (exemplos):
+
 - `DELIVERED → PREPARING`
 - `CANCELLED → READY`
 - `PAYMENT_FAILED → DELIVERED`
@@ -43,14 +44,14 @@ do `EventBus` de pagamentos para não interferir em consumidores existentes.
 
 ## Permissões
 
-| Ator | Pode disparar |
-| --- | --- |
-| `customer` | `CREATED`, `CANCELLED` |
+| Ator         | Pode disparar                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------------- |
+| `customer`   | `CREATED`, `CANCELLED`                                                                             |
 | `restaurant` | `RESTAURANT_ACCEPTED/REJECTED`, `PREPARING`, `READY`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED` |
-| `courier` | `OUT_FOR_DELIVERY`, `DELIVERED` |
-| `webhook` | `PAYMENT_APPROVED/FAILED`, `REFUNDED`, `CHARGEBACK` |
-| `system` | Transições automáticas do fluxo |
-| `admin` | Todas |
+| `courier`    | `OUT_FOR_DELIVERY`, `DELIVERED`                                                                    |
+| `webhook`    | `PAYMENT_APPROVED/FAILED`, `REFUNDED`, `CHARGEBACK`                                                |
+| `system`     | Transições automáticas do fluxo                                                                    |
+| `admin`      | Todas                                                                                              |
 
 ## Uso
 
@@ -58,9 +59,15 @@ do `EventBus` de pagamentos para não interferir em consumidores existentes.
 import { createOrchestrator } from "@/lib/orders/OrderOrchestrator";
 
 const orchestrator = createOrchestrator({
-  getOrder: async (id) => { /* SELECT id, restaurant_id, status */ },
-  updateOrderStatus: async (id, next) => { /* UPDATE orders SET status=... */ },
-  insertHistory: async (row) => { /* INSERT INTO order_status_history */ },
+  getOrder: async (id) => {
+    /* SELECT id, restaurant_id, status */
+  },
+  updateOrderStatus: async (id, next) => {
+    /* UPDATE orders SET status=... */
+  },
+  insertHistory: async (row) => {
+    /* INSERT INTO order_status_history */
+  },
 });
 
 await orchestrator.transition({
@@ -116,6 +123,7 @@ conforme requisito. Para ativá-lo end-to-end é necessário:
 ## Relatório de entrega
 
 **Arquivos criados**
+
 - `supabase/migrations/*_order_status_history.sql` (migração)
 - `src/lib/orders/OrderStateMachine.ts`
 - `src/lib/orders/TransitionValidator.ts`

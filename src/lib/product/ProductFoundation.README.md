@@ -19,11 +19,11 @@ src/lib/product/
 
 ## Persistência (novas tabelas)
 
-| Tabela              | Papel                                                            | RLS |
-|---------------------|------------------------------------------------------------------|-----|
-| `product_versions`  | Histórico **imutável** de alterações (versão, status, changes)   | Owner read/insert; UPDATE/DELETE bloqueado por trigger |
-| `product_media`     | Mídia estendida (image / video / model_3d) — complementa `menu_item_images` | Public SELECT + owner manage |
-| `product_audit`     | Trilha de auditoria (quem fez o quê)                             | Owner read/insert |
+| Tabela             | Papel                                                                       | RLS                                                    |
+| ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `product_versions` | Histórico **imutável** de alterações (versão, status, changes)              | Owner read/insert; UPDATE/DELETE bloqueado por trigger |
+| `product_media`    | Mídia estendida (image / video / model_3d) — complementa `menu_item_images` | Public SELECT + owner manage                           |
+| `product_audit`    | Trilha de auditoria (quem fez o quê)                                        | Owner read/insert                                      |
 
 **Reuso**: `menu_items`, `menu_categories`, `menu_item_images`, `builders*`,
 `featured_sections`, `coupons`, `customer_favorites`, bucket `product-images`,
@@ -37,7 +37,7 @@ src/lib/product/
 
 ## Integrações
 
-- **Inventory Domain**: `ProductAvailabilityService.resolve(product, { stockAvailable })`. O Product Domain **não** consulta estoque diretamente — recebe o sinal do Inventory como *port*.
+- **Inventory Domain**: `ProductAvailabilityService.resolve(product, { stockAvailable })`. O Product Domain **não** consulta estoque diretamente — recebe o sinal do Inventory como _port_.
 - **BusinessRulesEngine**: pode se inscrever em `ProductEventBus` para revalidar regras quando o produto muda.
 - **TenantConfigurationService**: consumidores devem repassar preferências (ex.: canais habilitados) para `ProductAvailabilityService`.
 - **Restaurant Dashboard**: consome `getProductHealth` para widgets.

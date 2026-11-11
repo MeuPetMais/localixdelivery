@@ -2,14 +2,22 @@
 // Extracted so we can unit test without touching Supabase.
 import { getDriverOperationalStatus } from "./driver-operational-status";
 
-export type CentralGroup = "disponivel" | "na_fila" | "em_entrega" | "retornando" | "pausa" | "offline";
+export type CentralGroup =
+  | "disponivel"
+  | "na_fila"
+  | "em_entrega"
+  | "retornando"
+  | "pausa"
+  | "offline";
 
 export type DriverLite = { id: string; status: string; online: boolean };
 export type QueueLite = { driver_id: string; status: string; position: number };
 export type ShiftLite = { driver_id: string; status: string; current_state: string };
 export type AssignmentLite = {
-  driver_id: string | null; status: string;
-  assigned_at: string | null; delivered_at: string | null;
+  driver_id: string | null;
+  status: string;
+  assigned_at: string | null;
+  delivered_at: string | null;
 };
 
 const ACTIVE_STATUSES = new Set(["ATRIBUIDO", "COLETANDO", "EM_ROTA"]);
@@ -49,9 +57,11 @@ export function returnGapsMinutes(assignments: AssignmentLite[]): number[] {
   for (const list of byDriver.values()) {
     const asc = [...list].sort((x, y) => (x.assigned_at ?? "").localeCompare(y.assigned_at ?? ""));
     for (let i = 0; i < asc.length - 1; i++) {
-      const prev = asc[i], next = asc[i + 1];
+      const prev = asc[i],
+        next = asc[i + 1];
       if (prev.status !== "ENTREGUE" || !prev.delivered_at || !next.assigned_at) continue;
-      const gap = (new Date(next.assigned_at).getTime() - new Date(prev.delivered_at).getTime()) / 60000;
+      const gap =
+        (new Date(next.assigned_at).getTime() - new Date(prev.delivered_at).getTime()) / 60000;
       if (gap >= 0 && gap <= 120) gaps.push(gap);
     }
   }

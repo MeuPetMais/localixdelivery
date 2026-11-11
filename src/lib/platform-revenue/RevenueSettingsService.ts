@@ -39,8 +39,9 @@ export const RevenueSettingsService = {
     const aboveFee = Number(row.platform_fee_above_30 ?? DEFAULT_POLICY.tiers![1].value);
 
     const policy: RevenuePolicy = {
-      service_fee_enabled: (row.service_fee_enabled as boolean) ?? DEFAULT_POLICY.service_fee_enabled,
-      service_fee_type: ((row.service_fee_type as RevenuePolicy["service_fee_type"]) ?? "TIERED"),
+      service_fee_enabled:
+        (row.service_fee_enabled as boolean) ?? DEFAULT_POLICY.service_fee_enabled,
+      service_fee_type: (row.service_fee_type as RevenuePolicy["service_fee_type"]) ?? "TIERED",
       service_fee_value: Number(row.service_fee_value ?? untilFee),
       tiers: [
         { upTo: 30, value: untilFee },
@@ -54,5 +55,7 @@ export const RevenueSettingsService = {
     cache = { at: Date.now(), value: policy };
     return policy;
   },
-  clearCache() { cache = null; },
+  clearCache() {
+    cache = null;
+  },
 };

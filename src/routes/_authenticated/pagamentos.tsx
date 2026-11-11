@@ -23,7 +23,8 @@ function PagamentosPage() {
       <header>
         <h1 className="text-2xl font-semibold">Central de Gateways</h1>
         <p className="text-sm text-muted-foreground">
-          Conecte um ou mais gateways de pagamento. Escolha qual será utilizado para PIX, cartão e futuros meios de pagamento.
+          Conecte um ou mais gateways de pagamento. Escolha qual será utilizado para PIX, cartão e
+          futuros meios de pagamento.
         </p>
       </header>
 

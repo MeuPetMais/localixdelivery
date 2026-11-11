@@ -17,31 +17,10 @@ import { APP_BASE_URL, DRIVER_PASSWORD_RESET_APP_URL } from "@/lib/driver-invite
 
 const VEHICLES = ["moto", "bicicleta", "carro", "a_pe"] as const;
 
-type SupabaseLike = {
-  rpc: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  from: (table: string) => {
-    select: (columns?: string) => unknown;
-  };
-};
-
-type RestaurantScopedClient = {
-  from: (table: string) => {
-    select: (columns?: string) => {
-      eq: (
-        column: string,
-        value: string,
-      ) => {
-        maybeSingle: () => Promise<{
-          data: { owner_id?: string | null } | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
+type SupabaseLike = import("@supabase/supabase-js").SupabaseClient<
+  import("@/integrations/supabase/types").Database
+>;
+type RestaurantScopedClient = SupabaseLike;
 
 type DriverLookupRow = {
   id: string;
@@ -150,11 +129,7 @@ export const registerDriverPending = createServerFn({ method: "POST" })
       .from("delivery_drivers")
       .select("id, status, cpf, phone")
       .eq("restaurant_id", data.restaurantId);
-    if (
-      (dup ?? []).some(
-        (r: DriverLookupRow) => digits(r.cpf) === cpfDigits || digits(r.phone) === phoneDigits,
-      )
-    ) {
+    if ((dup ?? []).some((r) => digits(r.cpf) === cpfDigits || digits(r.phone) === phoneDigits)) {
       throw new Error("Já existe um entregador com esse CPF ou telefone neste restaurante.");
     }
 
@@ -213,9 +188,7 @@ export const validateDriverActivation = createServerFn({ method: "POST" })
       .eq("status", "aguardando_ativacao")
       .is("owner_id", null);
 
-    const match = (rows ?? []).find(
-      (r: DriverLookupRow) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
-    );
+    const match = (rows ?? []).find((r) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD);
 
     if (!match) {
       // Auditoria de falha (sem PII no payload)
@@ -282,9 +255,7 @@ export const activateDriverAccount = createServerFn({ method: "POST" })
       .eq("status", "aguardando_ativacao")
       .is("owner_id", null);
 
-    const driver = (rows ?? []).find(
-      (r: DriverLookupRow) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD,
-    );
+    const driver = (rows ?? []).find((r) => digits(r.cpf) === cpfD && digits(r.phone) === phoneD);
 
     if (!driver) {
       await driverAudit(supabaseAdmin).insert({

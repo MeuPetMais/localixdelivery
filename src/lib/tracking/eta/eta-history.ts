@@ -3,7 +3,9 @@
 import type { EtaHistoryRecord } from "./eta.types";
 
 export interface EtaHistoryStore {
-  append(record: Omit<EtaHistoryRecord, "id" | "created_at"> & { id?: string; created_at?: string }): EtaHistoryRecord;
+  append(
+    record: Omit<EtaHistoryRecord, "id" | "created_at"> & { id?: string; created_at?: string },
+  ): EtaHistoryRecord;
   list(assignmentId: string): EtaHistoryRecord[];
   clear(): void;
 }
@@ -38,6 +40,8 @@ export function createInMemoryEtaHistoryStore(): EtaHistoryStore {
     list(assignmentId) {
       return rows.filter((r) => r.assignment_id === assignmentId);
     },
-    clear() { rows.length = 0; },
+    clear() {
+      rows.length = 0;
+    },
   };
 }

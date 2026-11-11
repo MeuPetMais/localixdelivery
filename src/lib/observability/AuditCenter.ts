@@ -28,7 +28,9 @@ export const AuditCenter = {
       tenant_id: input.tenant_id ?? null,
       target_type: input.target_type ?? null,
       target_id: input.target_id ?? null,
-      metadata: input.metadata ? (sanitizeLogPayload(input.metadata) as Record<string, unknown>) : undefined,
+      metadata: input.metadata
+        ? (sanitizeLogPayload(input.metadata) as Record<string, unknown>)
+        : undefined,
     };
     buffer.push(e);
     if (buffer.length > MAX) buffer.splice(0, buffer.length - MAX);
@@ -42,5 +44,8 @@ export const AuditCenter = {
     if (filter?.limit) out = out.slice(0, filter.limit);
     return out;
   },
-  _reset() { buffer.length = 0; seq = 0; },
+  _reset() {
+    buffer.length = 0;
+    seq = 0;
+  },
 } as const;

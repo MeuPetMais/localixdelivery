@@ -74,7 +74,15 @@ describe("DynamicPricingEngine", () => {
 
   it("Regra: min_subtotal bloqueia quando abaixo", () => {
     const p = promo({
-      rules: [{ id: "r", promotion_id: "p1", rule_type: "min_subtotal", operator: "gte", value: { amount: 50 } }],
+      rules: [
+        {
+          id: "r",
+          promotion_id: "p1",
+          rule_type: "min_subtotal",
+          operator: "gte",
+          value: { amount: 50 },
+        },
+      ],
     });
     const check = PromotionRuleEngine.isEligible(p, ctx());
     expect(check.eligible).toBe(false);
@@ -83,7 +91,17 @@ describe("DynamicPricingEngine", () => {
   it("Regra: weekday limita por dia", () => {
     const now = new Date("2026-07-06T12:00:00Z"); // segunda
     const okMon = PromotionRuleEngine.isEligible(
-      promo({ rules: [{ id: "r", promotion_id: "p1", rule_type: "weekday", operator: "in", value: { days: [1] } }] }),
+      promo({
+        rules: [
+          {
+            id: "r",
+            promotion_id: "p1",
+            rule_type: "weekday",
+            operator: "in",
+            value: { days: [1] },
+          },
+        ],
+      }),
       ctx({ now }),
     );
     expect(okMon.eligible).toBe(true);
@@ -95,7 +113,13 @@ describe("DynamicPricingEngine", () => {
     const check = PromotionRuleEngine.isEligible(
       promo({
         rules: [
-          { id: "r", promotion_id: "p1", rule_type: "time_window", operator: "between", value: { start: "18:00", end: "20:00" } },
+          {
+            id: "r",
+            promotion_id: "p1",
+            rule_type: "time_window",
+            operator: "between",
+            value: { start: "18:00", end: "20:00" },
+          },
         ],
       }),
       ctx({ now }),
@@ -116,7 +140,10 @@ describe("DynamicPricingEngine", () => {
   });
 
   it("Estratégia BEST_FOR_CUSTOMER escolhe maior desconto", () => {
-    const a = { promotion: promo({ id: "a" }), applied: DiscountCalculator.calculate(promo({ id: "a" }), ctx().lines)! };
+    const a = {
+      promotion: promo({ id: "a" }),
+      applied: DiscountCalculator.calculate(promo({ id: "a" }), ctx().lines)!,
+    };
     const b = {
       promotion: promo({ id: "b", discount_value: 25 }),
       applied: DiscountCalculator.calculate(promo({ id: "b", discount_value: 25 }), ctx().lines)!,
@@ -127,19 +154,39 @@ describe("DynamicPricingEngine", () => {
   });
 
   it("Estratégia STACKABLE combina cumulativas + melhor não-cumulativa", () => {
-    const stack1 = { promotion: promo({ id: "s1", stackable: true }), applied: { promotion_id: "s1", name: "s1", discount_type: "PERCENTAGE" as const, discount_amount: 2 } };
-    const stack2 = { promotion: promo({ id: "s2", stackable: true }), applied: { promotion_id: "s2", name: "s2", discount_type: "PERCENTAGE" as const, discount_amount: 3 } };
-    const nonStack = { promotion: promo({ id: "n1", stackable: false }), applied: { promotion_id: "n1", name: "n1", discount_type: "PERCENTAGE" as const, discount_amount: 5 } };
+    const stack1 = {
+      promotion: promo({ id: "s1", stackable: true }),
+      applied: {
+        promotion_id: "s1",
+        name: "s1",
+        discount_type: "PERCENTAGE" as const,
+        discount_amount: 2,
+      },
+    };
+    const stack2 = {
+      promotion: promo({ id: "s2", stackable: true }),
+      applied: {
+        promotion_id: "s2",
+        name: "s2",
+        discount_type: "PERCENTAGE" as const,
+        discount_amount: 3,
+      },
+    };
+    const nonStack = {
+      promotion: promo({ id: "n1", stackable: false }),
+      applied: {
+        promotion_id: "n1",
+        name: "n1",
+        discount_type: "PERCENTAGE" as const,
+        discount_amount: 5,
+      },
+    };
     const picked = DynamicPricingStrategy.select([stack1, stack2, nonStack], "STACKABLE");
     expect(picked.map((p) => p.promotion_id).sort()).toEqual(["n1", "s1", "s2"]);
   });
 
   it("Simulação alerta margem negativa", () => {
-    const r = PriceSimulation.run(
-      [promo({ discount_value: 90 })],
-      ctx(),
-      { productCost: () => 9 },
-    );
+    const r = PriceSimulation.run([promo({ discount_value: 90 })], ctx(), { productCost: () => 9 });
     expect(r.negative_margin).toBe(true);
   });
 

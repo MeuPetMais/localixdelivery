@@ -9,7 +9,12 @@ import { summarizeGrowthMeasurement } from "@/lib/customer360-measurement";
 const eventSchema = z.object({
   restaurantId: z.string().uuid(),
   customerId: z.string().uuid(),
-  eventType: z.enum(["OPPORTUNITY_VIEWED", "ACTION_SELECTED", "ACTION_EXECUTED", "ORDER_ATTRIBUTED"]),
+  eventType: z.enum([
+    "OPPORTUNITY_VIEWED",
+    "ACTION_SELECTED",
+    "ACTION_EXECUTED",
+    "ORDER_ATTRIBUTED",
+  ]),
   sourceType: z.string().trim().min(1).max(80),
   sourceRef: z.string().trim().max(120).nullable().optional(),
   actionKey: z.string().trim().max(120).nullable().optional(),
@@ -29,10 +34,25 @@ async function authorizeRestaurant(userId: string, restaurantId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [restaurantQ, adminRoleQ, growthRoleQ, assignmentQ] = await Promise.all([
     supabaseAdmin.from("restaurants").select("id,owner_id").eq("id", restaurantId).maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "partner_growth").maybeSingle(),
-    supabaseAdmin.from("partner_growth_assignments").select("id")
-      .eq("user_id", userId).eq("restaurant_id", restaurantId).eq("active", true).maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "partner_growth")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("partner_growth_assignments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("restaurant_id", restaurantId)
+      .eq("active", true)
+      .maybeSingle(),
   ]);
   if (restaurantQ.error) throw new Error(restaurantQ.error.message);
   if (!restaurantQ.data) throw new Error("Restaurant not found");
@@ -74,25 +94,30 @@ export const recordGrowthMeasurementEvent = createServerFn({ method: "POST" })
         throw new Error("ORDER_ATTRIBUTED requires orderId and parentEventId");
       }
 
-      const [{ data: parent, error: parentError }, { data: order, error: orderError }] = await Promise.all([
-        sb.from("growth_measurement_events")
-          .select("id,restaurant_id,customer_id,event_type,occurred_at")
-          .eq("id", data.parentEventId)
-          .eq("restaurant_id", data.restaurantId)
-          .eq("customer_id", data.customerId)
-          .maybeSingle(),
-        sb.from("orders")
-          .select("id,restaurant_id,customer_phone,total,status,created_at")
-          .eq("id", data.orderId)
-          .eq("restaurant_id", data.restaurantId)
-          .maybeSingle(),
-      ]);
+      const [{ data: parent, error: parentError }, { data: order, error: orderError }] =
+        await Promise.all([
+          sb
+            .from("growth_measurement_events")
+            .select("id,restaurant_id,customer_id,event_type,occurred_at")
+            .eq("id", data.parentEventId)
+            .eq("restaurant_id", data.restaurantId)
+            .eq("customer_id", data.customerId)
+            .maybeSingle(),
+          sb
+            .from("orders")
+            .select("id,restaurant_id,customer_phone,total,status,created_at")
+            .eq("id", data.orderId)
+            .eq("restaurant_id", data.restaurantId)
+            .maybeSingle(),
+        ]);
 
       if (parentError) throw new Error(parentError.message);
       if (orderError) throw new Error(orderError.message);
-      if (!parent || parent.event_type !== "ACTION_EXECUTED") throw new Error("Attribution requires prior ACTION_EXECUTED");
+      if (!parent || parent.event_type !== "ACTION_EXECUTED")
+        throw new Error("Attribution requires prior ACTION_EXECUTED");
       if (!order) throw new Error("Order not found");
-      if (!isOrderGrowthEligible(order.status)) throw new Error("Only realized orders can be attributed");
+      if (!isOrderGrowthEligible(order.status))
+        throw new Error("Only realized orders can be attributed");
       if (normalizeCustomerPhone(order.customer_phone) !== normalizeCustomerPhone(customer.phone)) {
         throw new Error("Order does not belong to Customer 360 identity");
       }
@@ -136,7 +161,9 @@ export const recordGrowthMeasurementEvent = createServerFn({ method: "POST" })
       parent_event_id: data.parentEventId ?? null,
       order_id: orderId,
       attributed_order_total: attributedOrderTotal,
-      metadata: data.metadata ?? {},
+      metadata: JSON.parse(
+        JSON.stringify(data.metadata ?? {}),
+      ) as import("@/integrations/supabase/types").Json,
       idempotency_key: data.idempotencyKey,
     };
 

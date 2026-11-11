@@ -51,12 +51,21 @@ export interface RemoteConfigEntry<T = unknown> {
 }
 
 export type PlatformConfigAuditAction =
-  | "flag.created" | "flag.updated" | "flag.enabled" | "flag.disabled"
-  | "flag.archived" | "flag.rollout_changed" | "flag.killed" | "flag.revived"
+  | "flag.created"
+  | "flag.updated"
+  | "flag.enabled"
+  | "flag.disabled"
+  | "flag.archived"
+  | "flag.rollout_changed"
+  | "flag.killed"
+  | "flag.revived"
   | "flag.rolled_back"
-  | "config.set" | "config.rolled_back" | "config.deleted"
+  | "config.set"
+  | "config.rolled_back"
+  | "config.deleted"
   | "plan.features_updated"
-  | "kill_switch.activated" | "kill_switch.deactivated";
+  | "kill_switch.activated"
+  | "kill_switch.deactivated";
 
 export interface PlatformConfigAuditEntry {
   id?: string;
@@ -82,8 +91,13 @@ export interface EvaluationContext {
 }
 
 export type KillSwitchDomain =
-  | "payments" | "delivery" | "promotions" | "marketplace"
-  | "ai" | "analytics" | "notifications";
+  | "payments"
+  | "delivery"
+  | "promotions"
+  | "marketplace"
+  | "ai"
+  | "analytics"
+  | "notifications";
 
 export interface KillSwitchState {
   domain: KillSwitchDomain | string;

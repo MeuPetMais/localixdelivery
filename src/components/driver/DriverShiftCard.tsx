@@ -31,16 +31,25 @@ export function DriverShiftCard() {
 
   const start = useMutation({
     mutationFn: useServerFn(startShift),
-    onSuccess: () => { toast.success("Turno iniciado"); invalidate(); },
-    onError: (e: any) => toast.error(e?.message ?? "Erro ao iniciar turno"),
+    onSuccess: () => {
+      toast.success("Turno iniciado");
+      invalidate();
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro ao iniciar turno"),
   });
   const pause = useMutation({
     mutationFn: useServerFn(pauseShift),
-    onSuccess: () => { toast.success("Turno pausado"); invalidate(); },
+    onSuccess: () => {
+      toast.success("Turno pausado");
+      invalidate();
+    },
   });
   const resume = useMutation({
     mutationFn: useServerFn(resumeShift),
-    onSuccess: () => { toast.success("Turno retomado"); invalidate(); },
+    onSuccess: () => {
+      toast.success("Turno retomado");
+      invalidate();
+    },
   });
   const finish = useMutation({
     mutationFn: useServerFn(finishShift),
@@ -79,7 +88,11 @@ export function DriverShiftCard() {
             <Clock className="h-3 w-3" /> Turno atual • {shift.status}
           </p>
           <p className="text-lg font-semibold">
-            Início {new Date(shift.started_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            Início{" "}
+            {new Date(shift.started_at).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </div>
         <div className="flex gap-2">

@@ -7,8 +7,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 
-const REDIRECT_URI =
-  "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
+const REDIRECT_URI = "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
 Deno.serve(async (req) => {
@@ -35,8 +34,8 @@ Deno.serve(async (req) => {
 
     const appId = Deno.env.get("MP_APP_ID");
     const mpClientSecret = Deno.env.get("MP_CLIENT_SECRET") || Deno.env.get("MP_ACCESS_TOKEN");
-    if (!appId || !mpClientSecret) return jsonErr("MP_APP_ID/MP_CLIENT_SECRET não configurados", 500);
-
+    if (!appId || !mpClientSecret)
+      return jsonErr("MP_APP_ID/MP_CLIENT_SECRET não configurados", 500);
 
     // Troca do authorization_code por access_token do lojista.
     const tokenRes = await fetch(MP_TOKEN_URL, {
@@ -57,37 +56,41 @@ Deno.serve(async (req) => {
 
     const rawBody = await tokenRes.text();
     let tokenJson: any = {};
-    try { tokenJson = JSON.parse(rawBody); } catch { tokenJson = { raw: rawBody }; }
+    try {
+      tokenJson = JSON.parse(rawBody);
+    } catch {
+      tokenJson = { raw: rawBody };
+    }
 
     console.error("MP TOKEN RESPONSE");
-console.error(rawBody);
+    console.error(rawBody);
 
     if (!tokenRes.ok) {
-  console.error("MP TOKEN ERROR", tokenRes.status);
-  console.error(rawBody);
+      console.error("MP TOKEN ERROR", tokenRes.status);
+      console.error(rawBody);
 
-  await admin.from("payment_logs").insert({
-    restaurant_id: st.restaurant_id,
-    level: "error",
-    message: "MP OAuth token exchange failed",
-    data: {
-      http_status: tokenRes.status,
-      body: tokenJson,
-      raw: rawBody,
-      redirect_uri: REDIRECT_URI,
-      client_id: appId,
-      code_verifier_found: !!st.code_verifier,
-    },
-  });
+      await admin.from("payment_logs").insert({
+        restaurant_id: st.restaurant_id,
+        level: "error",
+        message: "MP OAuth token exchange failed",
+        data: {
+          http_status: tokenRes.status,
+          body: tokenJson,
+          raw: rawBody,
+          redirect_uri: REDIRECT_URI,
+          client_id: appId,
+          code_verifier_found: !!st.code_verifier,
+        },
+      });
 
-  return new Response(rawBody, {
-    status: tokenRes.status,
-    headers: {
-      "content-type": "application/json",
-      ...corsHeaders,
-    },
-  });
-}
+      return new Response(rawBody, {
+        status: tokenRes.status,
+        headers: {
+          "content-type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
 
     const expiresAt = tokenJson.expires_in
       ? new Date(Date.now() + Number(tokenJson.expires_in) * 1000).toISOString()
@@ -111,7 +114,10 @@ console.error(rawBody);
       { onConflict: "restaurant_id" },
     );
 
-    await admin.from("oauth_states").update({ used_at: new Date().toISOString() }).eq("state", state);
+    await admin
+      .from("oauth_states")
+      .update({ used_at: new Date().toISOString() })
+      .eq("state", state);
 
     return redirect(st.redirect_to ?? "/pagamentos?mp=success");
   } catch (err) {

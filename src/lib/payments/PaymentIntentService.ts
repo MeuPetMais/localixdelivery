@@ -34,14 +34,18 @@ export function mapMpStatus(s: string | null | undefined): PaymentIntentStatus {
     case "refunded":
     case "charged_back":
       return "APPROVED";
-    case "in_process": return "PROCESSING";
-    case "rejected": return "REJECTED";
-    case "cancelled": return "CANCELLED";
-    default: return "PENDING";
+    case "in_process":
+      return "PROCESSING";
+    case "rejected":
+      return "REJECTED";
+    case "cancelled":
+      return "CANCELLED";
+    default:
+      return "PENDING";
   }
 }
 
-export type InvokeFn = (body: Record<string, unknown>) => Promise<any>;
+export type InvokeFn = (body: Record<string, unknown>) => Promise<unknown>;
 
 // Orquestração pura: pode ser testada sem o runtime do TanStack Start.
 export async function runIntent(
@@ -49,7 +53,9 @@ export async function runIntent(
   action: "create" | "status" | "cancel",
   body: Record<string, unknown>,
 ): Promise<PaymentIntentResult> {
-  const r = await invoke({ action, ...body });
+  const r = (await invoke({ action, ...body })) as
+    | (Partial<PaymentIntentResult> & { error?: unknown })
+    | null;
   if (r?.error) throw new Error(String(r.error));
   const status: PaymentIntentStatus =
     (r?.status as PaymentIntentStatus) ?? (action === "cancel" ? "CANCELLED" : "PENDING");
@@ -76,12 +82,14 @@ export const createPaymentIntent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
-      action: "create",
-      order_id: data.orderId,
-      payment_method: data.paymentMethod,
-      payer_email: data.payerEmail,
-    } });
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", {
+      body: {
+        action: "create",
+        order_id: data.orderId,
+        payment_method: data.paymentMethod,
+        payer_email: data.payerEmail,
+      },
+    });
     if (error) throw new Error(error.message);
     if (r?.error) throw new Error(String(r.error));
     const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "PENDING";
@@ -101,10 +109,12 @@ export const getPaymentIntentStatus = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderOnlySchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
-      action: "status",
-      order_id: data.orderId,
-    } });
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", {
+      body: {
+        action: "status",
+        order_id: data.orderId,
+      },
+    });
     if (error) throw new Error(error.message);
     if (r?.error) throw new Error(String(r.error));
     const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "PENDING";
@@ -124,10 +134,12 @@ export const cancelPaymentIntent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => orderOnlySchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", { body: {
-      action: "cancel",
-      order_id: data.orderId,
-    } });
+    const { data: r, error } = await supabaseAdmin.functions.invoke("mp-payment-intent", {
+      body: {
+        action: "cancel",
+        order_id: data.orderId,
+      },
+    });
     if (error) throw new Error(error.message);
     if (r?.error) throw new Error(String(r.error));
     const status: PaymentIntentStatus = (r?.status as PaymentIntentStatus) ?? "CANCELLED";

@@ -13,11 +13,7 @@ export type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-export type DriverPwaInstallAvailability =
-  | "available"
-  | "installed"
-  | "manual"
-  | "unsupported";
+export type DriverPwaInstallAvailability = "available" | "installed" | "manual" | "unsupported";
 
 function isPreviewHost(hostname: string): boolean {
   return (
@@ -51,9 +47,7 @@ async function unregisterDriverSw(): Promise<void> {
   try {
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.allSettled(
-      regs
-        .filter((r) => r.active?.scriptURL.endsWith(SW_URL))
-        .map((r) => r.unregister()),
+      regs.filter((r) => r.active?.scriptURL.endsWith(SW_URL)).map((r) => r.unregister()),
     );
   } catch {
     /* noop */
@@ -84,8 +78,8 @@ export function isStandaloneDisplay(): boolean {
 export function isIOSSafari(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) ||
-    (ua.includes("Macintosh") && "ontouchend" in document);
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) || (ua.includes("Macintosh") && "ontouchend" in document);
   const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
   return isIOS && isSafari;
 }
@@ -101,24 +95,32 @@ export function isInstallSupported(): boolean {
   // Chrome/Edge/Samsung: `BeforeInstallPromptEvent` disponível.
   // Safari iOS: usa "Adicionar à Tela Inicial" manual.
   return (
-    isStandaloneDisplay() ||
-    "onbeforeinstallprompt" in window ||
-    isChromeAndroid() ||
-    isIOSSafari()
+    isStandaloneDisplay() || "onbeforeinstallprompt" in window || isChromeAndroid() || isIOSSafari()
   );
 }
 
 export function markInstallDismissed(): void {
-  try { window.localStorage.setItem(DISMISS_KEY, "1"); } catch { /* noop */ }
+  try {
+    window.localStorage.setItem(DISMISS_KEY, "1");
+  } catch {
+    /* noop */
+  }
 }
 
 export function wasInstallDismissed(): boolean {
-  try { return window.localStorage.getItem(DISMISS_KEY) === "1"; }
-  catch { return false; }
+  try {
+    return window.localStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function clearInstallDismissed(): void {
-  try { window.localStorage.removeItem(DISMISS_KEY); } catch { /* noop */ }
+  try {
+    window.localStorage.removeItem(DISMISS_KEY);
+  } catch {
+    /* noop */
+  }
 }
 
 export type PwaInstallState = {
@@ -139,8 +141,8 @@ export type PwaInstallState = {
 export function useDriverPwaInstall(): PwaInstallState {
   const [evt, setEvt] = useState<BeforeInstallPromptEvent | null>(null);
   const [standalone, setStandalone] = useState<boolean>(() => isStandaloneDisplay());
-  const [serviceWorkerControlled, setServiceWorkerControlled] = useState<boolean>(() =>
-    typeof navigator !== "undefined" && !!navigator.serviceWorker?.controller,
+  const [serviceWorkerControlled, setServiceWorkerControlled] = useState<boolean>(
+    () => typeof navigator !== "undefined" && !!navigator.serviceWorker?.controller,
   );
 
   useEffect(() => {
@@ -167,7 +169,8 @@ export function useDriverPwaInstall(): PwaInstallState {
     };
     const mq = window.matchMedia?.("(display-mode: standalone)");
     const onModeChange = () => setStandalone(isStandaloneDisplay());
-    const onControllerChange = () => setServiceWorkerControlled(!!navigator.serviceWorker?.controller);
+    const onControllerChange = () =>
+      setServiceWorkerControlled(!!navigator.serviceWorker?.controller);
     window.addEventListener("beforeinstallprompt", onBIP);
     window.addEventListener("appinstalled", onInstalled);
     navigator.serviceWorker?.addEventListener?.("controllerchange", onControllerChange);

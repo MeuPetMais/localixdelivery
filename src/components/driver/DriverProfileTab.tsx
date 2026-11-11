@@ -7,8 +7,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  Bike, Camera, ChevronRight, FileText, IdCard, LogOut, RefreshCw,
-  Save, LifeBuoy, Lock, Upload, User,
+  Bike,
+  Camera,
+  ChevronRight,
+  FileText,
+  IdCard,
+  LogOut,
+  RefreshCw,
+  Save,
+  LifeBuoy,
+  Lock,
+  Upload,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -130,7 +140,9 @@ export function DriverProfileTab(props: { driver: Driver }) {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      setNewPassword(""); setConfirmPassword(""); setChangePassOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      setChangePassOpen(false);
       toast.success("Senha alterada");
     } catch (e) {
       toast.error((e as Error).message);
@@ -177,7 +189,9 @@ export function DriverProfileTab(props: { driver: Driver }) {
         <p className="mt-3 font-display text-xl font-extrabold">{name || "—"}</p>
         <p className="text-xs text-muted-foreground">{d.email ?? "—"}</p>
         <div className="mt-2 flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">{d.status}</Badge>
+          <Badge variant="outline" className="capitalize">
+            {d.status}
+          </Badge>
           <Badge variant="secondary">{days} dia(s) na plataforma</Badge>
         </div>
       </Card>
@@ -188,10 +202,20 @@ export function DriverProfileTab(props: { driver: Driver }) {
           <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
         </Field>
         <Field label="Telefone">
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} placeholder="(11) 90000-0000" />
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            maxLength={30}
+            placeholder="(11) 90000-0000"
+          />
         </Field>
         <Field label="CPF">
-          <Input value={cpf} onChange={(e) => setCpf(e.target.value)} maxLength={20} placeholder="000.000.000-00" />
+          <Input
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+            maxLength={20}
+            placeholder="000.000.000-00"
+          />
         </Field>
         <Button className="w-full rounded-2xl" onClick={savePersonal} disabled={saveMut.isPending}>
           <Save className="mr-2 h-4 w-4" /> Salvar dados
@@ -208,15 +232,27 @@ export function DriverProfileTab(props: { driver: Driver }) {
             aria-label="Tipo de veículo"
           >
             {Object.entries(VEHICLE_LABEL).map(([v, label]) => (
-              <option key={v} value={v}>{label}</option>
+              <option key={v} value={v}>
+                {label}
+              </option>
             ))}
           </select>
         </Field>
         <Field label="Modelo">
-          <Input value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} placeholder="Ex.: Honda CG 160" maxLength={80} />
+          <Input
+            value={vehicleModel}
+            onChange={(e) => setVehicleModel(e.target.value)}
+            placeholder="Ex.: Honda CG 160"
+            maxLength={80}
+          />
         </Field>
         <Field label="Placa">
-          <Input value={vehiclePlate} onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())} placeholder="AAA-0A00" maxLength={20} />
+          <Input
+            value={vehiclePlate}
+            onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+            placeholder="AAA-0A00"
+            maxLength={20}
+          />
         </Field>
         <Button className="w-full rounded-2xl" onClick={saveVehicle} disabled={saveMut.isPending}>
           <Save className="mr-2 h-4 w-4" /> Salvar veículo
@@ -226,18 +262,24 @@ export function DriverProfileTab(props: { driver: Driver }) {
       {/* Documentos */}
       <Section icon={<FileText className="h-4 w-4" />} title="Documentos">
         <DocRow
-          icon={<Camera className="h-4 w-4" />} label="Foto do perfil"
-          hasFile={!!photoUrl} url={photoUrl}
+          icon={<Camera className="h-4 w-4" />}
+          label="Foto do perfil"
+          hasFile={!!photoUrl}
+          url={photoUrl}
           onFile={(f) => handleUpload("photo", f)}
         />
         <DocRow
-          icon={<IdCard className="h-4 w-4" />} label="CNH"
-          hasFile={!!cnhUrl} url={cnhUrl}
+          icon={<IdCard className="h-4 w-4" />}
+          label="CNH"
+          hasFile={!!cnhUrl}
+          url={cnhUrl}
           onFile={(f) => handleUpload("cnh", f)}
         />
         <DocRow
-          icon={<FileText className="h-4 w-4" />} label="Comprovante de endereço"
-          hasFile={!!addressProofUrl} url={addressProofUrl}
+          icon={<FileText className="h-4 w-4" />}
+          label="Comprovante de endereço"
+          hasFile={!!addressProofUrl}
+          url={addressProofUrl}
           onFile={(f) => handleUpload("document", f)}
         />
       </Section>
@@ -251,7 +293,9 @@ export function DriverProfileTab(props: { driver: Driver }) {
           aria-expanded={changePassOpen}
         >
           Alterar senha
-          <ChevronRight className={`h-4 w-4 transition-transform ${changePassOpen ? "rotate-90" : ""}`} />
+          <ChevronRight
+            className={`h-4 w-4 transition-transform ${changePassOpen ? "rotate-90" : ""}`}
+          />
         </button>
         {changePassOpen && (
           <div className="mt-3 space-y-3">
@@ -271,7 +315,11 @@ export function DriverProfileTab(props: { driver: Driver }) {
                 autoComplete="new-password"
               />
             </Field>
-            <Button className="w-full rounded-2xl" onClick={handleChangePassword} disabled={changing}>
+            <Button
+              className="w-full rounded-2xl"
+              onClick={handleChangePassword}
+              disabled={changing}
+            >
               <Save className="mr-2 h-4 w-4" /> {changing ? "Salvando..." : "Salvar nova senha"}
             </Button>
           </div>
@@ -305,7 +353,8 @@ export function DriverProfileTab(props: { driver: Driver }) {
           <a
             className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2 text-sm hover:bg-muted"
             href={supportUrl}
-            target="_blank" rel="noreferrer"
+            target="_blank"
+            rel="noreferrer"
           >
             Falar com o suporte
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -325,7 +374,11 @@ export function DriverProfileTab(props: { driver: Driver }) {
         )}
       </Section>
 
-      <Button variant="outline" className="w-full rounded-2xl" onClick={() => supabase.auth.signOut()}>
+      <Button
+        variant="outline"
+        className="w-full rounded-2xl"
+        onClick={() => supabase.auth.signOut()}
+      >
         <LogOut className="mr-2 h-4 w-4" /> Sair
       </Button>
     </div>
@@ -354,7 +407,10 @@ function Field(props: { label: string; children: React.ReactNode }) {
 }
 
 function DocRow(props: {
-  icon: React.ReactNode; label: string; hasFile: boolean; url: string;
+  icon: React.ReactNode;
+  label: string;
+  hasFile: boolean;
+  url: string;
   onFile: (f: File) => void;
 }) {
   return (
@@ -363,17 +419,25 @@ function DocRow(props: {
         <span className="text-muted-foreground">{props.icon}</span>
         <span className="truncate">{props.label}</span>
         {props.hasFile ? (
-          <Badge variant="secondary" className="ml-1">Enviado</Badge>
+          <Badge variant="secondary" className="ml-1">
+            Enviado
+          </Badge>
         ) : (
-          <Badge variant="outline" className="ml-1">Pendente</Badge>
+          <Badge variant="outline" className="ml-1">
+            Pendente
+          </Badge>
         )}
       </div>
       <div className="flex items-center gap-2">
         {props.hasFile && (
           <a
-            href={props.url} target="_blank" rel="noreferrer"
+            href={props.url}
+            target="_blank"
+            rel="noreferrer"
             className="text-xs text-muted-foreground underline"
-          >Ver</a>
+          >
+            Ver
+          </a>
         )}
         <label className="cursor-pointer">
           <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-input px-3 text-xs font-medium hover:bg-muted">

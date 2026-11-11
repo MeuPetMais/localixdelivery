@@ -31,7 +31,7 @@ da versão anterior no editor Lovable já reverte o código das functions.
 Para desativar uma função sem reverter o código, use kill switch:
 
 ```ts
-platformConfiguration.killSwitch.enable('mp.payment.intent', 'incident 2026-07-03');
+platformConfiguration.killSwitch.enable("mp.payment.intent", "incident 2026-07-03");
 ```
 
 ## 4. Rollback de Migrations
@@ -50,8 +50,8 @@ Alternativa preferencial a rollback de código quando a feature está
 protegida por flag:
 
 ```ts
-platformConfiguration.featureFlags.setRollout('feature.key', 0);
-platformConfiguration.killSwitch.enable('feature.key', 'rollback');
+platformConfiguration.featureFlags.setRollout("feature.key", 0);
+platformConfiguration.killSwitch.enable("feature.key", "rollback");
 ```
 
 ## 6. Rollback de Secrets

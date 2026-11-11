@@ -45,12 +45,16 @@ const GROWTH_ELIGIBLE_STATUSES = ["entregue", "concluido"] satisfies OrderState[
 describe("order metrics contract", () => {
   it("cobre todos os status existentes de pedidos", () => {
     expect(new Set(ALL_ORDER_STATUSES)).toEqual(new Set(ORDER_STATES));
-    expect(Object.keys(ORDER_STATUS_METRIC_CLASSIFICATION).sort()).toEqual([...ORDER_STATES].sort());
+    expect(Object.keys(ORDER_STATUS_METRIC_CLASSIFICATION).sort()).toEqual(
+      [...ORDER_STATES].sort(),
+    );
   });
 
   it("classifica como confirmado operacionalmente apenas estados pos-pagamento aceitos pelo contrato", () => {
     for (const status of ALL_ORDER_STATUSES) {
-      expect(isOrderOperationallyConfirmed(status)).toBe(OPERATIONALLY_CONFIRMED_STATUSES.includes(status));
+      expect(isOrderOperationallyConfirmed(status)).toBe(
+        new Set<string>(OPERATIONALLY_CONFIRMED_STATUSES).has(status),
+      );
     }
 
     expect(ORDER_OPERATIONALLY_CONFIRMED_STATUSES).toEqual(OPERATIONALLY_CONFIRMED_STATUSES);
@@ -58,8 +62,12 @@ describe("order metrics contract", () => {
 
   it("classifica somente entregue e concluido como venda realizada elegivel para Growth", () => {
     for (const status of ALL_ORDER_STATUSES) {
-      expect(isOrderGrowthEligible(status)).toBe(GROWTH_ELIGIBLE_STATUSES.includes(status));
-      expect(isOrderRealizedSaleEligible(status)).toBe(GROWTH_ELIGIBLE_STATUSES.includes(status));
+      expect(isOrderGrowthEligible(status)).toBe(
+        new Set<string>(GROWTH_ELIGIBLE_STATUSES).has(status),
+      );
+      expect(isOrderRealizedSaleEligible(status)).toBe(
+        new Set<string>(GROWTH_ELIGIBLE_STATUSES).has(status),
+      );
     }
 
     expect(ORDER_GROWTH_ELIGIBLE_STATUSES).toEqual(GROWTH_ELIGIBLE_STATUSES);
@@ -78,7 +86,9 @@ describe("order metrics contract", () => {
   });
 
   it("exclui das metricas realizadas qualquer status que nao seja venda realizada", () => {
-    const excludedStatuses = ALL_ORDER_STATUSES.filter((status) => !GROWTH_ELIGIBLE_STATUSES.includes(status));
+    const excludedStatuses = ALL_ORDER_STATUSES.filter(
+      (status) => !new Set<string>(GROWTH_ELIGIBLE_STATUSES).has(status),
+    );
 
     for (const status of ALL_ORDER_STATUSES) {
       expect(shouldExcludeOrderFromRealizedMetrics(status)).toBe(excludedStatuses.includes(status));

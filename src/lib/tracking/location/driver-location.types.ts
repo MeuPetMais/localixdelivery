@@ -10,9 +10,9 @@ export interface DriverLocationSample {
   lat: number;
   lng: number;
   heading?: number | null;
-  speed?: number | null;      // m/s
-  accuracy?: number | null;   // meters
-  captured_at: string;        // ISO
+  speed?: number | null; // m/s
+  accuracy?: number | null; // meters
+  captured_at: string; // ISO
   correlation_id?: string;
   source?: "gps" | "manual" | "sync";
 }
@@ -27,10 +27,30 @@ export interface DriverLocationPolicy {
 }
 
 export const DRIVER_LOCATION_POLICIES: Record<DriverLocationMode, DriverLocationPolicy> = {
-  offline: { mode: "offline", minIntervalMs: 0, minDistanceMeters: Infinity, enableHighAccuracy: false },
-  paused: { mode: "paused", minIntervalMs: 5 * 60_000, minDistanceMeters: 500, enableHighAccuracy: false },
-  available: { mode: "available", minIntervalMs: 60_000, minDistanceMeters: 100, enableHighAccuracy: false },
-  delivery: { mode: "delivery", minIntervalMs: 15_000, minDistanceMeters: 25, enableHighAccuracy: true },
+  offline: {
+    mode: "offline",
+    minIntervalMs: 0,
+    minDistanceMeters: Infinity,
+    enableHighAccuracy: false,
+  },
+  paused: {
+    mode: "paused",
+    minIntervalMs: 5 * 60_000,
+    minDistanceMeters: 500,
+    enableHighAccuracy: false,
+  },
+  available: {
+    mode: "available",
+    minIntervalMs: 60_000,
+    minDistanceMeters: 100,
+    enableHighAccuracy: false,
+  },
+  delivery: {
+    mode: "delivery",
+    minIntervalMs: 15_000,
+    minDistanceMeters: 25,
+    enableHighAccuracy: true,
+  },
 };
 
 export interface DriverLocationEvaluation {
@@ -42,11 +62,11 @@ export interface DriverLocationEvaluation {
 }
 
 export interface DriverLocationConfig {
-  min_move_meters: number;         // gate para "significant change"
-  max_speed_ms: number;             // 120 km/h ≈ 33 m/s
+  min_move_meters: number; // gate para "significant change"
+  max_speed_ms: number; // 120 km/h ≈ 33 m/s
   max_teleport_meters_per_sec: number;
-  min_accuracy_m: number;           // se > n, LOW
-  stale_seconds: number;            // se sample mais antigo, LOW
+  min_accuracy_m: number; // se > n, LOW
+  stale_seconds: number; // se sample mais antigo, LOW
 }
 
 export const DEFAULT_LOCATION_CONFIG: DriverLocationConfig = {

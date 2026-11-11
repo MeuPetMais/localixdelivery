@@ -11,6 +11,17 @@ type Listener = (e: RevenueEvent) => void;
 const listeners = new Set<Listener>();
 
 export const RevenueEvents = {
-  on(l: Listener) { listeners.add(l); return () => listeners.delete(l); },
-  emit(e: RevenueEvent) { for (const l of listeners) { try { l(e); } catch { /* noop */ } } },
+  on(l: Listener) {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+  emit(e: RevenueEvent) {
+    for (const l of listeners) {
+      try {
+        l(e);
+      } catch {
+        /* noop */
+      }
+    }
+  },
 };

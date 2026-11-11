@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { FinancialDashboardService, type LedgerPort, type CostPort } from "./FinancialDashboardService";
+import {
+  FinancialDashboardService,
+  type LedgerPort,
+  type CostPort,
+} from "./FinancialDashboardService";
 import { FinancePermissions } from "./FinancePermissions";
 import { normalizeFilters, resolvePeriod } from "./FinanceFilters";
 import { FinanceWidgetRegistry } from "./FinanceWidgetRegistry";
@@ -8,18 +12,47 @@ import { FinanceAudit } from "./FinanceAudit";
 const ledger: LedgerPort = {
   async getStatement() {
     return [
-      { transaction_type: "RESTAURANT_RECEIVABLE", amount: 100, status: "COMPLETED", created_at: "2026-07-01" },
-      { transaction_type: "RESTAURANT_RECEIVABLE", amount: 50, status: "COMPLETED", created_at: "2026-07-02" },
-      { transaction_type: "PLATFORM_FEE", amount: -3, status: "COMPLETED", created_at: "2026-07-02" },
-      { transaction_type: "GATEWAY_FEE", amount: -2, status: "COMPLETED", created_at: "2026-07-02" },
-      { transaction_type: "RESTAURANT_RECEIVABLE", amount: 40, status: "PENDING", created_at: "2026-07-03" },
+      {
+        transaction_type: "RESTAURANT_RECEIVABLE",
+        amount: 100,
+        status: "COMPLETED",
+        created_at: "2026-07-01",
+      },
+      {
+        transaction_type: "RESTAURANT_RECEIVABLE",
+        amount: 50,
+        status: "COMPLETED",
+        created_at: "2026-07-02",
+      },
+      {
+        transaction_type: "PLATFORM_FEE",
+        amount: -3,
+        status: "COMPLETED",
+        created_at: "2026-07-02",
+      },
+      {
+        transaction_type: "GATEWAY_FEE",
+        amount: -2,
+        status: "COMPLETED",
+        created_at: "2026-07-02",
+      },
+      {
+        transaction_type: "RESTAURANT_RECEIVABLE",
+        amount: 40,
+        status: "PENDING",
+        created_at: "2026-07-03",
+      },
     ];
   },
-  async getBalance() { return { balance: 145, currency: "BRL" }; },
+  async getBalance() {
+    return { balance: 145, currency: "BRL" };
+  },
 };
 
 const cost: CostPort = {
-  async getPeriodProfitability() { return { cmv: 45, grossProfit: 100, netProfit: 90, marginPct: 60 }; },
+  async getPeriodProfitability() {
+    return { cmv: 45, grossProfit: 100, netProfit: 90, marginPct: 60 };
+  },
 };
 
 describe("FinancialDashboardService", () => {
@@ -47,9 +80,21 @@ describe("FinancialDashboardService", () => {
   it("returns status snapshot", async () => {
     const svc = new FinancialDashboardService({
       ledger,
-      reconciliation: { async getLastReconciliation() { return { at: "2026-07-03T00:00:00Z", status: "MATCHED" }; } },
-      split: { async getLastSplit() { return { at: "2026-07-02T00:00:00Z", status: "COMPLETED" }; } },
-      payment: { async getActiveGateway() { return { provider: "mercado_pago" }; } },
+      reconciliation: {
+        async getLastReconciliation() {
+          return { at: "2026-07-03T00:00:00Z", status: "MATCHED" };
+        },
+      },
+      split: {
+        async getLastSplit() {
+          return { at: "2026-07-02T00:00:00Z", status: "COMPLETED" };
+        },
+      },
+      payment: {
+        async getActiveGateway() {
+          return { provider: "mercado_pago" };
+        },
+      },
     });
     const s = await svc.getStatus({ restaurantId: "r1" });
     expect(s.activeGateway).toBe("mercado_pago");
@@ -81,7 +126,11 @@ describe("FinanceFilters", () => {
     expect(r.from.startsWith("2026-07-01")).toBe(true);
   });
   it("normalizes custom range", () => {
-    const f = normalizeFilters({ period: "custom", from: "2026-01-01T00:00:00Z", to: "2026-02-01T00:00:00Z" });
+    const f = normalizeFilters({
+      period: "custom",
+      from: "2026-01-01T00:00:00Z",
+      to: "2026-02-01T00:00:00Z",
+    });
     expect(f.period).toBe("custom");
     expect(f.from).toBe("2026-01-01T00:00:00Z");
   });
@@ -92,7 +141,13 @@ describe("FinanceWidgetRegistry", () => {
     FinanceWidgetRegistry.clear();
     const Dummy = () => null;
     FinanceWidgetRegistry.register({ id: "a", title: "A", tab: "summary", component: Dummy });
-    FinanceWidgetRegistry.register({ id: "b", title: "B", tab: "dre", requiredRoles: ["ADMIN"], component: Dummy });
+    FinanceWidgetRegistry.register({
+      id: "b",
+      title: "B",
+      tab: "dre",
+      requiredRoles: ["ADMIN"],
+      component: Dummy,
+    });
     expect(FinanceWidgetRegistry.listByTab("summary", "VIEWER")).toHaveLength(1);
     expect(FinanceWidgetRegistry.listByTab("dre", "VIEWER")).toHaveLength(0);
     expect(FinanceWidgetRegistry.listByTab("dre", "ADMIN")).toHaveLength(1);
@@ -101,8 +156,8 @@ describe("FinanceWidgetRegistry", () => {
 
 describe("FinanceAudit", () => {
   it("emits to sinks", () => {
-    const received: any[] = [];
-    const off = FinanceAudit.subscribe(e => received.push(e));
+    const received: Parameters<typeof FinanceAudit.emit>[0][] = [];
+    const off = FinanceAudit.subscribe((e) => received.push(e));
     FinanceAudit.emit({ type: "TAB_CHANGE", restaurantId: "r1", payload: { tab: "dre" } });
     off();
     expect(received[0].type).toBe("TAB_CHANGE");

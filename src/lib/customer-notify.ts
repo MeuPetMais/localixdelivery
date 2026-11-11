@@ -31,7 +31,9 @@ export function setNotifyPrefs(patch: Partial<CustomerNotifyPrefs>): CustomerNot
   const next = { ...getNotifyPrefs(), ...patch };
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(next));
-  } catch {}
+  } catch {
+    // Non-critical best-effort operation; continue safely.
+  }
   window.dispatchEvent(new CustomEvent("localix:notify-prefs", { detail: next }));
   return next;
 }
@@ -45,7 +47,7 @@ function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
     if (!audioCtx) {
-      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AC = globalThis.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return null;
       audioCtx = new AC();
     }
@@ -65,9 +67,12 @@ export function installAudioUnlock() {
     const ctx = getCtx();
     if (!ctx) return;
     if (ctx.state === "suspended") {
-      ctx.resume().then(() => {
-        console.log("[notify] AudioContext desbloqueado");
-      }).catch((e) => console.warn("[notify] resume falhou", e));
+      ctx
+        .resume()
+        .then(() => {
+          console.log("[notify] AudioContext desbloqueado");
+        })
+        .catch((e) => console.warn("[notify] resume falhou", e));
     }
     unlocked = true;
     window.removeEventListener("pointerdown", unlock);

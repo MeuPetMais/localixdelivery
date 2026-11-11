@@ -20,14 +20,16 @@ export class InMemoryPlatformAuditRepository implements PlatformAuditRepository 
   }
 
   async list(limit = 100): Promise<PlatformAuditEntry[]> {
-    return [...this.entries].sort((a, b) =>
-      (b.created_at ?? "").localeCompare(a.created_at ?? "")
-    ).slice(0, limit);
+    return [...this.entries]
+      .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+      .slice(0, limit);
   }
 }
 
 export class PlatformAuditService {
-  constructor(private readonly repo: PlatformAuditRepository = new InMemoryPlatformAuditRepository()) {}
+  constructor(
+    private readonly repo: PlatformAuditRepository = new InMemoryPlatformAuditRepository(),
+  ) {}
 
   record(entry: PlatformAuditEntry): Promise<void> {
     return this.repo.insert(entry);
@@ -37,7 +39,10 @@ export class PlatformAuditService {
     return this.repo.list(limit);
   }
 
-  diff<T extends Record<string, unknown>>(before: T, after: T): Record<string, { from: unknown; to: unknown }> {
+  diff<T extends Record<string, unknown>>(
+    before: T,
+    after: T,
+  ): Record<string, { from: unknown; to: unknown }> {
     const out: Record<string, { from: unknown; to: unknown }> = {};
     const keys = new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]);
     for (const key of keys) {

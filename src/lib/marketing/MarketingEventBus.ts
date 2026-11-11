@@ -10,8 +10,14 @@ export const MarketingEventBus = {
   },
   async publish(e: MarketingDomainEvent): Promise<void> {
     for (const h of handlers) {
-      try { await h(e); } catch { /* isolated */ }
+      try {
+        await h(e);
+      } catch {
+        /* isolated */
+      }
     }
   },
-  clear(): void { handlers.clear(); },
+  clear(): void {
+    handlers.clear();
+  },
 } as const;

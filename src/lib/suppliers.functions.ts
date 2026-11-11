@@ -24,29 +24,41 @@ export const toggleFavorite = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existing } = await supabase
-      .from("supplier_favorites").select("id")
-      .eq("user_id", userId).eq("supplier_id", data.supplierId).maybeSingle();
+      .from("supplier_favorites")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("supplier_id", data.supplierId)
+      .maybeSingle();
     if (existing) {
       await supabase.from("supplier_favorites").delete().eq("id", existing.id);
       return { favorited: false };
     }
-    await supabase.from("supplier_favorites").insert({ user_id: userId, supplier_id: data.supplierId });
+    await supabase
+      .from("supplier_favorites")
+      .insert({ user_id: userId, supplier_id: data.supplierId });
     return { favorited: true };
   });
 
 export const requestQuote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    supplierId: z.string().uuid(),
-    productName: z.string().min(2).max(120),
-    quantity: z.number().positive(),
-    unit: z.string().min(1).max(10),
-    message: z.string().max(500).optional(),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        supplierId: z.string().uuid(),
+        productName: z.string().min(2).max(120),
+        quantity: z.number().positive(),
+        unit: z.string().min(1).max(10),
+        message: z.string().max(500).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("quote_requests").insert({
-      user_id: context.userId, supplier_id: data.supplierId,
-      product_name: data.productName, quantity: data.quantity, unit: data.unit,
+      user_id: context.userId,
+      supplier_id: data.supplierId,
+      product_name: data.productName,
+      quantity: data.quantity,
+      unit: data.unit,
       message: data.message ?? null,
     });
     if (error) throw new Error(error.message);
@@ -67,20 +79,29 @@ export const listMyQuotes = createServerFn({ method: "GET" })
 
 export const recordPurchase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    supplierId: z.string().uuid(),
-    productName: z.string().min(2),
-    quantity: z.number().positive(),
-    unit: z.string().min(1),
-    unitPrice: z.number().nonnegative(),
-    referencePrice: z.number().nonnegative().optional(),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        supplierId: z.string().uuid(),
+        productName: z.string().min(2),
+        quantity: z.number().positive(),
+        unit: z.string().min(1),
+        unitPrice: z.number().nonnegative(),
+        referencePrice: z.number().nonnegative().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const total = data.quantity * data.unitPrice;
     const { error } = await context.supabase.from("purchase_orders").insert({
-      user_id: context.userId, supplier_id: data.supplierId,
-      product_name: data.productName, quantity: data.quantity, unit: data.unit,
-      unit_price: data.unitPrice, reference_price: data.referencePrice ?? null, total,
+      user_id: context.userId,
+      supplier_id: data.supplierId,
+      product_name: data.productName,
+      quantity: data.quantity,
+      unit: data.unit,
+      unit_price: data.unitPrice,
+      reference_price: data.referencePrice ?? null,
+      total,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -91,8 +112,15 @@ export const getPurchasingDashboard = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const [{ data: orders }, { count: favCount }] = await Promise.all([
-      supabase.from("purchase_orders").select("total, unit_price, reference_price, quantity, supplier_id").eq("user_id", userId).limit(500),
-      supabase.from("supplier_favorites").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      supabase
+        .from("purchase_orders")
+        .select("total, unit_price, reference_price, quantity, supplier_id")
+        .eq("user_id", userId)
+        .limit(500),
+      supabase
+        .from("supplier_favorites")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId),
     ]);
     const list = orders ?? [];
     const totalSpent = list.reduce((s, o) => s + Number(o.total ?? 0), 0);
@@ -116,10 +144,29 @@ export const generatePurchasingInsights = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const [{ data: ingredients }, { data: products }, { data: orders }] = await Promise.all([
       data.restaurantId
-        ? supabase.from("ingredients").select("name, stock, min_stock, unit, unit_cost").eq("restaurant_id", data.restaurantId)
-        : Promise.resolve({ data: [] as Array<{ name: string; stock: number; min_stock: number; unit: string; unit_cost: number }> }),
-      supabase.from("supplier_products").select("name, category, price, unit, suppliers(name)").limit(200),
-      supabase.from("purchase_orders").select("product_name, unit_price, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        ? supabase
+            .from("ingredients")
+            .select("name, stock, min_stock, unit, unit_cost")
+            .eq("restaurant_id", data.restaurantId)
+        : Promise.resolve({
+            data: [] as Array<{
+              name: string;
+              stock: number;
+              min_stock: number;
+              unit: string;
+              unit_cost: number;
+            }>,
+          }),
+      supabase
+        .from("supplier_products")
+        .select("name, category, price, unit, suppliers(name)")
+        .limit(200),
+      supabase
+        .from("purchase_orders")
+        .select("product_name, unit_price, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
 
     const key = process.env.LOVABLE_API_KEY;
@@ -127,10 +174,17 @@ export const generatePurchasingInsights = createServerFn({ method: "POST" })
 
     const payload = {
       estoque: (ingredients ?? []).map((i) => ({
-        nome: i.name, atual: Number(i.stock), minimo: Number(i.min_stock), unidade: i.unit, custo_unit: Number(i.unit_cost),
+        nome: i.name,
+        atual: Number(i.stock),
+        minimo: Number(i.min_stock),
+        unidade: i.unit,
+        custo_unit: Number(i.unit_cost),
       })),
       marketplace: (products ?? []).map((p) => ({
-        produto: p.name, categoria: p.category, preco: Number(p.price), unidade: p.unit,
+        produto: p.name,
+        categoria: p.category,
+        preco: Number(p.price),
+        unidade: p.unit,
         fornecedor: (p as { suppliers?: { name?: string } | null }).suppliers?.name ?? null,
       })),
       historico: orders ?? [],
@@ -142,7 +196,11 @@ export const generatePurchasingInsights = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "Você é o copiloto de compras de um restaurante. Gere 4 insights curtos, acionáveis, em português. Compare preços do marketplace com o custo atual dos ingredientes, alerte ingredientes próximos de acabar (estoque atual / consumo estimado), e sugira trocas de fornecedor com % de economia. Use bullets." },
+          {
+            role: "system",
+            content:
+              "Você é o copiloto de compras de um restaurante. Gere 4 insights curtos, acionáveis, em português. Compare preços do marketplace com o custo atual dos ingredientes, alerte ingredientes próximos de acabar (estoque atual / consumo estimado), e sugira trocas de fornecedor com % de economia. Use bullets.",
+          },
           { role: "user", content: JSON.stringify(payload) },
         ],
       }),

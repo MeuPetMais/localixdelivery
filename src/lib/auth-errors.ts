@@ -33,7 +33,9 @@ export function translateAuthError(err: unknown, context?: string): FriendlyAuth
   // Sempre registrar o erro técnico completo para diagnóstico.
   try {
     console.error(`[auth${context ? `:${context}` : ""}]`, err);
-  } catch {}
+  } catch {
+    // Non-critical best-effort operation; continue safely.
+  }
 
   const e = (err ?? {}) as RawAuthError;
   const code = (e.code ?? "").toLowerCase();
@@ -79,7 +81,11 @@ export function translateAuthError(err: unknown, context?: string): FriendlyAuth
   }
 
   // E-mail inválido
-  if (code === "invalid_email" || msg.includes("invalid email") || msg.includes("unable to validate email")) {
+  if (
+    code === "invalid_email" ||
+    msg.includes("invalid email") ||
+    msg.includes("unable to validate email")
+  ) {
     return { title: "E-mail inválido", message: "Informe um e-mail válido." };
   }
 
@@ -122,7 +128,10 @@ export function translateAuthError(err: unknown, context?: string): FriendlyAuth
 }
 
 /** Formata para uso com sonner: `toast.error(title, { description })`. */
-export function toastArgsFromAuthError(err: unknown, context?: string): [string, { description: string }] {
+export function toastArgsFromAuthError(
+  err: unknown,
+  context?: string,
+): [string, { description: string }] {
   const t = translateAuthError(err, context);
   return [t.title, { description: t.message }];
 }

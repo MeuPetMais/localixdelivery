@@ -1,5 +1,9 @@
 import type {
-  PurchasingRepository, PurchaseRequest, PurchaseRequestItem, Supplier, SupplierQuote,
+  PurchasingRepository,
+  PurchaseRequest,
+  PurchaseRequestItem,
+  Supplier,
+  SupplierQuote,
 } from "./types";
 import { PurchaseEventBus } from "./PurchaseEventBus";
 
@@ -7,15 +11,19 @@ export class PurchasingService {
   constructor(private repo: PurchasingRepository) {}
 
   // -------- Suppliers
-  listSuppliers(restaurantId: string) { return this.repo.listSuppliers(restaurantId); }
-  getSupplier(id: string) { return this.repo.getSupplier(id); }
+  listSuppliers(restaurantId: string) {
+    return this.repo.listSuppliers(restaurantId);
+  }
+  getSupplier(id: string) {
+    return this.repo.getSupplier(id);
+  }
   async createSupplier(s: Partial<Supplier> & { name: string; restaurant_id?: string | null }) {
     const rec = await this.repo.upsertSupplier({ active: true, ...s });
     PurchaseEventBus.emit({ name: "SupplierCreated", supplierId: rec.id });
     return rec;
   }
   async updateSupplier(id: string, changes: Partial<Supplier>) {
-    const rec = await this.repo.upsertSupplier({ id, name: changes.name ?? "" , ...changes });
+    const rec = await this.repo.upsertSupplier({ id, name: changes.name ?? "", ...changes });
     PurchaseEventBus.emit({ name: "SupplierChanged", supplierId: id, changes });
     return rec;
   }
@@ -38,7 +46,11 @@ export class PurchasingService {
       notes: input.notes,
       status: "OPEN",
     });
-    PurchaseEventBus.emit({ name: "PurchaseRequested", requestId: req.id, restaurantId: req.restaurant_id });
+    PurchaseEventBus.emit({
+      name: "PurchaseRequested",
+      requestId: req.id,
+      restaurantId: req.restaurant_id,
+    });
     return req;
   }
 
@@ -50,10 +62,18 @@ export class PurchasingService {
   rejectRequest(id: string, actor?: string) {
     return this.repo.updateRequestStatus(id, "REJECTED", actor);
   }
-  markOrdered(id: string) { return this.repo.updateRequestStatus(id, "ORDERED"); }
-  listRequests(restaurantId: string) { return this.repo.listRequests(restaurantId); }
+  markOrdered(id: string) {
+    return this.repo.updateRequestStatus(id, "ORDERED");
+  }
+  listRequests(restaurantId: string) {
+    return this.repo.listRequests(restaurantId);
+  }
 
   // -------- Quotes
-  createQuote(q: Omit<SupplierQuote, "id">) { return this.repo.createQuote(q); }
-  listQuotes(f: { restaurant_id: string; ingredient_id?: string }) { return this.repo.listQuotes(f); }
+  createQuote(q: Omit<SupplierQuote, "id">) {
+    return this.repo.createQuote(q);
+  }
+  listQuotes(f: { restaurant_id: string; ingredient_id?: string }) {
+    return this.repo.listQuotes(f);
+  }
 }

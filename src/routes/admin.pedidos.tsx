@@ -303,13 +303,15 @@ function AdminOrdersPage() {
                   </td>
                 </tr>
               )}
-              {!ordersQuery.isLoading && !ordersQuery.isError && (ordersQuery.data?.rows ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
-                    Nenhum pedido encontrado.
-                  </td>
-                </tr>
-              )}
+              {!ordersQuery.isLoading &&
+                !ordersQuery.isError &&
+                (ordersQuery.data?.rows ?? []).length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
+                      Nenhum pedido encontrado.
+                    </td>
+                  </tr>
+                )}
               {(ordersQuery.data?.rows ?? []).map((order) => (
                 <tr key={order.id} className="border-t border-slate-800 hover:bg-slate-800/30">
                   <td className="px-4 py-3 font-mono text-xs">
@@ -320,7 +322,9 @@ function AdminOrdersPage() {
                   <td className="px-4 py-3">
                     <div className="space-y-0.5">
                       <div>{order.customer.name ?? "-"}</div>
-                      <div className="text-xs text-slate-500">{order.customer.phoneMasked ?? "-"}</div>
+                      <div className="text-xs text-slate-500">
+                        {order.customer.phoneMasked ?? "-"}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -328,15 +332,21 @@ function AdminOrdersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="space-y-0.5">
-                      <div className="text-slate-200">{paymentMethodLabel(order.payment_method)}</div>
-                      <div className="text-xs text-slate-500">{order.payment_status ?? "Sem pagamento"}</div>
+                      <div className="text-slate-200">
+                        {paymentMethodLabel(order.payment_method)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {order.payment_status ?? "Sem pagamento"}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {order.financialSnapshotAvailable && order.customer_total != null ? (
                       brl(order.customer_total)
                     ) : (
-                      <span className="text-xs text-amber-300">Snapshot financeiro indisponivel</span>
+                      <span className="text-xs text-amber-300">
+                        Snapshot financeiro indisponivel
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -391,7 +401,10 @@ function AdminOrdersPage() {
       </section>
 
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="right" className="w-full overflow-y-auto border-slate-800 bg-slate-950 text-slate-100 sm:max-w-3xl">
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto border-slate-800 bg-slate-950 text-slate-100 sm:max-w-3xl"
+        >
           <SheetHeader>
             <SheetTitle className="text-slate-100">Detalhe do pedido</SheetTitle>
             <SheetDescription>
@@ -467,7 +480,10 @@ function OrderDetailContent({ detail }: { detail: AdminOrderDetail }) {
         {detail.items.length ? (
           <div className="space-y-2">
             {detail.items.map((item, index) => (
-              <div key={index} className="rounded-md border border-slate-800 bg-slate-900 p-3 text-sm">
+              <div
+                key={index}
+                className="rounded-md border border-slate-800 bg-slate-900 p-3 text-sm"
+              >
                 <pre className="whitespace-pre-wrap break-words font-sans text-slate-200">
                   {formatItem(item)}
                 </pre>
@@ -498,7 +514,10 @@ function OrderDetailContent({ detail }: { detail: AdminOrderDetail }) {
                 ["Coleta", formatNullableDate(detail.delivery.picked_up_at)],
                 ["Saiu para entrega", formatNullableDate(detail.delivery.departed_at)],
                 ["Entregue em", formatNullableDate(detail.delivery.delivered_at)],
-                ["Distancia", detail.delivery.distance_km == null ? "-" : `${detail.delivery.distance_km} km`],
+                [
+                  "Distancia",
+                  detail.delivery.distance_km == null ? "-" : `${detail.delivery.distance_km} km`,
+                ],
               ]}
             />
           ) : (
@@ -575,7 +594,11 @@ function OrderDetailContent({ detail }: { detail: AdminOrderDetail }) {
       </DetailSection>
 
       <DetailSection title="Alertas">
-        {detail.alerts.length ? <AlertList alerts={detail.alerts} /> : <EmptyLine text="Nenhum alerta comprovavel." />}
+        {detail.alerts.length ? (
+          <AlertList alerts={detail.alerts} />
+        ) : (
+          <EmptyLine text="Nenhum alerta comprovavel." />
+        )}
       </DetailSection>
     </div>
   );
@@ -619,7 +642,11 @@ function AlertSummary({ alerts }: { alerts: AdminOrderAlert[] }) {
         <Badge
           key={alert.code}
           variant="outline"
-          className={alert.severity === "error" ? "border-red-500/40 text-red-300" : "border-amber-500/40 text-amber-300"}
+          className={
+            alert.severity === "error"
+              ? "border-red-500/40 text-red-300"
+              : "border-amber-500/40 text-amber-300"
+          }
         >
           <AlertTriangle className="mr-1 h-3 w-3" />
           {alert.label}

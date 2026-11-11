@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-
 const ORDER_FIELDS =
   "id, order_number, status, total, discount, items, customer_name, customer_phone, address, payment_method, created_at, updated_at, estimated_delivery_time, restaurant_id";
 
@@ -32,14 +31,17 @@ export const getMyOrders = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: orders } = await context.supabase
       .from("orders")
-      .select("id, order_number, status, total, items, created_at, restaurant_id, estimated_delivery_time")
+      .select(
+        "id, order_number, status, total, items, created_at, restaurant_id, estimated_delivery_time",
+      )
       .eq("customer_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(100);
 
     const list = orders ?? [];
     const restaurantIds = Array.from(new Set(list.map((o) => o.restaurant_id)));
-    let restaurants: Array<{ id: string; name: string; slug: string; logo_url: string | null }> = [];
+    let restaurants: Array<{ id: string; name: string; slug: string; logo_url: string | null }> =
+      [];
     if (restaurantIds.length) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: rs } = await supabaseAdmin
@@ -126,6 +128,3 @@ export const cancelOrderByCustomer = createServerFn({ method: "POST" })
 
     return { ok: true as const, restaurant_id: order.restaurant_id };
   });
-
-
-

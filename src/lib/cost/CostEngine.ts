@@ -1,6 +1,11 @@
 import type {
-  CostBreakdown, CostRepository, IngredientCostRecord, OrderCostInput,
-  OrderProfitability, ProductProfitability, RecipeCostSnapshot,
+  CostBreakdown,
+  CostRepository,
+  IngredientCostRecord,
+  OrderCostInput,
+  OrderProfitability,
+  ProductProfitability,
+  RecipeCostSnapshot,
 } from "./types";
 import { MarginEngine } from "./MarginEngine";
 import { CostEventBus } from "./CostEventBus";
@@ -98,7 +103,8 @@ export class CostEngine {
       overhead: (recipe.overhead_cost ?? 0) / yieldQty,
       packaging: (recipe.packaging_cost ?? 0) / yieldQty,
     };
-    const total = perPortion.ingredient + perPortion.labor + perPortion.overhead + perPortion.packaging;
+    const total =
+      perPortion.ingredient + perPortion.labor + perPortion.overhead + perPortion.packaging;
     const breakdown: CostBreakdown = { ...perPortion, total };
 
     const snapshot = await this.repo.insertRecipeSnapshot({

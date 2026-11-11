@@ -18,6 +18,7 @@ altas sobre cada pedido e centralizam o cliente na própria marca, a
 Localix devolve o cliente, os dados e a margem para o restaurante.
 
 **Proposta de valor.**
+
 - Sem mensalidade.
 - Sem comissão sobre faturamento.
 - Taxa única, fixa e transparente por pedido.
@@ -27,6 +28,7 @@ Localix devolve o cliente, os dados e a margem para o restaurante.
 - Implantação assistida e acompanhada pela equipe Localix.
 
 **Público-alvo.**
+
 - Restaurantes, pizzarias, hamburguerias, açaiterias, esfiharias,
   cafeterias e operações de delivery com volume operacional consistente.
 - Perfil mínimo: 600 pedidos/mês (média operacional).
@@ -38,12 +40,14 @@ Localix devolve o cliente, os dados e a margem para o restaurante.
 ## 2. Modelo Comercial
 
 **A plataforma NÃO cobra:**
+
 - Mensalidade.
 - Comissão sobre faturamento.
 - Taxa de setup.
 - Taxa de manutenção.
 
 **A plataforma cobra:**
+
 - **Taxa de Serviço Localix — R$ 0,99 fixa por pedido.**
 
 **Transparência.**
@@ -62,6 +66,7 @@ o custo por pedido não sobe proporcionalmente à receita.
 **Gateway único: Stripe Connect.**
 
 Todo estabelecimento parceiro deverá:
+
 - Criar ou conectar uma conta Stripe.
 - Concluir o onboarding KYC/KYB da Stripe.
 - Autorizar a integração Stripe Connect com a Localix.
@@ -72,6 +77,7 @@ criação da conta, envio de documentação, verificação, testes e
 homologação.
 
 **Racional.**
+
 - Padrão global, auditável e compliance-first.
 - Split de pagamento nativo (restaurante recebe direto; Localix
   recebe a taxa de serviço).
@@ -143,9 +149,11 @@ parceiro homologado Localix.
 ## 6. Fontes de Receita
 
 **Principal (V1).**
+
 - Taxa de Serviço Localix — R$ 0,99 por pedido.
 
 **Futuras (roadmap comercial).**
+
 - Marketplace de Insumos (compra centralizada para restaurantes).
 - Serviços Premium (BI avançado, IA aplicada, consultoria).
 - Publicidade patrocinada dentro da rede Localix.

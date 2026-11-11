@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,8 +112,8 @@ export function AddressPickerModal({
       toast.success(editing ? "Endereço atualizado" : "Endereço salvo");
       onSelect?.(saved);
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao salvar");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
       setSaving(false);
     }
@@ -118,8 +124,8 @@ export function AddressPickerModal({
       await setDefaultAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", userId] });
       toast.success("Definido como principal");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -129,8 +135,8 @@ export function AddressPickerModal({
       await deleteAddress(id);
       qc.invalidateQueries({ queryKey: ["customer-addresses", userId] });
       toast.success("Endereço excluído");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro");
     }
   }
 
@@ -181,19 +187,36 @@ export function AddressPickerModal({
                             </span>
                           )}
                         </p>
-                        <p className="truncate text-xs text-muted-foreground">{formatAddressLine(a)}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {formatAddressLine(a)}
+                        </p>
                       </div>
                     </button>
                     <div className="flex shrink-0 gap-1">
                       {!a.is_default && (
-                        <Button size="icon" variant="ghost" title="Tornar principal" onClick={() => handleSetDefault(a.id)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Tornar principal"
+                          onClick={() => handleSetDefault(a.id)}
+                        >
                           <Star className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button size="icon" variant="ghost" title="Editar" onClick={() => openForm(a)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Editar"
+                        onClick={() => openForm(a)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" title="Excluir" onClick={() => handleDelete(a.id)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Excluir"
+                        onClick={() => handleDelete(a.id)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -219,35 +242,69 @@ export function AddressPickerModal({
               </div>
               <div className="space-y-1.5">
                 <Label>CEP</Label>
-                <Input value={form.cep ?? ""} onChange={(e) => setForm((s) => ({ ...s, cep: e.target.value }))} placeholder="00000-000" />
+                <Input
+                  value={form.cep ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, cep: e.target.value }))}
+                  placeholder="00000-000"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Número</Label>
-                <Input value={form.number ?? ""} onChange={(e) => setForm((s) => ({ ...s, number: e.target.value }))} placeholder="123" />
+                <Input
+                  value={form.number ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, number: e.target.value }))}
+                  placeholder="123"
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>Rua *</Label>
-                <Input value={form.street} onChange={(e) => setForm((s) => ({ ...s, street: e.target.value }))} placeholder="Rua das Flores" />
+                <Input
+                  value={form.street}
+                  onChange={(e) => setForm((s) => ({ ...s, street: e.target.value }))}
+                  placeholder="Rua das Flores"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Complemento</Label>
-                <Input value={form.complement ?? ""} onChange={(e) => setForm((s) => ({ ...s, complement: e.target.value }))} placeholder="Apto 12" />
+                <Input
+                  value={form.complement ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, complement: e.target.value }))}
+                  placeholder="Apto 12"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Bairro *</Label>
-                <Input value={form.neighborhood} onChange={(e) => setForm((s) => ({ ...s, neighborhood: e.target.value }))} placeholder="Centro" />
+                <Input
+                  value={form.neighborhood}
+                  onChange={(e) => setForm((s) => ({ ...s, neighborhood: e.target.value }))}
+                  placeholder="Centro"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Cidade</Label>
-                <Input value={form.city ?? ""} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} placeholder="São Paulo" />
+                <Input
+                  value={form.city ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
+                  placeholder="São Paulo"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Estado</Label>
-                <Input value={form.state ?? ""} onChange={(e) => setForm((s) => ({ ...s, state: e.target.value }))} placeholder="SP" maxLength={2} />
+                <Input
+                  value={form.state ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, state: e.target.value }))}
+                  placeholder="SP"
+                  maxLength={2}
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>Observações</Label>
-                <Textarea rows={2} value={form.notes ?? ""} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} placeholder="Portão azul, deixar na portaria…" />
+                <Textarea
+                  rows={2}
+                  value={form.notes ?? ""}
+                  onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))}
+                  placeholder="Portão azul, deixar na portaria…"
+                />
               </div>
             </div>
 
@@ -263,11 +320,20 @@ export function AddressPickerModal({
             </label>
 
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setMode("list")} disabled={saving}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setMode("list")}
+                disabled={saving}
+              >
                 Cancelar
               </Button>
               <Button className="flex-1" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
                 Salvar
               </Button>
             </div>

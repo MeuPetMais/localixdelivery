@@ -28,7 +28,9 @@ export function ActiveShiftsPanel() {
         qc.invalidateQueries({ queryKey: ["restaurant-active-shifts"] });
       })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [qc]);
 
   const shifts = data ?? [];
@@ -42,7 +44,7 @@ export function ActiveShiftsPanel() {
         <p className="text-sm text-muted-foreground">Nenhum motoboy em turno.</p>
       ) : (
         <ul className="space-y-2">
-          {shifts.map((s: any) => {
+          {shifts.map((s) => {
             const online =
               (s.online_minutes ?? 0) +
               (s.waiting_minutes ?? 0) +
@@ -57,14 +59,22 @@ export function ActiveShiftsPanel() {
               <li key={s.id} className="flex items-center justify-between rounded-xl border p-3">
                 <div className="flex items-center gap-3">
                   {s.delivery_drivers?.photo_url ? (
-                    <img src={s.delivery_drivers.photo_url} className="h-10 w-10 rounded-full object-cover" alt="" />
+                    <img
+                      src={s.delivery_drivers.photo_url}
+                      className="h-10 w-10 rounded-full object-cover"
+                      alt=""
+                    />
                   ) : (
                     <div className="h-10 w-10 rounded-full bg-muted" />
                   )}
                   <div>
                     <p className="text-sm font-medium">{s.delivery_drivers?.name ?? "Motoboy"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(s.started_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {fmtMinutes(online)}
+                      {new Date(s.started_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      · {fmtMinutes(online)}
                     </p>
                   </div>
                 </div>

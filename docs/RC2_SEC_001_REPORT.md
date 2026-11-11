@@ -1,6 +1,7 @@
 # RC2-SEC-001 — Parceiros autenticando via OAuth
 
 ## Causa raiz
+
 A tela `/auth` (parceiro) já não expunha botões de OAuth, mas nada impedia
 que um usuário logado via Google/Apple na área do cliente (`/entrar`)
 navegasse até `/dashboard`. O gate `_authenticated` apenas exigia sessão,
@@ -10,6 +11,7 @@ executava um `INSERT` em `public.restaurants` — a RLS só validava
 a parceiro (OWNER).
 
 ## Arquivos alterados
+
 - `src/routes/_authenticated/route.tsx` — bloqueia acesso ao painel do
   parceiro quando `app_metadata.provider !== 'email'` (signOut + redirect
   para `/entrar`).
@@ -27,30 +29,34 @@ A tela do cliente (`/entrar`) mantém Google/Apple — comportamento correto.
 A tela do parceiro (`/auth`) já era e continua exclusiva de e-mail/senha.
 
 ## Fluxos testados (matriz obrigatória)
-| Fluxo                              | Esperado   | Resultado |
-| ---------------------------------- | ---------- | --------- |
-| Cliente com Google                 | Funciona   | ✓ (tela `/entrar`) |
-| Cliente com Apple                  | Funciona   | ✓ (tela `/entrar`) |
-| Cliente com e-mail                 | Funciona   | ✓ (tela `/entrar`) |
-| Parceiro com e-mail/senha          | Funciona   | ✓ (tela `/auth`) |
-| Parceiro com Google                | Bloqueado  | ✓ trigger DB + guard redirect |
-| Parceiro com Apple                 | Bloqueado  | ✓ trigger DB + guard redirect |
-| Admin somente e-mail/senha         | Funciona   | ✓ guard em `/admin` |
+
+| Fluxo                      | Esperado  | Resultado                     |
+| -------------------------- | --------- | ----------------------------- |
+| Cliente com Google         | Funciona  | ✓ (tela `/entrar`)            |
+| Cliente com Apple          | Funciona  | ✓ (tela `/entrar`)            |
+| Cliente com e-mail         | Funciona  | ✓ (tela `/entrar`)            |
+| Parceiro com e-mail/senha  | Funciona  | ✓ (tela `/auth`)              |
+| Parceiro com Google        | Bloqueado | ✓ trigger DB + guard redirect |
+| Parceiro com Apple         | Bloqueado | ✓ trigger DB + guard redirect |
+| Admin somente e-mail/senha | Funciona  | ✓ guard em `/admin`           |
 
 Evidências:
+
 - Tentativa de INSERT em `restaurants` por usuário Google/Apple retorna
   `ERROR 42501: Parceiros devem se cadastrar exclusivamente com e-mail e
-  senha (provider=google|apple)`.
+senha (provider=google|apple)`.
 - Usuário OAuth acessando `/dashboard` ou `/admin` é deslogado e
   redirecionado para `/entrar` ou `/admin/login`.
 
 ## Parceiros criados via OAuth (identificados)
-| Restaurante        | Slug              | Owner e-mail                  | Provider | Criado em             |
-| ------------------ | ----------------- | ----------------------------- | -------- | --------------------- |
-| Pizzaria Sanliver  | `pizzariasanliver`| alexandresanliver@gmail.com   | google   | 2026-06-28 00:10 UTC  |
-| Pizzaria Jular     | `pizzaria-jular`  | jufernandanatale12@gmail.com  | apple    | 2026-07-06 15:38 UTC  |
+
+| Restaurante       | Slug               | Owner e-mail                 | Provider | Criado em            |
+| ----------------- | ------------------ | ---------------------------- | -------- | -------------------- |
+| Pizzaria Sanliver | `pizzariasanliver` | alexandresanliver@gmail.com  | google   | 2026-06-28 00:10 UTC |
+| Pizzaria Jular    | `pizzaria-jular`   | jufernandanatale12@gmail.com | apple    | 2026-07-06 15:38 UTC |
 
 ## Procedimento seguro de correção (sem perda de dados)
+
 Para cada parceiro identificado:
 
 1. Contactar o dono e confirmar o e-mail comercial correto.
@@ -78,6 +84,7 @@ Nenhum registro de restaurante, pedido, cardápio ou cliente é apagado —
 apenas a titularidade (`owner_id`) é transferida.
 
 ## Confirmação
+
 ✓ Botões OAuth ausentes das telas de parceiro (`/auth`).
 ✓ Banco impede criação de restaurantes por contas OAuth (trigger).
 ✓ Banco impede grant de roles `admin`/`partner` a contas OAuth (trigger).

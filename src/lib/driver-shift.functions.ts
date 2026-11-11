@@ -123,7 +123,16 @@ async function applyTransition(
     .select("*")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  await insertTimeline(supabase, shift.id, event, shift.current_state, nextState, actorId, metadata, correlationId);
+  await insertTimeline(
+    supabase,
+    shift.id,
+    event,
+    shift.current_state,
+    nextState,
+    actorId,
+    metadata,
+    correlationId,
+  );
   return data as ShiftRow;
 }
 
@@ -148,7 +157,14 @@ export const startShift = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const shift = data as ShiftRow;
 
-    await insertTimeline(context.supabase, shift.id, "SHIFT_STARTED", null, "ONLINE", context.userId);
+    await insertTimeline(
+      context.supabase,
+      shift.id,
+      "SHIFT_STARTED",
+      null,
+      "ONLINE",
+      context.userId,
+    );
 
     // Entrar automaticamente na fila.
     try {
@@ -179,7 +195,9 @@ export const pauseShift = createServerFn({ method: "POST" })
         _restaurant_id: driver.restaurant_id,
         _driver_id: driver.id,
       });
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
     return applyTransition(context.supabase, shift, "PAUSA", "PAUSE_STARTED", context.userId);
   });
 
@@ -190,14 +208,22 @@ export const resumeShift = createServerFn({ method: "POST" })
     const shift = await loadOpenShift(context.supabase, driver.id);
     if (!shift) throw new Error("Nenhum turno ativo");
     if (shift.status === "ATIVO") return shift;
-    const resumed = await applyTransition(context.supabase, shift, "AGUARDANDO", "PAUSE_FINISHED", context.userId);
+    const resumed = await applyTransition(
+      context.supabase,
+      shift,
+      "AGUARDANDO",
+      "PAUSE_FINISHED",
+      context.userId,
+    );
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.rpc("queue_enqueue", {
         _restaurant_id: driver.restaurant_id,
         _driver_id: driver.id,
       });
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
     return resumed;
   });
 
@@ -232,7 +258,9 @@ export const finishShift = createServerFn({ method: "POST" })
         _restaurant_id: driver.restaurant_id,
         _driver_id: driver.id,
       });
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
 
     return (data as ShiftRow) ?? closed;
   });
@@ -304,7 +332,9 @@ export const getShiftStats = createServerFn({ method: "GET" })
     const driver = await loadDriver(context);
     const { data } = await context.supabase
       .from("driver_shifts")
-      .select("id, started_at, finished_at, deliveries_count, earnings_total, distance_total_km, online_minutes, waiting_minutes, delivery_minutes, return_minutes, pause_minutes, status")
+      .select(
+        "id, started_at, finished_at, deliveries_count, earnings_total, distance_total_km, online_minutes, waiting_minutes, delivery_minutes, return_minutes, pause_minutes, status",
+      )
       .eq("driver_id", driver.id)
       .eq("status", "FINALIZADO")
       .order("started_at", { ascending: false })
@@ -322,7 +352,11 @@ export const getShiftStats = createServerFn({ method: "GET" })
     }
     const totals = rows.map((r) => {
       const total =
-        r.online_minutes + r.waiting_minutes + r.delivery_minutes + r.return_minutes + r.pause_minutes;
+        r.online_minutes +
+        r.waiting_minutes +
+        r.delivery_minutes +
+        r.return_minutes +
+        r.pause_minutes;
       return { day: r.started_at.slice(0, 10), total, earnings: Number(r.earnings_total) };
     });
     const days = new Set(totals.map((t) => t.day));

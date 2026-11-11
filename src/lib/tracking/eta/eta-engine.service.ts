@@ -2,7 +2,11 @@
 // Puro (sem I/O). Persistência remota fica em eta.functions.ts.
 
 import type {
-  EtaInput, EtaResult, EtaEngineConfig, EtaConfidence, EtaAlgorithm,
+  EtaInput,
+  EtaResult,
+  EtaEngineConfig,
+  EtaConfidence,
+  EtaAlgorithm,
 } from "./eta.types";
 import { DEFAULT_ETA_CONFIG } from "./eta.types";
 import { DEFAULT_STRATEGY, type EtaStrategy } from "./eta-calculator";
@@ -62,13 +66,17 @@ export function createEtaEngine(deps: EtaEngineDeps = {}) {
     const changed = isSignificantChange(prev, result);
     const previous_eta_seconds = prev?.eta_seconds ?? null;
 
-    emitEtaEvent(buildEtaEvent("EtaCalculated", {
-      assignment_id: input.assignment_id,
-      restaurant_id: input.restaurant_id,
-      order_id: input.order_id,
-      driver_id: input.driver_id,
-      result, previous_eta_seconds, correlation_id: input.correlation_id,
-    }));
+    emitEtaEvent(
+      buildEtaEvent("EtaCalculated", {
+        assignment_id: input.assignment_id,
+        restaurant_id: input.restaurant_id,
+        order_id: input.order_id,
+        driver_id: input.driver_id,
+        result,
+        previous_eta_seconds,
+        correlation_id: input.correlation_id,
+      }),
+    );
 
     if (changed) {
       lastByAssignment.set(input.assignment_id, {
@@ -91,21 +99,29 @@ export function createEtaEngine(deps: EtaEngineDeps = {}) {
         correlation_id: input.correlation_id ?? null,
         metadata: { reasons: result.reasons, distance_km: result.distance_km },
       });
-      emitEtaEvent(buildEtaEvent("EtaChanged", {
-        assignment_id: input.assignment_id,
-        restaurant_id: input.restaurant_id,
-        order_id: input.order_id,
-        driver_id: input.driver_id,
-        result, previous_eta_seconds, correlation_id: input.correlation_id,
-      }));
+      emitEtaEvent(
+        buildEtaEvent("EtaChanged", {
+          assignment_id: input.assignment_id,
+          restaurant_id: input.restaurant_id,
+          order_id: input.order_id,
+          driver_id: input.driver_id,
+          result,
+          previous_eta_seconds,
+          correlation_id: input.correlation_id,
+        }),
+      );
     } else {
-      emitEtaEvent(buildEtaEvent("EtaSkipped", {
-        assignment_id: input.assignment_id,
-        restaurant_id: input.restaurant_id,
-        order_id: input.order_id,
-        driver_id: input.driver_id,
-        result, previous_eta_seconds, correlation_id: input.correlation_id,
-      }));
+      emitEtaEvent(
+        buildEtaEvent("EtaSkipped", {
+          assignment_id: input.assignment_id,
+          restaurant_id: input.restaurant_id,
+          order_id: input.order_id,
+          driver_id: input.driver_id,
+          result,
+          previous_eta_seconds,
+          correlation_id: input.correlation_id,
+        }),
+      );
     }
 
     return { result, changed, previous_eta_seconds };
@@ -126,7 +142,10 @@ export function createEtaEngine(deps: EtaEngineDeps = {}) {
     recordActual,
     getLast: (id: string) => lastByAssignment.get(id) ?? null,
     getHistory: (id: string) => history.list(id),
-    _reset() { lastByAssignment.clear(); history.clear(); },
+    _reset() {
+      lastByAssignment.clear();
+      history.clear();
+    },
     config,
   };
 }

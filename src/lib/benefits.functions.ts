@@ -68,8 +68,10 @@ export const getMyBenefits = createServerFn({ method: "GET" })
       .select("points_balance")
       .eq("customer_id", userId);
 
-    const pointsTotal = ((pts ?? []) as Array<{ points_balance: number | null }>)
-      .reduce((sum, r) => sum + (Number(r.points_balance) || 0), 0);
+    const pointsTotal = ((pts ?? []) as Array<{ points_balance: number | null }>).reduce(
+      (sum, r) => sum + (Number(r.points_balance) || 0),
+      0,
+    );
 
     if (restaurantIds.length === 0) {
       return {
@@ -80,7 +82,6 @@ export const getMyBenefits = createServerFn({ method: "GET" })
         points: { total: pointsTotal },
       };
     }
-
 
     // 3. Fetch restaurants, active coupons, active promotions in parallel
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

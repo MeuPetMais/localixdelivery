@@ -5,7 +5,9 @@ const providers = new Map<AIProviderKey, AIProvider>();
 /** Deterministic mock provider — never calls real APIs. */
 const MockProvider: AIProvider = {
   key: "mock",
-  supports() { return true; },
+  supports() {
+    return true;
+  },
   async complete(req: AICompletionRequest): Promise<AICompletionResponse> {
     const started = Date.now();
     const promptText = req.messages.map((m) => m.content).join("\n");
@@ -26,12 +28,19 @@ const MockProvider: AIProvider = {
 };
 
 export const AIProviderRegistry = {
-  register(p: AIProvider) { providers.set(p.key, p); },
+  register(p: AIProvider) {
+    providers.set(p.key, p);
+  },
   get(key: AIProviderKey): AIProvider {
     return providers.get(key) ?? MockProvider;
   },
-  list(): AIProviderKey[] { return [...providers.keys(), "mock"]; },
-  reset() { providers.clear(); providers.set("mock", MockProvider); },
+  list(): AIProviderKey[] {
+    return [...providers.keys(), "mock"];
+  },
+  reset() {
+    providers.clear();
+    providers.set("mock", MockProvider);
+  },
 } as const;
 
 // bootstrap

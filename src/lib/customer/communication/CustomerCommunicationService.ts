@@ -23,7 +23,11 @@ export const CustomerCommunicationService = {
     return CommunicationPreferenceService.setChannel(customerId, channel, false);
   },
 
-  async canReach(customerId: string, channel: CommunicationChannel, opts?: { marketing?: boolean }) {
+  async canReach(
+    customerId: string,
+    channel: CommunicationChannel,
+    opts?: { marketing?: boolean },
+  ) {
     const prefs = await CommunicationPreferenceService.get(customerId);
     return CommunicationPreferenceService.isAllowed(prefs, channel, opts);
   },

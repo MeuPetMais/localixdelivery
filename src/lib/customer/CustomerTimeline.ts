@@ -30,7 +30,10 @@ export const CustomerTimeline = {
     return (data ?? null) as CustomerTimelineEvent | null;
   },
 
-  async list(customerId: string, opts?: { limit?: number; type?: CustomerTimelineEventType }): Promise<CustomerTimelineEvent[]> {
+  async list(
+    customerId: string,
+    opts?: { limit?: number; type?: CustomerTimelineEventType },
+  ): Promise<CustomerTimelineEvent[]> {
     let q = T().select("*").eq("customer_id", customerId).order("created_at", { ascending: false });
     if (opts?.type) q = q.eq("event_type", opts.type);
     if (opts?.limit) q = q.limit(opts.limit);

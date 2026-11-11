@@ -15,7 +15,8 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 }
 
 async function compressToWebp(file: File): Promise<Blob> {
-  if (file.type === "image/svg+xml" || file.type === "image/gif" || file.type === "application/pdf") return file;
+  if (file.type === "image/svg+xml" || file.type === "image/gif" || file.type === "application/pdf")
+    return file;
   try {
     const img = await loadImage(file);
     let { width, height } = img;
@@ -52,7 +53,7 @@ export async function uploadDriverAsset(
   const ext =
     blob.type === "image/webp"
       ? "webp"
-      : file.name.split(".").pop()?.toLowerCase() ?? (isImage ? "jpg" : "bin");
+      : (file.name.split(".").pop()?.toLowerCase() ?? (isImage ? "jpg" : "bin"));
   const path = `${restaurantId}/drivers/${kind}-${crypto.randomUUID()}.${ext}`;
 
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, blob, {

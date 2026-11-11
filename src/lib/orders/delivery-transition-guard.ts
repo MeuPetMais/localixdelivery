@@ -1,8 +1,4 @@
-export const ACTIVE_DELIVERY_ASSIGNMENT_STATUSES = [
-  "ATRIBUIDO",
-  "COLETANDO",
-  "EM_ROTA",
-] as const;
+export const ACTIVE_DELIVERY_ASSIGNMENT_STATUSES = ["ATRIBUIDO", "COLETANDO", "EM_ROTA"] as const;
 
 export const DELIVERY_DISPATCH_REQUIRED_MESSAGE =
   "Este pedido ainda não possui motoboy designado. Faça o despacho na Central de Entregas.";
@@ -23,8 +19,11 @@ export function isDeliveryOrder(order: DeliveryGuardOrder): boolean {
 }
 
 export function isActiveDeliveryAssignment(assignment: DeliveryGuardAssignment): boolean {
-  return !!assignment?.status && ACTIVE_DELIVERY_ASSIGNMENT_STATUSES.includes(
-    assignment.status as (typeof ACTIVE_DELIVERY_ASSIGNMENT_STATUSES)[number],
+  return (
+    !!assignment?.status &&
+    ACTIVE_DELIVERY_ASSIGNMENT_STATUSES.includes(
+      assignment.status as (typeof ACTIVE_DELIVERY_ASSIGNMENT_STATUSES)[number],
+    )
   );
 }
 

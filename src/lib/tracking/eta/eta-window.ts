@@ -3,7 +3,9 @@
 import type { EtaConfidence, EtaEngineConfig, EtaWindow } from "./eta.types";
 
 export function buildEtaWindow(
-  etaSeconds: number, confidence: EtaConfidence, config: EtaEngineConfig,
+  etaSeconds: number,
+  confidence: EtaConfidence,
+  config: EtaEngineConfig,
 ): EtaWindow {
   const min = Math.max(30, Math.round(etaSeconds * config.min_window_ratio));
   let max = Math.max(min + 60, Math.round(etaSeconds * config.max_window_ratio));

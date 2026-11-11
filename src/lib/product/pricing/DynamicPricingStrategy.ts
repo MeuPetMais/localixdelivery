@@ -25,7 +25,9 @@ export const DynamicPricingStrategy = {
       return [sorted[0].applied];
     }
     // BEST_FOR_CUSTOMER
-    const sorted = [...promotions].sort((a, b) => b.applied.discount_amount - a.applied.discount_amount);
+    const sorted = [...promotions].sort(
+      (a, b) => b.applied.discount_amount - a.applied.discount_amount,
+    );
     return [sorted[0].applied];
   },
 };

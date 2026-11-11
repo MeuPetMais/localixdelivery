@@ -1,4 +1,9 @@
-import type { AddressDetails, AddressProvider, AddressSuggestion, DeliveryAreaCheck } from "./types";
+import type {
+  AddressDetails,
+  AddressProvider,
+  AddressSuggestion,
+  DeliveryAreaCheck,
+} from "./types";
 import { NominatimProvider } from "./providers/NominatimProvider";
 
 const RECENT_KEY = "localix:address:recent";
@@ -21,7 +26,10 @@ export class AddressService {
     return this.provider.search(query, opts);
   }
 
-  async details(suggestion: AddressSuggestion, opts?: { signal?: AbortSignal }): Promise<AddressDetails> {
+  async details(
+    suggestion: AddressSuggestion,
+    opts?: { signal?: AbortSignal },
+  ): Promise<AddressDetails> {
     const d = await this.provider.details(suggestion, opts);
     this.pushRecent(d);
     return d;
@@ -31,7 +39,10 @@ export class AddressService {
    * Extension point — hoje aceita todos os endereços válidos.
    * Ao ligar o DeliveryService de fato, plugar aqui sem tocar no Checkout.
    */
-  async validateDeliveryArea(_details: AddressDetails, _ctx?: { restaurantSlug?: string }): Promise<DeliveryAreaCheck> {
+  async validateDeliveryArea(
+    _details: AddressDetails,
+    _ctx?: { restaurantSlug?: string },
+  ): Promise<DeliveryAreaCheck> {
     if (!Number.isFinite(_details.lat) || !Number.isFinite(_details.lng)) {
       return { ok: false, reason: "Coordenadas inválidas" };
     }
@@ -43,7 +54,9 @@ export class AddressService {
     try {
       const raw = localStorage.getItem(RECENT_KEY);
       return raw ? (JSON.parse(raw) as AddressDetails[]) : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
 
   private pushRecent(d: AddressDetails) {
@@ -52,7 +65,9 @@ export class AddressService {
       const list = this.getRecent().filter((x) => x.id !== d.id);
       list.unshift(d);
       localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
-    } catch {}
+    } catch {
+      // Non-critical best-effort operation; continue safely.
+    }
   }
 }
 

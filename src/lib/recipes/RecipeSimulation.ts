@@ -28,7 +28,12 @@ export function simulateProduction(
     .map((it) => {
       const needed = effectiveQuantity(it) * batches;
       const available = Number(map.get(it.ingredient_id)?.stock ?? 0);
-      return { ingredient_id: it.ingredient_id, needed, available, shortfall: Math.max(0, needed - available) };
+      return {
+        ingredient_id: it.ingredient_id,
+        needed,
+        available,
+        shortfall: Math.max(0, needed - available),
+      };
     });
   let possiblePortions = portions;
   let bottleneck: string | null = null;
@@ -38,7 +43,10 @@ export function simulateProduction(
     if (per <= 0) continue;
     const avail = Number(map.get(it.ingredient_id)?.stock ?? 0);
     const capacity = avail / per;
-    if (capacity < possiblePortions) { possiblePortions = capacity; bottleneck = it.ingredient_id; }
+    if (capacity < possiblePortions) {
+      possiblePortions = capacity;
+      bottleneck = it.ingredient_id;
+    }
   }
   const totalCost = RecipeCostEngine.totalCost(items, ingredients) * batches;
   const totalRevenue = price * portions;

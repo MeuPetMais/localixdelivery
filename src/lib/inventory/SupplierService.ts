@@ -9,10 +9,18 @@ export interface SupplierRepository {
 
 export function createSupplierService(repo: SupplierRepository) {
   return {
-    list(restaurantId: string) { return repo.list(restaurantId); },
-    create(s: Omit<Supplier, "id">) { return repo.create(s); },
-    update(id: string, patch: Partial<Supplier>) { return repo.update(id, patch); },
-    deactivate(id: string) { return repo.deactivate(id); },
+    list(restaurantId: string) {
+      return repo.list(restaurantId);
+    },
+    create(s: Omit<Supplier, "id">) {
+      return repo.create(s);
+    },
+    update(id: string, patch: Partial<Supplier>) {
+      return repo.update(id, patch);
+    },
+    deactivate(id: string) {
+      return repo.deactivate(id);
+    },
   };
 }
 

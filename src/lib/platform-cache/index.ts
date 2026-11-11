@@ -20,7 +20,10 @@ export interface CacheDriver {
   size(): number;
 }
 
-interface Entry { value: unknown; expires_at: number }
+interface Entry {
+  value: unknown;
+  expires_at: number;
+}
 
 export class MemoryCacheDriver implements CacheDriver {
   private store = new Map<string, Entry>();
@@ -29,18 +32,27 @@ export class MemoryCacheDriver implements CacheDriver {
   get<T>(key: string): T | null {
     const e = this.store.get(key);
     if (!e) return null;
-    if (Date.now() > e.expires_at) { this.store.delete(key); return null; }
+    if (Date.now() > e.expires_at) {
+      this.store.delete(key);
+      return null;
+    }
     return e.value as T;
   }
   set<T>(key: string, value: T, ttlMs?: number): void {
     this.store.set(key, { value, expires_at: Date.now() + (ttlMs ?? this.defaultTtlMs) });
   }
-  invalidate(key: string): void { this.store.delete(key); }
+  invalidate(key: string): void {
+    this.store.delete(key);
+  }
   invalidatePrefix(prefix: string): void {
     for (const k of this.store.keys()) if (k.startsWith(prefix)) this.store.delete(k);
   }
-  clear(): void { this.store.clear(); }
-  size(): number { return this.store.size; }
+  clear(): void {
+    this.store.clear();
+  }
+  size(): number {
+    return this.store.size;
+  }
 }
 
 /** Namespaces canônicos — evita colisão entre domínios. */

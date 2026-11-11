@@ -81,12 +81,14 @@ describe("GROWTH-8 campaign automation planner", () => {
       channel: "WHATSAPP",
       latestConsent: consent,
       providerAvailable: true,
-      recentJobs: [{
-        trigger_type: "AT_RISK",
-        channel: "WHATSAPP",
-        created_at: "2026-09-22T12:00:00.000Z",
-        status: "READY",
-      }],
+      recentJobs: [
+        {
+          trigger_type: "AT_RISK",
+          channel: "WHATSAPP",
+          created_at: "2026-09-22T12:00:00.000Z",
+          status: "READY",
+        },
+      ],
       now: new Date("2026-09-24T12:00:00.000Z"),
       cooldownDays: 7,
     });

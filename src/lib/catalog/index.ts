@@ -1,5 +1,9 @@
 export * from "./types";
-export { CatalogEventBus, type CatalogDomainEvent, type CatalogEventListener } from "./CatalogEventBus";
+export {
+  CatalogEventBus,
+  type CatalogDomainEvent,
+  type CatalogEventListener,
+} from "./CatalogEventBus";
 export { CatalogValidator } from "./CatalogValidator";
 export { CatalogAvailabilityService } from "./CatalogAvailabilityService";
 export { OrderingService, type OrderingInput } from "./OrderingService";

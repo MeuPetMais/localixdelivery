@@ -3,13 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type JsonObject = Record<string, any>;
 
-export type PromotionStatus =
-  | "DRAFT"
-  | "SCHEDULED"
-  | "ACTIVE"
-  | "PAUSED"
-  | "EXPIRED"
-  | "ARCHIVED";
+export type PromotionStatus = "DRAFT" | "SCHEDULED" | "ACTIVE" | "PAUSED" | "EXPIRED" | "ARCHIVED";
 
 export type PromotionDiscountType =
   | "FIXED_AMOUNT"

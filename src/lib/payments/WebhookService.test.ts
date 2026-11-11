@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { handleWebhook, mapStatus, eventNameFromStatus, verifyMpSignature, type WebhookDeps } from "./WebhookService";
+import {
+  handleWebhook,
+  mapStatus,
+  eventNameFromStatus,
+  verifyMpSignature,
+  type WebhookDeps,
+} from "./WebhookService";
 import { EventBus } from "./EventBus";
 
 function makeDeps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
@@ -8,7 +14,10 @@ function makeDeps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     markProcessed: vi.fn(async () => {}),
     enqueueRetry: vi.fn(async () => {}),
     fetchMpPayment: vi.fn(async () => ({
-      id: 123, status: "approved", transaction_amount: 50, currency_id: "BRL",
+      id: 123,
+      status: "approved",
+      transaction_amount: 50,
+      currency_id: "BRL",
       external_reference: "order-xyz",
     })),
     updateOrderPayment: vi.fn(async () => {}),
@@ -19,7 +28,7 @@ function makeDeps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   };
 }
 
-function payload(overrides: Record<string, any> = {}) {
+function payload(overrides: Record<string, unknown> = {}) {
   return {
     id: "notif-1",
     type: "payment",
@@ -51,12 +60,22 @@ describe("WebhookService - núcleo", () => {
   });
 
   it("verifyMpSignature retorna true sem secret", async () => {
-    const ok = await verifyMpSignature({ secret: null, xSignature: null, xRequestId: null, dataId: null });
+    const ok = await verifyMpSignature({
+      secret: null,
+      xSignature: null,
+      xRequestId: null,
+      dataId: null,
+    });
     expect(ok).toBe(true);
   });
 
   it("verifyMpSignature rejeita assinatura ausente quando secret existe", async () => {
-    const ok = await verifyMpSignature({ secret: "s", xSignature: null, xRequestId: "r", dataId: "1" });
+    const ok = await verifyMpSignature({
+      secret: "s",
+      xSignature: null,
+      xRequestId: "r",
+      dataId: "1",
+    });
     expect(ok).toBe(false);
   });
 });
@@ -65,17 +84,23 @@ describe("handleWebhook - fluxos", () => {
   beforeEach(() => EventBus._reset());
 
   it("pagamento aprovado: atualiza tudo e publica PaymentApproved", async () => {
-    const published: any[] = [];
-    EventBus.subscribe((name, p) => { published.push({ name, p }); });
+    const published: Array<{ name: string; p: unknown }> = [];
+    EventBus.subscribe((name, p) => {
+      published.push({ name, p });
+    });
     const deps = makeDeps();
     const out = await handleWebhook(deps, {
-      headers: {}, rawBody: JSON.stringify(payload()), parsed: payload(),
+      headers: {},
+      rawBody: JSON.stringify(payload()),
+      parsed: payload(),
     });
     expect(out.ok).toBe(true);
     expect(out.status).toBe("APPROVED");
     expect(out.eventName).toBe("PaymentApproved");
     expect(deps.updateOrder).toHaveBeenCalledWith("order-xyz", { status: "pago" });
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "PAYMENT_APPROVED", amount: 50 }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "PAYMENT_APPROVED", amount: 50 }),
+    );
     expect(published[0]?.name).toBe("PaymentApproved");
   });
 
@@ -89,53 +114,86 @@ describe("handleWebhook - fluxos", () => {
 
   it("pagamento rejeitado: registra PAYMENT_FAILED", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => ({ id: 1, status: "rejected", transaction_amount: 10, currency_id: "BRL" })) as any,
+      fetchMpPayment: vi.fn(async () => ({
+        id: 1,
+        status: "rejected",
+        transaction_amount: 10,
+        currency_id: "BRL",
+      })) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("REJECTED");
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "PAYMENT_FAILED" }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "PAYMENT_FAILED" }),
+    );
     expect(deps.updateOrder).not.toHaveBeenCalled();
   });
 
   it("pagamento pendente: registra PAYMENT_PENDING", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => ({ id: 1, status: "pending", transaction_amount: 10 })) as any,
+      fetchMpPayment: vi.fn(async () => ({
+        id: 1,
+        status: "pending",
+        transaction_amount: 10,
+      })) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("PENDING");
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "PAYMENT_PENDING" }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "PAYMENT_PENDING" }),
+    );
   });
 
   it("pagamento expirado: registra PAYMENT_FAILED", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => ({ id: 1, status: "expired", transaction_amount: 10 })) as any,
+      fetchMpPayment: vi.fn(async () => ({
+        id: 1,
+        status: "expired",
+        transaction_amount: 10,
+      })) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("EXPIRED");
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "PAYMENT_FAILED" }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "PAYMENT_FAILED" }),
+    );
   });
 
   it("estorno: registra REFUND", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => ({ id: 1, status: "refunded", transaction_amount: 10 })) as any,
+      fetchMpPayment: vi.fn(async () => ({
+        id: 1,
+        status: "refunded",
+        transaction_amount: 10,
+      })) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("REFUNDED");
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "REFUND" }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "REFUND" }),
+    );
   });
 
   it("chargeback: registra CHARGEBACK", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => ({ id: 1, status: "charged_back", transaction_amount: 10 })) as any,
+      fetchMpPayment: vi.fn(async () => ({
+        id: 1,
+        status: "charged_back",
+        transaction_amount: 10,
+      })) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.status).toBe("CHARGEBACK");
-    expect(deps.recordLedger).toHaveBeenCalledWith(expect.objectContaining({ transactionType: "CHARGEBACK" }));
+    expect(deps.recordLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionType: "CHARGEBACK" }),
+    );
   });
 
   it("erro no processamento: enfileira para retry", async () => {
     const deps = makeDeps({
-      fetchMpPayment: vi.fn(async () => { throw new Error("boom"); }) as any,
+      fetchMpPayment: vi.fn(async () => {
+        throw new Error("boom");
+      }) as any,
     });
     const out = await handleWebhook(deps, { headers: {}, rawBody: "{}", parsed: payload() });
     expect(out.ok).toBe(false);
@@ -146,7 +204,8 @@ describe("handleWebhook - fluxos", () => {
   it("evento não-payment: marca processado e ignora", async () => {
     const deps = makeDeps();
     const out = await handleWebhook(deps, {
-      headers: {}, rawBody: "{}",
+      headers: {},
+      rawBody: "{}",
       parsed: { id: "x", type: "merchant_order", data: { id: "999" } },
     });
     expect(out.ok).toBe(true);

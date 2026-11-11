@@ -69,7 +69,7 @@ export const Route = createFileRoute("/partner-growth")({
     if (error || !data.user) {
       throw redirect({
         to: "/auth",
-        search: { mode: undefined } as { mode: string | undefined },
+        search: { mode: undefined },
       });
     }
 
@@ -105,7 +105,11 @@ function PartnerGrowthPage() {
     setIsLoading(true);
     setLoadError(null);
 
-    Promise.all([loadPartnerGrowthDashboard(), loadPartnerGrowthPriorityAlerts(), loadPartnerGrowthTasks()])
+    Promise.all([
+      loadPartnerGrowthDashboard(),
+      loadPartnerGrowthPriorityAlerts(),
+      loadPartnerGrowthTasks(),
+    ])
       .then(([dashboardData, alertsData, tasksData]) => {
         if (!cancelled) {
           setDashboard(dashboardData);
@@ -134,7 +138,7 @@ function PartnerGrowthPage() {
     navigate({
       to: "/auth",
       replace: true,
-      search: { mode: undefined } as { mode: string | undefined },
+      search: { mode: undefined },
     });
   }
 
@@ -549,19 +553,21 @@ function TaskDialog({
 }) {
   const duplicateOpenTask = Boolean(
     draft?.sourceSignal &&
-      tasks.some(
-        (task) =>
-          task.restaurantId === draft.restaurantId &&
-          task.sourceSignal === draft.sourceSignal &&
-          (task.status === "PENDENTE" || task.status === "EM_ANDAMENTO"),
-      ),
+    tasks.some(
+      (task) =>
+        task.restaurantId === draft.restaurantId &&
+        task.sourceSignal === draft.sourceSignal &&
+        (task.status === "PENDENTE" || task.status === "EM_ANDAMENTO"),
+    ),
   );
 
   return (
     <Dialog open={!!draft} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{draft?.sourceSignal ? "Criar tarefa do alerta" : "Nova tarefa"}</DialogTitle>
+          <DialogTitle>
+            {draft?.sourceSignal ? "Criar tarefa do alerta" : "Nova tarefa"}
+          </DialogTitle>
         </DialogHeader>
         {draft && (
           <div className="space-y-4">
@@ -752,11 +758,7 @@ function VariationBadge({ value }: { value: number | null }) {
     return <Badge variant="secondary">Sem base</Badge>;
   }
 
-  return (
-    <Badge variant={value >= 0 ? "default" : "destructive"}>
-      {formatVariation(value)}
-    </Badge>
-  );
+  return <Badge variant={value >= 0 ? "default" : "destructive"}>{formatVariation(value)}</Badge>;
 }
 
 function PriorityBadge({ alert }: { alert: PartnerGrowthPriorityAlert }) {

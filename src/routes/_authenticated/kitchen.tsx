@@ -34,7 +34,21 @@ type Order = {
   id: string;
   order_number: number | null;
   customer_name: string;
-  items: Array<{ name: string; qty: number; price: number; notes?: string | null; addons?: Array<{ groupId?: string; groupName?: string; optionId?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }> }>;
+  items: Array<{
+    name: string;
+    qty: number;
+    price: number;
+    notes?: string | null;
+    addons?: Array<{
+      groupId?: string;
+      groupName?: string;
+      optionId?: string;
+      name?: string;
+      quantity?: number;
+      unitPrice?: number;
+      total?: number;
+    }>;
+  }>;
   total: number;
   status: string;
   payment_method: string | null;
@@ -201,7 +215,10 @@ function KitchenPage() {
   }
 
   function toggleFullscreen() {
-    const doc: any = document;
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void>;
+      documentElement: HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+    };
     if (!document.fullscreenElement) {
       (
         document.documentElement.requestFullscreen?.() ??

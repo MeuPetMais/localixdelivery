@@ -47,7 +47,9 @@ function TxPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Gestao Financeira</h1>
-        <p className="text-sm text-slate-400">Movimentos por pedido com valores persistidos no snapshot.</p>
+        <p className="text-sm text-slate-400">
+          Movimentos por pedido com valores persistidos no snapshot.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -57,7 +59,9 @@ function TxPage() {
               key={k}
               onClick={() => setRange(k)}
               className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                range === k ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"
+                range === k
+                  ? "bg-primary text-primary-foreground"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
               {l}
@@ -70,7 +74,9 @@ function TxPage() {
               key={k}
               onClick={() => setPayment(k)}
               className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                payment === k ? "bg-primary text-primary-foreground" : "text-slate-300 hover:bg-slate-800"
+                payment === k
+                  ? "bg-primary text-primary-foreground"
+                  : "text-slate-300 hover:bg-slate-800"
               }`}
             >
               {l}
@@ -96,20 +102,40 @@ function TxPage() {
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={10} className="p-6 text-center text-slate-400">Carregando...</td></tr>}
-            {!isLoading && (data ?? []).length === 0 && <tr><td colSpan={10} className="p-6 text-center text-slate-400">Sem transacoes.</td></tr>}
+            {isLoading && (
+              <tr>
+                <td colSpan={10} className="p-6 text-center text-slate-400">
+                  Carregando...
+                </td>
+              </tr>
+            )}
+            {!isLoading && (data ?? []).length === 0 && (
+              <tr>
+                <td colSpan={10} className="p-6 text-center text-slate-400">
+                  Sem transacoes.
+                </td>
+              </tr>
+            )}
             {(data ?? []).map((transaction) => (
               <tr key={transaction.id} className="border-t border-slate-800 hover:bg-slate-800/30">
-                <td className="px-4 py-3 text-slate-300">{new Date(transaction.created_at).toLocaleString("pt-BR")}</td>
-                <td className="px-4 py-3 font-mono text-xs">#{transaction.order_number ?? transaction.id.slice(0, 6)}</td>
+                <td className="px-4 py-3 text-slate-300">
+                  {new Date(transaction.created_at).toLocaleString("pt-BR")}
+                </td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  #{transaction.order_number ?? transaction.id.slice(0, 6)}
+                </td>
                 <td className="px-4 py-3">{transaction.restaurant_name}</td>
                 <td className="px-4 py-3 text-slate-300">{transaction.customer_name ?? "-"}</td>
-                <td className="px-4 py-3 uppercase text-slate-300">{transaction.payment_method ?? "-"}</td>
+                <td className="px-4 py-3 uppercase text-slate-300">
+                  {transaction.payment_method ?? "-"}
+                </td>
                 {transaction.financialSnapshotAvailable ? (
                   <>
                     <td className="px-4 py-3 text-right">{brl(transaction.gross)}</td>
                     <td className="px-4 py-3 text-right text-yellow-300">{brl(transaction.fee)}</td>
-                    <td className="px-4 py-3 text-right text-primary">{brl(transaction.realized_platform_revenue)}</td>
+                    <td className="px-4 py-3 text-right text-primary">
+                      {brl(transaction.realized_platform_revenue)}
+                    </td>
                     <td className="px-4 py-3 text-right text-green-400">{brl(transaction.net)}</td>
                   </>
                 ) : (
@@ -118,7 +144,9 @@ function TxPage() {
                   </td>
                 )}
                 <td className="px-4 py-3 text-center">
-                  <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-200">{transaction.status ?? "-"}</span>
+                  <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-200">
+                    {transaction.status ?? "-"}
+                  </span>
                 </td>
               </tr>
             ))}

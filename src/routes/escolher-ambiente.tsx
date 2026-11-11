@@ -15,7 +15,7 @@ export const Route = createFileRoute("/escolher-ambiente")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth", search: { mode: undefined } as { mode: string | undefined } });
+    if (!data.user) throw redirect({ to: "/auth", search: { mode: undefined } });
     const admin = await isCurrentUserAdmin(data.user.id);
     if (!admin) throw redirect({ to: "/dashboard" });
     return { user: data.user };
@@ -76,7 +76,9 @@ function EnvironmentChooser() {
               </span>
               <div>
                 <div className="text-lg font-bold">👨‍💼 Painel Administrativo</div>
-                <div className="text-xs text-slate-400">Entrar no painel completo da plataforma.</div>
+                <div className="text-xs text-slate-400">
+                  Entrar no painel completo da plataforma.
+                </div>
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm text-primary">
@@ -91,9 +93,7 @@ function EnvironmentChooser() {
               </span>
               <div>
                 <div className="text-lg font-bold">🏪 Painel do Estabelecimento</div>
-                <div className="text-xs text-slate-400">
-                  Acesse o dashboard do parceiro.
-                </div>
+                <div className="text-xs text-slate-400">Acesse o dashboard do parceiro.</div>
               </div>
             </div>
 
@@ -105,8 +105,8 @@ function EnvironmentChooser() {
               )}
               {!loading && restaurants!.length === 0 && (
                 <p className="text-sm text-slate-400">
-                  Você ainda não possui estabelecimento. Use “Entrar como estabelecimento” no
-                  menu de Parceiros para visualizar qualquer restaurante como administrador.
+                  Você ainda não possui estabelecimento. Use “Entrar como estabelecimento” no menu
+                  de Parceiros para visualizar qualquer restaurante como administrador.
                 </p>
               )}
               {!loading && restaurants!.length === 1 && (
@@ -114,17 +114,19 @@ function EnvironmentChooser() {
                   Abrir {restaurants![0].name}
                 </Button>
               )}
-              {!loading && restaurants!.length > 1 && restaurants!.map((r) => (
-                <Button
-                  key={r.id}
-                  variant="outline"
-                  className="w-full justify-between border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-800"
-                  onClick={() => goPartner(r.id)}
-                >
-                  {r.name}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ))}
+              {!loading &&
+                restaurants!.length > 1 &&
+                restaurants!.map((r) => (
+                  <Button
+                    key={r.id}
+                    variant="outline"
+                    className="w-full justify-between border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-800"
+                    onClick={() => goPartner(r.id)}
+                  >
+                    {r.name}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ))}
             </div>
           </Card>
         </div>

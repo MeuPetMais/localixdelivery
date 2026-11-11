@@ -4,7 +4,11 @@
 
 import { OrderEventBus } from "@/lib/orders/domain-events";
 
-export type OperationsRealtimeListener = (evt: { orderId: string; state: string; at: string }) => void;
+export type OperationsRealtimeListener = (evt: {
+  orderId: string;
+  state: string;
+  at: string;
+}) => void;
 
 export const OperationsRealtime = {
   subscribe(listener: OperationsRealtimeListener): () => void {

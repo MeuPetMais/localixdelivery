@@ -10,17 +10,30 @@ export type EmployeeRole =
   | "viewer";
 
 export const EMPLOYEE_ROLES: EmployeeRole[] = [
-  "admin", "manager", "finance", "operations", "marketing", "attendant", "viewer",
+  "admin",
+  "manager",
+  "finance",
+  "operations",
+  "marketing",
+  "attendant",
+  "viewer",
 ];
 
 export type Permission =
-  | "settings.read" | "settings.write"
-  | "employees.read" | "employees.write"
-  | "finance.read" | "finance.write"
-  | "orders.read" | "orders.write"
-  | "menu.read" | "menu.write"
-  | "delivery.read" | "delivery.write"
-  | "marketing.read" | "marketing.write"
+  | "settings.read"
+  | "settings.write"
+  | "employees.read"
+  | "employees.write"
+  | "finance.read"
+  | "finance.write"
+  | "orders.read"
+  | "orders.write"
+  | "menu.read"
+  | "menu.write"
+  | "delivery.read"
+  | "delivery.write"
+  | "marketing.read"
+  | "marketing.write"
   | "audit.read"
   | "features.write";
 

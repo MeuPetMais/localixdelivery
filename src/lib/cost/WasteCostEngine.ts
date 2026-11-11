@@ -1,5 +1,14 @@
-export interface WasteItem { ingredientId: string; quantity: number; unitCost: number; reason?: string }
-export interface WasteReport { totalQuantity: number; totalCost: number; items: WasteItem[] }
+export interface WasteItem {
+  ingredientId: string;
+  quantity: number;
+  unitCost: number;
+  reason?: string;
+}
+export interface WasteReport {
+  totalQuantity: number;
+  totalCost: number;
+  items: WasteItem[];
+}
 
 export const WasteCostEngine = {
   calculate(items: WasteItem[]): WasteReport {

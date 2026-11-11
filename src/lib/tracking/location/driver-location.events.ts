@@ -25,13 +25,22 @@ type Listener = (evt: DriverLocationEvent) => void;
 
 class DriverLocationBus {
   private listeners = new Set<Listener>();
-  subscribe(fn: Listener) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  subscribe(fn: Listener) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
   publish(evt: DriverLocationEvent) {
     for (const l of Array.from(this.listeners)) {
-      try { l(evt); } catch (err) { console.error("[driver-location-bus]", err); }
+      try {
+        l(evt);
+      } catch (err) {
+        console.error("[driver-location-bus]", err);
+      }
     }
   }
-  clear() { this.listeners.clear(); }
+  clear() {
+    this.listeners.clear();
+  }
 }
 
 export const driverLocationBus = new DriverLocationBus();

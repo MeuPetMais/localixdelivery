@@ -92,7 +92,7 @@ export interface GlobalNotification {
 export const GlobalNotificationCenterService = {
   validate(n: GlobalNotification): void {
     if (!n.title || !n.body) throw new Error("title and body required");
-    if (n.audience === "specific_tenants" && !(n.target_ids?.length)) {
+    if (n.audience === "specific_tenants" && !n.target_ids?.length) {
       throw new Error("target_ids required for specific_tenants");
     }
   },

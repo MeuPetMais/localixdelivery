@@ -77,7 +77,7 @@ export const Route = createFileRoute("/comercial")({
     if (error || !data.user) {
       throw redirect({
         to: "/auth",
-        search: { mode: undefined } as { mode: string | undefined },
+        search: { mode: undefined },
       });
     }
 
@@ -89,7 +89,7 @@ export const Route = createFileRoute("/comercial")({
     if (rolesError) {
       throw redirect({
         to: "/auth",
-        search: { mode: undefined } as { mode: string | undefined },
+        search: { mode: undefined },
       });
     }
 
@@ -102,7 +102,7 @@ export const Route = createFileRoute("/comercial")({
 });
 
 function CommercialPage() {
-  const { user } = Route.useRouteContext();
+  const { user } = Route.useRouteContext() as { user: import("@supabase/supabase-js").User };
   const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -131,7 +131,7 @@ function CommercialPage() {
 
     // partner_leads is a new Staging table and is not in the generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const leadsTable = supabase.from("partner_leads" as any);
+    const leadsTable = supabase.from("partner_leads");
     const { data, error: queryError } = await leadsTable
       .select(
         "id,business_name,contact_name,phone,segment,city,neighborhood,source,utm_campaign,creative_code,status,assigned_to,fit_score,lead_class,estimated_monthly_orders,current_channels,is_decision_maker,has_own_customer_base,has_recurring_customers,interested_in_own_channel,has_structured_operation,has_active_marketing,committed_to_promotion,main_pain,next_action_at,loss_reason",
@@ -305,8 +305,8 @@ function CommercialPage() {
     setSaving(true);
     // partner_leads is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const leadsTable = supabase.from("partner_leads" as any);
-    const { error: updateError } = await leadsTable.eq("id", leadId).update(patch);
+    const leadsTable = supabase.from("partner_leads");
+    const { error: updateError } = await leadsTable.update(patch).eq("id", leadId);
     setSaving(false);
     if (updateError) {
       toast.error("Nao foi possivel atualizar o lead.");
@@ -360,7 +360,7 @@ function CommercialPage() {
     setSelectedLeadId(leadId);
     // New CRM table is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const activitiesTable = supabase.from("partner_lead_activities" as any);
+    const activitiesTable = supabase.from("partner_lead_activities");
     const { data, error: activitiesError } = await activitiesTable
       .select("id,lead_id,activity_type,note,occurred_at,created_at")
       .eq("lead_id", leadId)
@@ -427,7 +427,7 @@ function CommercialPage() {
     setSaving(true);
     // New CRM table is not in generated client types yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const activitiesTable = supabase.from("partner_lead_activities" as any);
+    const activitiesTable = supabase.from("partner_lead_activities");
     const { error: activityError } = await activitiesTable.insert({
       lead_id: selectedLeadId,
       activity_type: activityType,
@@ -449,7 +449,7 @@ function CommercialPage() {
     navigate({
       to: "/auth",
       replace: true,
-      search: { mode: undefined } as { mode: string | undefined },
+      search: { mode: undefined },
     });
   }
 

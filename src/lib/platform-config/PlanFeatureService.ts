@@ -21,9 +21,15 @@ export interface PlanFeatureRepository {
 
 export class InMemoryPlanFeatureRepository implements PlanFeatureRepository {
   private map = new Map<PlanTier, PlanOverrides>();
-  get(p: PlanTier) { return this.map.get(p); }
-  save(o: PlanOverrides) { this.map.set(o.plan, o); }
-  list() { return [...this.map.values()]; }
+  get(p: PlanTier) {
+    return this.map.get(p);
+  }
+  save(o: PlanOverrides) {
+    this.map.set(o.plan, o);
+  }
+  list() {
+    return [...this.map.values()];
+  }
 }
 
 export class PlanFeatureService {
@@ -43,7 +49,10 @@ export class PlanFeatureService {
   }
 
   updateFeatures(input: {
-    plan: PlanTier; features?: string[]; restrictions?: string[]; actorId: string;
+    plan: PlanTier;
+    features?: string[];
+    restrictions?: string[];
+    actorId: string;
   }): PlanOverrides {
     const current = this.repo.get(input.plan);
     const next: PlanOverrides = {

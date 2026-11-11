@@ -10,9 +10,15 @@ export const AnalyticsEventBus = {
   },
   async publish(event: AnalyticsEvent) {
     for (const h of handlers) {
-      try { await h(event); } catch { /* isolate */ }
+      try {
+        await h(event);
+      } catch {
+        /* isolate */
+      }
     }
     return event;
   },
-  _reset() { handlers.clear(); },
+  _reset() {
+    handlers.clear();
+  },
 };

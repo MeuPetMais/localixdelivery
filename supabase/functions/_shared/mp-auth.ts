@@ -9,17 +9,12 @@ export interface AuthContext {
 }
 
 export function adminClient(): SupabaseClient {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
-export async function requireOwner(
-  req: Request,
-  restaurantId: string,
-): Promise<AuthContext> {
+export async function requireOwner(req: Request, restaurantId: string): Promise<AuthContext> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   if (!token) throw new Response("Unauthorized", { status: 401 });

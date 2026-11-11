@@ -55,7 +55,12 @@ import {
 } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard.functions";
 import { useRestaurantStatus } from "@/hooks/use-restaurant-status";
-import { DemoDashboardCards, DemoExtraMetrics, DemoAiCard, getDemoKpisOverride } from "@/components/DemoDashboardCards";
+import {
+  DemoDashboardCards,
+  DemoExtraMetrics,
+  DemoAiCard,
+  getDemoKpisOverride,
+} from "@/components/DemoDashboardCards";
 import { ProfileCompletionBanner } from "@/components/ProfileCompletionBanner";
 import { NewOrderCard } from "@/components/NewOrderCard";
 import { MerchantNotificationsBell } from "@/components/MerchantNotificationsBell";
@@ -178,9 +183,15 @@ function Dashboard() {
             }`}
             title={offSchedule ? "Fora do horário de funcionamento" : undefined}
           >
-            <span className={`h-2.5 w-2.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`}
+            />
             {openLabel}
-            {offSchedule && <span className="ml-1 hidden text-[10px] opacity-75 md:inline">(fora do horário)</span>}
+            {offSchedule && (
+              <span className="ml-1 hidden text-[10px] opacity-75 md:inline">
+                (fora do horário)
+              </span>
+            )}
           </div>
           <Button
             variant={restaurant.is_open ? "outline" : "default"}
@@ -189,7 +200,11 @@ function Dashboard() {
             className="min-h-11"
             title={restaurant.is_open ? "Fechar loja manualmente" : "Abrir loja agora"}
           >
-            {togglingOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
+            {togglingOpen ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Power className="mr-2 h-4 w-4" />
+            )}
             {restaurant.is_open ? "Fechar loja" : "Abrir loja"}
           </Button>
         </div>
@@ -212,20 +227,28 @@ function Dashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-display text-lg font-bold">Sua Loja Online</h3>
-                <p className="text-xs text-muted-foreground">Gerencie o acesso público da sua loja</p>
+                <p className="text-xs text-muted-foreground">
+                  Gerencie o acesso público da sua loja
+                </p>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border bg-muted/40 p-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Status</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Status
+                </p>
                 <div className="mt-1 flex items-center gap-2 text-sm font-semibold">
-                  <span className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`} />
+                  <span
+                    className={`h-2 w-2 rounded-full ${status.isOpen ? "bg-success" : "bg-destructive"} animate-pulse`}
+                  />
                   {status.isOpen ? "Online" : "Offline"}
                 </div>
               </div>
               <div className="min-w-0 rounded-xl border bg-muted/40 p-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">URL da loja</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  URL da loja
+                </p>
                 <p className="mt-1 truncate font-mono text-xs">{publicUrl}</p>
               </div>
             </div>
@@ -352,16 +375,50 @@ function Dashboard() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <QuickActionCard to="/orders" icon={Plus} title="Novo Pedido" desc="Registrar manualmente" tone="from-primary/15 text-primary" />
-          <QuickActionCard to="/menu" icon={ChefHat} title="Novo Produto" desc="Adicionar ao cardápio" tone="from-orange-500/15 text-orange-600" />
-          <QuickActionCard to="/promotions" icon={Ticket} title="Criar Promoção" desc="Cupons e descontos" tone="from-fuchsia-500/15 text-fuchsia-600" />
-          <QuickActionCard to="/finance" icon={Wallet} title="Financeiro" desc="Receitas e pagamentos" tone="from-emerald-500/15 text-emerald-600" />
-          <QuickActionCard to="/finance-ai" icon={BarChart3} title="Relatórios" desc="Análises e insights" tone="from-blue-500/15 text-blue-600" />
-          <QuickActionCard to="/ai" icon={Sparkles} title="Assistente IA" desc="Sugestões inteligentes" tone="from-violet-500/15 text-violet-600" />
+          <QuickActionCard
+            to="/orders"
+            icon={Plus}
+            title="Novo Pedido"
+            desc="Registrar manualmente"
+            tone="from-primary/15 text-primary"
+          />
+          <QuickActionCard
+            to="/menu"
+            icon={ChefHat}
+            title="Novo Produto"
+            desc="Adicionar ao cardápio"
+            tone="from-orange-500/15 text-orange-600"
+          />
+          <QuickActionCard
+            to="/promotions"
+            icon={Ticket}
+            title="Criar Promoção"
+            desc="Cupons e descontos"
+            tone="from-fuchsia-500/15 text-fuchsia-600"
+          />
+          <QuickActionCard
+            to="/finance"
+            icon={Wallet}
+            title="Financeiro"
+            desc="Receitas e pagamentos"
+            tone="from-emerald-500/15 text-emerald-600"
+          />
+          <QuickActionCard
+            to="/finance-ai"
+            icon={BarChart3}
+            title="Relatórios"
+            desc="Análises e insights"
+            tone="from-blue-500/15 text-blue-600"
+          />
+          <QuickActionCard
+            to="/ai"
+            icon={Sparkles}
+            title="Assistente IA"
+            desc="Sugestões inteligentes"
+            tone="from-violet-500/15 text-violet-600"
+          />
         </div>
       </section>
-
-
 
       {/* Row 1: KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -399,9 +456,6 @@ function Dashboard() {
       {isDemo && <DemoDashboardCards publicUrl={publicUrl} restaurantId={restaurant.id} />}
       {isDemo && <DemoAiCard />}
 
-
-
-
       {/* Row 2: Revenue chart + Status donut */}
       <div className="grid gap-4 lg:grid-cols-10">
         <Card className="min-w-0 p-5 lg:col-span-7">
@@ -421,7 +475,9 @@ function Dashboard() {
                     key={m}
                     onClick={() => setMetric(m)}
                     className={`rounded-md px-2.5 py-1 font-medium transition ${
-                      metric === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      metric === m
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {m === "revenue" ? "Receita" : "Pedidos"}
@@ -435,21 +491,50 @@ function Dashboard() {
           </div>
           <div className="mt-4 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dash?.series ?? []} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
+              <AreaChart
+                data={dash?.series ?? []}
+                margin={{ top: 10, right: 8, left: -10, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#FF5A1F" stopOpacity={0.4} />
                     <stop offset="100%" stopColor="#FF5A1F" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" opacity={0.3} />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
-                <Tooltip
-                  formatter={(v: number) => (metric === "revenue" ? brl(v) : `${v} pedido${v === 1 ? "" : "s"}`)}
-                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="currentColor"
+                  className="text-border"
+                  opacity={0.3}
                 />
-                <Area type="monotone" dataKey={metric} stroke="#FF5A1F" strokeWidth={2} fill="url(#rev)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11 }}
+                  stroke="currentColor"
+                  className="text-muted-foreground"
+                />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  stroke="currentColor"
+                  className="text-muted-foreground"
+                />
+                <Tooltip
+                  formatter={(v: number) =>
+                    metric === "revenue" ? brl(v) : `${v} pedido${v === 1 ? "" : "s"}`
+                  }
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey={metric}
+                  stroke="#FF5A1F"
+                  strokeWidth={2}
+                  fill="url(#rev)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -483,7 +568,6 @@ function Dashboard() {
         </Card>
       </div>
 
-
       {/* Row 3: Funnel */}
       <section>
         <div className="mb-3 flex items-center justify-between">
@@ -493,10 +577,30 @@ function Dashboard() {
           </Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FunnelCard label="Pedidos Novos" value={dash?.funnel.novo ?? 0} icon={Clock} color="bg-amber-500" />
-          <FunnelCard label="Em Preparo" value={dash?.funnel.preparo ?? 0} icon={ChefHat} color="bg-blue-500" />
-          <FunnelCard label="Em Entrega" value={dash?.funnel.entrega ?? 0} icon={Bike} color="bg-violet-500" />
-          <FunnelCard label="Entregues" value={dash?.funnel.entregue ?? 0} icon={CheckCircle2} color="bg-emerald-500" />
+          <FunnelCard
+            label="Pedidos Novos"
+            value={dash?.funnel.novo ?? 0}
+            icon={Clock}
+            color="bg-amber-500"
+          />
+          <FunnelCard
+            label="Em Preparo"
+            value={dash?.funnel.preparo ?? 0}
+            icon={ChefHat}
+            color="bg-blue-500"
+          />
+          <FunnelCard
+            label="Em Entrega"
+            value={dash?.funnel.entrega ?? 0}
+            icon={Bike}
+            color="bg-violet-500"
+          />
+          <FunnelCard
+            label="Entregues"
+            value={dash?.funnel.entregue ?? 0}
+            icon={CheckCircle2}
+            color="bg-emerald-500"
+          />
         </div>
       </section>
 
@@ -584,7 +688,11 @@ function Dashboard() {
                   <Pie
                     data={[
                       { name: "Novos", value: dash?.customerSegments.new ?? 0, color: "#FF5A1F" },
-                      { name: "Recorrentes", value: dash?.customerSegments.recurring ?? 0, color: "#3B82F6" },
+                      {
+                        name: "Recorrentes",
+                        value: dash?.customerSegments.recurring ?? 0,
+                        color: "#3B82F6",
+                      },
                       { name: "VIP", value: dash?.customerSegments.vip ?? 0, color: "#A855F7" },
                     ]}
                     dataKey="value"
@@ -597,17 +705,28 @@ function Dashboard() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
+                    contentStyle={{
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <ul className="space-y-2 text-sm">
               <SegRow color="#FF5A1F" label="Novos (30d)" value={dash?.customerSegments.new ?? 0} />
-              <SegRow color="#3B82F6" label="Recorrentes" value={dash?.customerSegments.recurring ?? 0} />
+              <SegRow
+                color="#3B82F6"
+                label="Recorrentes"
+                value={dash?.customerSegments.recurring ?? 0}
+              />
               <SegRow color="#A855F7" label="VIP" value={dash?.customerSegments.vip ?? 0} />
               <li className="border-t pt-2 text-xs text-muted-foreground">
-                Total: <span className="font-semibold text-foreground">{dash?.customerSegments.total ?? 0}</span>
+                Total:{" "}
+                <span className="font-semibold text-foreground">
+                  {dash?.customerSegments.total ?? 0}
+                </span>
               </li>
             </ul>
           </div>
@@ -662,7 +781,11 @@ function Dashboard() {
               </div>
             </div>
             <ul className="mt-4 space-y-2.5 text-sm">
-              <ExecRow label="Receita Bruta" value={brl(dash?.financial.grossRevenue ?? 0)} color="text-emerald-600" />
+              <ExecRow
+                label="Receita Bruta"
+                value={brl(dash?.financial.grossRevenue ?? 0)}
+                color="text-emerald-600"
+              />
               <ExecRow label="Custos (CMV)" value={`- ${brl(dash?.financial.costs ?? 0)}`} muted />
               <ExecRow label="Despesas" value={`- ${brl(dash?.financial.expenses ?? 0)}`} muted />
               <li className="mt-2 flex items-center justify-between border-t pt-2.5">
@@ -692,11 +815,27 @@ function Dashboard() {
               </div>
             </div>
             <ul className="mt-4 space-y-2.5">
-              <CrmRow icon={Crown} color="bg-amber-500/15 text-amber-600" label="Clientes VIP" value={dash?.crm.vip ?? 0} />
-              <CrmRow icon={UserCheck} color="bg-blue-500/15 text-blue-600" label="Frequentes" value={dash?.crm.frequent ?? 0} />
-              <CrmRow icon={UserX} color="bg-rose-500/15 text-rose-600" label="Inativos (30d+)" value={dash?.crm.inactive ?? 0} />
+              <CrmRow
+                icon={Crown}
+                color="bg-amber-500/15 text-amber-600"
+                label="Clientes VIP"
+                value={dash?.crm.vip ?? 0}
+              />
+              <CrmRow
+                icon={UserCheck}
+                color="bg-blue-500/15 text-blue-600"
+                label="Frequentes"
+                value={dash?.crm.frequent ?? 0}
+              />
+              <CrmRow
+                icon={UserX}
+                color="bg-rose-500/15 text-rose-600"
+                label="Inativos (30d+)"
+                value={dash?.crm.inactive ?? 0}
+              />
               <li className="border-t pt-2.5 text-xs text-muted-foreground">
-                Total de clientes: <span className="font-semibold text-foreground">{dash?.crm.total ?? 0}</span>
+                Total de clientes:{" "}
+                <span className="font-semibold text-foreground">{dash?.crm.total ?? 0}</span>
               </li>
             </ul>
           </Card>
@@ -715,16 +854,30 @@ function Dashboard() {
               </div>
             </div>
             <ul className="mt-4 space-y-2.5">
-              <CrmRow icon={Coins} color="bg-amber-500/15 text-amber-600" label="Pontos emitidos" value={dash?.loyalty.pointsIssued ?? 0} />
-              <CrmRow icon={TicketCheck} color="bg-blue-500/15 text-blue-600" label="Cupons utilizados" value={dash?.loyalty.couponsUsed ?? 0} />
+              <CrmRow
+                icon={Coins}
+                color="bg-amber-500/15 text-amber-600"
+                label="Pontos emitidos"
+                value={dash?.loyalty.pointsIssued ?? 0}
+              />
+              <CrmRow
+                icon={TicketCheck}
+                color="bg-blue-500/15 text-blue-600"
+                label="Cupons utilizados"
+                value={dash?.loyalty.couponsUsed ?? 0}
+              />
               <li className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-500/15 text-emerald-600">
                     <Gift className="h-3.5 w-3.5" />
                   </span>
-                  <span className="truncate text-sm text-muted-foreground">Cashback distribuído</span>
+                  <span className="truncate text-sm text-muted-foreground">
+                    Cashback distribuído
+                  </span>
                 </div>
-                <span className="font-display text-base font-bold">{brl(dash?.loyalty.cashbackDistributed ?? 0)}</span>
+                <span className="font-display text-base font-bold">
+                  {brl(dash?.loyalty.cashbackDistributed ?? 0)}
+                </span>
               </li>
             </ul>
           </Card>
@@ -798,9 +951,13 @@ function ActivePromosBanner({ restaurantId }: { restaurantId: string }) {
       className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-gradient-to-r from-destructive/10 to-primary/5 px-4 py-3 transition hover:shadow-sm"
     >
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-destructive text-destructive-foreground shadow">🔥</span>
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-destructive text-destructive-foreground shadow">
+          🔥
+        </span>
         <div>
-          <p className="font-display text-base font-extrabold">{count} {count === 1 ? "Promoção Ativa" : "Promoções Ativas"}</p>
+          <p className="font-display text-base font-extrabold">
+            {count} {count === 1 ? "Promoção Ativa" : "Promoções Ativas"}
+          </p>
           <p className="text-xs text-muted-foreground">Toque para gerenciar suas ofertas</p>
         </div>
       </div>
@@ -824,7 +981,9 @@ function KpiCard({
 }) {
   const positive = delta >= 0;
   return (
-    <Card className={`relative min-w-0 overflow-hidden border bg-gradient-to-br ${accent} p-5 shadow-sm transition hover:shadow-md`}>
+    <Card
+      className={`relative min-w-0 overflow-hidden border bg-gradient-to-br ${accent} p-5 shadow-sm transition hover:shadow-md`}
+    >
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 text-primary shadow-sm">
@@ -862,7 +1021,9 @@ function FunnelCard({
   return (
     <Card className="min-w-0 p-4">
       <div className="flex items-center gap-3">
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color} text-white shadow-sm`}>
+        <div
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color} text-white shadow-sm`}
+        >
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -933,7 +1094,9 @@ function Onboarding({ ownerId, onCreated }: { ownerId: string; onCreated: () => 
     <div className="mx-auto max-w-xl">
       <Card className="p-8">
         <h1 className="font-display text-2xl font-extrabold">Vamos criar seu Localix 🍔</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Em menos de 1 minuto seu cardápio digital está no ar.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Em menos de 1 minuto seu cardápio digital está no ar.
+        </p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="name">Nome do estabelecimento</Label>
@@ -964,7 +1127,13 @@ function Onboarding({ ownerId, onCreated }: { ownerId: string; onCreated: () => 
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="wa">WhatsApp para receber pedidos</Label>
-            <Input id="wa" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+55 11 99999-9999" />
+            <Input
+              id="wa"
+              required
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="+55 11 99999-9999"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="desc">Descrição curta (opcional)</Label>
@@ -994,11 +1163,23 @@ function Loader() {
   );
 }
 
-function ExecRow({ label, value, color, muted }: { label: string; value: string; color?: string; muted?: boolean }) {
+function ExecRow({
+  label,
+  value,
+  color,
+  muted,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  muted?: boolean;
+}) {
   return (
     <li className="flex items-center justify-between gap-2">
       <span className={`truncate text-sm ${muted ? "text-muted-foreground" : ""}`}>{label}</span>
-      <span className={`font-display text-base font-bold tabular-nums ${color ?? ""}`}>{value}</span>
+      <span className={`font-display text-base font-bold tabular-nums ${color ?? ""}`}>
+        {value}
+      </span>
     </li>
   );
 }
@@ -1022,12 +1203,17 @@ function CrmRow({
         </span>
         <span className="truncate text-sm text-muted-foreground">{label}</span>
       </div>
-      <span className="font-display text-base font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
+      <span className="font-display text-base font-bold tabular-nums">
+        {value.toLocaleString("pt-BR")}
+      </span>
     </li>
   );
 }
 
-const TIMELINE_META: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+const TIMELINE_META: Record<
+  string,
+  { icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
   order: { icon: ShoppingCart, color: "bg-amber-500/15 text-amber-600" },
   delivered: { icon: PackageCheck, color: "bg-emerald-500/15 text-emerald-600" },
   coupon: { icon: TicketCheck, color: "bg-violet-500/15 text-violet-600" },
@@ -1046,7 +1232,17 @@ function timeAgo(iso: string) {
   return `há ${d}d`;
 }
 
-function TimelineRow({ type, label, detail, at }: { type: string; label: string; detail: string; at: string }) {
+function TimelineRow({
+  type,
+  label,
+  detail,
+  at,
+}: {
+  type: string;
+  label: string;
+  detail: string;
+  at: string;
+}) {
   const meta = TIMELINE_META[type] ?? TIMELINE_META.order;
   const Icon = meta.icon;
   return (
@@ -1064,7 +1260,6 @@ function TimelineRow({ type, label, detail, at }: { type: string; label: string;
     </li>
   );
 }
-
 
 const STATUS_LABELS: Record<string, string> = {
   novo: "Novo Pedido",
@@ -1123,13 +1318,19 @@ function StatusDonut({ data }: { data?: Record<string, number> | null }) {
                     `${v} (${Math.round((v / total) * 100)}%)`,
                     p.payload?.label ?? "",
                   ]}
-                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <span className="font-display text-xl font-bold leading-none">{total}</span>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Total
+              </span>
             </div>
           </div>
           <ul className="mt-3 space-y-1.5 text-xs">
@@ -1154,7 +1355,6 @@ function StatusDonut({ data }: { data?: Record<string, number> | null }) {
   );
 }
 
-
 function QuickActionCard({
   to,
   icon: Icon,
@@ -1175,7 +1375,9 @@ function QuickActionCard({
       className="group flex min-h-[110px] flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
       title={desc}
     >
-      <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${gradient} to-transparent ${textColor} transition-transform group-hover:scale-110`}>
+      <div
+        className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${gradient} to-transparent ${textColor} transition-transform group-hover:scale-110`}
+      >
         <Icon className="h-5 w-5" />
       </div>
       <div className="mt-3">

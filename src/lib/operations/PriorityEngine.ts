@@ -21,7 +21,10 @@ export function classifyPriority(order: {
   return "NORMAL";
 }
 
-export function withPriority(cards: OperationsOrderCard[], now = Date.now()): OperationsOrderCard[] {
+export function withPriority(
+  cards: OperationsOrderCard[],
+  now = Date.now(),
+): OperationsOrderCard[] {
   return cards.map((c) => ({
     ...c,
     priority: classifyPriority({ createdAt: c.createdAt, etaMinutes: c.etaMinutes, now }),

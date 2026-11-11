@@ -1,9 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type MercadoPagoReadinessReason =
-  | "not_connected"
-  | "disconnected"
-  | "invalid_account";
+export type MercadoPagoReadinessReason = "not_connected" | "disconnected" | "invalid_account";
 
 export interface MercadoPagoReadiness {
   ready: boolean;
@@ -16,8 +13,6 @@ export interface MercadoPagoReadiness {
 
 export const MercadoPagoReadiness = {
   async get(restaurantId: string): Promise<MercadoPagoReadiness> {
-    
-
     const { data, error } = await supabase
       .from("mercado_pago_accounts")
       .select(
@@ -31,11 +26,10 @@ export const MercadoPagoReadiness = {
       .eq("restaurant_id", restaurantId)
       .maybeSingle();
 
-
-console.log("MP READINESS");
-console.log("restaurantId:", restaurantId);
-console.log("error:", error);
-console.log("data:", data);
+    console.log("MP READINESS");
+    console.log("restaurantId:", restaurantId);
+    console.log("error:", error);
+    console.log("data:", data);
 
     if (error || !data) {
       return {

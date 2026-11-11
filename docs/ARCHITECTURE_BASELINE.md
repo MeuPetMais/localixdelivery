@@ -42,23 +42,23 @@ supabase/
 
 **82 tabelas** no schema `public`. Agrupadas por domínio:
 
-| Domínio | Tabelas |
-|---|---|
-| **Restaurante/Cardápio** | restaurants, menu_categories, menu_items, menu_item_images, builders, builder_groups, builder_options, featured_sections, coupons, reviews |
-| **Clientes** | customer_profiles, customers, customer_addresses, customer_favorites, customer_points, customer_notifications |
-| **Pedidos** | orders, order_status_history, order_pricing_snapshot, order_payment, order_profitability |
-| **Pagamentos** | payments, payment_providers, payment_split, payment_logs, payment_reconciliation, payment_webhook_events, payment_event_queue, mercado_pago_accounts, oauth_states, platform_fees, platform_settings |
-| **Delivery** | delivery_orders, delivery_timeline, drivers, driver_locations |
-| **Inventory** | ingredients, inventory_locations, stock_movements, ingredient_cost_history |
-| **Recipes** | product_recipes, product_recipe_items, product_recipe_versions, recipe_items, recipe_cost_snapshot |
-| **Production** | production_orders, production_consumption, production_output, production_losses, production_batches |
-| **Purchasing** | suppliers, supplier_products, supplier_favorites, supplier_quotes, purchase_requests, purchase_orders, purchase_order_items, quote_requests |
-| **Financeiro** | financial_ledger, financial_movements, product_profitability |
-| **Tenant** | tenant_configuration, tenant_branding, tenant_features, tenant_business_settings, tenant_delivery_settings, tenant_payment_settings, tenant_notifications, tenant_config_audit, tenant_config_versions |
-| **Notifications** | notifications, notification_templates, notification_preferences, notification_logs, push_subscriptions |
-| **Support** | support_tickets, support_messages, support_articles |
-| **Business Rules** | business_rules, business_rule_execution_log |
-| **Auth/RBAC** | user_roles, owner_profiles, webhook_events |
+| Domínio                  | Tabelas                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Restaurante/Cardápio** | restaurants, menu_categories, menu_items, menu_item_images, builders, builder_groups, builder_options, featured_sections, coupons, reviews                                                             |
+| **Clientes**             | customer_profiles, customers, customer_addresses, customer_favorites, customer_points, customer_notifications                                                                                          |
+| **Pedidos**              | orders, order_status_history, order_pricing_snapshot, order_payment, order_profitability                                                                                                               |
+| **Pagamentos**           | payments, payment_providers, payment_split, payment_logs, payment_reconciliation, payment_webhook_events, payment_event_queue, mercado_pago_accounts, oauth_states, platform_fees, platform_settings   |
+| **Delivery**             | delivery_orders, delivery_timeline, drivers, driver_locations                                                                                                                                          |
+| **Inventory**            | ingredients, inventory_locations, stock_movements, ingredient_cost_history                                                                                                                             |
+| **Recipes**              | product_recipes, product_recipe_items, product_recipe_versions, recipe_items, recipe_cost_snapshot                                                                                                     |
+| **Production**           | production_orders, production_consumption, production_output, production_losses, production_batches                                                                                                    |
+| **Purchasing**           | suppliers, supplier_products, supplier_favorites, supplier_quotes, purchase_requests, purchase_orders, purchase_order_items, quote_requests                                                            |
+| **Financeiro**           | financial_ledger, financial_movements, product_profitability                                                                                                                                           |
+| **Tenant**               | tenant_configuration, tenant_branding, tenant_features, tenant_business_settings, tenant_delivery_settings, tenant_payment_settings, tenant_notifications, tenant_config_audit, tenant_config_versions |
+| **Notifications**        | notifications, notification_templates, notification_preferences, notification_logs, push_subscriptions                                                                                                 |
+| **Support**              | support_tickets, support_messages, support_articles                                                                                                                                                    |
+| **Business Rules**       | business_rules, business_rule_execution_log                                                                                                                                                            |
+| **Auth/RBAC**            | user_roles, owner_profiles, webhook_events                                                                                                                                                             |
 
 **RLS:** ativo em todas as tabelas listadas com policies (contagem entre 1–6). Padrão: restaurantes escopam por `owner_id = auth.uid()`; user_roles usa função `has_role()` SECURITY DEFINER.
 
@@ -82,12 +82,12 @@ Status: todas aplicadas em ordem determinística.
 
 ## 5. Edge Functions
 
-| Nome | Objetivo | Entrada | Saída | Dependências |
-|---|---|---|---|---|
-| `mp-oauth` | Inicia OAuth do Mercado Pago | `{restaurantId, redirectTo}` | URL de autorização | oauth_states, MP_APP_ID |
-| `mp-oauth-callback` | Recebe callback do MP e persiste tokens | `?code&state` | Redirect | mercado_pago_accounts, MP_TOKEN_ENC_KEY |
-| `mp-payment-intent` | Cria payment intent no MP | `{orderId, amount, method}` | `{preferenceId, initPoint}` | mp-auth, PaymentService |
-| `mp-webhook` | Processa notificações do MP | payload MP | 200 OK | payment_webhook_events, MP_WEBHOOK_SECRET |
+| Nome                | Objetivo                                | Entrada                      | Saída                       | Dependências                              |
+| ------------------- | --------------------------------------- | ---------------------------- | --------------------------- | ----------------------------------------- |
+| `mp-oauth`          | Inicia OAuth do Mercado Pago            | `{restaurantId, redirectTo}` | URL de autorização          | oauth_states, MP_APP_ID                   |
+| `mp-oauth-callback` | Recebe callback do MP e persiste tokens | `?code&state`                | Redirect                    | mercado_pago_accounts, MP_TOKEN_ENC_KEY   |
+| `mp-payment-intent` | Cria payment intent no MP               | `{orderId, amount, method}`  | `{preferenceId, initPoint}` | mp-auth, PaymentService                   |
+| `mp-webhook`        | Processa notificações do MP             | payload MP                   | 200 OK                      | payment_webhook_events, MP_WEBHOOK_SECRET |
 
 Além disso, endpoints públicos vivem em `src/routes/api/public/mp.*.ts` (TanStack server routes).
 
@@ -97,18 +97,18 @@ Além disso, endpoints públicos vivem em `src/routes/api/public/mp.*.ts` (TanSt
 
 Cada domínio expõe **um EventBus próprio** (in-process, sem broker externo):
 
-| Bus | Eventos principais |
-|---|---|
-| `OrderEventBus` (`orders/domain-events.ts`) | OrderCreated, OrderConfirmed, OrderInPreparation, OrderReady, OrderOutForDelivery, OrderDelivered, OrderCanceled |
-| `PaymentEventBus` (`payments/EventBus.ts`) | PaymentCreated, PaymentApproved, PaymentRejected, PaymentRefunded, WebhookReceived |
-| `DeliveryEventBus` | DeliveryAssigned, DeliveryPickedUp, DeliveryCompleted, DeliveryFailed |
-| `NotificationEvents` | NotificationQueued, NotificationSent, NotificationFailed |
-| `BusinessRulesEvents` | RuleTriggered, RuleExecuted, RuleFailed |
-| `InventoryEventBus` | StockIncreased, StockDecreased, StockReserved, StockReleased, LowStockAlert |
-| `RecipeEventBus` | RecipeCreated, RecipeActivated, RecipeVersioned, CostRecalculated |
-| `ProductionEventBus` | ProductionPlanned, Started, Paused, Resumed, Completed, Cancelled, Failed, BatchCreated, BatchExpired, LossRegistered |
-| `CostEventBus` | IngredientCostUpdated, RecipeCostRecalculated, OrderProfitCalculated |
-| `PurchaseEventBus` | SupplierCreated/Changed, PurchaseRequested/Approved/Received, CostUpdated |
+| Bus                                         | Eventos principais                                                                                                    |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `OrderEventBus` (`orders/domain-events.ts`) | OrderCreated, OrderConfirmed, OrderInPreparation, OrderReady, OrderOutForDelivery, OrderDelivered, OrderCanceled      |
+| `PaymentEventBus` (`payments/EventBus.ts`)  | PaymentCreated, PaymentApproved, PaymentRejected, PaymentRefunded, WebhookReceived                                    |
+| `DeliveryEventBus`                          | DeliveryAssigned, DeliveryPickedUp, DeliveryCompleted, DeliveryFailed                                                 |
+| `NotificationEvents`                        | NotificationQueued, NotificationSent, NotificationFailed                                                              |
+| `BusinessRulesEvents`                       | RuleTriggered, RuleExecuted, RuleFailed                                                                               |
+| `InventoryEventBus`                         | StockIncreased, StockDecreased, StockReserved, StockReleased, LowStockAlert                                           |
+| `RecipeEventBus`                            | RecipeCreated, RecipeActivated, RecipeVersioned, CostRecalculated                                                     |
+| `ProductionEventBus`                        | ProductionPlanned, Started, Paused, Resumed, Completed, Cancelled, Failed, BatchCreated, BatchExpired, LossRegistered |
+| `CostEventBus`                              | IngredientCostUpdated, RecipeCostRecalculated, OrderProfitCalculated                                                  |
+| `PurchaseEventBus`                          | SupplierCreated/Changed, PurchaseRequested/Approved/Received, CostUpdated                                             |
 
 Padrão: publish/subscribe local; consumidores registram-se em bootstrap. **Não há broker distribuído** (Kafka/Redis) — todos os handlers rodam na mesma execução (server function ou request).
 
@@ -195,7 +195,7 @@ Cobertura por domínio: unit/integration em Services; sem E2E Playwright configu
 - **RLS:** ativo em todas as 82 tabelas.
 - **OAuth MP:** state em `oauth_states`, tokens cifrados (`MP_TOKEN_ENC_KEY`).
 - **Webhooks:** assinatura HMAC verificada com `MP_WEBHOOK_SECRET`.
-- **Secrets:** MP_ACCESS_TOKEN, MP_APP_ID, MP_PUBLIC_KEY, MP_TOKEN_ENC_KEY, MP_WEBHOOK_SECRET, LOVABLE_API_KEY, SUPABASE_* — todos server-side.
+- **Secrets:** MP*ACCESS_TOKEN, MP_APP_ID, MP_PUBLIC_KEY, MP_TOKEN_ENC_KEY, MP_WEBHOOK_SECRET, LOVABLE_API_KEY, SUPABASE*\* — todos server-side.
 - **Rotas `/api/public/*`** contornam auth por design; verificação de assinatura obrigatória no handler.
 
 ---
@@ -266,18 +266,18 @@ Nenhuma **dependência cíclica** de módulo detectada.
 
 ## 21. Relatório de Saúde
 
-| Dimensão | Nota (0-100) | Observação |
-|---|---|---|
-| Arquitetura geral | **86** | Domínios isolados, EventBus por domínio, camadas bem definidas. |
-| Escalabilidade | **70** | Falta broker/queue persistente; workers ausentes; realtime Supabase escala bem até médio porte. |
-| Segurança | **84** | RLS 100%, RBAC via SECURITY DEFINER, tokens cifrados, webhooks assinados. Pendente pentest formal. |
-| Performance | **72** | Cache leve, paginação simples, sem CDN de assets custom, sem SSG. |
-| Manutenibilidade | **88** | Padrão consistente Service/Validator/EventBus/README/Test em cada domínio. |
-| Cobertura de testes | **68** | 19 suites Vitest, cobertura % não medida, sem E2E. |
-| Complexidade | **75** | 82 tabelas, 15 domínios — grande, mas bem organizado. |
-| Risco técnico | **Médio-baixo** | Principais riscos: duplicações inventory/cost, repositórios Supabase pendentes nos domínios novos, placeholders de gateway. |
-| Débito técnico | **Baixo-médio** | Consolidação de duplicatas + finalização de repositórios + processamento de `payment_event_queue`. |
-| Prontidão para produção | **78** | Fluxos core (pedido → pagamento → entrega → notificação) prontos e testados; domínios novos (Cost/Production/Purchasing) precisam de adapters Supabase + UI para produção plena. |
+| Dimensão                | Nota (0-100)    | Observação                                                                                                                                                                       |
+| ----------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arquitetura geral       | **86**          | Domínios isolados, EventBus por domínio, camadas bem definidas.                                                                                                                  |
+| Escalabilidade          | **70**          | Falta broker/queue persistente; workers ausentes; realtime Supabase escala bem até médio porte.                                                                                  |
+| Segurança               | **84**          | RLS 100%, RBAC via SECURITY DEFINER, tokens cifrados, webhooks assinados. Pendente pentest formal.                                                                               |
+| Performance             | **72**          | Cache leve, paginação simples, sem CDN de assets custom, sem SSG.                                                                                                                |
+| Manutenibilidade        | **88**          | Padrão consistente Service/Validator/EventBus/README/Test em cada domínio.                                                                                                       |
+| Cobertura de testes     | **68**          | 19 suites Vitest, cobertura % não medida, sem E2E.                                                                                                                               |
+| Complexidade            | **75**          | 82 tabelas, 15 domínios — grande, mas bem organizado.                                                                                                                            |
+| Risco técnico           | **Médio-baixo** | Principais riscos: duplicações inventory/cost, repositórios Supabase pendentes nos domínios novos, placeholders de gateway.                                                      |
+| Débito técnico          | **Baixo-médio** | Consolidação de duplicatas + finalização de repositórios + processamento de `payment_event_queue`.                                                                               |
+| Prontidão para produção | **78**          | Fluxos core (pedido → pagamento → entrega → notificação) prontos e testados; domínios novos (Cost/Production/Purchasing) precisam de adapters Supabase + UI para produção plena. |
 
 ---
 
@@ -310,7 +310,7 @@ domínio existente foi alterado e nenhuma migration foi criada.
 - Dashboard, tenants, assinaturas, auditoria, suporte, moderação,
   incidentes e notificações globais como projeções.
 - Persistência de auditoria administrativa: `InMemoryPlatformAudit
-  Repository` (pending Supabase repo — ver TECHNICAL_DEBT.md).
+Repository` (pending Supabase repo — ver TECHNICAL_DEBT.md).
 
 Ver `src/lib/platform/PlatformAdministration.README.md` e
 `src/lib/platform/DOMAIN_MANIFEST.md`.
@@ -411,7 +411,6 @@ Pattern preservado — consumidores externos não conhecem gateways por nome.
 OAuth único vive em `/pagamentos` via `PaymentService.connect`.
 Ver `DOMAIN_MANIFEST_PAYMENT.md` e `PAYMENT_DOMAIN_FINAL_REPORT.md`.
 
-
 ## Address Domain
 
 - Fachada única: `AddressService` (`src/lib/address/AddressService.ts`).
@@ -421,6 +420,7 @@ Ver `DOMAIN_MANIFEST_PAYMENT.md` e `PAYMENT_DOMAIN_FINAL_REPORT.md`.
 - Ver `ADDRESS_AUTOCOMPLETE.md`.
 
 ## Loyalty Lifecycle (2026-07-04)
+
 - Cron `loyalty-daily-lifecycle` (pg_cron, 03:00 UTC) executa
   `loyalty_expire_points()` + `loyalty_scan_expiring()`.
 - Nova tabela `loyalty_events` armazena eventos `PointsExpiring`

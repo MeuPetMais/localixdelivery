@@ -59,7 +59,9 @@ export function useCanAccessAdminSupport(userId: string | undefined) {
           : null;
       if (!supportRole) return { canAccess: false, role: null };
 
-      const { data: member, error: memberError } = await (supabase.from("support_team_members" as any) as any)
+      const { data: member, error: memberError } = await (
+        supabase.from("support_team_members" as any) as any
+      )
         .select("active, role")
         .eq("user_id", userId!)
         .maybeSingle();

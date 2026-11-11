@@ -3,8 +3,11 @@ import { isOrderRealizedSaleEligible } from "@/lib/orders/order-metrics-contract
 import type { CustomerAnalytics } from "./types";
 
 type OrderRow = {
-  id: string; total: number; created_at: string;
-  items: unknown; payment_method?: string | null;
+  id: string;
+  total: number;
+  created_at: string;
+  items: unknown;
+  payment_method?: string | null;
   status?: string | null;
 };
 
@@ -23,12 +26,16 @@ export const CustomerAnalyticsService = {
     const total_spent = realizedOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
     const avg_ticket = total_orders ? total_spent / total_orders : 0;
 
-    const sorted = [...realizedOrders].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+    const sorted = [...realizedOrders].sort(
+      (a, b) => +new Date(a.created_at) - +new Date(b.created_at),
+    );
     const first = sorted[0]?.created_at;
     const last = sorted[sorted.length - 1]?.created_at;
     const now = Date.now();
     const tenure_days = first ? Math.max(1, Math.round((now - +new Date(first)) / DAY_MS)) : 0;
-    const days_since_last_order = last ? Math.round((now - +new Date(last)) / DAY_MS) : Number.POSITIVE_INFINITY;
+    const days_since_last_order = last
+      ? Math.round((now - +new Date(last)) / DAY_MS)
+      : Number.POSITIVE_INFINITY;
     const months = Math.max(1, tenure_days / 30);
     const frequency_per_month = total_orders / months;
 
@@ -59,11 +66,14 @@ export const CustomerAnalyticsService = {
 
     const favorite_products = [...prodCount.entries()]
       .map(([product_id, v]) => ({ product_id, name: v.name, qty: v.qty }))
-      .sort((a, b) => b.qty - a.qty).slice(0, 5);
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5);
     const favorite_categories = [...catCount.entries()]
       .map(([category_id, v]) => ({ category_id, name: v.name, qty: v.qty }))
-      .sort((a, b) => b.qty - a.qty).slice(0, 5);
-    const favorite_channel = [...channelCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5);
+    const favorite_channel =
+      [...channelCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
     return {
       customer_id: customerId,
@@ -104,7 +114,11 @@ export const CustomerAnalyticsService = {
   },
 
   /** @deprecated Use only for authenticated-customer flows. Customer 360 uses GROWTH-2. */
-  async forCustomer(customerId: string, restaurantId: string, limit = 200): Promise<CustomerAnalytics> {
+  async forCustomer(
+    customerId: string,
+    restaurantId: string,
+    limit = 200,
+  ): Promise<CustomerAnalytics> {
     return CustomerAnalyticsService.forAuthenticatedCustomer(customerId, restaurantId, limit);
   },
 } as const;
