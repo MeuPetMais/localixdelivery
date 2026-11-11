@@ -1,85 +1,85 @@
-import { describe, expect, it } from "vitest";
-import { collectFinancialStatement } from "./financial-statement-pagination";
-
-function pagedSource(total: number) {
-  const source = Array.from({ length: total }, (_, index) => ({
-    id: `ledger-${index}`,
-    amount: 1,
-  }));
-  const ranges: Array<[number, number]> = [];
+import { describe, it, expect } from "vitest";
+import { readFinancialSnapshot, snapshotStatement } from "./financial-statement-pagination";
+const restaurant = "11111111-1111-4111-8111-111111111111";
+const other = "22222222-2222-4222-8222-222222222222";
+function entry(index: number) {
   return {
-    ranges,
-    fetch: async (start: number, end: number) => {
-      ranges.push([start, end]);
-      return source.slice(start, end + 1);
-    },
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    order_id: restaurant,
+    restaurant_id: restaurant,
+    customer_id: null,
+    provider: "synthetic",
+    transaction_type: "PAYMENT_APPROVED",
+    reference_type: "payment",
+    reference_id: String(index),
+    amount: 1,
+    currency: "BRL",
+    status: "COMPLETED",
+    description: null,
+    metadata: {},
+    created_at: "2026-11-01T00:00:00Z",
+    updated_at: "2026-11-01T00:00:00Z",
   };
 }
-
-describe("complete financial statement collector", () => {
-  it("retrieves all rows beyond the previous 500-row UI limit without double counting", async () => {
-    const source = pagedSource(1_201);
-    const rows = await collectFinancialStatement(source.fetch);
-    expect(rows).toHaveLength(1_201);
-    expect(new Set(rows.map((row) => row.id)).size).toBe(1_201);
-    expect(rows.reduce((total, row) => total + row.amount, 0)).toBe(1_201);
-    expect(source.ranges).toEqual([
-      [0, 499],
-      [500, 999],
-      [1_000, 1_499],
-    ]);
+function envelope(total: number) {
+  return {
+    version: 1,
+    restaurant_id: restaurant,
+    snapshot_at: "2026-11-11T00:00:00Z",
+    row_count: total,
+    complete: true,
+    entries: Array.from({ length: total }, (_, i) => entry(i)),
+  };
+}
+describe("transactional financial snapshot boundary", () => {
+  it.each([0, 501, 1000, 1201, 10001, 50000])(
+    "accepts the complete scalar snapshot of %i rows",
+    async (total) => {
+      const snapshot = await readFinancialSnapshot(async () => envelope(total), restaurant);
+      expect(snapshot.entries).toHaveLength(total);
+    },
+  );
+  it("rejects a transport response capped at 100 despite requesting more than 500", async () => {
+    const data = envelope(1201);
+    data.entries = data.entries.slice(0, 100);
+    await expect(readFinancialSnapshot(async () => data, restaurant)).rejects.toThrow("row count");
   });
-
-  it("handles an exact multiple of the page size with a final empty probe", async () => {
-    const source = pagedSource(1_000);
-    const rows = await collectFinancialStatement(source.fetch);
-    expect(rows).toHaveLength(1_000);
-    expect(source.ranges).toEqual([
-      [0, 499],
-      [500, 999],
-      [1_000, 1_499],
-    ]);
+  it.each(["duplicate", "missing", "tenant", "currency", "incomplete", "cap"])(
+    "rejects invalid snapshot %s",
+    async (kind) => {
+      const data = envelope(2);
+      if (kind === "duplicate") data.entries[1] = data.entries[0];
+      if (kind === "missing") data.entries[0].id = "";
+      if (kind === "tenant") data.entries[0].restaurant_id = other;
+      if (kind === "currency") data.entries[0].currency = "USD";
+      if (kind === "incomplete") data.complete = false;
+      if (kind === "cap") data.row_count = 50001;
+      await expect(readFinancialSnapshot(async () => data, restaurant)).rejects.toThrow(
+        "snapshot unavailable",
+      );
+    },
+  );
+  it("rejects another restaurant's envelope", async () => {
+    await expect(readFinancialSnapshot(async () => envelope(0), other)).rejects.toThrow("tenant");
   });
-
-  it("allows an empty statement", async () => {
-    const source = pagedSource(0);
-    expect(await collectFinancialStatement(source.fetch)).toEqual([]);
-  });
-
-  it("fails closed instead of returning a partial aggregate above the safety cap", async () => {
-    const source = pagedSource(1_001);
-    await expect(collectFinancialStatement(source.fetch, { maxRows: 1_000 })).rejects.toThrow(
-      "limite seguro de processamento",
+  it("propagates connection and RPC errors without returning an empty statement", async () => {
+    await expect(
+      readFinancialSnapshot(async () => {
+        throw new Error("connection lost");
+      }, restaurant),
+    ).rejects.toThrow("connection lost");
+    await expect(readFinancialSnapshot(async () => null, restaurant)).rejects.toThrow(
+      "snapshot unavailable",
     );
-    expect(source.ranges).toHaveLength(3);
   });
-
-  it("propagates a failed page rather than returning a partial statement", async () => {
-    await expect(
-      collectFinancialStatement(async (start) => {
-        if (start >= 500) throw new Error("remote page failure");
-        return Array.from({ length: 500 }, (_, index) => ({ id: `ledger-${index}` }));
-      }),
-    ).rejects.toThrow("remote page failure");
-  });
-
-  it("fails closed on duplicate IDs across pages during concurrent mutations", async () => {
-    await expect(
-      collectFinancialStatement(
-        async (start) => (start === 0 ? [{ id: "first" }, { id: "second" }] : [{ id: "second" }]),
-        { pageSize: 2 },
-      ),
-    ).rejects.toThrow("lançamento duplicado");
-  });
-
-  it("rejects invalid page sizes and oversized responses", async () => {
-    await expect(collectFinancialStatement(async () => [], { pageSize: 0 })).rejects.toThrow(
-      "Configuração inválida",
-    );
-    await expect(
-      collectFinancialStatement(async () => [{ id: "a" }, { id: "b" }, { id: "c" }], {
-        pageSize: 2,
-      }),
-    ).rejects.toThrow("página maior");
+  it("filters dates from the same immutable response, including inclusive boundaries", async () => {
+    const data = envelope(2);
+    data.entries[1].created_at = "2026-11-02T00:00:00Z";
+    const snapshot = await readFinancialSnapshot(async () => data, restaurant);
+    expect(
+      snapshotStatement(snapshot, "2026-11-02T00:00:00Z", "2026-11-02T00:00:00Z"),
+    ).toHaveLength(1);
+    expect(snapshot.entries).toHaveLength(2);
+    expect(() => snapshotStatement(snapshot, "invalid")).toThrow("interval");
   });
 });

@@ -12,7 +12,17 @@
 import type { ExecutiveKPIs, FinanceFilters, FinanceStatus } from "./types";
 import { normalizeFilters } from "./FinanceFilters";
 
+export interface LedgerViewInput {
+  restaurantId: string;
+  from?: string;
+  to?: string;
+}
+
 export interface LedgerPort {
+  getSnapshot?(input: LedgerViewInput): Promise<{
+    rows: Awaited<ReturnType<LedgerPort["getStatement"]>>;
+    balance: Awaited<ReturnType<LedgerPort["getBalance"]>>;
+  }>;
   getStatement(input: { restaurantId: string; from?: string; to?: string }): Promise<
     Array<{
       transaction_type: string;
@@ -70,12 +80,11 @@ export class FinancialDashboardService {
     filters?: Partial<FinanceFilters>;
   }): Promise<ExecutiveKPIs> {
     const filters = normalizeFilters(input.filters ?? {});
-    const rows = await this.ports.ledger.getStatement({
+    const { rows, balance } = await readLedgerView(this.ports.ledger, {
       restaurantId: input.restaurantId,
       from: filters.from,
       to: filters.to,
     });
-    const balance = await this.ports.ledger.getBalance({ restaurantId: input.restaurantId });
 
     let grossRevenue = 0;
     let fees = 0;
@@ -156,4 +165,17 @@ export class FinancialDashboardService {
       currency: balance.currency ?? "BRL",
     };
   }
+}
+
+/** Production ports implement getSnapshot; legacy injected test ports retain compatibility. */
+export async function readLedgerView(
+  ledger: LedgerPort,
+  input: { restaurantId: string; from?: string; to?: string },
+) {
+  if (ledger.getSnapshot) return ledger.getSnapshot(input);
+  const [rows, balance] = await Promise.all([
+    ledger.getStatement(input),
+    ledger.getBalance({ restaurantId: input.restaurantId }),
+  ]);
+  return { rows, balance };
 }

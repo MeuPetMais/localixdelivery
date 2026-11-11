@@ -7618,6 +7618,7 @@ export type Database = {
       };
     };
     Functions: {
+      get_restaurant_financial_snapshot: { Args: { _restaurant_id: string }; Returns: Json };
       get_partner_growth_priority_alerts: { Args: { _as_of?: string }; Returns: Json };
       support_admin_take_ticket: {
         Args: { _actor_user_id: string; _ticket_id: string };
