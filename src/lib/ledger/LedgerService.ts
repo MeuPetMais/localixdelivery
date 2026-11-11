@@ -7,6 +7,7 @@ import type { JsonObject } from "@/lib/json";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { collectFinancialStatement } from "./financial-statement-pagination";
 
 // ------------- Tipos -------------
 export type LedgerTransactionType =
@@ -228,6 +229,43 @@ export const getRestaurantStatement = createServerFn({ method: "POST" })
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return (rows ?? []) as LedgerEntry[];
+  });
+
+/**
+ * Extrato completo para agregações financeiras, distinto da paginação de UI.
+ * A leitura preserva RLS do usuário autenticado e usa uma ordenação estável.
+ * Falha fechada se exceder 10 mil registros, nunca retorna soma parcial.
+ *
+ * IMPORTANTE: a paginação por offset pressupõe que o período filtrado não
+ * sofra inserções retroativas durante a coleta. Para consistência transacional
+ * absoluta sob alta concorrência, migrar futuramente para snapshot/RPC.
+ */
+export const getRestaurantFinancialStatement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        restaurantId: z.string().uuid(),
+        from: z.string().datetime().optional(),
+        to: z.string().datetime().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    return collectFinancialStatement<LedgerEntry>(async (start, end) => {
+      let q = context.supabase
+        .from("financial_ledger")
+        .select("*")
+        .eq("restaurant_id", data.restaurantId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, end);
+      if (data.from) q = q.gte("created_at", data.from);
+      if (data.to) q = q.lte("created_at", data.to);
+      const { data: rows, error } = await q;
+      if (error) throw new Error(error.message);
+      return (rows ?? []) as LedgerEntry[];
+    });
   });
 
 /** Saldo consolidado do restaurante (a partir do extrato completo). */
