@@ -90,7 +90,7 @@ describe("StripeConnectService", () => {
 
 describe("PaymentsReadinessService", () => {
   function mockRestaurant(row: any) {
-    (supabase.from as any).mockReturnValue({
+    vi.mocked(supabase.from).mockReturnValue({
       select: () => ({
         eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }),
       }),
