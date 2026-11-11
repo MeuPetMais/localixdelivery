@@ -58,16 +58,28 @@ describe("complete financial statement collector", () => {
     await expect(
       collectFinancialStatement(async (start) => {
         if (start >= 500) throw new Error("remote page failure");
-        return Array.from({ length: 500 }, (_, index) => index);
+        return Array.from({ length: 500 }, (_, index) => ({ id: `ledger-${index}` }));
       }),
     ).rejects.toThrow("remote page failure");
+  });
+
+  it("fails closed on duplicate IDs across pages during concurrent mutations", async () => {
+    await expect(
+      collectFinancialStatement(
+        async (start) =>
+          start === 0 ? [{ id: "first" }, { id: "second" }] : [{ id: "second" }],
+        { pageSize: 2 },
+      ),
+    ).rejects.toThrow("lançamento duplicado");
   });
 
   it("rejects invalid page sizes and oversized responses", async () => {
     await expect(collectFinancialStatement(async () => [], { pageSize: 0 })).rejects.toThrow(
       "Configuração inválida",
     );
-    await expect(collectFinancialStatement(async () => [1, 2, 3], { pageSize: 2 })).rejects.toThrow(
+    await expect(collectFinancialStatement(async () => [{ id: "a" }, { id: "b" }, { id: "c" }], {
+      pageSize: 2,
+    })).rejects.toThrow(
       "página maior",
     );
   });
