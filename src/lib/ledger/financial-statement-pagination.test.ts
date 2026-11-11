@@ -66,8 +66,7 @@ describe("complete financial statement collector", () => {
   it("fails closed on duplicate IDs across pages during concurrent mutations", async () => {
     await expect(
       collectFinancialStatement(
-        async (start) =>
-          start === 0 ? [{ id: "first" }, { id: "second" }] : [{ id: "second" }],
+        async (start) => (start === 0 ? [{ id: "first" }, { id: "second" }] : [{ id: "second" }]),
         { pageSize: 2 },
       ),
     ).rejects.toThrow("lançamento duplicado");
@@ -77,10 +76,10 @@ describe("complete financial statement collector", () => {
     await expect(collectFinancialStatement(async () => [], { pageSize: 0 })).rejects.toThrow(
       "Configuração inválida",
     );
-    await expect(collectFinancialStatement(async () => [{ id: "a" }, { id: "b" }, { id: "c" }], {
-      pageSize: 2,
-    })).rejects.toThrow(
-      "página maior",
-    );
+    await expect(
+      collectFinancialStatement(async () => [{ id: "a" }, { id: "b" }, { id: "c" }], {
+        pageSize: 2,
+      }),
+    ).rejects.toThrow("página maior");
   });
 });
