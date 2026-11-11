@@ -5,6 +5,7 @@ import type {
   CampaignAudienceResult,
   CampaignPreviewResult,
   CommunicationChannel,
+  CommunicationPreferences,
 } from "./types";
 import { CommunicationPreferenceService } from "./CommunicationPreferenceService";
 
@@ -37,8 +38,9 @@ export const CampaignAudienceService = {
       .select("*")
       .in("customer_id", customerIds);
     if (error) throw error;
-    const map = new Map<string, { customer_id: string; [key: string]: unknown }>(
-      (data ?? []).map((r: { customer_id: string; [key: string]: unknown }) => [r.customer_id, r]),
+    const rows = (data ?? []) as CommunicationPreferences[];
+    const map = new Map<string, CommunicationPreferences>(
+      rows.map((r) => [r.customer_id, r]),
     );
     const eligible: string[] = [];
     for (const id of customerIds) {
