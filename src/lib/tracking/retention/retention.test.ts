@@ -62,7 +62,7 @@ describe("TrackingRetentionService", () => {
     const client = fakeClient({
       tracking_timeline: { online: 500, archive: 120, purge: 30 },
     });
-    const logs: unknown[] = [];
+    const logs: Array<{ correlation_id?: string; msg?: string; level?: string }> = [];
     const svc = createTrackingRetentionService({
       client,
       now: () => NOW,
