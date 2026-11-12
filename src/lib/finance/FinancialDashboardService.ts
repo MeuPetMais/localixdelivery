@@ -72,6 +72,23 @@ const APPROVED = new Set(["COMPLETED"]);
 const REVENUE_TYPES = new Set(["RESTAURANT_RECEIVABLE", "PAYMENT_APPROVED"]);
 const FEE_TYPES = new Set(["PLATFORM_FEE", "GATEWAY_FEE"]);
 
+/** Fail closed until DEC-021 defines an authoritative economic basis. */
+export function assertSingleRevenuePostingBasis(
+  rows: Array<{ transaction_type: string; status: string }>,
+): void {
+  let approved = false;
+  let receivable = false;
+  for (const row of rows) {
+    if (row.status !== "COMPLETED") continue;
+    if (row.transaction_type === "PAYMENT_APPROVED") approved = true;
+    if (row.transaction_type === "RESTAURANT_RECEIVABLE") receivable = true;
+    if (approved && receivable)
+      throw new Error(
+        "Indicadores financeiros indisponíveis: bases de pagamento e recebível exigem conciliação contábil.",
+      );
+  }
+}
+
 export class FinancialDashboardService {
   constructor(private readonly ports: FinancialDashboardPorts) {}
 
@@ -85,6 +102,10 @@ export class FinancialDashboardService {
       from: filters.from,
       to: filters.to,
     });
+
+    // Issue #90: never aggregate two incompatible posting bases into one revenue KPI.
+    // This is a safety guard, not a new accounting recognition formula.
+    assertSingleRevenuePostingBasis(rows);
 
     let grossRevenue = 0;
     let fees = 0;
