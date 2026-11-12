@@ -21,5 +21,22 @@
 - [ ] RLS/RBAC, multiempresa, auditoria e observabilidade.
 - [ ] CI, migrations, rollback e parecer GO específico.
 
+## Contrato mínimo de evidência por cenário
+
+Cada cenário do checklist deve possuir registro independente, verificável e vinculado à execução. **Nenhum checkbox marcado equivale, por si só, a PASS.** Exigir:
+
+| Campo | Evidência obrigatória |
+|---|---|
+| Identificação | ID do caso, data, responsável e ambiente (Staging/Production quando expressamente autorizado) |
+| Versão executada | SHA do commit, branch, versão/identificador de migration e versão da RPC/Edge Function quando aplicável |
+| Dados sintéticos | Identidade fictícia de pedido, pagamento, parceiro e tenant, sem tokens, PII ou segredos |
+| Entrada | Payload sanitizado, parâmetros, pré-condições e passos executados |
+| Oráculo | Resultado esperado e invariantes contábeis/segurança que precisam permanecer válidos |
+| Observação | Resultado observado, HTTP/status, registros e logs sanitizados com correlação |
+| Conciliação | Comparação entre snapshot, Ledger, gateway e liquidação quando aplicável; divergências identificadas |
+| Classificação | PASS / FAIL / BLOCK, com justificativa e referência à evidência |
+
+**Critério de aceite:** PASS somente quando o observado corresponder ao esperado, sem violar invariantes, com evidência reprodutível. FAIL indica desvio comprovado; BLOCK indica ausência de ambiente, acesso, dado ou evidência suficiente. Não converter BLOCK em PASS por inferência. Consolidar o parecer por caso e por Gate; um cenário crítico FAIL/BLOCK impede GO até resolução formal.
+
 ## Restrições
 Este documento não autoriza execução de testes mutáveis, merge, deploy, migrations, alteração de dados, valores, credenciais, pagamentos ou produção. PR documental não libera pedidos reais.
