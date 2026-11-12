@@ -229,11 +229,22 @@ RFC → Auditoria → Implementação → Certificação → Homologação → P
 
 ---
 
+## Nota de reconciliação proposta — DEC-021 (12/11/2026)
+
+**Status: proposta documental; não representa homologação ou alteração de código.**
+
+A ADR-003 registra Stripe como gateway oficial e Mercado Pago como removido. Essa redação conflita com a política comercial confirmada de Mercado Pago como gateway principal para novos parceiros (BD-017, proposta neste PR) e com a evidência do Gate C (DEC-010). Para fins de revisão de governança, a exclusividade comercial Stripe está proposta para substituição; a integração Stripe não será removida nem habilitada automaticamente como alternativa.
+
+A ADR-004 descreve especificamente **Destination Charges Stripe** e Merchant of Record da plataforma. Esse contrato **não pode ser presumido para Mercado Pago**. Titularidade dos recebíveis, split, tarifas e responsabilidades devem ser documentados por gateway e validados com contratos externos antes da aprovação contábil. A ADR-006 contém referência específica a webhooks Stripe; sua generalização deve ser avaliada, não assumida.
+
+A decisão estrutural proposta é a DEC-021. Documento Mestre integral ainda exige reconciliação. **Esta decisão deve atualizar o Documento Mestre.**
+
 ## Histórico de Revisões
 
 | Versão | Data       | Autor    | Mudanças                                                |
 |--------|------------|----------|---------------------------------------------------------|
 | 1.0.0  | 2026-07-10 | Localix  | Criação do documento; ADR-001 a ADR-015 consolidados.   |
+| Proposta (sem nova versão oficial) | 2026-11-12 | Localix | Nota de conflito ADR-003/004/006 e referência à DEC-021; pendente de revisão. |
 
 ---
 
