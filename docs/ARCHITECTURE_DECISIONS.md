@@ -237,6 +237,10 @@ A ADR-003 registra Stripe como gateway oficial e Mercado Pago como removido. Ess
 
 A ADR-004 descreve especificamente **Destination Charges Stripe** e Merchant of Record da plataforma. Esse contrato **não pode ser presumido para Mercado Pago**. Titularidade dos recebíveis, split, tarifas e responsabilidades devem ser documentados por gateway e validados com contratos externos antes da aprovação contábil. A ADR-006 contém referência específica a webhooks Stripe; sua generalização deve ser avaliada, não assumida.
 
+**Precedência condicionada à aprovação:** após aprovação formal da BD-017 e da DEC-021, a determinação de exclusividade do Stripe na ADR-003 ficará superada pela política de Mercado Pago como gateway comercial principal para novos parceiros. A ADR-004 permanece como descrição específica da integração Stripe, sem aplicação automática ao Mercado Pago. A ADR-006 mantém a autoridade do Payment Domain, devendo suas referências específicas a Stripe ser interpretadas conforme o gateway efetivamente utilizado.
+
+**Limite desta nota:** esta reconciliação é provisória e não altera silenciosamente o texto histórico nem a versão oficial das ADRs. A revisão arquitetural formal, com nova versão e registro no Histórico de Revisões, permanece obrigatória antes de tratar essas ADRs como norma atualizada. Até a aprovação, o conflito fica explicitamente sinalizado e não resolvido por presunção.
+
 A decisão estrutural proposta é a DEC-021. Documento Mestre integral ainda exige reconciliação. **Esta decisão deve atualizar o Documento Mestre.**
 
 ## Histórico de Revisões
