@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeBalance, type LedgerEntry } from "@/lib/ledger/LedgerService";
 import { dashboardBalance } from "@/lib/finance/dashboard-balance";
+import { assertSingleRevenuePostingBasis } from "@/lib/finance/FinancialDashboardService";
 
 // Issue #90 — regression characterization, NOT a new accounting recognition rule.
 // Never assert that netBalance represents bank cash or settled receivables.
@@ -36,6 +37,23 @@ function e(
 }
 
 describe("Gate 4 / Issue #90 — accounting safety regression matrix", () => {
+  it("FIN-01: prevents mixing payment and receivable in KPI and cash-flow projections", () => {
+    expect(() =>
+      assertSingleRevenuePostingBasis([
+        e("capture", "PAYMENT_APPROVED", 50),
+        e("receivable", "RESTAURANT_RECEIVABLE", 48.51),
+      ]),
+    ).toThrow("bases de pagamento e recebível");
+  });
+
+  it("FIN-04: pending receivable does not block completed payment", () => {
+    expect(() =>
+      assertSingleRevenuePostingBasis([
+        e("capture", "PAYMENT_APPROVED", 50),
+        e("pending", "RESTAURANT_RECEIVABLE", 48.51, { status: "PENDING" }),
+      ]),
+    ).not.toThrow();
+  });
   it("FIN-01: mixed gross and receivable remain unavailable, never shown as available cash", () => {
     const rows = [
       e("capture", "PAYMENT_APPROVED", 50),
