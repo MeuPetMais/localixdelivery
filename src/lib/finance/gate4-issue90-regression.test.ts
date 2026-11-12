@@ -50,7 +50,10 @@ describe("Gate 4 / Issue #90 — accounting safety regression matrix", () => {
 
   it("FIN-04: mixing economic bases across different orders still blocks the tenant", () => {
     const summary = computeBalance(
-      [e("capture", "PAYMENT_APPROVED", 50), e("receivable", "RESTAURANT_RECEIVABLE", 48.51, { order_id: O2 })],
+      [
+        e("capture", "PAYMENT_APPROVED", 50),
+        e("receivable", "RESTAURANT_RECEIVABLE", 48.51, { order_id: O2 }),
+      ],
       A,
     );
     expect(summary.ambiguousPostingBasis).toBe(true);
