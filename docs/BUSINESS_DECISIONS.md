@@ -166,6 +166,36 @@ registrada neste documento antes da implementação.
 
 ---
 
+## BD-016 — Taxa de serviço escalonada
+**Data:** 12/11/2026.
+**Status:** Regra comercial confirmada; registro documental proposto para revisão no PR.
+**Decisão:** taxa Localix em BRL de R$ 0,99 para subtotal elegível até R$ 30,00 inclusive; R$ 1,49 acima de R$ 30,00. Aplicação prospectiva conforme política vigente e snapshot, sem recalcular pedidos concluídos.
+**Substitui:** BD-002 apenas quanto ao valor fixo.
+**Preserva:** BD-001, BD-003 e demais restrições não alteradas.
+**Impacto e riscos:** checkout, PricingEngine, PlatformRevenueService, PaymentService, fonte de política, descontos e pagador da taxa; exigir testes nas fronteiras e reconciliação de fontes.
+**Condição para revisão:** alteração comercial aprovada da base, valor, vigência ou responsável.
+
+## BD-017 — Mercado Pago como gateway principal
+**Data:** 12/11/2026.
+**Status:** Regra comercial confirmada; registro documental proposto para revisão no PR.
+**Decisão:** Mercado Pago é o gateway comercial principal para novos parceiros.
+**Substitui:** BD-004 quanto à exclusividade do Stripe; BD-015 apenas nos trechos que tornam Stripe obrigatório e proíbem Mercado Pago como padrão.
+**Preserva:** checkout oficial, ausência de mensalidade e comissão, segurança, idempotência e histórico.
+**Stripe:** integração existente preservada; sem autorização para remover, desativar ou habilitar comercialmente como alternativa.
+**Impacto e riscos:** OAuth, webhook, split por `application_fee`, taxas, KYC, recebíveis, repasses, Merchant of Record e reconciliação devem obedecer ao contrato efetivo do Mercado Pago, sem herdar pressupostos Stripe.
+**Condição para revisão:** mudança de gateway principal, contrato do provedor ou estratégia comercial.
+
+## BD-018 — Onboarding financeiro por gateway aplicável (NÃO APROVADA)
+**Data:** 12/11/2026.
+**Status:** PROPOSTA OPERACIONAL — requer aprovação específica.
+**Proposta:** substituir a obrigatoriedade de onboarding Stripe em BD-005/BD-009 por onboarding financeiro do gateway autorizado; preservar suporte assistido.
+**Sequência sob análise:** Cadastro → Validação → Documentação/aceite → Vinculação financeira → Configuração → Treinamento → Homologação → Publicação.
+**Conflito explícito:** BD-009 prevê Publicação antes de Homologação. A inversão acima NÃO está aprovada e não altera a operação vigente.
+**Critérios propostos:** autorização do parceiro, conta elegível, credenciais protegidas, taxas/split conferidos e teste controlado.
+**Condição para revisão:** aprovação operacional, regras KYC/KYB ou mudança do provedor.
+
+---
+
 **Governança.**
 - Este arquivo é append-only.
 - Alterações a decisões existentes exigem nova entrada `BD-###`
