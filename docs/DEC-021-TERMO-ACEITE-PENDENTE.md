@@ -1,7 +1,7 @@
-# DEC-021 — Termo de aceite técnico-financeiro (pendente de assinaturas)
+# DEC-021 — Termo de aceite parcial do princípio contábil
 
 **Data de preparação:** 12/11/2026  
-**Status:** AGUARDANDO DELIBERAÇÃO — não aprovado  
+**Status:** PRINCÍPIO CONTÁBIL APROVADO PELO RESPONSÁVEL DO PROJETO — contrato completo e homologação pendentes  
 **Escopo:** contrato financeiro autoritativo do Localix Delivery; Issue #90; Gate 4.  
 **Documentos-base:** `DEC-021-FINANCIAL-AUTHORITATIVE-CONTRACT.md`, `GATE4_DEC021_EVIDENCIAS_2026-11-12.md`, `GATE-FINANCEIRO-DEC-021-HOMOLOGACAO.md`.
 
@@ -25,17 +25,18 @@ Aprovar, com ressalvas e após análise dos responsáveis, o princípio de **nã
 | RLS/RBAC multiempresa, JWTs, migration e RPC em staging | PENDENTE de evidência E2E | Técnico + Segurança |
 | Reconciliação com Documento Mestre integral | PENDENTE | Governança |
 
-## 3. Decisão a ser tomada pelos responsáveis
+## 3. Deliberação expressa registrada
 
-- [ ] **Aprovar somente os princípios contábeis descritos**, sem autorizar implementação, merge, deploy, migration ou recálculo histórico.
-- [ ] **Solicitar ajustes** à DEC-021 antes de aprovar, indicando quais premissas econômicas faltam.
-- [ ] **Rejeitar** a proposta, registrando alternativa, justificativa e riscos.
+- [x] **Aprovado somente o princípio contábil:** pagamento bruto e recebível do parceiro não podem ser contados duas vezes na mesma base econômica.
+- [x] **Implementação, merge e produção NÃO autorizados.** Também não há autorização para migration, deploy, reprocessamento ou recálculo histórico.
+- [ ] **Contrato financeiro completo e fórmula de saldo:** pendentes de aceite técnico-financeiro e contábil.
 
-**Deliberação escolhida:** NÃO REGISTRADA.  
-**Responsável de negócio:** não identificado para assinatura neste registro.  
-**Responsável técnico:** não identificado para assinatura neste registro.  
-**Responsável financeiro/contábil:** não identificado para assinatura neste registro.  
-**Data e evidência do aceite:** pendentes.
+**Deliberação escolhida:** APROVAÇÃO PARCIAL DO PRINCÍPIO, COM BLOQUEIO DE EXECUÇÃO.  
+**Autoridade da deliberação:** responsável pelo projeto, por autorização expressa nesta conversa; nome/assinatura formal não coletados.  
+**Responsável técnico:** aceite independente pendente.  
+**Responsável financeiro/contábil:** aceite independente pendente.  
+**Data da deliberação:** 12/11/2026.  
+**Limite:** esta autorização não aprova a base de reconhecimento, saldo disponível, caixa, gateway fees, Merchant of Record, split ou regras de estorno.
 
 ## 4. Critérios para autorizar implementação futura
 
@@ -46,6 +47,6 @@ Aprovar, com ressalvas e após análise dos responsáveis, o princípio de **nã
 5. Evidências independentes de conciliação de snapshot, gateway, ledger e liquidação, sem dados reais em relatório.
 6. CI 4/4 no SHA final e revisão do PR; liberação de produção em autorização separada.
 
-**Até deliberação expressa: DEC-021 PROPOSTA, Issue #90 aberta, Gate Financeiro NO-GO.**
+**Situação após deliberação:** princípio contábil aprovado; DEC-021 como contrato financeiro integral permanece PROPOSTA; Issue #90 aberta; Gate Financeiro NO-GO.
 
 **Esta decisão deve atualizar o Documento Mestre** somente após aceite e reconciliação formal.
