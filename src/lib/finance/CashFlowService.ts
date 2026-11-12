@@ -1,4 +1,8 @@
-import { assertSingleRevenuePostingBasis, readLedgerView, type LedgerPort } from "./FinancialDashboardService";
+import {
+  assertSingleRevenuePostingBasis,
+  readLedgerView,
+  type LedgerPort,
+} from "./FinancialDashboardService";
 // Cash Flow / Receivables / Payables / Projection services.
 //
 // Port-based, side-effect free. UI never queries the DB; it calls these
