@@ -29,10 +29,14 @@ C. Preservar domínios e histórico; formalizar reconhecimento por fato econômi
 | Taxa gateway | Extrato/captura do provedor | Custo efetivo, não estimativa zero |
 | Recebível do parceiro | Contrato de liquidação + provedor | Direito a receber, não caixa |
 | Repasse realizado | Comprovante de transferência/liquidação | Somente após confirmação |
+| Saldo contábil | Direitos e obrigações reconhecidos conforme base contábil aprovada | Posição contábil sem pressupor liquidação ou disponibilidade bancária |
 | Saldo disponível | Liquidações, bloqueios e saídas conciliadas | Nunca apenas soma indiscriminada de eventos |
+| Caixa realizado | Extratos/relatórios de liquidação do provedor ou conta financeira | Movimentações efetivamente liquidadas e comprovadas; distinto de cobrança aprovada e de recebível |
 | Reembolso | `refund_id` e valor confirmado | Reversão única, total ou parcial |
 | Chargeback | `chargeback_case_id` e estado financeiro | Conforme disputa e efeito confirmado |
 | Benefits | Ledger próprio + pedido/snapshot | Concessão e resgate únicos |
+
+**Limite do legado:** o campo `netBalance` retornado por `computeBalance()` no Ledger atual não deve ser automaticamente exibido ou interpretado como saldo contábil, saldo disponível ou caixa realizado antes de definição aprovada e homologação das agregações. Nenhuma dessas três métricas pode ser inferida apenas pela soma de tipos de eventos.
 
 A identidade do fato financeiro deve incluir tenant, provedor, pagamento e operação; captura, refund, disputa ou payout exigem suas identidades específicas. Webhooks repetidos ou fora de ordem não podem criar obrigação adicional. `PAYMENT_APPROVED` e `RESTAURANT_RECEIVABLE` podem coexistir como registros, mas não como duas receitas ou dois saldos da mesma base.
 
