@@ -1,7 +1,10 @@
 /** Pure, bounded retry policy for payment webhook recovery. */
 export const MAX_WEBHOOK_RETRIES = 6;
 
-export function nextWebhookRetry(retryCount: number, now: Date): {
+export function nextWebhookRetry(
+  retryCount: number,
+  now: Date,
+): {
   attempts: number;
   status: "pending" | "failed";
   nextRetry: string;
