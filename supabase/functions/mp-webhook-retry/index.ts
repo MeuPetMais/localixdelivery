@@ -44,6 +44,7 @@ Deno.serve(async (req: Request) => {
     .from("payment_event_queue")
     .update({ locked: false })
     .eq("status", "pending")
+    .gte("created_at", new Date(cutoverTime).toISOString())
     .eq("locked", true)
     .lt("updated_at", staleBefore);
   if (releaseError) return respond({ ok: false, error: "stale_lock_release_failed" }, 503);
