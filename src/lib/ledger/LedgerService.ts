@@ -158,6 +158,20 @@ export function assertNoDuplicateCompletedLedgerReferences(entries: LedgerEntry[
   }
 }
 
+/**
+ * Fail closed at the server financial snapshot boundary. The legacy netBalance
+ * is not an approved economic basis when gross payments and partner receivables
+ * coexist. No ledger entries are modified, excluded, or reclassified.
+ */
+export function assertUnambiguousFinancialPostingBasis<T extends BalanceSummary>(balance: T): T {
+  if (balance.ambiguousPostingBasis) {
+    throw new Error(
+      "Extrato financeiro indisponível: pagamento bruto e recebível exigem conciliação contábil.",
+    );
+  }
+  return balance;
+}
+
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -228,9 +242,10 @@ export const getRestaurantFinancialSnapshot = createServerFn({ method: "POST" })
       return payload;
     }, data.restaurantId);
     assertNoDuplicateCompletedLedgerReferences(snapshot.entries);
+    const balance = assertUnambiguousFinancialPostingBasis(computeBalance(snapshot.entries, data.restaurantId));
     return {
       rows: snapshotStatement(snapshot, data.from, data.to),
-      balance: computeBalance(snapshot.entries, data.restaurantId),
+      balance,
       snapshotAt: snapshot.snapshot_at,
     };
   });
