@@ -9,13 +9,10 @@ describe("Mercado Pago webhook duplicate delivery response", () => {
     });
   });
 
-  it.each([false, null, undefined])(
-    "never acknowledges an unfinished event (%s)",
-    (processed) => {
-      expect(existingWebhookDelivery(processed)).toEqual({
-        status: 503,
-        body: { ok: false, error: "webhook_pending_recovery" },
-      });
-    },
-  );
+  it.each([false, null, undefined])("never acknowledges an unfinished event (%s)", (processed) => {
+    expect(existingWebhookDelivery(processed)).toEqual({
+      status: 503,
+      body: { ok: false, error: "webhook_pending_recovery" },
+    });
+  });
 });
