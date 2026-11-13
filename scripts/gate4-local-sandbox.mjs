@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { neutralizeLocalCronJobs } from "./gate4-local-neutralize-cron.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SANDBOX_DIR_NAME = ".localix-financial-sandbox";
@@ -85,7 +86,6 @@ port = 55424
 `;
   if (BLOCKED.some((id) => isolated.includes(id))) throw Error("remote_project_in_config");
   writeFileSync(join(target, "supabase", "config.toml"), isolated);
-  writeFileSync(marker, SANDBOX_MARKER);
 
   // These are copies only; no SQL is run and no remote database is touched.
   // A migration audit is REQUIRED before any local Supabase CLI start/db reset.
@@ -98,13 +98,24 @@ port = 55424
     force: true,
   });
 
+  const localCronChanges = neutralizeLocalCronJobs(
+    sourceMigrations,
+    join(target, "supabase", "migrations"),
+  );
+  writeFileSync(
+    join(target, "LOCAL_CRON_NEUTRALIZATION.json"),
+    JSON.stringify(localCronChanges, null, 2) + "\\n",
+  );
+  writeFileSync(marker, SANDBOX_MARKER);
+
   writeFileSync(
     join(target, "LOCAL_GATE4_README.txt"),
     [
       "Localix Gate 4 — sandbox prepared, NOT RUNNING.",
       "All files are copies. No migrations or Edge Functions executed.",
       "Do NOT use supabase link, db push, migration repair or db reset.",
-      "Review all copied migrations before starting the local stack.",
+      "Three reviewed cron SQL tails were removed ONLY from local migration copies.",
+      "Audit all other SQL and Docker settings before starting the local stack.",
       "The app/gateway must remain in mock-only mode until an authorized sandbox deployment.",
       "This directory is excluded from Git and must never receive real production secrets.",
       "",
@@ -118,6 +129,7 @@ port = 55424
     databasePort: LOCAL_DB_PORT,
     migrationsExecuted: false,
     remoteAccessAttempted: false,
+    localCronJobsDisabled: localCronChanges.length,
   };
 }
 
