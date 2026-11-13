@@ -34,3 +34,14 @@ PASS limitado para configurações verificáveis de função/RLS/privilégios em
 NÃO FOI POSSÍVEL PROVAR homologação financeira E2E, idempotência completa, reconciliação externa nem prontidão de produção.
 B3 permanece ABERTO. Issue #90 ABERTA; Gate Financeiro NO-GO; PRs Draft.
 Esta decisão deve atualizar o Documento Mestre quando aprovada e conciliada formalmente.
+
+## B3 — segunda rodada de verificação (13/11/2026)
+- Execução local isolada não foi possível neste ambiente: repositório privado não pôde ser clonado por ausência de resolução de rede para github.com; ambiente não dispõe de Bun ou Docker. **Não houve teste PostgreSQL local novo**. A CI prévia dos PRs continua sendo evidência separada, não substitui E2E.
+- Staging consultado exclusivamente por SELECT. Migration da função presente no histórico do banco como **20261111212209_gate4_consistent_financial_snapshot**; arquivo versionado no PR #93 tem nome **20261111204106_gate4_consistent_financial_snapshot.sql**. Divergência de identificação exige reconciliar histórico antes de integrar PRs/migrations; NÃO reaplicar SQL automaticamente.
+- `pg_get_functiondef` confirma consulta única MATERIALIZED, filtro por restaurant_id e auth.uid, limite 50.001, flag complete, version 1, JSONB escalar, search_path vazio e STABLE. Conteúdo funcional observado é coerente com o arquivo proposto do PR #93, mas **identidade exata do artefato/migration e versionamento ainda não foram comprovados**.
+- ACL da RPC contém postgres, service_role e authenticated; anon não tem EXECUTE. Sua invocação com JWTs reais e validação de RLS entre identidades ainda não foi realizada.
+- Security advisors do Staging informaram 11 tabelas com RLS sem policies (INFO), 1 função com search_path mutável, extensão pg_net em public, 5 SECURITY DEFINER executáveis por anon, 15 executáveis por authenticated e proteção de senha vazada desabilitada. Estes achados exigem triagem de superfície; **não equivalem automaticamente a exploração ou violação**. Nenhuma correção ou revogação em massa foi feita.
+  - https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable
+  - https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+- O Staging possui somente uma branch main no controle de branches consultado; não se criou ambiente isolado nem dados sintéticos.
+- Conclusão: B3 NÃO CONCLUÍDO; impedir migrations até reconciliar as versões, homologar com JWTs distintos, conciliação Mercado Pago e testes isolados. Gate Financeiro NO-GO, produção inalterada.
