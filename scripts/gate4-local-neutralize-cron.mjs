@@ -47,7 +47,8 @@ export function neutralizeLocalCronJobs(sourceDirectory, targetDirectory) {
       throw Error("cron_job_signature_changed:" + file);
     if ((tail.match(cronCall) ?? []).length !== 1)
       throw Error("unexpected_cron_schedule_count:" + file);
-    const remaining = prefix + "-- LOCALIX GATE4: cron job disabled only in this disposable local copy.\n";
+    const remaining =
+      prefix + "-- LOCALIX GATE4: cron job disabled only in this disposable local copy.\n";
     if (cronCall.test(remaining)) throw Error("remaining_cron_schedule:" + file);
     cronCall.lastIndex = 0;
     changes.push({
@@ -63,8 +64,7 @@ export function neutralizeLocalCronJobs(sourceDirectory, targetDirectory) {
   for (const file of readdirSync(sourceDirectory).filter((name) => name.endsWith(".sql"))) {
     if (allowed.has(file)) continue;
     const sql = readFileSync(join(sourceDirectory, file), "utf8");
-    if (/\bcron\s*\.\s*schedule\s*\(/i.test(sql))
-      throw Error("unreviewed_cron_schedule:" + file);
+    if (/\bcron\s*\.\s*schedule\s*\(/i.test(sql)) throw Error("unreviewed_cron_schedule:" + file);
   }
   for (const { file, remaining } of changes) writeFileSync(join(targetDirectory, file), remaining);
   return changes.map(({ file, job, originalSha256, localSha256 }) => ({
