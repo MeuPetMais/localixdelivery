@@ -128,6 +128,36 @@ export function computeBalance(entries: LedgerEntry[], restaurantId: string): Ba
   };
 }
 
+/**
+ * Gate 4 / Issue #90: reject duplicated completed financial events before
+ * presenting a statement or balance. This is a read-side safety check only:
+ * it never removes or rewrites append-only ledger entries.
+ *
+ * Entries without a complete economic identity are not deduplicated by guesswork.
+ */
+export function assertNoDuplicateCompletedLedgerReferences(entries: LedgerEntry[]): void {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    if (entry.status !== "COMPLETED") continue;
+    if (!entry.restaurant_id || !entry.provider || !entry.reference_type || !entry.reference_id)
+      continue;
+    const key = JSON.stringify([
+      entry.restaurant_id,
+      entry.currency,
+      entry.provider,
+      entry.transaction_type,
+      entry.reference_type,
+      entry.reference_id,
+    ]);
+    if (seen.has(key)) {
+      throw new Error(
+        "Extrato financeiro indisponível: referência econômica duplicada exige conciliação.",
+      );
+    }
+    seen.add(key);
+  }
+}
+
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -197,6 +227,7 @@ export const getRestaurantFinancialSnapshot = createServerFn({ method: "POST" })
       if (error) throw new Error("Financial snapshot unavailable: " + error.message);
       return payload;
     }, data.restaurantId);
+    assertNoDuplicateCompletedLedgerReferences(snapshot.entries);
     return {
       rows: snapshotStatement(snapshot, data.from, data.to),
       balance: computeBalance(snapshot.entries, data.restaurantId),
