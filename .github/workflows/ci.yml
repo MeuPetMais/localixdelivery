@@ -12,6 +12,7 @@ on:
       - audit/gate4-unique-order-kpis
       - audit/gate4-complete-financial-statements
       - audit/gate4-issue90-regression-tests
+      - fix/gate4-mp-webhook-pending-retry
 
 permissions:
   contents: read
