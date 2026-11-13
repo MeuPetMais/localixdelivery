@@ -530,6 +530,7 @@ Deno.serve(async (req) => {
         error: opErr?.message,
         rows: opUp?.length ?? 0,
       });
+      throw new Error("order_payment_upsert_failed");
     }
 
     // payments — mesma estrutura que Stripe (cross-gateway).
@@ -553,12 +554,14 @@ Deno.serve(async (req) => {
       },
       { onConflict: "provider,external_id" },
     );
-    if (payErr)
+    if (payErr) {
       console.error("[mp-webhook] payments upsert failed", {
         orderId,
         mpId: String(mp.id),
         error: payErr.message,
       });
+      throw new Error("payments_upsert_failed");
+    }
 
     // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
     const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;
@@ -694,7 +697,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    await sb
+    const { error: completionError } = await sb
       .from("payment_webhook_events")
       .update({
         processed: true,
@@ -702,6 +705,7 @@ Deno.serve(async (req) => {
         ...(internalReplay ? {} : { processing_attempts: 1 }),
       })
       .eq("id", eventPk);
+    if (completionError) throw new Error("webhook_completion_failed");
 
     return json({ ok: true, status: local, orderId });
   } catch (err) {
