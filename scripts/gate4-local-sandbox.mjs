@@ -89,7 +89,10 @@ port = 55424
 
   // These are copies only; no SQL is run and no remote database is touched.
   // A migration audit is REQUIRED before any local Supabase CLI start/db reset.
-  cpSync(sourceMigrations, join(target, "supabase", "migrations"), { recursive: true, force: true });
+  cpSync(sourceMigrations, join(target, "supabase", "migrations"), {
+    recursive: true,
+    force: true,
+  });
   cpSync(sourceFunctions, join(target, "supabase", "functions"), {
     recursive: true,
     force: true,
