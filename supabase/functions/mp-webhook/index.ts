@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
 
   try {
     const failClosed = async (reason: string) => {
-      await sb
+      const { error: eventError } = await sb
         .from("payment_webhook_events")
         .update({
           processed: false,
@@ -339,7 +339,26 @@ Deno.serve(async (req) => {
           ...(internalReplay ? {} : { processing_attempts: 1 }),
         })
         .eq("id", eventPk);
-      return json({ ok: false, error: reason }, { status: 200 });
+      if (eventError) {
+        console.error("[mp-webhook] trust boundary state persistence failed", eventError);
+        return json({ ok: false, error: "event_state_persistence_failed" }, { status: 503 });
+      }
+      if (!internalReplay) {
+        const { error: queueError } = await sb.from("payment_event_queue").insert({
+          event_id: eventPk,
+          status: "pending",
+          retry_count: 0,
+          next_retry: new Date(Date.now() + 60_000).toISOString(),
+          last_error: `trust_boundary:${reason}`,
+        });
+        if (queueError) {
+          console.error("[mp-webhook] trust boundary queue failed", queueError);
+          return json({ ok: false, error: "trust_boundary_queue_failed" }, { status: 503 });
+        }
+      }
+      // 200 on processed=false previously hid failed payment verification from MP
+      // and left no recovery ticket. A replay is handled by the existing worker.
+      return json({ ok: false, error: reason }, { status: 503 });
     };
 
     const webhookUserId = normalizeMpUserId(body?.user_id ?? body?.data?.user_id);
@@ -596,6 +615,9 @@ Deno.serve(async (req) => {
           correlationId,
           reason: tr.reason ?? tr.error,
         });
+        // Never ACK a paid/refunded/charged-back event before the order domain
+        // has accepted the corresponding state (including idempotent no-ops).
+        throw new Error("order_transition_rejected");
       }
     }
 
