@@ -17,7 +17,8 @@ const CRON_TAILS = [
   },
   {
     file: "20260805160000_support_knowledge_category_scope_and_sla_cron.sql",
-    marker: "DO $$\nBEGIN\n  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'support-sla-notifications-every-5-minutes')",
+    marker:
+      "DO $\\nBEGIN\\n  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'support-sla-notifications-every-5-minutes')",
     job: "support-sla-notifications-every-5-minutes",
   },
 ];
@@ -49,7 +50,13 @@ export function neutralizeLocalCronJobs(sourceDirectory, targetDirectory) {
     const remaining = prefix + "-- LOCALIX GATE4: cron job disabled only in this disposable local copy.\n";
     if (cronCall.test(remaining)) throw Error("remaining_cron_schedule:" + file);
     cronCall.lastIndex = 0;
-    changes.push({ file, job, originalSha256: sha256(original), localSha256: sha256(remaining), remaining });
+    changes.push({
+      file,
+      job,
+      originalSha256: sha256(original),
+      localSha256: sha256(remaining),
+      remaining,
+    });
   }
   // Refuse any other scheduled action, including new migration files.
   const allowed = new Set(CRON_TAILS.map((item) => item.file));
