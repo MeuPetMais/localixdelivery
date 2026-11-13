@@ -87,6 +87,7 @@ function fakeSupabase(state: State) {
 }
 
 type Runtime = {
+  client: ReturnType<typeof fakeSupabase>;
   handler: (req: Request) => Promise<Response>;
   state: State;
   replay: ReturnType<typeof vi.fn>;
@@ -173,7 +174,7 @@ function setup(options: { fail?: boolean; cutoff?: string } = {}): Runtime {
     console,
   });
   if (!handler) throw Error("Worker did not register a handler");
-  return { handler, state, replay, env };
+  return { client: sb, handler, state, replay, env };
 }
 
 function request(secret = "synthetic-secret") {
@@ -227,5 +228,64 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
     expect(await response.json()).toMatchObject({ scanned: 0, completed: 0 });
     expect(r.replay).not.toHaveBeenCalled();
     expect(r.state.payment_webhook_events[0].processed).toBe(false);
+  });
+
+  it("invokes the actual MP receiver handler for a persisted synthetic non-financial event", async () => {
+    const runtime = setup();
+    runtime.state.payment_webhook_events[0].payload_json = {
+      id: "synthetic-event-1",
+      type: "unsupported_synthetic",
+      data: { id: "synthetic-payment-1" },
+    };
+    const { readFileSync } = await import("node:fs");
+    let receiverSource = readFileSync(
+      new URL("../mp-webhook/index.ts", import.meta.url),
+      "utf8",
+    );
+    receiverSource = receiverSource.replace(/^import[^;]+;\\n/gm, "");
+    const receiverCompiled = ts.transpileModule(receiverSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+    }).outputText;
+    let receiver: ((req: Request) => Promise<Response>) | undefined;
+    runInNewContext(receiverCompiled, {
+      Deno: {
+        env: {
+          get: (key: string) =>
+            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined,
+        },
+        serve: (handler: (req: Request) => Promise<Response>) => {
+          receiver = handler;
+        },
+      },
+      createClient: () => runtime.client,
+      corsHeaders: {},
+      json: (body: unknown, init: ResponseInit = {}) =>
+        new Response(JSON.stringify(body), {
+          ...init,
+          headers: { "content-type": "application/json" },
+        }),
+      existingWebhookDelivery: () => ({
+        status: 503,
+        body: { ok: false, error: "webhook_pending_recovery" },
+      }),
+      shouldReplayExistingWebhook: (processed: boolean, internal: boolean) =>
+        processed === false && internal,
+      crypto,
+      Response,
+      URL,
+      TextEncoder,
+      Uint8Array,
+      console,
+    });
+    expect(receiver).toBeTypeOf("function");
+    runtime.replay.mockImplementation(async (url: URL, options: RequestInit) => {
+      const request = new Request(url.toString(), options);
+      return receiver!(request);
+    });
+    const response = await runtime.handler(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ completed: 1 });
+    expect(runtime.state.payment_webhook_events[0].processed).toBe(true);
+    expect(runtime.state.payment_event_queue[0].status).toBe("completed");
   });
 });
