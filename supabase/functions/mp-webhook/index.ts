@@ -182,6 +182,15 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, { status: 405 });
 
   const sb = admin();
+  const configuredReplaySecret = Deno.env.get("MP_WEBHOOK_REPLAY_SECRET");
+  const internalReplay =
+    !!configuredReplaySecret &&
+    req.headers.get("x-localix-replay-secret") === configuredReplaySecret;
+  // A replay credential never makes the payload authoritative: the normal MP
+  // ownership, status, amount and trust-boundary checks below still execute.
+  if (req.headers.has("x-localix-replay-secret") && !internalReplay) {
+    return json({ ok: false, error: "replay_unauthorized" }, { status: 401 });
+  }
   const rawBody = await req.text();
   const body = (() => {
     try {
@@ -233,9 +242,13 @@ Deno.serve(async (req) => {
       existingProcessed = existing.processed === true;
     }
   }
-  if (eventPk) {
+  if (eventPk && !(internalReplay && existingProcessed === false)) {
     const duplicate = existingWebhookDelivery(existingProcessed);
     return json(duplicate.body, { status: duplicate.status });
+  }
+  // Internal replay cannot invent new payment events.
+  if (!eventPk && internalReplay) {
+    return json({ ok: false, error: "replay_event_missing" }, { status: 409 });
   }
   if (!eventPk) {
     const { data: inserted, error } = await sb
@@ -323,7 +336,7 @@ Deno.serve(async (req) => {
           processed: false,
           processed_at: null,
           error_message: `trust_boundary:${reason}`,
-          processing_attempts: 1,
+          ...(internalReplay ? {} : { processing_attempts: 1 }),
         })
         .eq("id", eventPk);
       return json({ ok: false, error: reason }, { status: 200 });
@@ -661,7 +674,7 @@ Deno.serve(async (req) => {
             processed: false,
             processed_at: null,
             error_message: reason,
-            processing_attempts: 1,
+            ...(internalReplay ? {} : { processing_attempts: 1 }),
           })
           .eq("id", eventPk);
         return json({ ok: false, error: "refund_incomplete" }, { status: 200 });
@@ -673,7 +686,7 @@ Deno.serve(async (req) => {
       .update({
         processed: true,
         processed_at: new Date().toISOString(),
-        processing_attempts: 1,
+        ...(internalReplay ? {} : { processing_attempts: 1 }),
       })
       .eq("id", eventPk);
 
@@ -686,7 +699,7 @@ Deno.serve(async (req) => {
       .update({
         processed: false,
         error_message: msg,
-        processing_attempts: 1,
+        ...(internalReplay ? {} : { processing_attempts: 1 }),
       })
       .eq("id", eventPk);
     const nextRetry = new Date(Date.now() + 60_000).toISOString();
