@@ -74,13 +74,16 @@ Deno.serve(async (req: Request) => {
       .eq("locked", false)
       .eq("retry_count", job.retry_count)
       .lte("next_retry", now.toISOString())
-      .select("id")
+      .select("id,updated_at")
       .maybeSingle();
     if (claimError || !locked) {
       deferred++;
       continue;
     }
 
+    // Fence the queue lease with the timestamp assigned by the updated_at
+    // trigger. An older worker must not complete a lease reclaimed by another.
+    const leaseUpdatedAt = locked.updated_at;
     const finish = async (status: string, errorMessage: string | null) => {
       const policy = nextWebhookRetry(Number(job.retry_count ?? 0), new Date());
       const update =
@@ -93,12 +96,17 @@ Deno.serve(async (req: Request) => {
               next_retry: policy.nextRetry,
               last_error: (errorMessage ?? "replay_failed").slice(0, 250),
             };
-      const { error } = await sb
+      const { data: finalized, error } = await sb
         .from("payment_event_queue")
         .update(update)
         .eq("id", job.id)
-        .eq("locked", true);
+        .eq("locked", true)
+        .eq("retry_count", job.retry_count)
+        .eq("updated_at", leaseUpdatedAt)
+        .select("id")
+        .maybeSingle();
       if (error) throw new Error("queue_finalization_failed");
+      if (!finalized) throw new Error("queue_lease_lost");
       if (status === "completed") completed++;
       else if (policy.status === "failed") failed++;
       else retried++;
