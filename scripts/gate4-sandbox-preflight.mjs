@@ -17,7 +17,9 @@ export function validateFinancialSandboxEnvironment(env) {
   const supabaseUrl = String(env.SUPABASE_URL ?? "").trim();
   const frontendUrl = String(env.VITE_SUPABASE_URL ?? "").trim();
   const frontendProject = String(env.VITE_SUPABASE_PROJECT_ID ?? "").trim();
-  const mpMode = String(env.MP_ENVIRONMENT ?? "").trim().toLowerCase();
+  const mpMode = String(env.MP_ENVIRONMENT ?? "")
+    .trim()
+    .toLowerCase();
   const publicKey = String(env.MP_PUBLIC_KEY_TEST ?? "").trim();
   const accessToken = String(env.MP_ACCESS_TOKEN_TEST ?? "").trim();
   const cutover = String(env.MP_WEBHOOK_RETRY_CUTOVER ?? "").trim();
@@ -46,17 +48,17 @@ export function validateFinancialSandboxEnvironment(env) {
   if (!cutover || !Number.isFinite(Date.parse(cutover)))
     errors.push("retry_cutover_unconfigured");
 
-  if (env.MP_RETRY_AUTOMATION_ENABLED === "true")
-    errors.push("scheduler_must_remain_off");
-  if (env.PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL)
-    errors.push("production_functions_fallback_present");
+  if (env.MP_RETRY_AUTOMATION_ENABLED === "true") errors.push("scheduler_must_remain_off");
+  if (env.PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL) errors.push("production_functions_fallback_present");
 
   return { ok: errors.length === 0, errors };
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   const result = validateFinancialSandboxEnvironment(process.env);
-  console.log(result.ok ? "H1_PREFLIGHT_PASS (config only; NO financial E2E)" : "H1_PREFLIGHT_BLOCKED");
+  console.log(
+    result.ok ? "H1_PREFLIGHT_PASS (config only; NO financial E2E)" : "H1_PREFLIGHT_BLOCKED",
+  );
   for (const code of result.errors) console.log(code);
   process.exitCode = result.ok ? 0 : 1;
 }
