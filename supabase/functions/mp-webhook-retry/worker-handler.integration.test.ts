@@ -119,7 +119,11 @@ function setup(options: { fail?: boolean; cutoff?: string } = {}): Runtime {
         signature: null,
         resource_id: "synthetic-payment-1",
         event_id: "synthetic-event-1",
-        payload_json: { id: "synthetic-event-1", type: "payment", data: { id: "synthetic-payment-1" } },
+        payload_json: {
+          id: "synthetic-event-1",
+          type: "payment",
+          data: { id: "synthetic-payment-1" },
+        },
       },
     ],
   };
