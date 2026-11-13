@@ -19,9 +19,13 @@ Deno.serve(async (req: Request) => {
   const replaySecret = Deno.env.get("MP_WEBHOOK_REPLAY_SECRET");
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const cutover = Deno.env.get("MP_WEBHOOK_RETRY_CUTOVER");
+  const cutoverTime = Date.parse(cutover ?? "");
 
+  // Historical entries require manual gateway reconciliation. An explicit
+  // cutover protects pre-rollout webhooks from an unintended automatic replay.
   // No configuration means no financial side effects, even when invoked.
-  if (!workerSecret || !replaySecret || !url || !serviceKey) {
+  if (!workerSecret || !replaySecret || !url || !serviceKey || !Number.isFinite(cutoverTime)) {
     return respond({ ok: false, error: "worker_not_configured" }, 503);
   }
   if (req.headers.get("authorization") !== `Bearer ${workerSecret}`) {
@@ -47,6 +51,7 @@ Deno.serve(async (req: Request) => {
   const { data: jobs, error: listError } = await sb
     .from("payment_event_queue")
     .select("id,event_id,retry_count,locked,next_retry,status")
+    .gte("created_at", new Date(cutoverTime).toISOString())
     .eq("status", "pending")
     .eq("locked", false)
     .lte("next_retry", now.toISOString())
@@ -179,5 +184,8 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return respond({ ok: true, scanned: jobs?.length ?? 0, completed, retried, deferred, failed });
+  return respond(
+    { ok: failed === 0, scanned: jobs?.length ?? 0, completed, retried, deferred, failed },
+    failed > 0 ? 503 : 200,
+  );
 });
