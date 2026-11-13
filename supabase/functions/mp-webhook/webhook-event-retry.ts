@@ -11,3 +11,11 @@ export function existingWebhookDelivery(processed: boolean | null | undefined) {
     body: { ok: false, error: "webhook_pending_recovery" },
   };
 }
+
+/** Only a trusted internal replay may resume an existing unfinished event. */
+export function shouldReplayExistingWebhook(
+  processed: boolean | null | undefined,
+  internalReplay: boolean,
+): boolean {
+  return processed === false && internalReplay;
+}
