@@ -45,3 +45,9 @@ Esta decisão deve atualizar o Documento Mestre quando aprovada e conciliada for
   - https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
 - O Staging possui somente uma branch main no controle de branches consultado; não se criou ambiente isolado nem dados sintéticos.
 - Conclusão: B3 NÃO CONCLUÍDO; impedir migrations até reconciliar as versões, homologar com JWTs distintos, conciliação Mercado Pago e testes isolados. Gate Financeiro NO-GO, produção inalterada.
+
+## B3 — privilégios e índices (consulta adicional)
+- A concessão de tabela observada para authenticated é SELECT; não foram encontrados INSERT/UPDATE/DELETE para authenticated nem grants para anon em information_schema.role_table_grants. Isto não prova ausência de outros caminhos privilegiados via RPC/SECURITY DEFINER ou service_role.
+- service_role possui privilégios amplos de DML e administração na tabela, conforme esperado de papel privilegiado; não é prova de exposição desses privilégios ao cliente.
+- Os índices únicos Mercado Pago são PARCIAIS: exigem metadata.ledger_idempotency_key. O primeiro cobre referências não nulas e tipos PAYMENT_PENDING/APPROVED/FAILED, REFUND e CHARGEBACK; o segundo cobre mp_payment e três tipos PAYMENT. Operações sem essa chave não são protegidas por esses índices. Não foi provado que todo writer preenche a chave ou que a chave é economicamente única para refund/chargeback.
+- Nenhuma escrita/DDL realizada. A próxima tarefa técnica é inventariar os writers e ensaiar concorrência em banco isolado; não liberar GO pela existência de índices.
