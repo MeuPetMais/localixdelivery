@@ -29,7 +29,12 @@ type Table =
 type State = Record<Table, Row[]>;
 type Operation = { table: Table; kind: "upsert" | "insert" | "update" };
 
-function createFixture(status: string, failTable?: Table, failCompletion = false) {
+function createFixture(
+  status: string,
+  failTable?: Table,
+  failCompletion = false,
+  rejectTransition = false,
+) {
   const eventBody: Row = {
     id: "synthetic-event-1",
     type: "payment",
@@ -227,6 +232,7 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
     validateTrustedMpPaymentContext,
     transitionOrder: async (args: { to: string }) => {
       transitions.push(args.to);
+      if (rejectTransition) return { ok: false, reason: "SYNTHETIC_TRANSITION_REJECTED" };
       state.orders[0].status = args.to;
       return { ok: true };
     },
@@ -345,4 +351,26 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
     expect(r.state.financial_ledger).toHaveLength(1);
     expect(r.state.financial_ledger[0].transaction_type).toBe("PAYMENT_APPROVED");
   });
+  it("does not acknowledge approved payment if order transition is rejected", async () => {
+    const r = createFixture("approved", undefined, false, true);
+    const res = await r.invoke();
+    expect(res.status).toBe(503);
+    expect(r.transitions).toEqual(["pago"]);
+    expect(r.state.orders[0].status).toBe("aguardando_pagamento");
+    expect(r.state.payment_webhook_events[0].processed).toBe(false);
+    expect(r.state.financial_ledger).toHaveLength(0);
+    expect(r.state.order_payment[0].status).toBe("APPROVED");
+  });
+
+  it("rejects amount mismatch without confirming the event or changing order", async () => {
+    const r = createFixture("approved");
+    r.mp.transaction_amount = 51;
+    const res = await r.invoke();
+    expect(res.status).toBe(503);
+    expect(r.state.payment_webhook_events[0]).toMatchObject({ processed: false });
+    expect(r.transitions).toHaveLength(0);
+    expect(r.state.financial_ledger).toHaveLength(0);
+    expect(r.state.orders[0].status).toBe("aguardando_pagamento");
+  });
+
 });
