@@ -67,6 +67,16 @@ describe("Gate 4 — sandbox financeiro estritamente local", () => {
       join(root, ".localix-financial-sandbox", "supabase", "config.toml"),
       "utf8",
     );
+    const report = JSON.parse(
+      readFileSync(
+        join(root, ".localix-financial-sandbox", "LOCAL_CRON_NEUTRALIZATION.json"),
+        "utf8",
+      ),
+    );
+    expect(report).toHaveLength(3);
+    expect(report.every((item: { jobDisabledInLocalCopy: boolean }) => item.jobDisabledInLocalCopy)).toBe(true);
+    expect(report[0].originalSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(report[0].localSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(result).toMatchObject({
       prepared: true,
       migrationsExecuted: false,
