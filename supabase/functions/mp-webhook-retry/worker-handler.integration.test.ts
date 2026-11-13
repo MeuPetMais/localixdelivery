@@ -238,16 +238,14 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
       data: { id: "synthetic-payment-1" },
     };
     const { readFileSync } = await import("node:fs");
-    let receiverSource = readFileSync(
-      new URL("../mp-webhook/index.ts", import.meta.url),
-      "utf8",
-    );
+    let receiverSource = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8");
     receiverSource = receiverSource.replace(/^import[^;]+;\\n/gm, "");
     const receiverCompiled = ts.transpileModule(receiverSource, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
     }).outputText;
     let receiver: ((req: Request) => Promise<Response>) | undefined;
     runInNewContext(receiverCompiled, {
+      exports: {},
       Deno: {
         env: {
           get: (key: string) =>
@@ -299,6 +297,7 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
     let receiver: ((req: Request) => Promise<Response>) | undefined;
     const gateway = vi.fn(async () => new Response(null, { status: 404 }));
     runInNewContext(receiverCompiled, {
+      exports: {},
       Deno: {
         env: {
           get: (key: string) =>
