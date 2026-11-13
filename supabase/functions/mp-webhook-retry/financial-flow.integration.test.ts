@@ -6,7 +6,10 @@ import { recordMercadoPagoLedger } from "../mp-webhook/ledger-idempotency";
 import { recordPaymentRefunds } from "../mp-webhook/refund-ledger";
 import { recordChargebackLedger } from "../mp-webhook/chargeback-ledger";
 import { validateTrustedMpPaymentContext } from "../mp-webhook/trust-boundary";
-import { existingWebhookDelivery, shouldReplayExistingWebhook } from "../mp-webhook/webhook-event-retry";
+import {
+  existingWebhookDelivery,
+  shouldReplayExistingWebhook,
+} from "../mp-webhook/webhook-event-retry";
 
 const ORDER = "11111111-1111-4111-8111-111111111111";
 const RESTAURANT = "22222222-2222-4222-8222-222222222222";
@@ -44,21 +47,29 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
     refunds: status === "refunded" ? [{ id: "synthetic-refund-1", amount: 50 }] : [],
   };
   const state: State = {
-    payment_webhook_events: [{
-      id: "event-1",
-      provider: "mercado_pago",
-      event_id: "synthetic-event-1",
-      processed: false,
-      processing_attempts: 1,
-      payload_json: eventBody,
-      resource_id: PAYMENT,
-    }],
+    payment_webhook_events: [
+      {
+        id: "event-1",
+        provider: "mercado_pago",
+        event_id: "synthetic-event-1",
+        processed: false,
+        processing_attempts: 1,
+        payload_json: eventBody,
+        resource_id: PAYMENT,
+      },
+    ],
     payment_event_queue: [],
     orders: [{ id: ORDER, restaurant_id: RESTAURANT, status: "aguardando_pagamento" }],
-    order_payment: [{
-      id: "order-payment-1", order_id: ORDER, restaurant_id: RESTAURANT,
-      provider: "mercado_pago", payment_id: PAYMENT, transaction_amount: 50,
-    }],
+    order_payment: [
+      {
+        id: "order-payment-1",
+        order_id: ORDER,
+        restaurant_id: RESTAURANT,
+        provider: "mercado_pago",
+        payment_id: PAYMENT,
+        transaction_amount: 50,
+      },
+    ],
     order_pricing_snapshot: [{ order_id: ORDER, customer_total: 50, currency: "BRL" }],
     restaurants: [{ id: RESTAURANT }],
     mercado_pago_accounts: [{ restaurant_id: RESTAURANT, mp_user_id: SELLER, connected: true }],
@@ -108,37 +119,53 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
           const r = execute();
           return { data: r.data?.[0] ?? null, error: r.error };
         },
-        then: <T>(resolve: (value: { data: Row[] | null; error: { code?: string; message: string } | null }) => T) =>
-          Promise.resolve(resolve(execute())),
+        then: <T>(
+          resolve: (value: {
+            data: Row[] | null;
+            error: { code?: string; message: string } | null;
+          }) => T,
+        ) => Promise.resolve(resolve(execute())),
       };
       function execute() {
-        const matches = state[table].filter((row) =>
-          filters.every(([key, value]) => row[key] === value),
-        ).slice(0, max);
+        const matches = state[table]
+          .filter((row) => filters.every(([key, value]) => row[key] === value))
+          .slice(0, max);
         if (kind === "read") return { data: matches.map((row) => ({ ...row })), error: null };
         operations.push({ table, kind });
         if (table === failTable && (kind === "upsert" || kind === "insert")) {
           return { data: null, error: { message: "synthetic_persistence_failure" } };
         }
-        if (table === "payment_webhook_events" && kind === "update" &&
-          patch?.processed === true && failCompletion) {
+        if (
+          table === "payment_webhook_events" &&
+          kind === "update" &&
+          patch?.processed === true &&
+          failCompletion
+        ) {
           return { data: null, error: { message: "synthetic_completion_failure" } };
         }
         if (kind === "insert") {
-          if (table === "financial_ledger" && state.financial_ledger.some((row) =>
-            row.provider === patch?.provider &&
-            row.reference_type === patch?.reference_type &&
-            row.reference_id === patch?.reference_id &&
-            row.transaction_type === patch?.transaction_type &&
-            Boolean((row.metadata as Row | undefined)?.ledger_idempotency_key) &&
-            Boolean((patch?.metadata as Row | undefined)?.ledger_idempotency_key))) {
+          if (
+            table === "financial_ledger" &&
+            state.financial_ledger.some(
+              (row) =>
+                row.provider === patch?.provider &&
+                row.reference_type === patch?.reference_type &&
+                row.reference_id === patch?.reference_id &&
+                row.transaction_type === patch?.transaction_type &&
+                Boolean((row.metadata as Row | undefined)?.ledger_idempotency_key) &&
+                Boolean((patch?.metadata as Row | undefined)?.ledger_idempotency_key),
+            )
+          ) {
             return { data: null, error: { message: "duplicate", code: "23505" } };
           }
           state[table].push({ id: `synthetic-${table}-${state[table].length}`, ...patch });
           return { data: [state[table].at(-1)!], error: null };
         }
         if (kind === "upsert") {
-          const keys = upsertConflict.split(",").map((key) => key.trim()).filter(Boolean);
+          const keys = upsertConflict
+            .split(",")
+            .map((key) => key.trim())
+            .filter(Boolean);
           const found = state[table].find((row) => keys.every((key) => row[key] === patch?.[key]));
           if (found) Object.assign(found, patch);
           else state[table].push({ id: `synthetic-${table}-${state[table].length}`, ...patch });
@@ -152,33 +179,50 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
   };
   const paymentsApi = vi.fn(async (url: string) => {
     if (url.includes("/v1/chargebacks/")) {
-      return new Response(JSON.stringify({
-        id: "synthetic-chargeback-1", payments: [PAYMENT], amount: 50, currency: "BRL",
-      }), { status: 200 });
+      return new Response(
+        JSON.stringify({
+          id: "synthetic-chargeback-1",
+          payments: [PAYMENT],
+          amount: 50,
+          currency: "BRL",
+        }),
+        { status: 200 },
+      );
     }
     return new Response(JSON.stringify(mp), { status: 200 });
   });
   let handler: ((req: Request) => Promise<Response>) | undefined;
-  const source = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8")
-    .replace(/^import[^;]+;\n/gm, "");
+  const source = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8").replace(
+    /^import[^;]+;\n/gm,
+    "",
+  );
   const compiled = ts.transpileModule(source, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }).outputText;
   runInNewContext(compiled, {
     Deno: {
-      env: { get: (key: string) => key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined },
-      serve: (fn: (req: Request) => Promise<Response>) => { handler = fn; },
+      env: {
+        get: (key: string) => (key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined),
+      },
+      serve: (fn: (req: Request) => Promise<Response>) => {
+        handler = fn;
+      },
     },
     exports: {},
     createClient: () => client,
     corsHeaders: {},
-    json: (body: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(body), {
-      ...init, headers: { "content-type": "application/json" },
-    }),
+    json: (body: unknown, init: ResponseInit = {}) =>
+      new Response(JSON.stringify(body), {
+        ...init,
+        headers: { "content-type": "application/json" },
+      }),
     decryptToken: async () => "synthetic",
     normalizeMpUserId: () => SELLER,
     resolveMercadoPagoWebhookToken: async () => ({
-      ok: true, token: "synthetic", restaurantId: RESTAURANT, source: "synthetic",
+      ok: true,
+      token: "synthetic",
+      restaurantId: RESTAURANT,
+      source: "synthetic",
     }),
     validateTrustedMpPaymentContext,
     transitionOrder: async (args: { to: string }) => {
@@ -201,17 +245,17 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
     console,
   });
   if (!handler) throw new Error("Receiver handler not registered");
-  const invoke = () => handler!(new Request(
-    `https://synthetic.supabase.co/functions/v1/mp-webhook?data.id=${PAYMENT}`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-localix-replay-secret": "synthetic-replay",
-      },
-      body: JSON.stringify(eventBody),
-    },
-  ));
+  const invoke = () =>
+    handler!(
+      new Request(`https://synthetic.supabase.co/functions/v1/mp-webhook?data.id=${PAYMENT}`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-localix-replay-secret": "synthetic-replay",
+        },
+        body: JSON.stringify(eventBody),
+      }),
+    );
   return { state, mp, operations, transitions, paymentsApi, invoke };
 }
 
@@ -227,7 +271,9 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
     expect(r.transitions).toEqual(["pago"]);
     expect(r.state.financial_ledger).toHaveLength(1);
     expect(r.state.financial_ledger[0]).toMatchObject({
-      transaction_type: "PAYMENT_APPROVED", amount: 50, currency: "BRL",
+      transaction_type: "PAYMENT_APPROVED",
+      amount: 50,
+      currency: "BRL",
       reference_id: PAYMENT,
     });
     expect(r.state.payment_webhook_events[0].processed).toBe(true);
@@ -247,7 +293,8 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
     expect((await r.invoke()).status).toBe(200);
     expect(r.state.financial_ledger).toHaveLength(1);
     expect(r.state.financial_ledger[0]).toMatchObject({
-      transaction_type: "REFUND", amount: 50,
+      transaction_type: "REFUND",
+      amount: 50,
       reference_id: `${PAYMENT}:refund:synthetic-refund-1`,
     });
     expect(r.transitions).toEqual(["reembolsado"]);
@@ -295,12 +342,17 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
       },
     };
     await recordChargebackLedger(client, {
-      orderId: ORDER, restaurantId: RESTAURANT,
-      chargebackId: "synthetic-chargeback-1", paymentId: PAYMENT,
-      amount: 50, currency: "BRL", correlationId: "synthetic",
+      orderId: ORDER,
+      restaurantId: RESTAURANT,
+      chargebackId: "synthetic-chargeback-1",
+      paymentId: PAYMENT,
+      amount: 50,
+      currency: "BRL",
+      correlationId: "synthetic",
     });
     expect(r.state.financial_ledger[0]).toMatchObject({
-      transaction_type: "CHARGEBACK", reference_id: "synthetic-chargeback-1",
+      transaction_type: "CHARGEBACK",
+      reference_id: "synthetic-chargeback-1",
     });
   });
 
