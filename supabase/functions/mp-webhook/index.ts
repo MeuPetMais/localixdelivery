@@ -255,7 +255,6 @@ Deno.serve(async (req) => {
     eventPk = inserted.id;
   }
 
-
   // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
   const sigResult = await verifySignature({
     secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
