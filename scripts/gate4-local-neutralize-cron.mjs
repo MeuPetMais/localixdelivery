@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 // This allowlist is intentionally narrow. Never edit repository migrations.
 // The exact SQL tails were inspected in PR #100 and must match byte-for-byte.
+const DOLLAR_QUOTE = "$".repeat(2);
 const CRON_TAILS = [
   {
     file: "20260704162552_ebcdc1d4-907d-4762-8180-1ac3bb7a3bdd.sql",
@@ -17,8 +18,7 @@ const CRON_TAILS = [
   },
   {
     file: "20260805160000_support_knowledge_category_scope_and_sla_cron.sql",
-    marker:
-      "DO $\\nBEGIN\\n  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'support-sla-notifications-every-5-minutes')",
+    marker: `DO ${DOLLAR_QUOTE}\nBEGIN\n  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'support-sla-notifications-every-5-minutes')`,
     job: "support-sla-notifications-every-5-minutes",
   },
 ];
