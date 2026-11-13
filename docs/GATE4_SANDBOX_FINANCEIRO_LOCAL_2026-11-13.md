@@ -28,7 +28,7 @@ Este comando:
 1. Cria somente `.localix-financial-sandbox/` e recusa outros caminhos.
 2. Copia o `config.toml` existente, mas substitui `project_id` por `localix-financial-sandbox`.
 3. Usa portas locais não padrão: API 55421, banco 55422, Studio 55423, Inbucket 55424.
-4. Copia as migrations e Edge Functions para o diretório isolado, **sem executar** nenhuma.
+4. Copia as migrations e Edge Functions para o diretório isolado, **sem executar** nenhuma. Neutraliza apenas os três jobs de cron conhecidos nos trechos finais dos arquivos SQL copiados, preservando as funções e mantendo as migrations oficiais intactas. Falha se encontrar um novo `cron.schedule` desconhecido. Registra hashes em `LOCAL_CRON_NEUTRALIZATION.json`.
 5. Não copia o `.env`, segredos nem tokens; não invoca rede, Docker, SQL ou Supabase CLI.
 6. A pasta é ignorada pelo Git.
 
@@ -36,9 +36,9 @@ Se o diretório já existir sem a marca de posse específica, a ferramenta falha
 
 ## Fase L2 — Auditoria das migrations antes de iniciar containers
 
-**OBRIGATÓRIO:** conferir a cadeia de migrations copiada, especialmente eventuais scripts com `http`, `pg_net`, `vault`, URLs HTTPS, `cron`, tokens, `dblink`, grants, RLS, triggers e referências a `mvkfrwxgneqzvoabkaws` ou `dnotmvbhuqujvqdtgzav`. Essa inspeção ainda não foi provada como concluída.
+**OBRIGATÓRIO:** conferir a cadeia de migrations copiada, inclusive as três neutralizações locais e seus hashes, especialmente eventuais scripts com `http`, `pg_net`, `vault`, URLs HTTPS, `cron`, tokens, `dblink`, grants, RLS, triggers e referências a `mvkfrwxgneqzvoabkaws` ou `dnotmvbhuqujvqdtgzav`. Essa inspeção ainda não foi provada como concluída.
 
-Não executar `supabase start` ou `supabase db reset` enquanto a revisão de migrations não for aprovada. A inicialização do Supabase pode aplicar migrations locais e iniciar funções/triggers que exigem avaliação antes.
+Não executar `supabase start` ou `supabase db reset` enquanto a revisão completa de migrations não for aprovada. A neutralização dos três jobs conhecidos não demonstra que o restante da cadeia esteja seguro. A inicialização do Supabase pode aplicar migrations locais e iniciar funções/triggers que exigem avaliação antes.
 
 As seguintes operações são **proibidas neste gate**: `supabase link`, `supabase db push`, `supabase migration repair`, `supabase functions deploy`, `vercel --prod` e criação/reprocessamento de pagamentos externos.
 
