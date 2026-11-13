@@ -74,7 +74,9 @@ describe("Gate 4 — sandbox financeiro estritamente local", () => {
       ),
     );
     expect(report).toHaveLength(3);
-    expect(report.every((item: { jobDisabledInLocalCopy: boolean }) => item.jobDisabledInLocalCopy)).toBe(true);
+    expect(
+      report.every((item: { jobDisabledInLocalCopy: boolean }) => item.jobDisabledInLocalCopy),
+    ).toBe(true);
     expect(report[0].originalSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report[0].localSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(result).toMatchObject({
