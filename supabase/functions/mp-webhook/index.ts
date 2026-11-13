@@ -16,6 +16,7 @@ import { transitionOrder } from "../_shared/order-transition.ts";
 import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
+import { existingWebhookDelivery } from "./webhook-event-retry.ts";
 import { normalizeMpUserId, resolveMercadoPagoWebhookToken } from "./token-resolution.ts";
 import { validateTrustedMpPaymentContext } from "./trust-boundary.ts";
 
@@ -215,18 +216,26 @@ Deno.serve(async (req) => {
   };
 
   let eventPk: string | null = null;
-  let duplicated = false;
+  let existingProcessed: boolean | null = null;
   if (eventId) {
-    const { data: existing } = await sb
+    const { data: existing, error: lookupError } = await sb
       .from("payment_webhook_events")
       .select("id, processed")
       .eq("provider", "mercado_pago")
       .eq("event_id", eventId)
       .maybeSingle();
-    if (existing) {
-      duplicated = true;
-      eventPk = existing.id;
+    if (lookupError) {
+      console.error("[mp-webhook] event lookup failed", lookupError);
+      return json({ ok: false, error: "event_lookup_failed" }, { status: 503 });
     }
+    if (existing) {
+      eventPk = existing.id;
+      existingProcessed = existing.processed === true;
+    }
+  }
+  if (eventPk) {
+    const duplicate = existingWebhookDelivery(existingProcessed);
+    return json(duplicate.body, { status: duplicate.status });
   }
   if (!eventPk) {
     const { data: inserted, error } = await sb
@@ -236,14 +245,16 @@ Deno.serve(async (req) => {
       .single();
     if (error) {
       console.error("[mp-webhook] insert failed", error);
-      return json({ ok: false, error: "persist_failed" }, { status: 500 });
+      // A concurrent delivery may have inserted this event first. Never
+      // acknowledge success or process concurrently without an atomic claim.
+      return json(
+        { ok: false, error: error.code === "23505" ? "event_race_retry" : "persist_failed" },
+        { status: error.code === "23505" ? 503 : 500 },
+      );
     }
     eventPk = inserted.id;
   }
 
-  if (duplicated) {
-    return json({ ok: true, duplicated: true });
-  }
 
   // Validar assinatura (HMAC SHA-256, manifest oficial do Mercado Pago)
   const sigResult = await verifySignature({
