@@ -101,7 +101,9 @@ Deno.serve(async (req: Request) => {
     try {
       const { data: event, error: eventError } = await sb
         .from("payment_webhook_events")
-        .select("id,processed,processing_attempts,updated_at,payload_json,signature,resource_id,event_id,provider")
+        .select(
+          "id,processed,processing_attempts,updated_at,payload_json,signature,resource_id,event_id,provider",
+        )
         .eq("id", job.event_id)
         .single();
       if (eventError || !event || event.provider !== "mercado_pago") {
@@ -113,7 +115,10 @@ Deno.serve(async (req: Request) => {
         continue;
       }
       const attempt = Number(event.processing_attempts);
-      if (!Number.isInteger(attempt) || !isClaimableEvent(event.processed, event.updated_at, new Date())) {
+      if (
+        !Number.isInteger(attempt) ||
+        !isClaimableEvent(event.processed, event.updated_at, new Date())
+      ) {
         await finish("retry", "event_claim_not_ready");
         continue;
       }
@@ -162,7 +167,10 @@ Deno.serve(async (req: Request) => {
         await finish("retry", "mp_webhook_replay_not_completed");
       }
     } catch (error) {
-      console.error("[mp-webhook-retry] replay failed", error instanceof Error ? error.message : "unknown");
+      console.error(
+        "[mp-webhook-retry] replay failed",
+        error instanceof Error ? error.message : "unknown",
+      );
       try {
         await finish("retry", "replay_exception");
       } catch (finalizationError) {
