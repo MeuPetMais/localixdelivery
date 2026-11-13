@@ -290,10 +290,9 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
   it("keeps a payment event pending when the real receiver cannot confirm it at the gateway", async () => {
     const runtime = setup();
     const receiverFile = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8");
-    const receiverCompiled = ts.transpileModule(
-      receiverFile.replace(/^import[^;]+;\\n/gm, ""),
-      { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } },
-    ).outputText;
+    const receiverCompiled = ts.transpileModule(receiverFile.replace(/^import[^;]+;\n/gm, ""), {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+    }).outputText;
     let receiver: ((req: Request) => Promise<Response>) | undefined;
     const gateway = vi.fn(async () => new Response(null, { status: 404 }));
     runInNewContext(receiverCompiled, {
