@@ -104,7 +104,7 @@ port = 55424
   );
   writeFileSync(
     join(target, "LOCAL_CRON_NEUTRALIZATION.json"),
-    JSON.stringify(localCronChanges, null, 2) + "\\n",
+    JSON.stringify(localCronChanges, null, 2) + "\n",
   );
   writeFileSync(marker, SANDBOX_MARKER);
 
