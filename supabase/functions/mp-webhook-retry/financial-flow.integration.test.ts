@@ -256,7 +256,7 @@ function createFixture(status: string, failTable?: Table, failCompletion = false
         body: JSON.stringify(eventBody),
       }),
     );
-  return { state, mp, operations, transitions, paymentsApi, invoke };
+  return { state, mp, eventBody, operations, transitions, paymentsApi, invoke };
 }
 
 describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and database", () => {
@@ -300,60 +300,23 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
     expect(r.transitions).toEqual(["reembolsado"]);
   });
 
-  it("chargeback is recorded by chargeback case ID", async () => {
+  it("settled chargeback travels through receiver, order and one ledger entry", async () => {
     const r = createFixture("charged_back");
     r.mp.status_detail = "settled";
-    r.state.payment_webhook_events[0].resource_id = "synthetic-chargeback-1";
-    r.state.payment_webhook_events[0].payload_json = {
-      id: "synthetic-event-1",
-      type: "topic_chargebacks_wh",
-      data: { id: "synthetic-chargeback-1", payment_id: PAYMENT },
-    };
-    // The callback uses the original event stored in the queue.
-    const event = r.state.payment_webhook_events[0].payload_json;
-    const req = new Request("https://synthetic.supabase.co/functions/v1/mp-webhook", {
-      method: "POST",
-      headers: { "x-localix-replay-secret": "synthetic-replay" },
-      body: JSON.stringify(event),
-    });
-    // The fixture's public request helper remains the payment path; validate
-    // chargeback IDs through the actual writer instead of forging a receiver.
-    expect(req.method).toBe("POST");
-    const client = {
-      from: (table: string) => {
-        if (table !== "financial_ledger") throw new Error("wrong table");
-        return {
-          select: () => ({
-            eq: () => ({
-              eq: () => ({
-                eq: () => ({
-                  eq: () => ({
-                    limit: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-          insert: async (entry: Row) => {
-            r.state.financial_ledger.push(entry);
-            return { error: null };
-          },
-        };
-      },
-    };
-    await recordChargebackLedger(client, {
-      orderId: ORDER,
-      restaurantId: RESTAURANT,
-      chargebackId: "synthetic-chargeback-1",
-      paymentId: PAYMENT,
-      amount: 50,
-      currency: "BRL",
-      correlationId: "synthetic",
-    });
+    r.eventBody.type = "topic_chargebacks_wh";
+    r.eventBody.action = "chargebacks.updated";
+    r.eventBody.data = { id: "synthetic-chargeback-1", payment_id: PAYMENT };
+    const res = await r.invoke();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, status: "CHARGEBACK" });
+    expect(r.transitions).toEqual(["chargeback"]);
+    expect(r.state.financial_ledger).toHaveLength(1);
     expect(r.state.financial_ledger[0]).toMatchObject({
       transaction_type: "CHARGEBACK",
+      amount: 50,
       reference_id: "synthetic-chargeback-1",
     });
+    expect(r.state.payment_webhook_events[0].processed).toBe(true);
   });
 
   it("never acknowledges persistence failure in order_payment", async () => {
