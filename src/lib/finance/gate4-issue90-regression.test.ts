@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeBalance, type LedgerEntry } from "@/lib/ledger/LedgerService";
+import { assertNoDuplicateCompletedLedgerReferences, computeBalance, type LedgerEntry } from "@/lib/ledger/LedgerService";
 import { dashboardBalance } from "@/lib/finance/dashboard-balance";
 import { assertSingleRevenuePostingBasis } from "@/lib/finance/FinancialDashboardService";
 
@@ -98,6 +98,27 @@ describe("Gate 4 / Issue #90 — accounting safety regression matrix", () => {
       e("payout-pending", "PAYOUT", 20, { status: "PENDING" }),
     ];
     expect(computeBalance(rows, A).netBalance).toBe(50);
+  });
+
+  it("FIN-06: blocks duplicate completed captures even when ledger IDs differ", () => {
+    const rows = [
+      e("first", "PAYMENT_APPROVED", 50, { reference_id: "mp-capture-1" }),
+      e("second", "PAYMENT_APPROVED", 50, { reference_id: "mp-capture-1" }),
+    ];
+    expect(() => assertNoDuplicateCompletedLedgerReferences(rows)).toThrow(
+      "referência econômica duplicada",
+    );
+  });
+
+  it("FIN-06: does not confuse separate providers, operations, tenants or pending entries", () => {
+    const rows = [
+      e("capture-a", "PAYMENT_APPROVED", 50, { reference_id: "shared" }),
+      e("capture-b", "PAYMENT_APPROVED", 50, { reference_id: "shared", provider: "other" }),
+      e("refund", "REFUND", 10, { reference_id: "shared" }),
+      e("tenant-b", "PAYMENT_APPROVED", 50, { reference_id: "shared", restaurant_id: B }),
+      e("pending", "PAYMENT_APPROVED", 50, { reference_id: "shared", status: "PENDING" }),
+    ];
+    expect(() => assertNoDuplicateCompletedLedgerReferences(rows)).not.toThrow();
   });
 
   it("FIN-06: duplicate economic references with different ledger IDs are NOT proven idempotent", () => {
