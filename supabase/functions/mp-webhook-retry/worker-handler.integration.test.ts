@@ -66,8 +66,8 @@ function fakeSupabase(state: State) {
             const a = r[f.key];
             if (f.op === "eq") return a === f.value;
             if (a == null) return false;
-            const lhs = typeof a === "number" ? a : String(a);
-            const rhs = typeof f.value === "number" ? f.value : String(f.value);
+            const lhs = String(a);
+            const rhs = String(f.value);
             if (f.op === "gte") return lhs >= rhs;
             if (f.op === "lte") return lhs <= rhs;
             return lhs < rhs;
