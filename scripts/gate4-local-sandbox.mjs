@@ -42,7 +42,10 @@ export function validateLocalSandboxConfig(env) {
   return { ok: errors.length === 0, errors };
 }
 
-export function prepareLocalSandbox(repoRoot = ROOT, targetRoot = join(repoRoot, SANDBOX_DIR_NAME)) {
+export function prepareLocalSandbox(
+  repoRoot = ROOT,
+  targetRoot = join(repoRoot, SANDBOX_DIR_NAME),
+) {
   const target = resolve(targetRoot);
   const root = resolve(repoRoot);
   // The helper must never overwrite files outside the dedicated local directory.
@@ -54,15 +57,20 @@ export function prepareLocalSandbox(repoRoot = ROOT, targetRoot = join(repoRoot,
     throw Error("repository_supabase_files_missing");
 
   const marker = join(target, ".localix-sandbox");
-  if (existsSync(target) && (!existsSync(marker) || readFileSync(marker, "utf8") !== SANDBOX_MARKER))
+  if (
+    existsSync(target) &&
+    (!existsSync(marker) || readFileSync(marker, "utf8") !== SANDBOX_MARKER)
+  )
     throw Error("sandbox_directory_not_owned");
   mkdirSync(join(target, "supabase"), { recursive: true });
 
   const original = readFileSync(sourceConfig, "utf8");
-  if (!/^project_id\s*=\s*"[^"]+"/m.test(original))
-    throw Error("source_project_id_missing");
+  if (!/^project_id\s*=\s*"[^"]+"/m.test(original)) throw Error("source_project_id_missing");
   // NEVER reuse the repository's production project_id.
-  let isolated = original.replace(/^project_id\s*=\s*"[^"]+"/m, 'project_id = "localix-financial-sandbox"');
+  let isolated = original.replace(
+    /^project_id\s*=\s*"[^"]+"/m,
+    'project_id = "localix-financial-sandbox"',
+  );
   isolated += `
 # Gate 4 local-only ports (kept separate from default Supabase CLI local stack).
 [api]
@@ -82,7 +90,10 @@ port = 55424
   // These are copies only; no SQL is run and no remote database is touched.
   // A migration audit is REQUIRED before any local Supabase CLI start/db reset.
   cpSync(sourceMigrations, join(target, "supabase", "migrations"), { recursive: true, force: true });
-  cpSync(sourceFunctions, join(target, "supabase", "functions"), { recursive: true, force: true });
+  cpSync(sourceFunctions, join(target, "supabase", "functions"), {
+    recursive: true,
+    force: true,
+  });
 
   writeFileSync(
     join(target, "LOCAL_GATE4_README.txt"),
