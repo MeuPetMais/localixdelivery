@@ -677,7 +677,20 @@ Deno.serve(async (req) => {
             ...(internalReplay ? {} : { processing_attempts: 1 }),
           })
           .eq("id", eventPk);
-        return json({ ok: false, error: "refund_incomplete" }, { status: 200 });
+        if (!internalReplay) {
+          const { error: queueError } = await sb.from("payment_event_queue").insert({
+            event_id: eventPk,
+            status: "pending",
+            retry_count: 0,
+            next_retry: new Date(Date.now() + 60_000).toISOString(),
+            last_error: "refund_incomplete",
+          });
+          if (queueError) {
+            console.error("[mp-webhook] refund retry queue failed", queueError);
+            return json({ ok: false, error: "refund_retry_queue_failed" }, { status: 503 });
+          }
+        }
+        return json({ ok: false, error: "refund_incomplete" }, { status: 503 });
       }
     }
 
@@ -703,13 +716,19 @@ Deno.serve(async (req) => {
       })
       .eq("id", eventPk);
     const nextRetry = new Date(Date.now() + 60_000).toISOString();
-    await sb.from("payment_event_queue").insert({
-      event_id: eventPk,
-      status: "pending",
-      retry_count: 0,
-      next_retry: nextRetry,
-      last_error: msg,
-    });
-    return json({ ok: false, error: msg }, { status: 200 }); // 200 para MP não reenviar em loop
+    if (!internalReplay) {
+      const { error: queueError } = await sb.from("payment_event_queue").insert({
+        event_id: eventPk,
+        status: "pending",
+        retry_count: 0,
+        next_retry: nextRetry,
+        last_error: msg,
+      });
+      if (queueError) {
+        console.error("[mp-webhook] retry queue failed", queueError);
+        return json({ ok: false, error: "retry_queue_failed" }, { status: 503 });
+      }
+    }
+    return json({ ok: false, error: "payment_processing_failed" }, { status: 503 });
   }
 });
