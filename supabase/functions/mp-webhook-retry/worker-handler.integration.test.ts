@@ -239,7 +239,7 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
     };
     const { readFileSync } = await import("node:fs");
     let receiverSource = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8");
-    receiverSource = receiverSource.replace(/^import[^;]+;\\n/gm, "");
+    receiverSource = receiverSource.replace(/^import[^;]+;\n/gm, "");
     const receiverCompiled = ts.transpileModule(receiverSource, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
     }).outputText;
@@ -320,6 +320,7 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
       shouldReplayExistingWebhook: (processed: boolean, internal: boolean) =>
         processed === false && internal,
       normalizeMpUserId: () => "synthetic-merchant",
+      decryptToken: async () => "synthetic-token",
       resolveMercadoPagoWebhookToken: async () => ({
         ok: true,
         token: "synthetic-token",
