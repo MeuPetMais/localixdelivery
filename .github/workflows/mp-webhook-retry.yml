@@ -1,0 +1,39 @@
+name: Mercado Pago webhook retry worker
+
+on:
+  schedule:
+    # Activated only after separately approved merge to the default branch.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mp-webhook-retry
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Invoke internal worker (fail closed without secrets)
+        env:
+          WORKER_URL: ${{ secrets.LOCALIX_MP_RETRY_WORKER_URL }}
+          WORKER_SECRET: ${{ secrets.LOCALIX_MP_RETRY_WORKER_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WORKER_URL}" ] || [ -z "${WORKER_SECRET}" ]; then
+            echo "MP worker not configured. No request sent." >&2
+            exit 1
+          fi
+          case "${WORKER_URL}" in
+            https://*.supabase.co/functions/v1/mp-webhook-retry) ;;
+            *) echo "Unexpected worker URL. No request sent." >&2; exit 1 ;;
+          esac
+          curl --fail --silent --show-error --max-time 50 \
+            -X POST "${WORKER_URL}" \
+            -H "Authorization: Bearer ${WORKER_SECRET}" \
+            -H "Content-Type: application/json" \
+            --data '{}' >/dev/null

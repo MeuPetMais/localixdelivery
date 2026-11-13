@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { existingWebhookDelivery } from "./webhook-event-retry";
+import { existingWebhookDelivery, shouldReplayExistingWebhook } from "./webhook-event-retry";
 
 describe("Mercado Pago webhook duplicate delivery response", () => {
   it("acknowledges only an already processed event", () => {
@@ -14,5 +14,11 @@ describe("Mercado Pago webhook duplicate delivery response", () => {
       status: 503,
       body: { ok: false, error: "webhook_pending_recovery" },
     });
+  });
+  it("replays only pending persisted events with trusted internal authorization", () => {
+    expect(shouldReplayExistingWebhook(false, true)).toBe(true);
+    expect(shouldReplayExistingWebhook(false, false)).toBe(false);
+    expect(shouldReplayExistingWebhook(true, true)).toBe(false);
+    expect(shouldReplayExistingWebhook(null, true)).toBe(false);
   });
 });
