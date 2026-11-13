@@ -14,7 +14,38 @@ function fixture() {
     join(root, "supabase", "config.toml"),
     'project_id = "mvkfrwxgneqzvoabkaws"\n[functions.mp-webhook]\nverify_jwt = false\n',
   );
-  writeFileSync(join(root, "supabase", "migrations", "00001_test.sql"), "select 1;\n");
+  writeFileSync(join(root, "supabase", "migrations", "00001_test.sql"), "select 1;\\n");
+  writeFileSync(
+    join(root, "supabase", "migrations", "20260704162552_ebcdc1d4-907d-4762-8180-1ac3bb7a3bdd.sql"),
+    [
+      "CREATE FUNCTION loyalty_expire_points() RETURNS void AS $ BEGIN END $ LANGUAGE plpgsql;",
+      "-- Cron diário: expira + gera eventos de pré-aviso",
+      "DO $ BEGIN PERFORM cron.schedule('loyalty-daily-lifecycle', '0 3 * * *', $SELECT 1$); END $;",
+      "",
+    ].join("\\n"),
+  );
+  writeFileSync(
+    join(root, "supabase", "migrations", "20260712153054_60234e8e-9ffc-4196-a8dc-97f3373b3053.sql"),
+    [
+      "CREATE FUNCTION expire_pending_payment_orders() RETURNS void AS $ BEGIN END $ LANGUAGE plpgsql;",
+      "-- Desagenda job antigo (se existir) antes de reagendar (idempotente)",
+      "SELECT cron.schedule('expire-pending-payment-orders', '*/5 * * * *', $SELECT 1$);",
+      "",
+    ].join("\\n"),
+  );
+  writeFileSync(
+    join(root, "supabase", "migrations", "20260805160000_support_knowledge_category_scope_and_sla_cron.sql"),
+    [
+      "CREATE FUNCTION run_support_sla_notifications_job() RETURNS void AS $ BEGIN END $ LANGUAGE plpgsql;",
+      "DO $",
+      "BEGIN",
+      "  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'support-sla-notifications-every-5-minutes') THEN",
+      "    PERFORM cron.schedule('support-sla-notifications-every-5-minutes', '*/5 * * * *', $SELECT 1$);",
+      "  END IF;",
+      "END $;",
+      "",
+    ].join("\\n"),
+  );
   writeFileSync(join(root, "supabase", "functions", "index.ts"), "// synthetic\n");
   return root;
 }
@@ -35,7 +66,31 @@ describe("Gate 4 — sandbox financeiro estritamente local", () => {
       migrationsExecuted: false,
       remoteAccessAttempted: false,
       databasePort: 55422,
+      localCronJobsDisabled: 3,
     });
+
+    const originalCron = readFileSync(
+      join(
+        root,
+        "supabase",
+        "migrations",
+        "20260712153054_60234e8e-9ffc-4196-a8dc-97f3373b3053.sql",
+      ),
+      "utf8",
+    );
+    const localCron = readFileSync(
+      join(
+        root,
+        ".localix-financial-sandbox",
+        "supabase",
+        "migrations",
+        "20260712153054_60234e8e-9ffc-4196-a8dc-97f3373b3053.sql",
+      ),
+      "utf8",
+    );
+    expect(originalCron).toContain("cron.schedule");
+    expect(localCron).not.toContain("cron.schedule");
+    expect(localCron).toContain("CREATE FUNCTION expire_pending_payment_orders()");
     expect(isolated).toContain('project_id = "localix-financial-sandbox"');
     expect(isolated).not.toContain("mvkfrwxgneqzvoabkaws");
     expect(isolated).toContain("port = 55422");
@@ -61,6 +116,15 @@ describe("Gate 4 — sandbox financeiro estritamente local", () => {
     const root = fixture();
     mkdirSync(join(root, ".localix-financial-sandbox"));
     expect(() => prepareLocalSandbox(root)).toThrow("sandbox_directory_not_owned");
+  });
+
+  it("refuses a new unreviewed cron job without applying changes to the remote schema", () => {
+    const root = fixture();
+    writeFileSync(
+      join(root, "supabase", "migrations", "99999999_surprise.sql"),
+      "SELECT cron.schedule('unexpected', '* * * * *', 'SELECT 1');",
+    );
+    expect(() => prepareLocalSandbox(root)).toThrow("unreviewed_cron_schedule");
   });
 
   it("rejects network/production keys and non-local targets", () => {
