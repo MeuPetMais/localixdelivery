@@ -2,10 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  prepareLocalSandbox,
-  validateLocalSandboxConfig,
-} from "./gate4-local-sandbox.mjs";
+import { prepareLocalSandbox, validateLocalSandboxConfig } from "./gate4-local-sandbox.mjs";
 
 const roots: string[] = [];
 function fixture() {
@@ -42,9 +39,9 @@ describe("Gate 4 — sandbox financeiro estritamente local", () => {
     expect(isolated).toContain('project_id = "localix-financial-sandbox"');
     expect(isolated).not.toContain("mvkfrwxgneqzvoabkaws");
     expect(isolated).toContain("port = 55422");
-    expect(
-      readFileSync(join(root, "supabase", "config.toml"), "utf8"),
-    ).toContain("mvkfrwxgneqzvoabkaws");
+    expect(readFileSync(join(root, "supabase", "config.toml"), "utf8")).toContain(
+      "mvkfrwxgneqzvoabkaws",
+    );
     expect(
       readFileSync(
         join(root, ".localix-financial-sandbox", "supabase", "migrations", "00001_test.sql"),
