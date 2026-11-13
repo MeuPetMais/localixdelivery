@@ -16,7 +16,7 @@ import { transitionOrder } from "../_shared/order-transition.ts";
 import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
-import { existingWebhookDelivery } from "./webhook-event-retry.ts";
+import { existingWebhookDelivery, shouldReplayExistingWebhook } from "./webhook-event-retry.ts";
 import { normalizeMpUserId, resolveMercadoPagoWebhookToken } from "./token-resolution.ts";
 import { validateTrustedMpPaymentContext } from "./trust-boundary.ts";
 
@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       existingProcessed = existing.processed === true;
     }
   }
-  if (eventPk && !(internalReplay && existingProcessed === false)) {
+  if (eventPk && !shouldReplayExistingWebhook(existingProcessed, internalReplay)) {
     const duplicate = existingWebhookDelivery(existingProcessed);
     return json(duplicate.body, { status: duplicate.status });
   }
