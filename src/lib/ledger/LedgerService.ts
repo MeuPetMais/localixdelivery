@@ -242,7 +242,9 @@ export const getRestaurantFinancialSnapshot = createServerFn({ method: "POST" })
       return payload;
     }, data.restaurantId);
     assertNoDuplicateCompletedLedgerReferences(snapshot.entries);
-    const balance = assertUnambiguousFinancialPostingBasis(computeBalance(snapshot.entries, data.restaurantId));
+    const balance = assertUnambiguousFinancialPostingBasis(
+      computeBalance(snapshot.entries, data.restaurantId),
+    );
     return {
       rows: snapshotStatement(snapshot, data.from, data.to),
       balance,
