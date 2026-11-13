@@ -28,6 +28,12 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      - name: Gate4 temporary format preview
+        run: |
+          echo GATE4_FORMAT_START
+          bunx prettier supabase/functions/mp-webhook-retry/financial-flow.integration.test.ts | base64 -w0
+          echo
+          echo GATE4_FORMAT_END
       - run: bun run lint
 
   typecheck:
