@@ -372,5 +372,4 @@ describe("Gate 4 / Mercado Pago financial receiver with isolated gateway and dat
     expect(r.state.financial_ledger).toHaveLength(0);
     expect(r.state.orders[0].status).toBe("aguardando_pagamento");
   });
-
 });
