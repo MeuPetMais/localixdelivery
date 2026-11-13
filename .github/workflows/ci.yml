@@ -10,6 +10,7 @@ on:
       - codex/gate3-lint-fix
       - audit/gate4-accounting-contract-tests
       - audit/gate4-unique-order-kpis
+      - audit/gate4-complete-financial-statements
 
 permissions:
   contents: read

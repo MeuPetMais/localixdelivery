@@ -1,4 +1,8 @@
-import { readLedgerView, type LedgerPort } from "./FinancialDashboardService";
+import {
+  assertSingleRevenuePostingBasis,
+  readLedgerView,
+  type LedgerPort,
+} from "./FinancialDashboardService";
 // Cash Flow / Receivables / Payables / Projection services.
 //
 // Port-based, side-effect free. UI never queries the DB; it calls these
@@ -120,6 +124,8 @@ export class CashFlowService {
     to: string;
   }): Promise<CashFlowSummary> {
     const { rows, balance } = await readLedgerView(this.ports.ledger, input);
+    // Do not present gross capture plus partner receivable as cash inflow.
+    assertSingleRevenuePostingBasis(rows);
     const today = todayKey();
     const buckets = new Map<string, { inflow: number; outflow: number }>();
     let periodIn = 0,
