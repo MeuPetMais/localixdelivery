@@ -11,6 +11,7 @@ on:
       - audit/gate4-accounting-contract-tests
       - audit/gate4-unique-order-kpis
       - audit/gate4-complete-financial-statements
+      - audit/gate4-issue90-regression-tests
 
 permissions:
   contents: read
