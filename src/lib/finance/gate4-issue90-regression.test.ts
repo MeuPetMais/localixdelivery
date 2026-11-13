@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assertNoDuplicateCompletedLedgerReferences, computeBalance, type LedgerEntry } from "@/lib/ledger/LedgerService";
+import {
+  assertNoDuplicateCompletedLedgerReferences,
+  assertUnambiguousFinancialPostingBasis,
+  computeBalance,
+  type LedgerEntry,
+} from "@/lib/ledger/LedgerService";
 import { dashboardBalance } from "@/lib/finance/dashboard-balance";
 import { assertSingleRevenuePostingBasis } from "@/lib/finance/FinancialDashboardService";
 
@@ -129,5 +134,23 @@ describe("Gate 4 / Issue #90 — accounting safety regression matrix", () => {
     // Characterization of an unresolved writer-level risk. This is NOT an approved balance.
     expect(computeBalance(rows, A).netBalance).toBe(100);
     expect(rows[0].reference_id).toBe(rows[1].reference_id);
+  });
+
+  it("FIN-01: server snapshot rejects mixed bases before any consumer can display legacy balance", () => {
+    const summary = computeBalance(
+      [
+        e("capture", "PAYMENT_APPROVED", 50),
+        e("receivable", "RESTAURANT_RECEIVABLE", 48.51),
+        e("platform", "PLATFORM_FEE", 1.49),
+      ],
+      A,
+    );
+    expect(summary.netBalance).toBe(97.02);
+    expect(() => assertUnambiguousFinancialPostingBasis(summary)).toThrow("conciliação contábil");
+  });
+
+  it("FIN-01: server snapshot allows a single posting basis without redefining its balance", () => {
+    const summary = computeBalance([e("capture", "PAYMENT_APPROVED", 50)], A);
+    expect(assertUnambiguousFinancialPostingBasis(summary)).toBe(summary);
   });
 });
