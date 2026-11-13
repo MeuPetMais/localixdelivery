@@ -45,11 +45,11 @@ export function validateFinancialSandboxEnvironment(env) {
 
   // Explicitly do not accept a webhook replay cutover on older shared data:
   // cutover has to be set and manually reviewed for a new sandbox.
-  if (!cutover || !Number.isFinite(Date.parse(cutover)))
-    errors.push("retry_cutover_unconfigured");
+  if (!cutover || !Number.isFinite(Date.parse(cutover))) errors.push("retry_cutover_unconfigured");
 
   if (env.MP_RETRY_AUTOMATION_ENABLED === "true") errors.push("scheduler_must_remain_off");
-  if (env.PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL) errors.push("production_functions_fallback_present");
+  if (env.PRODUCTION_LOCALIX_SUPABASE_FUNCTIONS_BASE_URL)
+    errors.push("production_functions_fallback_present");
 
   return { ok: errors.length === 0, errors };
 }
