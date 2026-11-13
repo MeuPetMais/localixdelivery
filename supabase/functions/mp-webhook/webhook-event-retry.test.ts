@@ -21,5 +21,4 @@ describe("Mercado Pago webhook duplicate delivery response", () => {
     expect(shouldReplayExistingWebhook(true, true)).toBe(false);
     expect(shouldReplayExistingWebhook(null, true)).toBe(false);
   });
-
 });
