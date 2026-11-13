@@ -288,4 +288,67 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
     expect(runtime.state.payment_webhook_events[0].processed).toBe(true);
     expect(runtime.state.payment_event_queue[0].status).toBe("completed");
   });
+
+  it("keeps a payment event pending when the real receiver cannot confirm it at the gateway", async () => {
+    const runtime = setup();
+    const receiverFile = readFileSync(new URL("../mp-webhook/index.ts", import.meta.url), "utf8");
+    const receiverCompiled = ts.transpileModule(
+      receiverFile.replace(/^import[^;]+;\\n/gm, ""),
+      { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } },
+    ).outputText;
+    let receiver: ((req: Request) => Promise<Response>) | undefined;
+    const gateway = vi.fn(async () => new Response(null, { status: 404 }));
+    runInNewContext(receiverCompiled, {
+      Deno: {
+        env: {
+          get: (key: string) =>
+            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined,
+        },
+        serve: (handler: (req: Request) => Promise<Response>) => {
+          receiver = handler;
+        },
+      },
+      createClient: () => runtime.client,
+      corsHeaders: {},
+      json: (body: unknown, init: ResponseInit = {}) =>
+        new Response(JSON.stringify(body), {
+          ...init,
+          headers: { "content-type": "application/json" },
+        }),
+      existingWebhookDelivery: () => ({
+        status: 503,
+        body: { ok: false, error: "webhook_pending_recovery" },
+      }),
+      shouldReplayExistingWebhook: (processed: boolean, internal: boolean) =>
+        processed === false && internal,
+      normalizeMpUserId: () => "synthetic-merchant",
+      resolveMercadoPagoWebhookToken: async () => ({
+        ok: true,
+        token: "synthetic-token",
+        restaurantId: "synthetic-restaurant",
+        source: "synthetic",
+      }),
+      fetch: gateway,
+      crypto,
+      Response,
+      URL,
+      TextEncoder,
+      Uint8Array,
+      console,
+    });
+    expect(receiver).toBeTypeOf("function");
+    runtime.replay.mockImplementation(async (url: URL, options: RequestInit) => {
+      return receiver!(new Request(url.toString(), options));
+    });
+    const response = await runtime.handler(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ completed: 0, retried: 1 });
+    expect(gateway).toHaveBeenCalledTimes(1);
+    expect(runtime.state.payment_webhook_events[0].processed).toBe(false);
+    expect(runtime.state.payment_event_queue[0]).toMatchObject({
+      status: "pending",
+      locked: false,
+      retry_count: 1,
+    });
+  });
 });
