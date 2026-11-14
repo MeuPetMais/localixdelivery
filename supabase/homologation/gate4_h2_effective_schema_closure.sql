@@ -4,6 +4,9 @@
 
 -- Do not deploy to production/shared staging.
 
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated;
+
 CREATE TYPE public.stock_movement_type AS ENUM ('ENTRY','EXIT','RESERVE','RELEASE','LOSS','ADJUSTMENT','TRANSFER','PRODUCTION','SALE');
 
 CREATE TABLE public.customers (
