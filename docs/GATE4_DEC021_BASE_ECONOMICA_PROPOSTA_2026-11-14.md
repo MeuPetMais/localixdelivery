@@ -1,6 +1,6 @@
-# Gate 4 — DEC-021: proposta de base econômica, para aprovação (14/11/2026)
+# Gate 4 — DEC-021: aprovação conceitual de bases econômicas segregadas (14/11/2026)
 
-**Status:** PROPOSTA, não aprovada e não implementada. PR #100 Draft. Sem alterações de lógica, schema, dados, merge, deploy ou pagamentos.
+**Status:** APROVADO APENAS O MODELO CONCEITUAL DE CONTAS SEGREGADAS (opção C). Fórmula, lançamentos, classificação econômica, migração, reconciliação e implementação seguem NÃO aprovados. PR #100 Draft; sem merge, deploy ou pagamentos.
 
 ## Fatos comprovados no código
 - `src/lib/ledger/LedgerService.ts`: `signedAmount` trata `PAYMENT_APPROVED` e `RESTAURANT_RECEIVABLE` com sinal positivo; `computeBalance` sinaliza `ambiguousPostingBasis` quando ambas estão `COMPLETED`.
@@ -37,3 +37,23 @@ C. **Subledgers segregados (proposta preferida):** pedido/valor econômico, gate
 - Ambiente isolado de verdade para E2E é uma **dependência externa objetiva**: criar projeto/branch autorizada com custo declarado, ou stack local com acesso externo controlado e dados fictícios, depois de revisar apenas dependências do runtime financeiro. Nada disso foi criado nesta etapa.
 
 **Parecer:** CI e guardas estão aprovados, mas não foi possível provar GO financeiro. A DEC-021 permanece pendente de escolha contábil e prova de liquidação. Não utilizar o cálculo de R$97,02 como saldo real.
+
+## Registro de aprovação conceitual — 14/11/2026
+
+**Decisão:** usuário confirmou a recomendação de adotar **somente o modelo conceitual de contas separadas**, distinguindo pagamento/captura, recebível do parceiro, taxa da plataforma e saldo liquidado, com transferências entre contas sem reconhecimento duplicado de receita. É uma evolução de escopo **conceitual** da DEC-021, não aprovação de fórmula de cálculo nem de regra operacional.
+
+**Problema:** somar `PAYMENT_APPROVED` e `RESTAURANT_RECEIVABLE` pode duplicar a mesma base econômica.
+
+**Contexto:** guardas fail-closed existentes impedem mostrar como saldo disponível o exemplo diagnóstico legado de R$97,02; não há reconciliação integrada aprovada.
+
+**Opções consideradas:** A (recebível como base), B (captura como base), C (subledgers segregados). **Escolhida em princípio: C**.
+
+**Motivo:** separar receita, obrigação, liquidação e taxas, preservando rastreabilidade para split/reembolso.
+
+**Impacto:** diretriz para desenho e testes futuros; **nenhuma mudança técnica autorizada**.
+
+**Riscos:** titularidade de valores, classificação incorreta de receita, duplicaçao de lançamentos, custo de reconciliação, dependências do contrato Mercado Pago e do ledger legado.
+
+**Data:** 2026-11-14. **Status:** APROVAÇÃO CONCEITUAL; IMPLEMENTAÇÃO BLOQUEADA. **Condição de revisão:** validação financeira com contratos MP, snapshot autoritativo, aprovação de especificação contábil, E2E isolado e autorização separada de implementação.
+
+**Esta decisão deve atualizar o Documento Mestre.** A atualização do Documento Mestre original ainda não foi realizada neste registro de branch. Não inferir autorização para merge, deploy, produção, migrations, jobs, segredos ou pagamentos reais.
