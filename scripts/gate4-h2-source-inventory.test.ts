@@ -13,9 +13,7 @@ describe("Gate 4 H2 — source migration provenance (read-only)", () => {
 
   it("locates both application financial RPC definitions", () => {
     const report = createGate4SourceReport(migrations);
-    const missing = report.functions
-      .filter((f) => f.definitions.length === 0)
-      .map((f) => f.name);
+    const missing = report.functions.filter((f) => f.definitions.length === 0).map((f) => f.name);
     expect(missing).toEqual([]);
   });
 
