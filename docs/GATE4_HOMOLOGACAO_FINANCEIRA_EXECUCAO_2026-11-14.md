@@ -10,6 +10,7 @@ Supabase **somente homologação** `gvozcqyjhogmvebrwzap` (sa-east-1). Staging c
 - `20261114150702_gate4_b2_atomic_checkout`
 - `20261114150919_gate4_b3_financial_snapshot`
 - `20261114151245_gate4_restrict_order_number_trigger`
+- `gate4_b2_coupons_partner_email` (migration de cupons + FK de pedidos + email-only partner; versão verificada via list_migrations no fechamento)
 
 Cada SQL aplicada é versionada em `supabase/homologation`, separada da cadeia regular de 206 migrations; não deve ser executada em Production/Staging.
 
@@ -32,7 +33,7 @@ Cada SQL aplicada é versionada em `supabase/homologation`, separada da cadeia r
 ## Contratos estruturais comparados com Staging
 - `scripts/gate4-h2-effective-contract-check.sql`: **24/33** no Supabase novo (33/33 em Staging).
 - `scripts/gate4-h2-transitive-dependency-check.sql`: **13/21** no Supabase novo (21/21 em Staging).
-- Total **37/54** controles presentes. Os 17 faltantes são `orders`/`restaurants` (triggers), `coupons`, e as funções transitivas: estoque, fidelidade, notificações, clientes, rewards, platform_settings. Essas funções não devem ser simuladas nem criadas sem suas tabelas, checks, idempotência e dependências originais.
+- Total **40/54** controles presentes após a instalação complementar de cupons e partner email-only. Os 14 faltantes concentram-se em `orders` (7 triggers operacionais ausentes + contagem mínima da tabela) e 6 funções transitivas dependentes de módulos de estoque, fidelidade, notificações, clientes, rewards e platform_settings. A relação de cupons e o controle de e-mail de parceiro foram instalados. Essas funções não devem ser simuladas nem criadas sem suas tabelas, checks, idempotência e dependências originais.
 - O trigger `tg_orders_snapshot_platform_fees` de Staging calcula com `NEW.total`, enquanto a DEC-015 requer verificar a base da faixa da taxa; antes de incluí-lo, confrontar a base econômica com PricingEngine/snapshot e testar o limite R$30,00.
 
 ## Bloqueios para GO financeiro (não superados)
@@ -42,6 +43,12 @@ Cada SQL aplicada é versionada em `supabase/homologation`, separada da cadeia r
 4. DEC-021: somente o princípio contábil foi aprovado; fórmula/saldo final NÃO aprovados. Sem esta decisão não emitir GO de balanço/recebível.
 5. Testes finais por persona com sessão JWT real (owner, gerente, cliente, admin, anon), monitoramento, rollback e autorização explícita de GO; CI pass isolado não substitui esses critérios.
 
-**Resultado:** B1 + fundação B2/B3 e testes de banco = PASS com escopo limitado. **Gate Financeiro global = NO-GO**; não foi possível provar homologação E2E Mercado Pago. Nenhum merge, deploy público, cron, worker ou pagamento real executado.
+**Resultado:** B1 + fundação B2/B3, cupons, controle de cadastro parceiro e testes de banco = PASS com escopo limitado. **Gate Financeiro global = NO-GO**; não foi possível provar homologação E2E Mercado Pago. Nenhum merge, deploy público, cron, worker ou pagamento real executado.
 
 **Esta decisão deve atualizar o Documento Mestre** caso o novo Supabase seja adotado formalmente como ambiente de homologação permanente.
+
+## Adendo de segurança e dependências (após B2/B3)
+- Migration `supabase/homologation/gate4_b2_coupons_partner_email.sql` aplicada após dry-run. Na primeira versão, o SELECT de privilégio revelou `has_table_privilege('anon','public.coupons','INSERT')=true` por grants herdados; **bloqueado antes da aplicação**, adicionado `REVOKE ALL FROM PUBLIC,anon,authenticated` e nova execução confirmou `anon_coupon_insert=false`, `auth_coupon_insert=true`. Somente então a migration foi aplicada.
+- Verificadores estruturais repetidos no Supabase novo: **25/33** contratos efetivos + **15/21** dependências = **40/54**. Nenhum dos 14 faltantes pode ser dado como aprovado por ausência de erro de CI.
+- Teste adicional `scripts/gate4-b2-checkout-hash-conflict-rollback.sql`: hash diferente para mesma chave => `unique_violation` e somente 1 pedido, 1 vínculo financeiro e 1 chave; fee 1.49 para snapshot sintético acima de R$30. Não prova aplicação da regra pelo PricingEngine.
+- Teste adicional `scripts/gate4-b3-financial-admin-rls-rollback.sql`: admin autenticado com role real viu 1 lançamento de outro estabelecimento dentro de transação revertida.
