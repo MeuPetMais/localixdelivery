@@ -4,8 +4,8 @@
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { requireOwner } from "../_shared/mp-auth.ts";
 import { decryptToken, pkceChallengeS256, randomBase64Url } from "../_shared/crypto.ts";
+import { resolveMpOAuthRedirectUri, resolveMpOAuthAppRedirect } from "../_shared/mp-oauth-url.ts";
 
-const REDIRECT_URI = "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-oauth-callback";
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
 Deno.serve(async (req) => {
@@ -24,6 +24,13 @@ Deno.serve(async (req) => {
       const appId = Deno.env.get("MP_APP_ID");
       if (!appId) return json({ error: "MP_APP_ID não configurado" }, { status: 500 });
 
+      const redirectUri = resolveMpOAuthRedirectUri(
+        Deno.env.get("SUPABASE_URL"),
+        Deno.env.get("MP_OAUTH_REDIRECT_URI"),
+      );
+      const redirectTo = body?.redirect_to
+        ? resolveMpOAuthAppRedirect(Deno.env.get("APP_URL"), body.redirect_to, true)
+        : null;
       const state = randomBase64Url(24);
       const codeVerifier = randomBase64Url(48);
       const codeChallenge = await pkceChallengeS256(codeVerifier);
@@ -34,7 +41,7 @@ Deno.serve(async (req) => {
         restaurant_id: restaurantId,
         user_id: ctx.userId,
         code_verifier: codeVerifier,
-        redirect_to: body?.redirect_to ?? null,
+        redirect_to: redirectTo,
       });
       if (stErr) throw stErr;
 
@@ -42,16 +49,12 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("client_id", appId);
       authUrl.searchParams.set("response_type", "code");
       authUrl.searchParams.set("platform_id", "mp");
-      authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+      authUrl.searchParams.set("redirect_uri", redirectUri);
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("code_challenge", codeChallenge);
       authUrl.searchParams.set("code_challenge_method", "S256");
 
-      const _full = authUrl.toString();
-      console.log("[mp-oauth][start] MP_APP_ID:", appId);
-      console.log("[mp-oauth][start] client_id:", appId);
-      console.log("[mp-oauth][start] authorize_url:", _full);
-      return json({ authorize_url: _full });
+      return json({ authorize_url: authUrl.toString() });
     }
 
     if (action === "status") {
