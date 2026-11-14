@@ -12,6 +12,7 @@ CREATE TABLE public.coupons (
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (restaurant_id, code)
 );
+REVOKE ALL ON public.coupons FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.coupons TO authenticated;
 GRANT ALL ON public.coupons TO service_role;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
