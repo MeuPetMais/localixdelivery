@@ -512,6 +512,12 @@ CREATE UNIQUE INDEX stock_movements_order_consume_uidx ON public.stock_movements
 
 CREATE UNIQUE INDEX stock_movements_order_reverse_uidx ON public.stock_movements USING btree (reference_id, ingredient_id) WHERE ((reference_type = 'order'::text) AND (COALESCE((metadata ->> 'operation'::text), ''::text) = 'reverse'::text));
 
+-- Mandatory singleton settings row; absence causes legacy rewards trigger to treat NULL as enabled.
+-- Mirrored settings from Staging baseline, benefits/rewards deliberately disabled.
+INSERT INTO public.platform_settings
+ (id, commission_rate, fixed_fee, platform_fee_until_30, platform_fee_above_30, localix_rewards_enabled, localix_benefits_enabled)
+VALUES (true, 0.05, 0.99, 0.99, 1.49, false, false);
+
 CREATE OR REPLACE FUNCTION private.apply_order_stock_status_transition()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1129,3 +1135,25 @@ REVOKE ALL ON public.menu_categories FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON public.inventory_locations FROM PUBLIC,anon,authenticated;
 
 -- H2 schema closure is intentionally service-role-only pending per-role policy integration.
+-- Never expose SECURITY DEFINER or financial helper functions to PostgREST roles.
+DO $revoke$
+DECLARE f record;
+BEGIN
+  FOR f IN
+    SELECT n.nspname AS schema_name, p.proname AS function_name,
+           pg_get_function_identity_arguments(p.oid) AS identity_args
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE (n.nspname||'.'||p.proname) IN (
+      'private.apply_order_stock_status_transition','private.upsert_customer_from_order',
+      'public.tg_order_notify_customer','public.tg_orders_loyalty_status',
+      'public.tg_orders_snapshot_platform_fees','public.tg_rewards_enqueue_order_event',
+      'private.consume_order_stock','private.reverse_order_stock',
+      'private.rebuild_customer_order_metrics','public.loyalty_apply',
+      'public.loyalty_rollback_reserve','public.validate_builder_option_menu_item_scope'
+    )
+  LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %I.%I(%s) FROM PUBLIC, anon, authenticated',
+                   f.schema_name, f.function_name, f.identity_args);
+  END LOOP;
+END
+$revoke$;
