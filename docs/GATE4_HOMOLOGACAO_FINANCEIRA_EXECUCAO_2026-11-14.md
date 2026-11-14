@@ -10,7 +10,7 @@ Supabase **somente homologação** `gvozcqyjhogmvebrwzap` (sa-east-1). Staging c
 - `20261114150702_gate4_b2_atomic_checkout`
 - `20261114150919_gate4_b3_financial_snapshot`
 - `20261114151245_gate4_restrict_order_number_trigger`
-- `gate4_b2_coupons_partner_email` (migration de cupons + FK de pedidos + email-only partner; versão verificada via list_migrations no fechamento)
+- `20261114152014_gate4_b2_coupons_partner_email`
 
 Cada SQL aplicada é versionada em `supabase/homologation`, separada da cadeia regular de 206 migrations; não deve ser executada em Production/Staging.
 
