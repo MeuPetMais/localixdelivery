@@ -7,6 +7,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 import { resolveMpOAuthRedirectUri, resolveMpOAuthAppRedirect } from "../_shared/mp-oauth-url.ts";
+import { assertMpOAuthTokenMode, resolveMpOAuthTestToken } from "../_shared/mp-oauth-environment.ts";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
@@ -38,6 +39,7 @@ Deno.serve(async (req) => {
     );
     // Validate navigation before consuming single-use authorization code.
     resolveMpOAuthAppRedirect(Deno.env.get("APP_URL"), st.redirect_to, true);
+    const testToken = resolveMpOAuthTestToken(Deno.env.get("MP_ENVIRONMENT"));
     const appId = Deno.env.get("MP_APP_ID");
     const mpClientSecret = Deno.env.get("MP_CLIENT_SECRET");
     if (!appId || !mpClientSecret)
@@ -54,6 +56,7 @@ Deno.serve(async (req) => {
         client_id: appId,
         client_secret: mpClientSecret,
         grant_type: "authorization_code",
+        test_token: testToken,
         code,
         redirect_uri: redirectUri,
         code_verifier: st.code_verifier,
@@ -102,8 +105,10 @@ Deno.serve(async (req) => {
     if (!tokenJson.access_token || !tokenJson.user_id) {
       return jsonErr("oauth_incomplete_token_response", 502);
     }
-    if (Deno.env.get("MP_ENVIRONMENT") === "test" && tokenJson.live_mode === true) {
-      return jsonErr("oauth_live_token_rejected_in_test", 403);
+    try {
+      assertMpOAuthTokenMode(Deno.env.get("MP_ENVIRONMENT"), tokenJson.live_mode);
+    } catch {
+      return jsonErr("oauth_token_environment_mismatch", 403);
     }
 
     const { error: accountError } = await admin.from("mercado_pago_accounts").upsert(
