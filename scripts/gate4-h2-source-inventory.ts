@@ -37,7 +37,9 @@ export type SourceDeclaration = {
  * EXECUTE SQL and statement dependencies may require manual follow-up.
  */
 export function inventoryGate4Sources(migrationsDir: string): SourceDeclaration[] {
-  const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+  const files = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
   const tables = new Set<string>(GATE4_TABLES);
   const fns = new Set<string>(GATE4_FUNCTIONS);
   const matches: SourceDeclaration[] = [];
@@ -46,21 +48,50 @@ export function inventoryGate4Sources(migrationsDir: string): SourceDeclaration[
     lines.forEach((line, index) => {
       const s = line.trim();
       if (/^(--|\/\*|\*)/.test(s)) return;
-      const create = s.match(/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i);
-      const alter = s.match(/^ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i);
-      const fn = s.match(/^CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i);
+      const create = s.match(
+        /^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i,
+      );
+      const alter = s.match(
+        /^ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i,
+      );
+      const fn = s.match(
+        /^CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?"?([a-z_][a-z_0-9]*)"?/i,
+      );
       let kind: SourceDeclaration["kind"] | undefined;
       let name: string | undefined;
-      if (create) { kind = "CREATE TABLE"; name = create[1].toLowerCase(); }
-      else if (alter) { kind = "ALTER TABLE"; name = alter[1].toLowerCase(); }
-      else if (fn) { kind = "FUNCTION"; name = fn[1].toLowerCase(); }
-      else if (/^CREATE\s+(?:UNIQUE\s+)?INDEX\b/i.test(s) && /financial_ledger|payment|queue|order|restaurant|checkout/i.test(s)) {
-        kind = "INDEX"; name = s.match(/(?:INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?)((?:public\.)?[a-z_0-9]+)/i)?.[1] ?? "unknown";
+      if (create) {
+        kind = "CREATE TABLE";
+        name = create[1].toLowerCase();
+      } else if (alter) {
+        kind = "ALTER TABLE";
+        name = alter[1].toLowerCase();
+      } else if (fn) {
+        kind = "FUNCTION";
+        name = fn[1].toLowerCase();
+      } else if (
+        /^CREATE\s+(?:UNIQUE\s+)?INDEX\b/i.test(s) &&
+        /financial_ledger|payment|queue|order|restaurant|checkout/i.test(s)
+      ) {
+        kind = "INDEX";
+        name =
+          s.match(/(?:INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?)((?:public\.)?[a-z_0-9]+)/i)?.[1] ??
+          "unknown";
+      } else if (/^CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\b/i.test(s)) {
+        kind = "TRIGGER";
+        name = s.match(/TRIGGER\s+([a-z_0-9]+)/i)?.[1] ?? "unknown";
+      } else if (/^CREATE\s+POLICY\b/i.test(s)) {
+        kind = "POLICY";
+        name =
+          s.match(/POLICY\s+(?:"([^"]+)"|([a-z_0-9]+))/i)?.[1] ??
+          s.match(/POLICY\s+([a-z_0-9]+)/i)?.[1] ??
+          "unknown";
       }
-      else if (/^CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\b/i.test(s)) { kind = "TRIGGER"; name = s.match(/TRIGGER\s+([a-z_0-9]+)/i)?.[1] ?? "unknown"; }
-      else if (/^CREATE\s+POLICY\b/i.test(s)) { kind = "POLICY"; name = s.match(/POLICY\s+(?:"([^"]+)"|([a-z_0-9]+))/i)?.[1] ?? s.match(/POLICY\s+([a-z_0-9]+)/i)?.[1] ?? "unknown"; }
       if (!kind || !name) return;
-      if ((kind === "FUNCTION" && !fns.has(name)) || ((kind === "CREATE TABLE" || kind === "ALTER TABLE") && !tables.has(name))) return;
+      if (
+        (kind === "FUNCTION" && !fns.has(name)) ||
+        ((kind === "CREATE TABLE" || kind === "ALTER TABLE") && !tables.has(name))
+      )
+        return;
       matches.push({ kind, name, file, line: index + 1, statement: s.slice(0, 180) });
     });
   }
