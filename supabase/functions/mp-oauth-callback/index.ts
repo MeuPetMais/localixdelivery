@@ -7,7 +7,10 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { adminClient } from "../_shared/mp-auth.ts";
 import { encryptToken } from "../_shared/crypto.ts";
 import { resolveMpOAuthRedirectUri, resolveMpOAuthAppRedirect } from "../_shared/mp-oauth-url.ts";
-import { assertMpOAuthTokenMode, resolveMpOAuthTestToken } from "../_shared/mp-oauth-environment.ts";
+import {
+  assertMpOAuthTokenMode,
+  resolveMpOAuthTestToken,
+} from "../_shared/mp-oauth-environment.ts";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
