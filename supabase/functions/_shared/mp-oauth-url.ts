@@ -34,7 +34,15 @@ export function resolveMpOAuthAppRedirect(
 ): string {
   if (!appUrl) throw new Error("mp_oauth_app_url_not_configured");
   const app = new URL(appUrl);
-  if (app.protocol !== "https:" || app.username || app.password || app.search || app.hash || app.pathname !== "/" || app.port) {
+  if (
+    app.protocol !== "https:" ||
+    app.username ||
+    app.password ||
+    app.search ||
+    app.hash ||
+    app.pathname !== "/" ||
+    app.port
+  ) {
     throw new Error("mp_oauth_invalid_app_url");
   }
   const fallback = success ? "/pagamentos?mp=success" : "/pagamentos?mp=error&reason=internal";
