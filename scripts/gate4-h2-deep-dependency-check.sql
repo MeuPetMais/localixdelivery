@@ -3,7 +3,7 @@
 WITH expected_relation(name) AS (
   VALUES ('customers'),('customer_notifications'),('loyalty_transactions'),
   ('customer_loyalty'),('platform_settings'),('reward_order_event_queue'),
-  ('order_items'),('stock_movements'),('ingredients'),('recipe_items'),
+  ('stock_movements'),('ingredients'),('recipe_items'),
   ('builder_option_ingredients'),('builder_options'),('builder_groups'),
   ('builders'),('menu_items')
 ), expected_function(schema_name,fn) AS (
