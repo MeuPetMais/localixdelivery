@@ -5,6 +5,7 @@ import { corsHeaders, json } from "../_shared/cors.ts";
 import { requireOwner } from "../_shared/mp-auth.ts";
 import { decryptToken, pkceChallengeS256, randomBase64Url } from "../_shared/crypto.ts";
 import { resolveMpOAuthRedirectUri, resolveMpOAuthAppRedirect } from "../_shared/mp-oauth-url.ts";
+import { resolveMpOAuthTestToken } from "../_shared/mp-oauth-environment.ts";
 
 const MP_AUTH_BASE = "https://auth.mercadopago.com/authorization";
 
@@ -21,6 +22,8 @@ Deno.serve(async (req) => {
     const ctx = await requireOwner(req, restaurantId);
 
     if (action === "start") {
+      // No authorization code may be issued if the token exchange mode is undefined.
+      resolveMpOAuthTestToken(Deno.env.get("MP_ENVIRONMENT"));
       const appId = Deno.env.get("MP_APP_ID");
       if (!appId) return json({ error: "MP_APP_ID não configurado" }, { status: 500 });
 
