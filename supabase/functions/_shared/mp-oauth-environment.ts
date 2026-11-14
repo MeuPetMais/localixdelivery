@@ -11,10 +11,7 @@ export function resolveMpOAuthTestToken(environment: string | undefined): "true"
   throw new Error("mp_oauth_environment_not_configured");
 }
 
-export function assertMpOAuthTokenMode(
-  environment: string | undefined,
-  liveMode: unknown,
-): void {
+export function assertMpOAuthTokenMode(environment: string | undefined, liveMode: unknown): void {
   const expected = resolveMpOAuthTestToken(environment);
   if (expected === "true" && liveMode !== false) {
     throw new Error("oauth_test_environment_requires_sandbox_token");
