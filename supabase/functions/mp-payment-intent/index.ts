@@ -1079,6 +1079,12 @@ Deno.serve(async (req) => {
           },
         );
       }
+      // Mercado Pago TEST requires the payer to be a test user. Reject
+      // non-test e-mails locally instead of sending a doomed payment request.
+      // This does NOT invent or infer the buyer account's actual e-mail.
+      if (environment === "test" && !/^[^@\\s]+@testuser\\.com$/i.test(payerEmail)) {
+        return json({ error: "sandbox_test_payer_email_required" }, { status: 422 });
+      }
       const { data: pricingSnapshot, error: pricingErr } = await sb
         .from("order_pricing_snapshot")
         .select("platform_fee")
