@@ -11,6 +11,7 @@ import {
   assertMpOAuthTokenMode,
   resolveMpOAuthTestToken,
 } from "../_shared/mp-oauth-environment.ts";
+import { assertMpExpectedTestSeller } from "../_shared/mp-payment-environment.ts";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 
@@ -134,6 +135,16 @@ Deno.serve(async (req) => {
         token_kind: tokenKind,
       });
       return jsonErr("oauth_token_environment_mismatch", 403);
+    }
+
+    try {
+      assertMpExpectedTestSeller(
+        Deno.env.get("MP_ENVIRONMENT"),
+        tokenJson.user_id,
+        Deno.env.get("MP_TEST_SELLER_USER_ID"),
+      );
+    } catch {
+      return jsonErr("oauth_test_seller_identity_not_verified", 403);
     }
 
     const { error: accountError } = await admin.from("mercado_pago_accounts").upsert(
