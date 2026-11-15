@@ -427,7 +427,30 @@ Deno.serve(async (req) => {
           status: 400,
         },
       );
+    const environment = Deno.env.get("MP_ENVIRONMENT");
+    if (environment !== "test" && environment !== "production") {
+      return json({ error: "mp_payment_environment_not_configured" }, { status: 503 });
+    }
+    if (
+      environment === "test" &&
+      Deno.env.get("SUPABASE_URL") !== "https://gvozcqyjhogmvebrwzap.supabase.co"
+    ) {
+      return json({ error: "sandbox_payment_project_mismatch" }, { status: 503 });
+    }
     const sb = admin();
+    // Isolated Gate 4: only a verified sandbox restaurant owner can request
+    // a synthetic payment. Do not rely on the service-role key as caller auth.
+    let sandboxCallerId = null;
+    if (environment === "test") {
+      const bearer = req.headers.get("authorization") ?? "";
+      const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
+      if (!accessJwt) return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
+      if (callerError || !caller?.user?.id) {
+        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      }
+      sandboxCallerId = caller.user.id;
+    }
     // Carrega pedido + pagamento
     const { data: order, error: ordErr } = await sb
       .from("orders")
@@ -446,6 +469,36 @@ Deno.serve(async (req) => {
           status: 404,
         },
       );
+    if (environment === "test") {
+      const { data: restaurant, error: restaurantError } = await sb
+        .from("restaurants")
+        .select("id, owner_id, active, is_open")
+        .eq("id", order.restaurant_id)
+        .maybeSingle();
+      if (
+        restaurantError ||
+        !restaurant ||
+        restaurant.id !== "1e271104-299c-44b6-98f5-d8effaef3f0a" ||
+        restaurant.owner_id !== sandboxCallerId ||
+        restaurant.active !== false ||
+        restaurant.is_open !== false ||
+        order.customer_name !== "GATE4 SANDBOX PAYMENT"
+      ) {
+        return json({ error: "sandbox_order_not_authorized" }, { status: 403 });
+      }
+      if (action !== "create" && action !== "status") {
+        return json({ error: "sandbox_action_not_allowed" }, { status: 403 });
+      }
+      if (action === "create" && order.status !== "aguardando_pagamento") {
+        return json({ error: "sandbox_order_status_not_pending" }, { status: 409 });
+      }
+      if (Number(order.total) > 31 || Number(order.total) <= 0) {
+        return json({ error: "sandbox_amount_out_of_bounds" }, { status: 409 });
+      }
+      if (String(payload?.payment_method ?? "pix").toLowerCase() !== "pix") {
+        return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+    }
     const { data: existing } = await sb
       .from("order_payment")
       .select("*")
