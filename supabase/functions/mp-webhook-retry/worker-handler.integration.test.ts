@@ -249,7 +249,7 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
       Deno: {
         env: {
           get: (key: string) =>
-            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined,
+            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : key === "MP_ENVIRONMENT" ? "production" : undefined,
         },
         serve: (handler: (req: Request) => Promise<Response>) => {
           receiver = handler;
@@ -300,7 +300,7 @@ describe("Gate 4 — actual MP retry worker handler with isolated adapters", () 
       Deno: {
         env: {
           get: (key: string) =>
-            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined,
+            key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : key === "MP_ENVIRONMENT" ? "production" : undefined,
         },
         serve: (handler: (req: Request) => Promise<Response>) => {
           receiver = handler;
