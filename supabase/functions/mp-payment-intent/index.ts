@@ -514,6 +514,47 @@ Deno.serve(async (req) => {
     const method = String(
       payload?.payment_method ?? existing?.payment_method ?? "pix",
     ).toLowerCase();
+    if (environment === "test" && action === "create") {
+      if (method !== "pix") {
+        return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+      if (existing?.payment_id || (existing?.status && existing.status !== "PENDING")) {
+        return json({ error: "sandbox_payment_already_started" }, { status: 409 });
+      }
+      const { data: snapshot, error: snapshotError } = await sb
+        .from("order_pricing_snapshot")
+        .select("subtotal, platform_fee, customer_total, service_fee_payer, provider, currency")
+        .eq("order_id", orderId)
+        .maybeSingle();
+      const { data: settings, error: settingsError } = await sb
+        .from("platform_settings")
+        .select("platform_fee_until_30, platform_fee_above_30, default_gateway")
+        .eq("id", true)
+        .maybeSingle();
+      const subtotal = Number(snapshot?.subtotal);
+      const expectedFee = subtotal <= 30
+        ? Number(settings?.platform_fee_until_30)
+        : Number(settings?.platform_fee_above_30);
+      if (
+        snapshotError ||
+        settingsError ||
+        !snapshot ||
+        !settings ||
+        !Number.isFinite(subtotal) ||
+        subtotal <= 0 ||
+        !Number.isFinite(expectedFee) ||
+        expectedFee < 0 ||
+        Math.abs(Number(snapshot.platform_fee) - expectedFee) > 0.001 ||
+        Math.abs(Number(snapshot.customer_total) - Number(order.total)) > 0.001 ||
+        Math.abs(Number(order.total) - (subtotal + expectedFee)) > 0.001 ||
+        snapshot.service_fee_payer !== "customer" ||
+        snapshot.provider !== "mercado_pago" ||
+        settings.default_gateway !== "mercado_pago" ||
+        snapshot.currency !== "BRL"
+      ) {
+        return json({ error: "sandbox_pricing_snapshot_mismatch" }, { status: 409 });
+      }
+    }
     const token = await getAccessToken(sb, order.restaurant_id);
     // ---------- CREATE ----------
     if (action === "create") {
