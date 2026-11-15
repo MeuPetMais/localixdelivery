@@ -113,12 +113,9 @@ Deno.serve(async (req) => {
     } catch {
       // Safe diagnostics only: never log token, refresh token, code, client secret or user_id.
       // MP can return live_mode=true, false, or omit it; record that distinction only.
-      const liveMode =
-        tokenJson.live_mode === true
-          ? "true"
-          : tokenJson.live_mode === false
-            ? "false"
-            : "absent";
+      let liveMode = "absent";
+      if (tokenJson.live_mode === true) liveMode = "true";
+      if (tokenJson.live_mode === false) liveMode = "false";
       let tokenKind = "absent";
       if (typeof tokenJson.access_token === "string") {
         tokenKind = tokenJson.access_token.startsWith("TEST-")
