@@ -144,7 +144,9 @@ Deno.serve(async (req) => {
         refresh_token: await encryptToken(tokenJson.refresh_token ?? ""),
         public_key: await encryptToken(tokenJson.public_key ?? ""),
         scope: tokenJson.scope ?? null,
-        live_mode: tokenJson.live_mode ?? true,
+        // The MP TEST response may omit live_mode. The validated token kind,
+        // never a permissive default, is authoritative for persistence.
+        live_mode: resolveMpOAuthTestToken(Deno.env.get("MP_ENVIRONMENT")) !== "true",
         connected: true,
         expires_at: expiresAt,
         connected_at: new Date().toISOString(),
