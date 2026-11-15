@@ -212,6 +212,30 @@ Deno.serve(async (req) => {
     String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
 
+  // Isolated Gate 4: never persist an unverified external notification.
+  // Production retains its existing API-based verification until independently audited.
+  if (Deno.env.get("MP_ENVIRONMENT") === "test" && !internalReplay) {
+    const testSignature = await verifySignature({
+      secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
+      xSignature,
+      xRequestId,
+      dataIdFromQuery,
+      dataIdFromBody,
+    });
+    if (!testSignature.ok) {
+      console.warn("[mp-webhook] sandbox signature rejected", {
+        reason: testSignature.reason ?? "unknown",
+      });
+      return json({ ok: false, error: "webhook_invalid_signature" }, { status: 401 });
+    }
+  }
+
+  // No test-mode financial mutation until the transition service is explicitly isolated.
+  // The current shared fallback can otherwise send a service-role bearer to a non-sandbox URL.
+  if (Deno.env.get("MP_ENVIRONMENT") === "test") {
+    return json({ ok: false, error: "sandbox_transition_not_homologated" }, { status: 503 });
+  }
+
   // Persistência com idempotência por (provider, event_id)
   const insertPayload = {
     provider: "mercado_pago",
