@@ -113,16 +113,24 @@ Deno.serve(async (req) => {
     } catch {
       // Safe diagnostics only: never log token, refresh token, code, client secret or user_id.
       // MP can return live_mode=true, false, or omit it; record that distinction only.
+      const liveMode =
+        tokenJson.live_mode === true
+          ? "true"
+          : tokenJson.live_mode === false
+            ? "false"
+            : "absent";
+      let tokenKind = "absent";
+      if (typeof tokenJson.access_token === "string") {
+        tokenKind = tokenJson.access_token.startsWith("TEST-")
+          ? "TEST"
+          : tokenJson.access_token.startsWith("APP_USR-")
+            ? "APP_USR"
+            : "other";
+      }
       console.warn("[mp-oauth-callback] token mode rejected", {
         environment: Deno.env.get("MP_ENVIRONMENT") === "test" ? "test" : "other",
-        live_mode: tokenJson.live_mode === true ? "true" : tokenJson.live_mode === false ? "false" : "absent",
-        token_kind: typeof tokenJson.access_token === "string"
-          ? tokenJson.access_token.startsWith("TEST-")
-            ? "TEST"
-            : tokenJson.access_token.startsWith("APP_USR-")
-              ? "APP_USR"
-              : "other"
-          : "absent",
+        live_mode: liveMode,
+        token_kind: tokenKind,
       });
       return jsonErr("oauth_token_environment_mismatch", 403);
     }
