@@ -223,3 +223,27 @@ describe("mp-payment-intent refund Mercado Pago", () => {
     expect(refundFlow).toContain('service: "mp-payment-intent:refund"');
   });
 });
+
+describe("Gate 4: sandbox payment caller and amount isolation", () => {
+  it("fails closed without authenticated owner and isolated restaurant", () => {
+    expect(source).toContain('error: "sandbox_caller_unauthorized"');
+    expect(source).toContain("await sb.auth.getUser(accessJwt)");
+    expect(source).toContain('error: "sandbox_payment_project_mismatch"');
+    expect(source).toContain('restaurant.owner_id !== sandboxCallerId');
+    expect(source).toContain('order.customer_name !== "GATE4 SANDBOX PAYMENT"');
+    expect(source).toContain('error: "sandbox_order_not_authorized"');
+    expect(source).toContain('error: "sandbox_amount_out_of_bounds"');
+  });
+
+  it("blocks payment creation before external MP call when snapshot differs", () => {
+    const validation = source.indexOf('error: "sandbox_pricing_snapshot_mismatch"');
+    const gateway = source.indexOf('const token = await getAccessToken(sb, order.restaurant_id)');
+    expect(validation).toBeGreaterThan(-1);
+    expect(gateway).toBeGreaterThan(validation);
+    expect(source).toContain('settings.default_gateway !== "mercado_pago"');
+    expect(source).toContain('snapshot.service_fee_payer !== "customer"');
+    expect(source).toContain("Math.abs(Number(snapshot.customer_total) - Number(order.total))");
+    expect(source).toContain('error: "sandbox_payment_already_started"');
+    expect(source).toContain('error: "sandbox_payment_method_not_allowed"');
+  });
+});
