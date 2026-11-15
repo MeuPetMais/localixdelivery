@@ -48,3 +48,17 @@ export function assertMpSellerTokenMode(
     throw new Error("mp_payment_seller_token_not_production");
   }
 }
+
+/** Require the explicit TEST vendor account, never the application's real owner. */
+export function assertMpExpectedTestSeller(
+  environment: string | undefined,
+  sellerUserId: unknown,
+  expectedTestSellerUserId: string | undefined,
+): void {
+  if (environment !== "test") return;
+  const expected = String(expectedTestSellerUserId ?? "").trim();
+  const actual = String(sellerUserId ?? "").trim();
+  if (!/^\\d+$/.test(expected) || actual !== expected) {
+    throw new Error("mp_test_seller_identity_not_verified");
+  }
+}
