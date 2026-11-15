@@ -207,7 +207,7 @@ function createFixture(
   runInNewContext(compiled, {
     Deno: {
       env: {
-        get: (key: string) => (key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : undefined),
+        get: (key: string) => (key === "MP_WEBHOOK_REPLAY_SECRET" ? "synthetic-replay" : key === "MP_ENVIRONMENT" ? "production" : undefined),
       },
       serve: (fn: (req: Request) => Promise<Response>) => {
         handler = fn;
