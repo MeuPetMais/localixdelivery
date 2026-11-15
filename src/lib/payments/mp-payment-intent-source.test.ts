@@ -229,7 +229,7 @@ describe("Gate 4: sandbox payment caller and amount isolation", () => {
     expect(source).toContain('error: "sandbox_caller_unauthorized"');
     expect(source).toContain("await sb.auth.getUser(accessJwt)");
     expect(source).toContain('error: "sandbox_payment_project_mismatch"');
-    expect(source).toContain('restaurant.owner_id !== sandboxCallerId');
+    expect(source).toContain("restaurant.owner_id !== sandboxCallerId");
     expect(source).toContain('order.customer_name !== "GATE4 SANDBOX PAYMENT"');
     expect(source).toContain('error: "sandbox_order_not_authorized"');
     expect(source).toContain('error: "sandbox_amount_out_of_bounds"');
@@ -237,7 +237,7 @@ describe("Gate 4: sandbox payment caller and amount isolation", () => {
 
   it("blocks payment creation before external MP call when snapshot differs", () => {
     const validation = source.indexOf('error: "sandbox_pricing_snapshot_mismatch"');
-    const gateway = source.indexOf('const token = await getAccessToken(sb, order.restaurant_id)');
+    const gateway = source.indexOf("const token = await getAccessToken(sb, order.restaurant_id)");
     expect(validation).toBeGreaterThan(-1);
     expect(gateway).toBeGreaterThan(validation);
     expect(source).toContain('settings.default_gateway !== "mercado_pago"');
