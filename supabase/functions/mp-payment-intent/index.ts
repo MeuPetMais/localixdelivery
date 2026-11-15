@@ -532,9 +532,10 @@ Deno.serve(async (req) => {
         .eq("id", true)
         .maybeSingle();
       const subtotal = Number(snapshot?.subtotal);
-      const expectedFee = subtotal <= 30
-        ? Number(settings?.platform_fee_until_30)
-        : Number(settings?.platform_fee_above_30);
+      const expectedFee =
+        subtotal <= 30
+          ? Number(settings?.platform_fee_until_30)
+          : Number(settings?.platform_fee_above_30);
       if (
         snapshotError ||
         settingsError ||
