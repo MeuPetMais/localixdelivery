@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assertMpSellerTokenMode, assertMpExpectedTestSeller, resolveMpPaymentWebhookUrl } from "./mp-payment-environment";
+import {
+  assertMpSellerTokenMode,
+  assertMpExpectedTestSeller,
+  resolveMpPaymentWebhookUrl,
+} from "./mp-payment-environment";
 
 const SANDBOX = "https://gvozcqyjhogmvebrwzap.supabase.co";
 const PRODUCTION = "https://mvkfrwxgneqzvoabkaws.supabase.co";
