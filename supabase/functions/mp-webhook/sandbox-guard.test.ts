@@ -31,6 +31,7 @@ describe("Gate 4: Mercado Pago webhook sandbox isolation", () => {
 
   it("keeps sandbox seller TEST-only and refuses cross-environment token", () => {
     expect(source).toContain("assertMpSellerTokenMode(environment, seller.live_mode, token)");
+    expect(source).toContain("assertMpExpectedTestSeller");
     expect(source).toContain("sandbox_seller_token_mismatch");
     expect(source).toContain("sandbox_seller_account_unavailable");
   });
