@@ -23,7 +23,7 @@ function respond(status: number, data: Record<string, unknown>): Response {
 Deno.serve(async (req: Request) => {
   if (Deno.env.get("SUPABASE_URL") !== PROD_URL) return respond(403, { error: "wrong_environment" });
   if (req.method !== "GET") return respond(405, { error: "method_not_allowed" });
-  const bearer = /^Bearer\\s+(\\S+)$/i.exec(req.headers.get("Authorization") ?? "");
+  const bearer = /^Bearer\s+(\S+)$/i.exec(req.headers.get("Authorization") ?? "");
   if (!bearer) return respond(401, { error: "unauthorized" });
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!serviceKey) return respond(503, { error: "service_not_configured" });
