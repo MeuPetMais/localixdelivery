@@ -144,6 +144,16 @@ async function transitionOrderDirect(
 export async function transitionOrder(
   req: OrderTransitionRequest,
 ): Promise<OrderTransitionResponse> {
+  // Gate 4 sandbox: never send service-role bearer or HMAC to a remote
+  // transition URL. Use the isolated database's transactional RPC only.
+  if (Deno.env.get("MP_ENVIRONMENT") === "test") {
+    const origin = Deno.env.get("SUPABASE_URL");
+    if (origin !== "https://gvozcqyjhogmvebrwzap.supabase.co") {
+      return { ok: false, error: "sandbox_transition_project_mismatch" };
+    }
+    return await transitionOrderDirect(req, "sandbox_direct_rpc");
+  }
+
   const url = Deno.env.get("INTERNAL_TRANSITION_URL") ?? DEFAULT_URL;
   const bearer = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const secret = Deno.env.get("INTERNAL_TRANSITION_HMAC_SECRET");
