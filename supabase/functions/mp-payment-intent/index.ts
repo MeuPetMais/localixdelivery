@@ -8,6 +8,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import {
+  resolveMpPaymentWebhookUrl,
+  assertMpSellerTokenMode,
+  assertMpExpectedTestSeller,
+} from "../_shared/mp-payment-environment.ts";
 function mapStatus(s) {
   switch ((s ?? "").toLowerCase()) {
     case "approved":
@@ -36,7 +41,7 @@ function admin() {
 async function getAccessToken(sb, restaurantId) {
   const { data } = await sb
     .from("mercado_pago_accounts")
-    .select("access_token, connected")
+    .select("access_token, connected, live_mode, mp_user_id")
     .eq("restaurant_id", restaurantId)
     .maybeSingle();
   if (!data?.connected || !data.access_token) {
@@ -44,6 +49,12 @@ async function getAccessToken(sb, restaurantId) {
   }
   const token = await decryptToken(data.access_token);
   if (!token) throw new Error("mercado_pago_seller_not_connected");
+  assertMpSellerTokenMode(Deno.env.get("MP_ENVIRONMENT"), data.live_mode, token);
+  assertMpExpectedTestSeller(
+    Deno.env.get("MP_ENVIRONMENT"),
+    data.mp_user_id,
+    Deno.env.get("MP_TEST_SELLER_USER_ID"),
+  );
   return token;
 }
 function sanitizeMpCause(cause) {
@@ -416,7 +427,30 @@ Deno.serve(async (req) => {
           status: 400,
         },
       );
+    const environment = Deno.env.get("MP_ENVIRONMENT");
+    if (environment !== "test" && environment !== "production") {
+      return json({ error: "mp_payment_environment_not_configured" }, { status: 503 });
+    }
+    if (
+      environment === "test" &&
+      Deno.env.get("SUPABASE_URL") !== "https://gvozcqyjhogmvebrwzap.supabase.co"
+    ) {
+      return json({ error: "sandbox_payment_project_mismatch" }, { status: 503 });
+    }
     const sb = admin();
+    // Isolated Gate 4: only a verified sandbox restaurant owner can request
+    // a synthetic payment. Do not rely on the service-role key as caller auth.
+    let sandboxCallerId = null;
+    if (environment === "test") {
+      const bearer = req.headers.get("authorization") ?? "";
+      const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
+      if (!accessJwt) return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
+      if (callerError || !caller?.user?.id) {
+        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      }
+      sandboxCallerId = caller.user.id;
+    }
     // Carrega pedido + pagamento
     const { data: order, error: ordErr } = await sb
       .from("orders")
@@ -435,6 +469,36 @@ Deno.serve(async (req) => {
           status: 404,
         },
       );
+    if (environment === "test") {
+      const { data: restaurant, error: restaurantError } = await sb
+        .from("restaurants")
+        .select("id, owner_id, active, is_open")
+        .eq("id", order.restaurant_id)
+        .maybeSingle();
+      if (
+        restaurantError ||
+        !restaurant ||
+        restaurant.id !== "1e271104-299c-44b6-98f5-d8effaef3f0a" ||
+        restaurant.owner_id !== sandboxCallerId ||
+        restaurant.active !== false ||
+        restaurant.is_open !== false ||
+        order.customer_name !== "GATE4 SANDBOX PAYMENT"
+      ) {
+        return json({ error: "sandbox_order_not_authorized" }, { status: 403 });
+      }
+      if (action !== "create" && action !== "status") {
+        return json({ error: "sandbox_action_not_allowed" }, { status: 403 });
+      }
+      if (action === "create" && order.status !== "aguardando_pagamento") {
+        return json({ error: "sandbox_order_status_not_pending" }, { status: 409 });
+      }
+      if (Number(order.total) > 31 || Number(order.total) <= 0) {
+        return json({ error: "sandbox_amount_out_of_bounds" }, { status: 409 });
+      }
+      if (String(payload?.payment_method ?? "pix").toLowerCase() !== "pix") {
+        return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+    }
     const { data: existing } = await sb
       .from("order_payment")
       .select("*")
@@ -450,6 +514,48 @@ Deno.serve(async (req) => {
     const method = String(
       payload?.payment_method ?? existing?.payment_method ?? "pix",
     ).toLowerCase();
+    if (environment === "test" && action === "create") {
+      if (method !== "pix") {
+        return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+      if (existing?.payment_id || (existing?.status && existing.status !== "PENDING")) {
+        return json({ error: "sandbox_payment_already_started" }, { status: 409 });
+      }
+      const { data: snapshot, error: snapshotError } = await sb
+        .from("order_pricing_snapshot")
+        .select("subtotal, platform_fee, customer_total, service_fee_payer, provider, currency")
+        .eq("order_id", orderId)
+        .maybeSingle();
+      const { data: settings, error: settingsError } = await sb
+        .from("platform_settings")
+        .select("platform_fee_until_30, platform_fee_above_30, default_gateway")
+        .eq("id", true)
+        .maybeSingle();
+      const subtotal = Number(snapshot?.subtotal);
+      const expectedFee =
+        subtotal <= 30
+          ? Number(settings?.platform_fee_until_30)
+          : Number(settings?.platform_fee_above_30);
+      if (
+        snapshotError ||
+        settingsError ||
+        !snapshot ||
+        !settings ||
+        !Number.isFinite(subtotal) ||
+        subtotal <= 0 ||
+        !Number.isFinite(expectedFee) ||
+        expectedFee < 0 ||
+        Math.abs(Number(snapshot.platform_fee) - expectedFee) > 0.001 ||
+        Math.abs(Number(snapshot.customer_total) - Number(order.total)) > 0.001 ||
+        Math.abs(Number(order.total) - (subtotal + expectedFee)) > 0.001 ||
+        snapshot.service_fee_payer !== "customer" ||
+        snapshot.provider !== "mercado_pago" ||
+        settings.default_gateway !== "mercado_pago" ||
+        snapshot.currency !== "BRL"
+      ) {
+        return json({ error: "sandbox_pricing_snapshot_mismatch" }, { status: 409 });
+      }
+    }
     const token = await getAccessToken(sb, order.restaurant_id);
     // ---------- CREATE ----------
     if (action === "create") {
@@ -555,8 +661,10 @@ Deno.serve(async (req) => {
             },
           );
         }
-        const transparentNotificationUrl =
-          "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
+        const transparentNotificationUrl = resolveMpPaymentWebhookUrl(
+          Deno.env.get("SUPABASE_URL"),
+          Deno.env.get("MP_ENVIRONMENT"),
+        );
         const transparentIdempotencyKey = await buildCardIdempotencyKey(
           orderId,
           transparentCard.token,
@@ -719,7 +827,10 @@ Deno.serve(async (req) => {
           );
         }
         // 2) notification_url — mesma do PIX, compatível com webhook existente.
-        const notificationUrl = "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
+        const notificationUrl = resolveMpPaymentWebhookUrl(
+          Deno.env.get("SUPABASE_URL"),
+          Deno.env.get("MP_ENVIRONMENT"),
+        );
         // 3) back_urls — auto_return exige HTTPS válido em success.
         const successUrl = String(payload?.success_url ?? "").trim();
         const cancelUrl = String(payload?.cancel_url ?? "").trim();
@@ -1029,7 +1140,10 @@ Deno.serve(async (req) => {
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       const callbackUrl = String(payload?.success_url ?? "").trim();
       // notification_url — obrigatório para receber webhook do MP.
-      const notificationUrl = "https://mvkfrwxgneqzvoabkaws.supabase.co/functions/v1/mp-webhook";
+      const notificationUrl = resolveMpPaymentWebhookUrl(
+        Deno.env.get("SUPABASE_URL"),
+        Deno.env.get("MP_ENVIRONMENT"),
+      );
       console.log("[mp-payment-intent] creating pix", {
         restaurant_id: order.restaurant_id,
         order_id: orderId,

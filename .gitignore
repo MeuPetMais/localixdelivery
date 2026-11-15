@@ -34,3 +34,5 @@ dist-ssr
 .env
 .env.*
 !.env.example
+# Gate 4 — ambiente financeiro local descartável (nunca versionar dados/secrets)
+.localix-financial-sandbox/

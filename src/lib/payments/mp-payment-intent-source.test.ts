@@ -43,7 +43,11 @@ const pixCreateFlow = source.slice(
 describe("mp-payment-intent seller OAuth", () => {
   it("usa somente OAuth do seller, sem fallback MP_ACCESS_TOKEN", () => {
     expect(accessTokenFunction).toContain('.from("mercado_pago_accounts")');
-    expect(accessTokenFunction).toContain('.select("access_token, connected")');
+    expect(accessTokenFunction).toContain(
+      '.select("access_token, connected, live_mode, mp_user_id")',
+    );
+    expect(accessTokenFunction).toContain("assertMpSellerTokenMode");
+    expect(accessTokenFunction).toContain("assertMpExpectedTestSeller");
     expect(accessTokenFunction).toContain("!data?.connected || !data.access_token");
     expect(accessTokenFunction).toContain("const token = await decryptToken(data.access_token)");
     expect(accessTokenFunction).toContain('throw new Error("mercado_pago_seller_not_connected")');
@@ -114,7 +118,8 @@ describe("mp-payment-intent transparent card", () => {
   it("define external_reference como order.id e notification_url do webhook", () => {
     expect(transparentCardFunction).toContain("external_reference: params.externalReference");
     expect(transparentCardCreateFlow).toContain("externalReference: order.id");
-    expect(transparentCardCreateFlow).toContain("mp-webhook");
+    expect(transparentCardCreateFlow).toContain("resolveMpPaymentWebhookUrl");
+    expect(source).not.toContain("mvkfrwxgneqzvoabkaws.supabase.co");
   });
 
   it("usa idempotencia deterministica por pedido e token sem persistir token", () => {
@@ -216,5 +221,29 @@ describe("mp-payment-intent refund Mercado Pago", () => {
     expect(refundFlow).toContain("last_refund: refundRaw");
     expect(refundFlow).toContain('to: "reembolsado"');
     expect(refundFlow).toContain('service: "mp-payment-intent:refund"');
+  });
+});
+
+describe("Gate 4: sandbox payment caller and amount isolation", () => {
+  it("fails closed without authenticated owner and isolated restaurant", () => {
+    expect(source).toContain('error: "sandbox_caller_unauthorized"');
+    expect(source).toContain("await sb.auth.getUser(accessJwt)");
+    expect(source).toContain('error: "sandbox_payment_project_mismatch"');
+    expect(source).toContain("restaurant.owner_id !== sandboxCallerId");
+    expect(source).toContain('order.customer_name !== "GATE4 SANDBOX PAYMENT"');
+    expect(source).toContain('error: "sandbox_order_not_authorized"');
+    expect(source).toContain('error: "sandbox_amount_out_of_bounds"');
+  });
+
+  it("blocks payment creation before external MP call when snapshot differs", () => {
+    const validation = source.indexOf('error: "sandbox_pricing_snapshot_mismatch"');
+    const gateway = source.indexOf("const token = await getAccessToken(sb, order.restaurant_id)");
+    expect(validation).toBeGreaterThan(-1);
+    expect(gateway).toBeGreaterThan(validation);
+    expect(source).toContain('settings.default_gateway !== "mercado_pago"');
+    expect(source).toContain('snapshot.service_fee_payer !== "customer"');
+    expect(source).toContain("Math.abs(Number(snapshot.customer_total) - Number(order.total))");
+    expect(source).toContain('error: "sandbox_payment_already_started"');
+    expect(source).toContain('error: "sandbox_payment_method_not_allowed"');
   });
 });

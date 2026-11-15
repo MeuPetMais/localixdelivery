@@ -13,10 +13,14 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import {
+  assertMpSellerTokenMode,
+  assertMpExpectedTestSeller,
+} from "../_shared/mp-payment-environment.ts";
 import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
-import { existingWebhookDelivery } from "./webhook-event-retry.ts";
+import { existingWebhookDelivery, shouldReplayExistingWebhook } from "./webhook-event-retry.ts";
 import { normalizeMpUserId, resolveMercadoPagoWebhookToken } from "./token-resolution.ts";
 import { validateTrustedMpPaymentContext } from "./trust-boundary.ts";
 
@@ -181,7 +185,27 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, { status: 405 });
 
+  const environment = Deno.env.get("MP_ENVIRONMENT");
+  if (environment !== "test" && environment !== "production") {
+    return json({ ok: false, error: "mp_webhook_environment_not_configured" }, { status: 503 });
+  }
+  if (
+    environment === "test" &&
+    Deno.env.get("SUPABASE_URL") !== "https://gvozcqyjhogmvebrwzap.supabase.co"
+  ) {
+    return json({ ok: false, error: "sandbox_webhook_project_mismatch" }, { status: 503 });
+  }
+
   const sb = admin();
+  const configuredReplaySecret = Deno.env.get("MP_WEBHOOK_REPLAY_SECRET");
+  const internalReplay =
+    !!configuredReplaySecret &&
+    req.headers.get("x-localix-replay-secret") === configuredReplaySecret;
+  // A replay credential never makes the payload authoritative: the normal MP
+  // ownership, status, amount and trust-boundary checks below still execute.
+  if (req.headers.has("x-localix-replay-secret") && !internalReplay) {
+    return json({ ok: false, error: "replay_unauthorized" }, { status: 401 });
+  }
   const rawBody = await req.text();
   const body = (() => {
     try {
@@ -202,6 +226,24 @@ Deno.serve(async (req) => {
   const eventId =
     String(body?.id ?? "") || (resourceId && action ? `${action}:${resourceId}` : null);
   const externalRef = body?.external_reference ?? body?.data?.external_reference ?? null;
+
+  // Isolated Gate 4: never persist an unverified external notification.
+  // Production retains its existing API-based verification until independently audited.
+  if (Deno.env.get("MP_ENVIRONMENT") === "test" && !internalReplay) {
+    const testSignature = await verifySignature({
+      secret: Deno.env.get("MP_WEBHOOK_SECRET") ?? null,
+      xSignature,
+      xRequestId,
+      dataIdFromQuery,
+      dataIdFromBody,
+    });
+    if (!testSignature.ok) {
+      console.warn("[mp-webhook] sandbox signature rejected", {
+        reason: testSignature.reason ?? "unknown",
+      });
+      return json({ ok: false, error: "webhook_invalid_signature" }, { status: 401 });
+    }
+  }
 
   // Persistência com idempotência por (provider, event_id)
   const insertPayload = {
@@ -233,9 +275,13 @@ Deno.serve(async (req) => {
       existingProcessed = existing.processed === true;
     }
   }
-  if (eventPk) {
+  if (eventPk && !shouldReplayExistingWebhook(existingProcessed, internalReplay)) {
     const duplicate = existingWebhookDelivery(existingProcessed);
     return json(duplicate.body, { status: duplicate.status });
+  }
+  // Internal replay cannot invent new payment events.
+  if (!eventPk && internalReplay) {
+    return json({ ok: false, error: "replay_event_missing" }, { status: 409 });
   }
   if (!eventPk) {
     const { data: inserted, error } = await sb
@@ -317,16 +363,35 @@ Deno.serve(async (req) => {
 
   try {
     const failClosed = async (reason: string) => {
-      await sb
+      const { error: eventError } = await sb
         .from("payment_webhook_events")
         .update({
           processed: false,
           processed_at: null,
           error_message: `trust_boundary:${reason}`,
-          processing_attempts: 1,
+          ...(internalReplay ? {} : { processing_attempts: 1 }),
         })
         .eq("id", eventPk);
-      return json({ ok: false, error: reason }, { status: 200 });
+      if (eventError) {
+        console.error("[mp-webhook] trust boundary state persistence failed", eventError);
+        return json({ ok: false, error: "event_state_persistence_failed" }, { status: 503 });
+      }
+      if (!internalReplay) {
+        const { error: queueError } = await sb.from("payment_event_queue").insert({
+          event_id: eventPk,
+          status: "pending",
+          retry_count: 0,
+          next_retry: new Date(Date.now() + 60_000).toISOString(),
+          last_error: `trust_boundary:${reason}`,
+        });
+        if (queueError) {
+          console.error("[mp-webhook] trust boundary queue failed", queueError);
+          return json({ ok: false, error: "trust_boundary_queue_failed" }, { status: 503 });
+        }
+      }
+      // 200 on processed=false previously hid failed payment verification from MP
+      // and left no recovery ticket. A replay is handled by the existing worker.
+      return json({ ok: false, error: reason }, { status: 503 });
     };
 
     const webhookUserId = normalizeMpUserId(body?.user_id ?? body?.data?.user_id);
@@ -345,6 +410,26 @@ Deno.serve(async (req) => {
     });
     if (!tokenResolution.ok) return await failClosed(tokenResolution.reason);
     const token = tokenResolution.token;
+    if (environment === "test") {
+      const { data: seller, error: sellerError } = await sb
+        .from("mercado_pago_accounts")
+        .select("connected, live_mode, mp_user_id")
+        .eq("restaurant_id", tokenResolution.restaurantId)
+        .maybeSingle();
+      if (sellerError || !seller?.connected) {
+        return await failClosed("sandbox_seller_account_unavailable");
+      }
+      try {
+        assertMpSellerTokenMode(environment, seller.live_mode, token);
+        assertMpExpectedTestSeller(
+          environment,
+          seller.mp_user_id,
+          Deno.env.get("MP_TEST_SELLER_USER_ID"),
+        );
+      } catch {
+        return await failClosed("sandbox_seller_token_mismatch");
+      }
+    }
 
     let paymentResourceId = resourceId;
     let chargeback: Record<string, unknown> | null = null;
@@ -517,6 +602,7 @@ Deno.serve(async (req) => {
         error: opErr?.message,
         rows: opUp?.length ?? 0,
       });
+      throw new Error("order_payment_upsert_failed");
     }
 
     // payments — mesma estrutura que Stripe (cross-gateway).
@@ -540,12 +626,14 @@ Deno.serve(async (req) => {
       },
       { onConflict: "provider,external_id" },
     );
-    if (payErr)
+    if (payErr) {
       console.error("[mp-webhook] payments upsert failed", {
         orderId,
         mpId: String(mp.id),
         error: payErr.message,
       });
+      throw new Error("payments_upsert_failed");
+    }
 
     // RC4.2 — Mapeamento evento → status do domínio (via endpoint interno).
     const correlationId = `mp:${eventId ?? resourceId ?? crypto.randomUUID()}`;
@@ -580,6 +668,9 @@ Deno.serve(async (req) => {
           correlationId,
           reason: tr.reason ?? tr.error,
         });
+        // Never ACK a paid/refunded/charged-back event before the order domain
+        // has accepted the corresponding state (including idempotent no-ops).
+        throw new Error("order_transition_rejected");
       }
     }
 
@@ -661,21 +752,35 @@ Deno.serve(async (req) => {
             processed: false,
             processed_at: null,
             error_message: reason,
-            processing_attempts: 1,
+            ...(internalReplay ? {} : { processing_attempts: 1 }),
           })
           .eq("id", eventPk);
-        return json({ ok: false, error: "refund_incomplete" }, { status: 200 });
+        if (!internalReplay) {
+          const { error: queueError } = await sb.from("payment_event_queue").insert({
+            event_id: eventPk,
+            status: "pending",
+            retry_count: 0,
+            next_retry: new Date(Date.now() + 60_000).toISOString(),
+            last_error: "refund_incomplete",
+          });
+          if (queueError) {
+            console.error("[mp-webhook] refund retry queue failed", queueError);
+            return json({ ok: false, error: "refund_retry_queue_failed" }, { status: 503 });
+          }
+        }
+        return json({ ok: false, error: "refund_incomplete" }, { status: 503 });
       }
     }
 
-    await sb
+    const { error: completionError } = await sb
       .from("payment_webhook_events")
       .update({
         processed: true,
         processed_at: new Date().toISOString(),
-        processing_attempts: 1,
+        ...(internalReplay ? {} : { processing_attempts: 1 }),
       })
       .eq("id", eventPk);
+    if (completionError) throw new Error("webhook_completion_failed");
 
     return json({ ok: true, status: local, orderId });
   } catch (err) {
@@ -686,17 +791,23 @@ Deno.serve(async (req) => {
       .update({
         processed: false,
         error_message: msg,
-        processing_attempts: 1,
+        ...(internalReplay ? {} : { processing_attempts: 1 }),
       })
       .eq("id", eventPk);
     const nextRetry = new Date(Date.now() + 60_000).toISOString();
-    await sb.from("payment_event_queue").insert({
-      event_id: eventPk,
-      status: "pending",
-      retry_count: 0,
-      next_retry: nextRetry,
-      last_error: msg,
-    });
-    return json({ ok: false, error: msg }, { status: 200 }); // 200 para MP não reenviar em loop
+    if (!internalReplay) {
+      const { error: queueError } = await sb.from("payment_event_queue").insert({
+        event_id: eventPk,
+        status: "pending",
+        retry_count: 0,
+        next_retry: nextRetry,
+        last_error: msg,
+      });
+      if (queueError) {
+        console.error("[mp-webhook] retry queue failed", queueError);
+        return json({ ok: false, error: "retry_queue_failed" }, { status: 503 });
+      }
+    }
+    return json({ ok: false, error: "payment_processing_failed" }, { status: 503 });
   }
 });
