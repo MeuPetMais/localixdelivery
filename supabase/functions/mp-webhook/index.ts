@@ -13,6 +13,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { assertMpSellerTokenMode } from "../_shared/mp-payment-environment.ts";
 import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
@@ -181,6 +182,17 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, { status: 405 });
 
+  const environment = Deno.env.get("MP_ENVIRONMENT");
+  if (environment !== "test" && environment !== "production") {
+    return json({ ok: false, error: "mp_webhook_environment_not_configured" }, { status: 503 });
+  }
+  if (
+    environment === "test" &&
+    Deno.env.get("SUPABASE_URL") !== "https://gvozcqyjhogmvebrwzap.supabase.co"
+  ) {
+    return json({ ok: false, error: "sandbox_webhook_project_mismatch" }, { status: 503 });
+  }
+
   const sb = admin();
   const configuredReplaySecret = Deno.env.get("MP_WEBHOOK_REPLAY_SECRET");
   const internalReplay =
@@ -228,12 +240,6 @@ Deno.serve(async (req) => {
       });
       return json({ ok: false, error: "webhook_invalid_signature" }, { status: 401 });
     }
-  }
-
-  // No test-mode financial mutation until the transition service is explicitly isolated.
-  // The current shared fallback can otherwise send a service-role bearer to a non-sandbox URL.
-  if (Deno.env.get("MP_ENVIRONMENT") === "test") {
-    return json({ ok: false, error: "sandbox_transition_not_homologated" }, { status: 503 });
   }
 
   // Persistência com idempotência por (provider, event_id)
@@ -401,6 +407,21 @@ Deno.serve(async (req) => {
     });
     if (!tokenResolution.ok) return await failClosed(tokenResolution.reason);
     const token = tokenResolution.token;
+    if (environment === "test") {
+      const { data: seller, error: sellerError } = await sb
+        .from("mercado_pago_accounts")
+        .select("connected, live_mode")
+        .eq("restaurant_id", tokenResolution.restaurantId)
+        .maybeSingle();
+      if (sellerError || !seller?.connected) {
+        return await failClosed("sandbox_seller_account_unavailable");
+      }
+      try {
+        assertMpSellerTokenMode(environment, seller.live_mode, token);
+      } catch {
+        return await failClosed("sandbox_seller_token_mismatch");
+      }
+    }
 
     let paymentResourceId = resourceId;
     let chargeback: Record<string, unknown> | null = null;
