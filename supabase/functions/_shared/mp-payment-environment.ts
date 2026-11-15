@@ -58,7 +58,7 @@ export function assertMpExpectedTestSeller(
   if (environment !== "test") return;
   const expected = String(expectedTestSellerUserId ?? "").trim();
   const actual = String(sellerUserId ?? "").trim();
-  if (!/^\\d+$/.test(expected) || actual !== expected) {
+  if (!/^[0-9]+$/.test(expected) || actual !== expected) {
     throw new Error("mp_test_seller_identity_not_verified");
   }
 }
