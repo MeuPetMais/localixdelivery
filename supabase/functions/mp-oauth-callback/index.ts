@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       return jsonErr("oauth_incomplete_token_response", 502);
     }
     try {
-      assertMpOAuthTokenMode(Deno.env.get("MP_ENVIRONMENT"), tokenJson.live_mode);
+      assertMpOAuthTokenMode(Deno.env.get("MP_ENVIRONMENT"), tokenJson.live_mode, tokenJson.access_token);
     } catch {
       // Safe diagnostics only: never log token, refresh token, code, client secret or user_id.
       // MP can return live_mode=true, false, or omit it; record that distinction only.
