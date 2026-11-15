@@ -11,6 +11,7 @@ import { transitionOrder } from "../_shared/order-transition.ts";
 import {
   resolveMpPaymentWebhookUrl,
   assertMpSellerTokenMode,
+  assertMpExpectedTestSeller,
 } from "../_shared/mp-payment-environment.ts";
 function mapStatus(s) {
   switch ((s ?? "").toLowerCase()) {
@@ -40,7 +41,7 @@ function admin() {
 async function getAccessToken(sb, restaurantId) {
   const { data } = await sb
     .from("mercado_pago_accounts")
-    .select("access_token, connected, live_mode")
+    .select("access_token, connected, live_mode, mp_user_id")
     .eq("restaurant_id", restaurantId)
     .maybeSingle();
   if (!data?.connected || !data.access_token) {
@@ -49,6 +50,11 @@ async function getAccessToken(sb, restaurantId) {
   const token = await decryptToken(data.access_token);
   if (!token) throw new Error("mercado_pago_seller_not_connected");
   assertMpSellerTokenMode(Deno.env.get("MP_ENVIRONMENT"), data.live_mode, token);
+  assertMpExpectedTestSeller(
+    Deno.env.get("MP_ENVIRONMENT"),
+    data.mp_user_id,
+    Deno.env.get("MP_TEST_SELLER_USER_ID"),
+  );
   return token;
 }
 function sanitizeMpCause(cause) {
