@@ -43,8 +43,9 @@ const pixCreateFlow = source.slice(
 describe("mp-payment-intent seller OAuth", () => {
   it("usa somente OAuth do seller, sem fallback MP_ACCESS_TOKEN", () => {
     expect(accessTokenFunction).toContain('.from("mercado_pago_accounts")');
-    expect(accessTokenFunction).toContain('.select("access_token, connected, live_mode")');
+    expect(accessTokenFunction).toContain('.select("access_token, connected, live_mode, mp_user_id")');
     expect(accessTokenFunction).toContain("assertMpSellerTokenMode");
+    expect(accessTokenFunction).toContain("assertMpExpectedTestSeller");
     expect(accessTokenFunction).toContain("!data?.connected || !data.access_token");
     expect(accessTokenFunction).toContain("const token = await decryptToken(data.access_token)");
     expect(accessTokenFunction).toContain('throw new Error("mercado_pago_seller_not_connected")');
