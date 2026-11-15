@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertMpSellerTokenMode, resolveMpPaymentWebhookUrl } from "./mp-payment-environment";
+import { assertMpSellerTokenMode, assertMpExpectedTestSeller, resolveMpPaymentWebhookUrl } from "./mp-payment-environment";
 
 const SANDBOX = "https://gvozcqyjhogmvebrwzap.supabase.co";
 const PRODUCTION = "https://mvkfrwxgneqzvoabkaws.supabase.co";
@@ -34,5 +34,15 @@ describe("Gate 4 payment intent environment isolation", () => {
     expect(resolveMpPaymentWebhookUrl(PRODUCTION, "production")).toBe(
       PRODUCTION + "/functions/v1/mp-webhook",
     );
+  });
+  it("requires a named test seller account instead of the real app owner", () => {
+    expect(() => assertMpExpectedTestSeller("test", "385001111", "385001111")).not.toThrow();
+    expect(() => assertMpExpectedTestSeller("test", "455773879", "385001111")).toThrow(
+      "mp_test_seller_identity_not_verified",
+    );
+    expect(() => assertMpExpectedTestSeller("test", "455773879", undefined)).toThrow(
+      "mp_test_seller_identity_not_verified",
+    );
+    expect(() => assertMpExpectedTestSeller("production", "455773879", undefined)).not.toThrow();
   });
 });
