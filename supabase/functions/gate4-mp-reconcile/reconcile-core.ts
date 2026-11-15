@@ -35,7 +35,7 @@ export function sanitizePayments(body: unknown): {
   if (!body || typeof body !== "object") throw new Error("invalid_gateway_response");
   const obj = body as Record<string, unknown>;
   const paging = obj.paging as Record<string, unknown> | undefined;
-  if (!paging || !Number.isSafeInteger(paging.total) || Number(paging.total) < 0 ||
+  if (!paging || typeof paging.total !== "number" || !Number.isSafeInteger(paging.total) || paging.total < 0 ||
       !Array.isArray(obj.results)) throw new Error("invalid_gateway_response");
   const payments = obj.results.map((item): SanitizedPayment => {
     if (!item || typeof item !== "object") throw new Error("invalid_gateway_payment");
