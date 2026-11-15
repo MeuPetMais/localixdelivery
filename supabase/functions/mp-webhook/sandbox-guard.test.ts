@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
-const transitions = readFileSync(new URL("../_shared/order-transition.ts", import.meta.url), "utf8");
+const transitions = readFileSync(
+  new URL("../_shared/order-transition.ts", import.meta.url),
+  "utf8",
+);
 
 describe("Gate 4: Mercado Pago webhook sandbox isolation", () => {
   const sandboxGuard = source.indexOf(
@@ -14,9 +17,7 @@ describe("Gate 4: Mercado Pago webhook sandbox isolation", () => {
     expect(sandboxGuard).toBeGreaterThan(-1);
     expect(sandboxGuard).toBeLessThan(firstFinancialWrite);
     expect(source.slice(sandboxGuard, firstFinancialWrite)).toContain("verifySignature");
-    expect(source.slice(sandboxGuard, firstFinancialWrite)).toContain(
-      "webhook_invalid_signature",
-    );
+    expect(source.slice(sandboxGuard, firstFinancialWrite)).toContain("webhook_invalid_signature");
   });
 
   it("blocks a missing mode or a non-isolated project before any writes", () => {
