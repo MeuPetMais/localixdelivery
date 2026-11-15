@@ -31,11 +31,7 @@ export function assertMpOAuthTokenMode(
     }
     return;
   }
-  if (
-    typeof accessToken !== "string" ||
-    !accessToken.startsWith("APP_USR-") ||
-    liveMode !== true
-  ) {
+  if (typeof accessToken !== "string" || !accessToken.startsWith("APP_USR-") || liveMode !== true) {
     throw new Error("oauth_production_environment_requires_live_token");
   }
 }
