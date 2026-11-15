@@ -247,3 +247,24 @@ describe("Gate 4: sandbox payment caller and amount isolation", () => {
     expect(source).toContain('error: "sandbox_payment_method_not_allowed"');
   });
 });
+
+
+describe("mp-payment-intent PIX TEST payer guard", () => {
+  it("rejects non-TEST payer before calling Mercado Pago", () => {
+    expect(pixCreateFlow).toContain('sandbox_test_payer_email_required');
+    expect(pixCreateFlow).toContain('status: 422');
+    const guard = pixCreateFlow.indexOf('sandbox_test_payer_email_required');
+    const createPix = pixCreateFlow.indexOf('createPixPayment(token');
+    expect(guard).toBeGreaterThan(-1);
+    expect(createPix).toBeGreaterThan(guard);
+  });
+
+  it("requires TEST buyer domain rather than arbitrary well-formed email", () => {
+    const match = source.match(/!\/(\^\[\^@.*?\$)\/i\.test\(payerEmail\)/);
+    expect(match).not.toBeNull();
+    const buyerEmail = new RegExp(match![1], "i");
+    expect(buyerEmail.test("test_payer@example.com")).toBe(false);
+    expect(buyerEmail.test("buyer@testuser.com")).toBe(true);
+    expect(buyerEmail.test("buyer@testuser.com.evil")).toBe(false);
+  });
+});
