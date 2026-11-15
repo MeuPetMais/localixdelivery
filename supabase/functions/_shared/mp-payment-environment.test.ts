@@ -6,9 +6,7 @@ const PRODUCTION = "https://mvkfrwxgneqzvoabkaws.supabase.co";
 
 describe("Gate 4 payment intent environment isolation", () => {
   it("routes TEST notifications only to the isolated project", () => {
-    expect(resolveMpPaymentWebhookUrl(SANDBOX, "test")).toBe(
-      SANDBOX + "/functions/v1/mp-webhook",
-    );
+    expect(resolveMpPaymentWebhookUrl(SANDBOX, "test")).toBe(SANDBOX + "/functions/v1/mp-webhook");
   });
 
   it("rejects production origin in TEST and missing configuration", () => {
