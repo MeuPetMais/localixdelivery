@@ -8,7 +8,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
-import { resolveMpPaymentWebhookUrl, assertMpSellerTokenMode } from "../_shared/mp-payment-environment.ts";
+import {
+  resolveMpPaymentWebhookUrl,
+  assertMpSellerTokenMode,
+} from "../_shared/mp-payment-environment.ts";
 function mapStatus(s) {
   switch ((s ?? "").toLowerCase()) {
     case "approved":
@@ -557,8 +560,10 @@ Deno.serve(async (req) => {
             },
           );
         }
-        const transparentNotificationUrl =
-          resolveMpPaymentWebhookUrl(Deno.env.get("SUPABASE_URL"), Deno.env.get("MP_ENVIRONMENT"));
+        const transparentNotificationUrl = resolveMpPaymentWebhookUrl(
+          Deno.env.get("SUPABASE_URL"),
+          Deno.env.get("MP_ENVIRONMENT"),
+        );
         const transparentIdempotencyKey = await buildCardIdempotencyKey(
           orderId,
           transparentCard.token,
@@ -721,7 +726,10 @@ Deno.serve(async (req) => {
           );
         }
         // 2) notification_url — mesma do PIX, compatível com webhook existente.
-        const notificationUrl = resolveMpPaymentWebhookUrl(Deno.env.get("SUPABASE_URL"), Deno.env.get("MP_ENVIRONMENT"));
+        const notificationUrl = resolveMpPaymentWebhookUrl(
+          Deno.env.get("SUPABASE_URL"),
+          Deno.env.get("MP_ENVIRONMENT"),
+        );
         // 3) back_urls — auto_return exige HTTPS válido em success.
         const successUrl = String(payload?.success_url ?? "").trim();
         const cancelUrl = String(payload?.cancel_url ?? "").trim();
@@ -1031,7 +1039,10 @@ Deno.serve(async (req) => {
       const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       const callbackUrl = String(payload?.success_url ?? "").trim();
       // notification_url — obrigatório para receber webhook do MP.
-      const notificationUrl = resolveMpPaymentWebhookUrl(Deno.env.get("SUPABASE_URL"), Deno.env.get("MP_ENVIRONMENT"));
+      const notificationUrl = resolveMpPaymentWebhookUrl(
+        Deno.env.get("SUPABASE_URL"),
+        Deno.env.get("MP_ENVIRONMENT"),
+      );
       console.log("[mp-payment-intent] creating pix", {
         restaurant_id: order.restaurant_id,
         order_id: orderId,
