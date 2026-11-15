@@ -43,7 +43,8 @@ const pixCreateFlow = source.slice(
 describe("mp-payment-intent seller OAuth", () => {
   it("usa somente OAuth do seller, sem fallback MP_ACCESS_TOKEN", () => {
     expect(accessTokenFunction).toContain('.from("mercado_pago_accounts")');
-    expect(accessTokenFunction).toContain('.select("access_token, connected")');
+    expect(accessTokenFunction).toContain('.select("access_token, connected, live_mode")');
+    expect(accessTokenFunction).toContain("assertMpSellerTokenMode");
     expect(accessTokenFunction).toContain("!data?.connected || !data.access_token");
     expect(accessTokenFunction).toContain("const token = await decryptToken(data.access_token)");
     expect(accessTokenFunction).toContain('throw new Error("mercado_pago_seller_not_connected")');
@@ -114,7 +115,8 @@ describe("mp-payment-intent transparent card", () => {
   it("define external_reference como order.id e notification_url do webhook", () => {
     expect(transparentCardFunction).toContain("external_reference: params.externalReference");
     expect(transparentCardCreateFlow).toContain("externalReference: order.id");
-    expect(transparentCardCreateFlow).toContain("mp-webhook");
+    expect(transparentCardCreateFlow).toContain("resolveMpPaymentWebhookUrl");
+    expect(source).not.toContain("mvkfrwxgneqzvoabkaws.supabase.co");
   });
 
   it("usa idempotencia deterministica por pedido e token sem persistir token", () => {
