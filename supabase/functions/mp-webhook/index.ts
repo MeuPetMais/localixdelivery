@@ -13,7 +13,10 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
-import { assertMpSellerTokenMode } from "../_shared/mp-payment-environment.ts";
+import {
+  assertMpSellerTokenMode,
+  assertMpExpectedTestSeller,
+} from "../_shared/mp-payment-environment.ts";
 import { recordChargebackLedger } from "./chargeback-ledger.ts";
 import { recordMercadoPagoLedger } from "./ledger-idempotency.ts";
 import { recordPaymentRefunds } from "./refund-ledger.ts";
@@ -410,7 +413,7 @@ Deno.serve(async (req) => {
     if (environment === "test") {
       const { data: seller, error: sellerError } = await sb
         .from("mercado_pago_accounts")
-        .select("connected, live_mode")
+        .select("connected, live_mode, mp_user_id")
         .eq("restaurant_id", tokenResolution.restaurantId)
         .maybeSingle();
       if (sellerError || !seller?.connected) {
@@ -418,6 +421,11 @@ Deno.serve(async (req) => {
       }
       try {
         assertMpSellerTokenMode(environment, seller.live_mode, token);
+        assertMpExpectedTestSeller(
+          environment,
+          seller.mp_user_id,
+          Deno.env.get("MP_TEST_SELLER_USER_ID"),
+        );
       } catch {
         return await failClosed("sandbox_seller_token_mismatch");
       }
