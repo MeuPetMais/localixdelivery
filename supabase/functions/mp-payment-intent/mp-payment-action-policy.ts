@@ -36,6 +36,7 @@ export function mapMpStatus(status: string | null | undefined): string {
       return "REFUNDED";
     case "charged_back":
       return "CHARGEBACK";
-    default: return "PENDING";
+    default:
+      return "PENDING";
   }
 }
