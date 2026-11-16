@@ -16,15 +16,17 @@ if (process.env.VERCEL === "1" &&
     process.env.VERCEL_GIT_COMMIT_REF === "fix/gate4b-owner-authorization-status") {
   const isolated = "gvozcqyjhogmvebrwzap";
   const expectedUrl = `https://${isolated}.supabase.co`;
-  if (
-    process.env.VERCEL_ENV !== "preview" ||
-    process.env.SUPABASE_URL !== expectedUrl ||
-    process.env.VITE_SUPABASE_URL !== expectedUrl ||
-    process.env.VITE_SUPABASE_PROJECT_ID !== isolated ||
-    process.env.LOCALIX_ENV !== "staging" ||
-    process.env.MP_ENVIRONMENT !== "test"
-  ) {
-    throw new Error("gate4b_preview_environment_attestation_failed");
+  // Report ONLY the names of mismatched settings. Never log actual values.
+  const mismatched = [
+    process.env.VERCEL_ENV !== "preview" ? "VERCEL_ENV" : null,
+    process.env.SUPABASE_URL !== expectedUrl ? "SUPABASE_URL" : null,
+    process.env.VITE_SUPABASE_URL !== expectedUrl ? "VITE_SUPABASE_URL" : null,
+    process.env.VITE_SUPABASE_PROJECT_ID !== isolated ? "VITE_SUPABASE_PROJECT_ID" : null,
+    process.env.LOCALIX_ENV !== "staging" ? "LOCALIX_ENV" : null,
+    process.env.MP_ENVIRONMENT !== "test" ? "MP_ENVIRONMENT" : null,
+  ].filter(Boolean);
+  if (mismatched.length) {
+    throw new Error(`gate4b_preview_environment_attestation_failed: ${mismatched.join(",")}`);
   }
 }
 
