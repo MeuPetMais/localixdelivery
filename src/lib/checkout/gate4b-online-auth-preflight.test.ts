@@ -97,7 +97,9 @@ describe("Gate 4B: fail-closed isolated preview environment", () => {
     expect(orderServiceSource).toContain("gate4b_preview_sandbox_environment_not_verified");
     expect(orderServiceSource).toContain("process.env.SUPABASE_URL !== isolatedUrl");
     expect(orderServiceSource).toContain("process.env.VITE_SUPABASE_URL !== isolatedUrl");
-    expect(orderServiceSource).toContain("process.env.VITE_SUPABASE_PROJECT_ID !== isolatedProject");
+    expect(orderServiceSource).toContain(
+      "process.env.VITE_SUPABASE_PROJECT_ID !== isolatedProject",
+    );
     expect(orderServiceSource).toContain('process.env.MP_ENVIRONMENT !== "test"');
   });
 });
