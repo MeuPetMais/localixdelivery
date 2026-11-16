@@ -241,6 +241,22 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
   .middleware([optionalSupabaseAuth])
   .inputValidator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
+    // Gate 4B: this PR's preview must NEVER write checkout orders to Production.
+    // Fail closed before initializing a service-role Supabase client.
+    if (process.env.VERCEL_GIT_COMMIT_REF === "fix/gate4b-owner-authorization-status") {
+      const isolatedUrl = "https://gvozcqyjhogmvebrwzap.supabase.co";
+      const isolatedProject = "gvozcqyjhogmvebrwzap";
+      if (
+        process.env.VERCEL_ENV !== "preview" ||
+        process.env.SUPABASE_URL !== isolatedUrl ||
+        process.env.VITE_SUPABASE_URL !== isolatedUrl ||
+        process.env.VITE_SUPABASE_PROJECT_ID !== isolatedProject ||
+        process.env.LOCALIX_ENV !== "staging" ||
+        process.env.MP_ENVIRONMENT !== "test"
+      ) {
+        throw new Error("gate4b_preview_sandbox_environment_not_verified");
+      }
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1) Validar restaurante ativo + conectado
