@@ -8,28 +8,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { isAuthorizedPaymentAction, mapMpStatus as mapStatus } from "./mp-payment-action-policy.ts";
 import {
   resolveMpPaymentWebhookUrl,
   assertMpSellerTokenMode,
   assertMpExpectedTestSeller,
 } from "../_shared/mp-payment-environment.ts";
-function mapStatus(s) {
-  switch ((s ?? "").toLowerCase()) {
-    case "approved":
-      return "APPROVED";
-    case "in_process":
-      return "PROCESSING";
-    case "rejected":
-      return "REJECTED";
-    case "cancelled":
-      return "CANCELLED";
-    case "refunded":
-    case "charged_back":
-      return "APPROVED";
-    default:
-      return "PENDING";
-  }
-}
 function admin() {
   return createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: {
@@ -438,19 +422,25 @@ Deno.serve(async (req) => {
       return json({ error: "sandbox_payment_project_mismatch" }, { status: 503 });
     }
     const sb = admin();
-    // Isolated Gate 4: only a verified sandbox restaurant owner can request
-    // a synthetic payment. Do not rely on the service-role key as caller auth.
-    let sandboxCallerId = null;
-    if (environment === "test") {
-      const bearer = req.headers.get("authorization") ?? "";
-      const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
-      if (!accessJwt) return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
-      const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
-      if (callerError || !caller?.user?.id) {
+    // Gate 4B: JWT at edge gateway is not object-level authorization.
+    // Revalidate caller identity server-side before reading a privileged order.
+    const bearer = req.headers.get("authorization") ?? "";
+    const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
+    if (!accessJwt) {
+      if (environment === "test") {
         return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
       }
-      sandboxCallerId = caller.user.id;
+      return json({ error: "payment_caller_unauthorized" }, { status: 401 });
     }
+    const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
+    if (callerError || !caller?.user?.id || caller.user.is_anonymous) {
+      if (environment === "test") {
+        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      }
+      return json({ error: "payment_caller_unauthorized" }, { status: 401 });
+    }
+    const callerId = caller.user.id;
+    const sandboxCallerId = environment === "test" ? callerId : null;
     // Carrega pedido + pagamento
     const { data: order, error: ordErr } = await sb
       .from("orders")
@@ -480,7 +470,7 @@ Deno.serve(async (req) => {
         !restaurant ||
         restaurant.id !== "1e271104-299c-44b6-98f5-d8effaef3f0a" ||
         restaurant.owner_id !== sandboxCallerId ||
-        restaurant.active !== false ||
+        restaurant.active !== true ||
         restaurant.is_open !== false ||
         order.customer_name !== "GATE4 SANDBOX PAYMENT"
       ) {
@@ -497,6 +487,31 @@ Deno.serve(async (req) => {
       }
       if (String(payload?.payment_method ?? "pix").toLowerCase() !== "pix") {
         return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+    }
+    if (environment === "production") {
+      // Never use service_role visibility as proof of checkout authorization.
+      // customer_id references auth.users(id), not a mutable metadata field.
+      const { data: restaurant, error: restaurantError } = await sb
+        .from("restaurants")
+        .select("id, owner_id")
+        .eq("id", order.restaurant_id)
+        .maybeSingle();
+      if (restaurantError || !restaurant || restaurant.id !== order.restaurant_id) {
+        return json({ error: "payment_restaurant_unavailable" }, { status: 409 });
+      }
+      // Anonymous checkout requires a separately reviewed signed checkout
+      // capability. Never infer authorization from knowledge of order_id.
+      // Refunding and cancelling are restricted to the restaurant owner.
+      if (
+        !isAuthorizedPaymentAction({
+          action,
+          callerId,
+          ownerId: restaurant.owner_id,
+          customerId: order.customer_id,
+        })
+      ) {
+        return json({ error: "payment_action_forbidden" }, { status: 403 });
       }
     }
     const { data: existing } = await sb
@@ -1079,12 +1094,10 @@ Deno.serve(async (req) => {
           },
         );
       }
-      // Mercado Pago TEST requires the payer to be a test user. Reject
-      // non-test e-mails locally instead of sending a doomed payment request.
-      // This does NOT invent or infer the buyer account's actual e-mail.
-      if (environment === "test" && !/^[^@\s]+@testuser\.com$/i.test(payerEmail)) {
-        return json({ error: "sandbox_test_payer_email_required" }, { status: 422 });
-      }
+      // Checkout Transparente /v1/payments: payer.email is required, but
+      // the MP TEST account dashboard does not expose a mandatory buyer email
+      // or a required @testuser.com domain. Keep the format check above; seller
+      // token mode and isolated sandbox ownership are verified independently.
       const { data: pricingSnapshot, error: pricingErr } = await sb
         .from("order_pricing_snapshot")
         .select("platform_fee")

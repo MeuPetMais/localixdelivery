@@ -36,7 +36,7 @@ const transparentCardCreateFlow = source.slice(
   source.indexOf("// 1) Garante linha em order_payment ANTES de chamar o MP."),
 );
 const pixCreateFlow = source.slice(
-  source.indexOf("const rawPlatformFee"),
+  source.indexOf("const payerEmail = String(payload?.payer_email"),
   source.indexOf("// ---------- STATUS ----------"),
 );
 
@@ -248,23 +248,24 @@ describe("Gate 4: sandbox payment caller and amount isolation", () => {
   });
 });
 
-
-describe("mp-payment-intent PIX TEST payer guard", () => {
-  it("rejects non-TEST payer before calling Mercado Pago", () => {
-    expect(pixCreateFlow).toContain('sandbox_test_payer_email_required');
-    expect(pixCreateFlow).toContain('status: 422');
-    const guard = pixCreateFlow.indexOf('sandbox_test_payer_email_required');
-    const createPix = pixCreateFlow.indexOf('createPixPayment(token');
+describe("mp-payment-intent PIX payer validation", () => {
+  it("requires caller-supplied valid email before local payment writes and MP call", () => {
+    const guard = pixCreateFlow.indexOf('error: "payer_email_required"');
+    const paymentUpsert = pixCreateFlow.indexOf(
+      ".upsert(",
+      pixCreateFlow.indexOf('"order_payment"', guard),
+    );
+    const createPix = pixCreateFlow.indexOf("createPixPayment(token");
     expect(guard).toBeGreaterThan(-1);
-    expect(createPix).toBeGreaterThan(guard);
+    expect(paymentUpsert).toBeGreaterThan(guard);
+    expect(createPix).toBeGreaterThan(paymentUpsert);
+    expect(pixCreateFlow).not.toContain("sandbox_test_payer_email_required");
   });
 
-  it("requires TEST buyer domain rather than arbitrary well-formed email", () => {
-    const match = source.match(/!\/(\^\[\^@.*?\$)\/i\.test\(payerEmail\)/);
-    expect(match).not.toBeNull();
-    const buyerEmail = new RegExp(match![1], "i");
-    expect(buyerEmail.test("test_payer@example.com")).toBe(false);
-    expect(buyerEmail.test("buyer@testuser.com")).toBe(true);
-    expect(buyerEmail.test("buyer@testuser.com.evil")).toBe(false);
+  it("does not infer the payer email from a Mercado Pago TEST User ID", () => {
+    expect(pixCreateFlow).toContain("payload?.payer_email");
+    expect(pixCreateFlow).not.toContain("MP_TEST_BUYER_EMAIL");
+    expect(pixCreateFlow).not.toContain("sandbox_test_buyer_mismatch");
+    expect(pixCreateFlow).not.toContain("sandbox_test_payer_email_required");
   });
 });
