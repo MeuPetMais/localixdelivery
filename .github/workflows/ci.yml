@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/gate4b-owner-authorization-status]
   pull_request:
     branches:
       - main
