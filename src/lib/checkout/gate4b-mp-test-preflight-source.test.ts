@@ -19,7 +19,7 @@ describe("Gate 4B — MP test-payment preflight", () => {
   it("validates TEST payer email syntax without requiring an unavailable dashboard secret", () => {
     const payerRequired = source.indexOf('error: "payer_email_required"');
     const payerDomainGuard = source.indexOf("sandbox_test_payer_email_required");
-    const paymentUpsert = source.indexOf('"order_payment")\\n        .upsert('.replace("\\\\n", "\\n"));
+    const paymentUpsert = source.indexOf('"order_payment")\\n        .upsert(');
     const mpPost = source.indexOf("mp = await createPixPayment(");
 
     expect(payerRequired).toBeGreaterThanOrEqual(0);
