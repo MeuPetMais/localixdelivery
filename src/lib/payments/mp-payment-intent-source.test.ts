@@ -266,6 +266,6 @@ describe("mp-payment-intent PIX payer validation", () => {
     expect(pixCreateFlow).toContain("payload?.payer_email");
     expect(pixCreateFlow).not.toContain("MP_TEST_BUYER_EMAIL");
     expect(pixCreateFlow).not.toContain("sandbox_test_buyer_mismatch");
-    expect(pixCreateFlow).not.toContain("@testuser.com");
+    expect(pixCreateFlow).not.toContain("sandbox_test_payer_email_required");
   });
 });
