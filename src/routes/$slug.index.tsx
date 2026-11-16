@@ -2085,6 +2085,26 @@ function CheckoutSheet({
         return;
       }
 
+      // The server function's optional auth middleware reads the Authorization
+      // header; React auth context alone does not forward a Supabase JWT.
+      // Resolve the current (possibly just-created) session before persisting.
+      const { data: checkoutSessionData, error: checkoutSessionError } =
+        await supabase.auth.getSession();
+      const checkoutSession = checkoutSessionData.session;
+      if (
+        selectedPayment.online &&
+        (checkoutSessionError ||
+          !checkoutSession?.access_token ||
+          !checkoutUser?.id ||
+          checkoutSession.user.id !== checkoutUser.id)
+      ) {
+        toast.error("Sua sessão expirou. Entre novamente para pagar online.");
+        return;
+      }
+      const checkoutAuthHeaders = checkoutSession?.access_token
+        ? { Authorization: `Bearer ${checkoutSession.access_token}` }
+        : undefined;
+
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
       const checkoutAttemptFingerprint = JSON.stringify({
         restaurantId: restaurant.id,
@@ -2111,6 +2131,7 @@ function CheckoutSheet({
       }
 
       const res = await create({
+        ...(checkoutAuthHeaders ? { headers: checkoutAuthHeaders } : {}),
         data: {
           restaurantSlug: restaurant.slug,
           customer: { name, phone, address: fullAddress },
