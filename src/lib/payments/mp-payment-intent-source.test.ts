@@ -248,13 +248,12 @@ describe("Gate 4: sandbox payment caller and amount isolation", () => {
   });
 });
 
-
 describe("mp-payment-intent PIX TEST payer guard", () => {
   it("rejects non-TEST payer before calling Mercado Pago", () => {
-    expect(pixCreateFlow).toContain('sandbox_test_payer_email_required');
-    expect(pixCreateFlow).toContain('status: 422');
-    const guard = pixCreateFlow.indexOf('sandbox_test_payer_email_required');
-    const createPix = pixCreateFlow.indexOf('createPixPayment(token');
+    expect(pixCreateFlow).toContain("sandbox_test_payer_email_required");
+    expect(pixCreateFlow).toContain("status: 422");
+    const guard = pixCreateFlow.indexOf("sandbox_test_payer_email_required");
+    const createPix = pixCreateFlow.indexOf("createPixPayment(token");
     expect(guard).toBeGreaterThan(-1);
     expect(createPix).toBeGreaterThan(guard);
   });
