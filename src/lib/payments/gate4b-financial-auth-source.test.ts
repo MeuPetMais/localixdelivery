@@ -34,7 +34,7 @@ describe("Gate 4B payment handler hardening — source integration", () => {
   });
 
   it("derives MP status from reversal-aware policy, not a phantom approval", () => {
-    expect(source).toContain('mapMpStatus as mapStatus');
+    expect(source).toContain("mapMpStatus as mapStatus");
     expect(source).not.toContain('case "charged_back":\n      return "APPROVED"');
   });
 });
