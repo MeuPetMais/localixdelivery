@@ -12,8 +12,10 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
  * This is an attestation gate, not authorization for an E2E payment test.
  * Never print values of Supabase or MP environment variables.
  */
-if (process.env.VERCEL === "1" &&
-    process.env.VERCEL_GIT_COMMIT_REF === "fix/gate4b-owner-authorization-status") {
+if (
+  process.env.VERCEL === "1" &&
+  process.env.VERCEL_GIT_COMMIT_REF === "fix/gate4b-owner-authorization-status"
+) {
   const isolated = "gvozcqyjhogmvebrwzap";
   const expectedUrl = `https://${isolated}.supabase.co`;
   // Report ONLY the names of mismatched settings. Never log actual values.
