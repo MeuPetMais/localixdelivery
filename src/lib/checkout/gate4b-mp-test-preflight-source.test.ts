@@ -16,20 +16,19 @@ describe("Gate 4B — MP test-payment preflight", () => {
     expect(source).not.toContain("restaurant.active !== false ||");
   });
 
-  it("rejects unconfigured or mismatched TEST buyers before any PIX persistence or request", () => {
-    const buyerConfig = source.indexOf('Deno.env.get("MP_TEST_BUYER_EMAIL")');
-    const unconfigured = source.indexOf("sandbox_test_buyer_not_configured");
-    const mismatch = source.indexOf("sandbox_test_buyer_mismatch");
-    const paymentUpsert = source.indexOf('"order_payment")\n        .upsert(', buyerConfig);
-    const mpPost = source.indexOf("mp = await createPixPayment(", buyerConfig);
+  it("validates TEST payer email syntax without requiring an unavailable dashboard secret", () => {
+    const payerRequired = source.indexOf('error: "payer_email_required"');
+    const payerDomainGuard = source.indexOf("sandbox_test_payer_email_required");
+    const paymentUpsert = source.indexOf('"order_payment")\\n        .upsert('.replace("\\\\n", "\\n"));
+    const mpPost = source.indexOf("mp = await createPixPayment(");
 
-    expect(buyerConfig).toBeGreaterThan(0);
-    expect(unconfigured).toBeGreaterThan(buyerConfig);
-    expect(mismatch).toBeGreaterThan(unconfigured);
-    expect(paymentUpsert).toBeGreaterThan(mismatch);
+    expect(payerRequired).toBeGreaterThanOrEqual(0);
+    expect(payerDomainGuard).toBeGreaterThan(payerRequired);
+    expect(paymentUpsert).toBeGreaterThan(payerDomainGuard);
     expect(mpPost).toBeGreaterThan(paymentUpsert);
-    expect(source).toContain("configuredBuyerEmail");
-    expect(source).toContain("payerEmail !== configuredBuyerEmail");
+    expect(source).not.toContain("MP_TEST_BUYER_EMAIL");
+    expect(source).not.toContain("sandbox_test_buyer_not_configured");
+    expect(source).not.toContain("sandbox_test_buyer_mismatch");
   });
 
   it("keeps sandbox order authorization limited to the fixed synthetic identity", () => {
