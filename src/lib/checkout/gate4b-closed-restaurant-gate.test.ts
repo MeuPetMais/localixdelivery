@@ -40,9 +40,7 @@ describe("Gate 4B — closed restaurant checkout guard", () => {
     const isolatedGuard = checkoutHandler.indexOf(
       "gate4b_preview_sandbox_environment_not_verified",
     );
-    const serviceRoleImport = checkoutHandler.indexOf(
-      '@/integrations/supabase/client.server',
-    );
+    const serviceRoleImport = checkoutHandler.indexOf("@/integrations/supabase/client.server");
     expect(isolatedGuard).toBeGreaterThanOrEqual(0);
     expect(serviceRoleImport).toBeGreaterThan(isolatedGuard);
   });
