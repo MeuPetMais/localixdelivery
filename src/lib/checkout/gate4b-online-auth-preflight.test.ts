@@ -9,7 +9,9 @@ describe("Gate 4B: public checkout preflight before order persistence", () => {
     const persist = source.indexOf("const res = await create({");
     expect(guard).toBeGreaterThan(-1);
     expect(persist).toBeGreaterThan(guard);
-    expect(source.slice(guard, persist)).toContain('toast.error("Faça login com e-mail para pagar online")');
+    expect(source.slice(guard, persist)).toContain(
+      'toast.error("Faça login com e-mail para pagar online")',
+    );
     expect(source.slice(guard, persist)).toContain("return;");
   });
 
@@ -27,19 +29,22 @@ describe("Gate 4B: public checkout preflight before order persistence", () => {
   });
 });
 
-
 describe("Gate 4B: server-side online payment ownership preflight", () => {
   it("rejects pending payment without verified server user before atomic RPC", () => {
-    const guard = orderServiceSource.indexOf('paymentDecision.paymentRecordStatus === "PENDING" && !context.userId');
+    const guard = orderServiceSource.indexOf(
+      'paymentDecision.paymentRecordStatus === "PENDING" && !context.userId',
+    );
     const creation = orderServiceSource.indexOf('"create_order_with_snapshot_payment"');
     expect(guard).toBeGreaterThan(-1);
     expect(creation).toBeGreaterThan(guard);
     expect(orderServiceSource).toContain('throw new Error("online_payment_auth_required")');
-    expect(orderServiceSource).toContain('customer_id: context.userId ?? null');
+    expect(orderServiceSource).toContain("customer_id: context.userId ?? null");
   });
 
   it("keeps offline guests available (guard scoped only to pending online)", () => {
-    expect(orderServiceSource).toContain('paymentDecision.paymentRecordStatus === "PENDING" && !context.userId');
+    expect(orderServiceSource).toContain(
+      'paymentDecision.paymentRecordStatus === "PENDING" && !context.userId',
+    );
     expect(orderServiceSource).toContain("_customer_id: context.userId ?? null");
   });
 });
