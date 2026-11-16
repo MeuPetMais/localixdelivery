@@ -36,7 +36,7 @@ const transparentCardCreateFlow = source.slice(
   source.indexOf("// 1) Garante linha em order_payment ANTES de chamar o MP."),
 );
 const pixCreateFlow = source.slice(
-  source.indexOf("const rawPlatformFee"),
+  source.indexOf("const payerEmail = String(payload?.payer_email"),
   source.indexOf("// ---------- STATUS ----------"),
 );
 
