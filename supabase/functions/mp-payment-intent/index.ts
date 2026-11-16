@@ -1094,16 +1094,10 @@ Deno.serve(async (req) => {
           },
         );
       }
-      // Mercado Pago TEST requires the payer to be a test user. Reject
-      // non-test e-mails locally instead of sending a doomed payment request.
-      // This does NOT invent or infer the buyer account's actual e-mail.
-      if (environment === "test" && !/^[^@\s]+@testuser\.com$/i.test(payerEmail)) {
-        return json({ error: "sandbox_test_payer_email_required" }, { status: 422 });
-      }
-      // Mercado Pago's dashboard may show a TEST user ID without an email.
-      // Do not require an invented or undisclosed buyer-email secret here.
-      // Pix still requires a caller-supplied payer.email validated above.
-      // In TEST, only the documented testuser.com domain may be submitted.
+      // Checkout Transparente /v1/payments: payer.email is required, but
+      // the MP TEST account dashboard does not expose a mandatory buyer email
+      // or a required @testuser.com domain. Keep the format check above; seller
+      // token mode and isolated sandbox ownership are verified independently.
       const { data: pricingSnapshot, error: pricingErr } = await sb
         .from("order_pricing_snapshot")
         .select("platform_fee")
