@@ -2078,6 +2078,13 @@ function CheckoutSheet({
         toast.success("Conta criada! Você já está logado(a).");
       }
 
+      // Online payment needs a signed-in buyer BEFORE creating the order.
+      // Guest checkout remains available for offline payment methods.
+      if (selectedPayment.online && !checkoutUser?.email) {
+        toast.error("Faça login com e-mail para pagar online");
+        return;
+      }
+
       const paymentPayload = buildCheckoutPaymentPayload(selectedPayment);
       const checkoutAttemptFingerprint = JSON.stringify({
         restaurantId: restaurant.id,
