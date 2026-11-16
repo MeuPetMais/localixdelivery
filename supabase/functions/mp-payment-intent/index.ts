@@ -8,29 +8,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { transitionOrder } from "../_shared/order-transition.ts";
+import { isAuthorizedPaymentAction, mapMpStatus as mapStatus } from "./mp-payment-action-policy.ts";
 import {
   resolveMpPaymentWebhookUrl,
   assertMpSellerTokenMode,
   assertMpExpectedTestSeller,
 } from "../_shared/mp-payment-environment.ts";
-function mapStatus(s) {
-  switch ((s ?? "").toLowerCase()) {
-    case "approved":
-      return "APPROVED";
-    case "in_process":
-      return "PROCESSING";
-    case "rejected":
-      return "REJECTED";
-    case "cancelled":
-      return "CANCELLED";
-    case "refunded":
-      return "REFUNDED";
-    case "charged_back":
-      return "CHARGEBACK";
-    default:
-      return "PENDING";
-  }
-}
 function admin() {
   return createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: {
@@ -517,20 +500,15 @@ Deno.serve(async (req) => {
       if (restaurantError || !restaurant || restaurant.id !== order.restaurant_id) {
         return json({ error: "payment_restaurant_unavailable" }, { status: 409 });
       }
-      const isOwner = restaurant.owner_id === callerId;
-      const isCustomer = order.customer_id !== null && order.customer_id === callerId;
-      // Financial reversal/cancellation must never be callable by a consumer.
-      if (action === "refund" || action === "cancel") {
-        if (!isOwner) {
-          return json({ error: "payment_action_forbidden" }, { status: 403 });
-        }
-      } else if (action === "create" || action === "status") {
-        if (!isOwner && !isCustomer) {
-          // Anonymous checkout requires a separately reviewed signed checkout
-          // capability. Do not infer authorization from knowing order_id.
-          return json({ error: "payment_order_forbidden" }, { status: 403 });
-        }
-      } else {
+      // Anonymous checkout requires a separately reviewed signed checkout
+      // capability. Never infer authorization from knowledge of order_id.
+      // Refunding and cancelling are restricted to the restaurant owner.
+      if (!isAuthorizedPaymentAction({
+        action,
+        callerId,
+        ownerId: restaurant.owner_id,
+        customerId: order.customer_id,
+      })) {
         return json({ error: "payment_action_forbidden" }, { status: 403 });
       }
     }
