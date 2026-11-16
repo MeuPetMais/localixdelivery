@@ -503,12 +503,14 @@ Deno.serve(async (req) => {
       // Anonymous checkout requires a separately reviewed signed checkout
       // capability. Never infer authorization from knowledge of order_id.
       // Refunding and cancelling are restricted to the restaurant owner.
-      if (!isAuthorizedPaymentAction({
-        action,
-        callerId,
-        ownerId: restaurant.owner_id,
-        customerId: order.customer_id,
-      })) {
+      if (
+        !isAuthorizedPaymentAction({
+          action,
+          callerId,
+          ownerId: restaurant.owner_id,
+          customerId: order.customer_id,
+        })
+      ) {
         return json({ error: "payment_action_forbidden" }, { status: 403 });
       }
     }
