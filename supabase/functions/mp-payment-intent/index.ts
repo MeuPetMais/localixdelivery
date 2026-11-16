@@ -1100,20 +1100,10 @@ Deno.serve(async (req) => {
       if (environment === "test" && !/^[^@\s]+@testuser\.com$/i.test(payerEmail)) {
         return json({ error: "sandbox_test_payer_email_required" }, { status: 422 });
       }
-      if (environment === "test") {
-        // An address shaped like a test email is not proof of a TEST buyer identity.
-        // Match the exact buyer address from the Mercado Pago developer test account.
-        // Fail before any DB pre-upsert or PIX POST when it is not configured.
-        const configuredBuyerEmail = String(Deno.env.get("MP_TEST_BUYER_EMAIL") ?? "")
-          .trim()
-          .toLowerCase();
-        if (!/^[^@\\s]+@testuser\\.com$/i.test(configuredBuyerEmail)) {
-          return json({ error: "sandbox_test_buyer_not_configured" }, { status: 503 });
-        }
-        if (payerEmail !== configuredBuyerEmail) {
-          return json({ error: "sandbox_test_buyer_mismatch" }, { status: 422 });
-        }
-      }
+      // Mercado Pago's dashboard may show a TEST user ID without an email.
+      // Do not require an invented or undisclosed buyer-email secret here.
+      // Pix still requires a caller-supplied payer.email validated above.
+      // In TEST, only the documented testuser.com domain may be submitted.
       const { data: pricingSnapshot, error: pricingErr } = await sb
         .from("order_pricing_snapshot")
         .select("platform_fee")
