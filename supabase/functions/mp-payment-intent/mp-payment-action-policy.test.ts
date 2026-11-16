@@ -6,32 +6,57 @@ const CUSTOMER = "buyer-user";
 const STRANGER = "another-user";
 
 describe("Gate 4B: authorization of payment actions by object", () => {
-  it("allows order owner and authenticated customer to create and read status", () => {
-    for (const action of ["create", "status"]) {
-      expect(isAuthorizedPaymentAction({ action, callerId: OWNER, ownerId: OWNER, customerId: CUSTOMER })).toBe(true);
-      expect(isAuthorizedPaymentAction({ action, callerId: CUSTOMER, ownerId: OWNER, customerId: CUSTOMER })).toBe(true);
-    }
+  it.each([
+    ["create", OWNER, true],
+    ["create", CUSTOMER, true],
+    ["create", STRANGER, false],
+    ["status", OWNER, true],
+    ["status", CUSTOMER, true],
+    ["status", STRANGER, false],
+    ["refund", OWNER, true],
+    ["refund", CUSTOMER, false],
+    ["refund", STRANGER, false],
+    ["cancel", OWNER, true],
+    ["cancel", CUSTOMER, false],
+    ["cancel", STRANGER, false],
+    ["refund-all", OWNER, false],
+    ["__proto__", OWNER, false],
+  ])("authorizes action %s for %s: %s", (action, callerId, expected) => {
+    expect(
+      isAuthorizedPaymentAction({
+        action,
+        callerId,
+        ownerId: OWNER,
+        customerId: CUSTOMER,
+      }),
+    ).toBe(expected);
   });
 
-  it("denies strangers and callers without an order association", () => {
-    for (const action of ["create", "status", "refund", "cancel"]) {
-      expect(isAuthorizedPaymentAction({ action, callerId: STRANGER, ownerId: OWNER, customerId: CUSTOMER })).toBe(false);
-      expect(isAuthorizedPaymentAction({ action, callerId: "", ownerId: OWNER, customerId: CUSTOMER })).toBe(false);
-      expect(isAuthorizedPaymentAction({ action, callerId: CUSTOMER, ownerId: null, customerId: null })).toBe(false);
-    }
-  });
-
-  it("allows only the restaurant owner to refund or cancel", () => {
-    for (const action of ["refund", "cancel"]) {
-      expect(isAuthorizedPaymentAction({ action, callerId: OWNER, ownerId: OWNER, customerId: CUSTOMER })).toBe(true);
-      expect(isAuthorizedPaymentAction({ action, callerId: CUSTOMER, ownerId: OWNER, customerId: CUSTOMER })).toBe(false);
-    }
-  });
-
-  it("fails closed for unknown actions and null customer on anonymous checkout", () => {
-    expect(isAuthorizedPaymentAction({ action: "create", callerId: CUSTOMER, ownerId: OWNER, customerId: null })).toBe(false);
-    expect(isAuthorizedPaymentAction({ action: "refund-all", callerId: OWNER, ownerId: OWNER, customerId: CUSTOMER })).toBe(false);
-    expect(isAuthorizedPaymentAction({ action: "__proto__", callerId: OWNER, ownerId: OWNER, customerId: CUSTOMER })).toBe(false);
+  it("rejects unauthenticated callers and customers without an order association", () => {
+    expect(
+      isAuthorizedPaymentAction({
+        action: "create",
+        callerId: "",
+        ownerId: OWNER,
+        customerId: CUSTOMER,
+      }),
+    ).toBe(false);
+    expect(
+      isAuthorizedPaymentAction({
+        action: "create",
+        callerId: CUSTOMER,
+        ownerId: null,
+        customerId: null,
+      }),
+    ).toBe(false);
+    expect(
+      isAuthorizedPaymentAction({
+        action: "create",
+        callerId: CUSTOMER,
+        ownerId: OWNER,
+        customerId: null,
+      }),
+    ).toBe(false);
   });
 });
 
