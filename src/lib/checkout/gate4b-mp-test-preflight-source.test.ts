@@ -16,20 +16,19 @@ describe("Gate 4B — MP test-payment preflight", () => {
     expect(source).not.toContain("restaurant.active !== false ||");
   });
 
-  it("validates TEST payer email syntax without requiring an unavailable dashboard secret", () => {
+  it("requires a valid payer email without inventing a TEST buyer account address", () => {
     const payerRequired = source.indexOf('error: "payer_email_required"');
-    const payerDomainGuard = source.indexOf("sandbox_test_payer_email_required");
     const paymentUpsert = source.indexOf(
       ".upsert(",
-      source.indexOf('"order_payment"', payerDomainGuard),
+      source.indexOf('"order_payment"', payerRequired),
     );
     const mpPost = source.indexOf("mp = await createPixPayment(");
 
     expect(payerRequired).toBeGreaterThanOrEqual(0);
-    expect(payerDomainGuard).toBeGreaterThan(payerRequired);
-    expect(paymentUpsert).toBeGreaterThan(payerDomainGuard);
+    expect(paymentUpsert).toBeGreaterThan(payerRequired);
     expect(mpPost).toBeGreaterThan(paymentUpsert);
     expect(source).not.toContain("MP_TEST_BUYER_EMAIL");
+    expect(source).not.toContain("sandbox_test_payer_email_required");
     expect(source).not.toContain("sandbox_test_buyer_not_configured");
     expect(source).not.toContain("sandbox_test_buyer_mismatch");
   });
