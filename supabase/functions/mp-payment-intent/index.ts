@@ -444,10 +444,16 @@ Deno.serve(async (req) => {
     const bearer = req.headers.get("authorization") ?? "";
     const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
     if (!accessJwt) {
+      if (environment === "test") {
+        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      }
       return json({ error: "payment_caller_unauthorized" }, { status: 401 });
     }
     const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
     if (callerError || !caller?.user?.id || caller.user.is_anonymous) {
+      if (environment === "test") {
+        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
+      }
       return json({ error: "payment_caller_unauthorized" }, { status: 401 });
     }
     const callerId = caller.user.id;
