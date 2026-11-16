@@ -43,3 +43,35 @@ describe("Gate 4B: server-side online payment ownership preflight", () => {
     expect(orderServiceSource).toContain("_customer_id: context.userId ?? null");
   });
 });
+
+describe("Gate 4B: authenticated JWT forwarding to checkout server function", () => {
+  it("gets the active Supabase session after in-checkout signup/login", () => {
+    const signIn = source.indexOf("await supabase.auth.signInWithPassword({");
+    const getSession = source.indexOf("await supabase.auth.getSession();", signIn);
+    const create = source.indexOf("const res = await create({", getSession);
+    expect(signIn).toBeGreaterThan(-1);
+    expect(getSession).toBeGreaterThan(signIn);
+    expect(create).toBeGreaterThan(getSession);
+  });
+
+  it("requires a matching session user for online payment, before order persistence", () => {
+    const guard = source.indexOf("checkoutSession.user.id !== checkoutUser.id");
+    const create = source.indexOf("const res = await create({");
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(create);
+    expect(source).toContain("!checkoutSession?.access_token");
+  });
+
+  it("sends Authorization in serverFn call without exposing the service key", () => {
+    const create = source.indexOf("const res = await create({");
+    const slice = source.slice(create, create + 200);
+    expect(slice).toContain("headers: checkoutAuthHeaders");
+    expect(source).toContain("Authorization: `Bearer ${checkoutSession.access_token}`");
+    expect(source).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+  });
+
+  it("keeps offline guest checkout possible without an Authorization header", () => {
+    expect(source).toContain("...(checkoutAuthHeaders ? { headers: checkoutAuthHeaders } : {})");
+    expect(source).toContain("selectedPayment.online &&");
+  });
+});
