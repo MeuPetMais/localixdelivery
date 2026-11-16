@@ -261,6 +261,12 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
     }
 
     const paymentDecision = resolveCheckoutPayment(data.paymentMethod);
+    // A pending online payment must belong to a verified checkout user.
+    // A client-provided email alone does not establish identity or ownership.
+    // Offline orders retain the established guest checkout behavior.
+    if (paymentDecision.paymentRecordStatus === "PENDING" && !context.userId) {
+      throw new Error("online_payment_auth_required");
+    }
     console.log("[order-payment-debug]", {
       receivedPaymentMethod: data.paymentMethod,
       paymentDecision,
