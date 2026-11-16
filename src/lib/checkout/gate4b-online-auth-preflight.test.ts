@@ -2,11 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync(new URL("../../routes/$slug.index.tsx", import.meta.url), "utf8");
-const checkout = source.slice(
-  source.indexOf("async function submit"),
-  source.indexOf("return (", source.indexOf("const res = await create({")),
-);
-
 describe("Gate 4B: public checkout preflight before order persistence", () => {
   it("blocks online checkout without authenticated email BEFORE createCheckoutOrder", () => {
     const guard = source.indexOf("if (selectedPayment.online && !checkoutUser?.email)");
