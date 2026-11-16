@@ -470,7 +470,7 @@ Deno.serve(async (req) => {
         !restaurant ||
         restaurant.id !== "1e271104-299c-44b6-98f5-d8effaef3f0a" ||
         restaurant.owner_id !== sandboxCallerId ||
-        restaurant.active !== false ||
+        restaurant.active !== true ||
         restaurant.is_open !== false ||
         order.customer_name !== "GATE4 SANDBOX PAYMENT"
       ) {
@@ -1099,6 +1099,20 @@ Deno.serve(async (req) => {
       // This does NOT invent or infer the buyer account's actual e-mail.
       if (environment === "test" && !/^[^@\s]+@testuser\.com$/i.test(payerEmail)) {
         return json({ error: "sandbox_test_payer_email_required" }, { status: 422 });
+      }
+      if (environment === "test") {
+        // An address shaped like a test email is not proof of a TEST buyer identity.
+        // Match the exact buyer address from the Mercado Pago developer test account.
+        // Fail before any DB pre-upsert or PIX POST when it is not configured.
+        const configuredBuyerEmail = String(Deno.env.get("MP_TEST_BUYER_EMAIL") ?? "")
+          .trim()
+          .toLowerCase();
+        if (!/^[^@\\s]+@testuser\\.com$/i.test(configuredBuyerEmail)) {
+          return json({ error: "sandbox_test_buyer_not_configured" }, { status: 503 });
+        }
+        if (payerEmail !== configuredBuyerEmail) {
+          return json({ error: "sandbox_test_buyer_mismatch" }, { status: 422 });
+        }
       }
       const { data: pricingSnapshot, error: pricingErr } = await sb
         .from("order_pricing_snapshot")
