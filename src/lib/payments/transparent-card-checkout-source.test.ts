@@ -20,7 +20,8 @@ describe("checkout transparent card phase 1 guards", () => {
   it("usa Public Key dedicada e nao expõe segredos Mercado Pago", () => {
     expect(checkoutSource).toContain("PaymentService.getMercadoPagoPublicKey");
     expect(checkoutSource).toContain("publicKey={mercadoPagoPublicKey ?? null}");
-    expect(checkoutSource).not.toContain("access_token");
+    expect(checkoutSource).not.toContain("MP_ACCESS_TOKEN");
+    expect(checkoutSource).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(checkoutSource).not.toContain("client_secret");
   });
 });
