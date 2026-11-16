@@ -24,12 +24,18 @@ export function isAuthorizedPaymentAction(args: {
  */
 export function mapMpStatus(status: string | null | undefined): string {
   switch ((status ?? "").toLowerCase()) {
-    case "approved": return "APPROVED";
-    case "in_process": return "PROCESSING";
-    case "rejected": return "REJECTED";
-    case "cancelled": return "CANCELLED";
-    case "refunded": return "REFUNDED";
-    case "charged_back": return "CHARGEBACK";
+    case "approved":
+      return "APPROVED";
+    case "in_process":
+      return "PROCESSING";
+    case "rejected":
+      return "REJECTED";
+    case "cancelled":
+      return "CANCELLED";
+    case "refunded":
+      return "REFUNDED";
+    case "charged_back":
+      return "CHARGEBACK";
     default: return "PENDING";
   }
 }
