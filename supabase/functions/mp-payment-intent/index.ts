@@ -24,8 +24,9 @@ function mapStatus(s) {
     case "cancelled":
       return "CANCELLED";
     case "refunded":
+      return "REFUNDED";
     case "charged_back":
-      return "APPROVED";
+      return "CHARGEBACK";
     default:
       return "PENDING";
   }
@@ -438,19 +439,19 @@ Deno.serve(async (req) => {
       return json({ error: "sandbox_payment_project_mismatch" }, { status: 503 });
     }
     const sb = admin();
-    // Isolated Gate 4: only a verified sandbox restaurant owner can request
-    // a synthetic payment. Do not rely on the service-role key as caller auth.
-    let sandboxCallerId = null;
-    if (environment === "test") {
-      const bearer = req.headers.get("authorization") ?? "";
-      const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
-      if (!accessJwt) return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
-      const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
-      if (callerError || !caller?.user?.id) {
-        return json({ error: "sandbox_caller_unauthorized" }, { status: 401 });
-      }
-      sandboxCallerId = caller.user.id;
+    // Gate 4B: JWT at edge gateway is not object-level authorization.
+    // Revalidate caller identity server-side before reading a privileged order.
+    const bearer = req.headers.get("authorization") ?? "";
+    const accessJwt = bearer.startsWith("Bearer ") ? bearer.slice(7).trim() : "";
+    if (!accessJwt) {
+      return json({ error: "payment_caller_unauthorized" }, { status: 401 });
     }
+    const { data: caller, error: callerError } = await sb.auth.getUser(accessJwt);
+    if (callerError || !caller?.user?.id || caller.user.is_anonymous) {
+      return json({ error: "payment_caller_unauthorized" }, { status: 401 });
+    }
+    const callerId = caller.user.id;
+    const sandboxCallerId = environment === "test" ? callerId : null;
     // Carrega pedido + pagamento
     const { data: order, error: ordErr } = await sb
       .from("orders")
@@ -497,6 +498,34 @@ Deno.serve(async (req) => {
       }
       if (String(payload?.payment_method ?? "pix").toLowerCase() !== "pix") {
         return json({ error: "sandbox_payment_method_not_allowed" }, { status: 403 });
+      }
+    }
+    if (environment === "production") {
+      // Never use service_role visibility as proof of checkout authorization.
+      // customer_id references auth.users(id), not a mutable metadata field.
+      const { data: restaurant, error: restaurantError } = await sb
+        .from("restaurants")
+        .select("id, owner_id")
+        .eq("id", order.restaurant_id)
+        .maybeSingle();
+      if (restaurantError || !restaurant || restaurant.id !== order.restaurant_id) {
+        return json({ error: "payment_restaurant_unavailable" }, { status: 409 });
+      }
+      const isOwner = restaurant.owner_id === callerId;
+      const isCustomer = order.customer_id !== null && order.customer_id === callerId;
+      // Financial reversal/cancellation must never be callable by a consumer.
+      if (action === "refund" || action === "cancel") {
+        if (!isOwner) {
+          return json({ error: "payment_action_forbidden" }, { status: 403 });
+        }
+      } else if (action === "create" || action === "status") {
+        if (!isOwner && !isCustomer) {
+          // Anonymous checkout requires a separately reviewed signed checkout
+          // capability. Do not infer authorization from knowing order_id.
+          return json({ error: "payment_order_forbidden" }, { status: 403 });
+        }
+      } else {
+        return json({ error: "payment_action_forbidden" }, { status: 403 });
       }
     }
     const { data: existing } = await sb
