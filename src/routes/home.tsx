@@ -8,7 +8,8 @@ export const Route = createFileRoute("/home")({
       { title: "Minha conta — Localix Delivery" },
       {
         name: "description",
-        content: "Acesse seus pedidos e favoritos. Para comprar, utilize o link do estabelecimento.",
+        content:
+          "Acesse seus pedidos e favoritos. Para comprar, utilize o link do estabelecimento.",
       },
     ],
   }),
@@ -36,8 +37,8 @@ function CustomerHome() {
           <div className="space-y-1">
             <h2 className="font-semibold">Quer fazer um pedido?</h2>
             <p className="text-sm text-muted-foreground">
-              Abra o link de cardápio enviado pelo seu estabelecimento. Assim você
-              compra diretamente na loja que escolheu.
+              Abra o link de cardápio enviado pelo seu estabelecimento. Assim você compra
+              diretamente na loja que escolheu.
             </p>
           </div>
         </div>
