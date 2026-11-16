@@ -7,7 +7,7 @@ const menu = readFileSync(new URL("../../components/BottomNav.tsx", import.meta.
 describe("Localix pilot — direct partner links, without public marketplace", () => {
   it("does not load or expose an establishment discovery list on /home", () => {
     expect(home).not.toContain("restaurants_public");
-    expect(home).not.toContain(".from(\"restaurants");
+    expect(home).not.toContain('.from("restaurants');
     expect(home).not.toContain("Buscar restaurantes");
     expect(home).not.toContain("restaurantes próximos");
     expect(home).not.toContain("Cupons e ofertas dos restaurantes");
